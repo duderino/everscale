@@ -3,7 +3,7 @@
  * under the BSD (revised) open source license.
  */
 
-v#ifndef AWS_CLIENT_SOCKET_FACTORY_H
+#ifndef AWS_CLIENT_SOCKET_FACTORY_H
 #include <AWSClientSocketFactory.h>
 #endif
 
