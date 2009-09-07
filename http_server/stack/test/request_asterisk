@@ -1,0 +1,4 @@
+OPTIONS * HTTP/1.1
+Host: vip-aws.back.den.p4pnet.net
+Connection: close    
+

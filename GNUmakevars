@@ -1,0 +1,121 @@
+# Platform specific flags and system libraries
+
+uname=$(shell echo `uname`)
+
+ifeq ($(uname),Linux)
+    COMPILER_FLAGS += -ansi -Wall -Woverloaded-virtual -Werror -fno-exceptions -fno-rtti -DES_LINUX -D_REENTRANT -D_XOPEN_SOURCE -D_GNU_SOURCE
+    SYSTEM_LIBS += -lpthread
+    DYNAMIC_LINKER_FLAGS += -shared
+endif
+
+ifeq ($(uname),SunOS)
+    COMPILER_FLAGS += -ansi -Wall -Woverloaded-virtual -Werror -fno-exceptions -fno-rtti -DES_SOLARIS -D_POSIX_C_SOURCE=199506L -D_XOPEN_SOURCE -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__ -D_REENTRANT
+    SYSTEM_LIBS += -lsocket -lpthread -lposix4 -lnsl
+    DYNAMIC_LINKER_FLAGS += -shared
+endif
+
+ifeq ($(uname),Darwin)
+    COMPILER_FLAGS += -ansi -Wall -Woverloaded-virtual -Werror -fno-exceptions -fno-rtti -DES_DARWIN -D_REENTRANT
+    DYNAMIC_LINKER_FLAGS += -dynamiclib
+endif
+
+COMPILER = g++
+PROD_COMPILER_FLAGS += -O2 -g $(COMPILER_FLAGS) -DNDEBUG
+PROD_SO_COMPILER_FLAGS += -fPIC $(PROD_COMPILER_FLAGS)
+DEBUG_COMPILER_FLAGS += -O0 -g $(COMPILER_FLAGS) -DDEBUG -DUSE_SMART_POINTER_DEBUGGER
+DEBUG_SO_COMPILER_FLAGS += -fPIC $(DEBUG_COMPILER_FLAGS)
+DYNAMIC_LINKER = g++
+STATIC_LINKER = ar
+STATIC_LINKER_FLAGS = rs
+
+# Automatically generated dependencies will be stored here
+DEPENDS_DIR = .depends/
+
+# Generated object files will be stored here
+OBJECTS_DIR = .objects/
+
+$(DEPENDS_DIR)%_prod.d: %.cpp
+	@echo
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(PROD_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(DEPENDS_DIR)%_debug.d: %.cpp
+	@echo
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(DEBUG_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(OBJECTS_DIR)%_prod.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(PROD_COMPILER_FLAGS) $<
+
+$(OBJECTS_DIR)%_debug.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(DEBUG_COMPILER_FLAGS) $<
+
+$(DEPENDS_DIR)%_prod_so.d: %.cpp
+	@echo
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(PROD_SO_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod_so.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(DEPENDS_DIR)%_debug_so.d: %.cpp
+	@echo
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(DEBUG_SO_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug_so.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(OBJECTS_DIR)%_prod_so.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(PROD_SO_COMPILER_FLAGS) $<
+
+$(OBJECTS_DIR)%_debug_so.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(DEBUG_SO_COMPILER_FLAGS) $<
+
+PROD_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod.o))
+DEBUG_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug.o))
+PROD_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod.d))
+DEBUG_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug.d))
+PROD_SO_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod_so.o))
+DEBUG_SO_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug_so.o))
+PROD_SO_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod_so.d))
+DEBUG_SO_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug_so.d))
+
+include $(PROD_DEPENDS)
+include $(DEBUG_DEPENDS)
+include $(PROD_SO_DEPENDS)
+include $(DEBUG_SO_DEPENDS)
+
+$(EXE_PROD_TARGET): $(PROD_OBJECTS) $(EXE_PROD_STATIC_LIBS) $(EXE_PROD_DYNAMIC_LIB_DEPENDENCIES)
+	@echo
+	$(COMPILER) -o $(EXE_PROD_TARGET) $(PROD_OBJECTS) $(EXE_PROD_STATIC_LIBS) $(EXE_PROD_FLAGS) $(DYNAMIC_LIB_PATH) $(EXE_PROD_DYNAMIC_LIBS) $(SYSTEM_LIBS)
+
+$(EXE_DEBUG_TARGET): $(DEBUG_OBJECTS) $(EXE_DEBUG_STATIC_LIBS) $(EXE_DEBUG_DYNAMIC_LIB_DEPENDENCIES)
+	@echo
+	$(COMPILER) -o $(EXE_DEBUG_TARGET) $(DEBUG_OBJECTS) $(EXE_DEBUG_STATIC_LIBS) $(EXE_DEBUG_FLAGS) $(DYNAMIC_LIB_PATH) $(EXE_DEBUG_DYNAMIC_LIBS) $(SYSTEM_LIBS)
+
+$(DYNAMIC_LIB_PROD_TARGET): $(PROD_SO_OBJECTS) $(DYNAMIC_LIB_PROD_DYNAMIC_LIBS)
+	@echo
+	$(DYNAMIC_LINKER) -o $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LINKER_FLAGS) $(PROD_SO_OBJECTS) $(DYNAMIC_LIB_PATH) $(DYNAMIC_LIB_PROD_DYNAMIC_LIBS) $(SYSTEM_LIBS)
+
+$(DYNAMIC_LIB_DEBUG_TARGET): $(DEBUG_SO_OBJECTS) $(DYNAMIC_LIB_DEBUG_DYNAMIC_LIBS)
+	@echo
+	$(DYNAMIC_LINKER) -o $(DYNAMIC_LIB_DEBUG_TARGET) $(DYNAMIC_LINKER_FLAGS) $(DEBUG_SO_OBJECTS) $(DYNAMIC_LIB_PATH) $(DYNAMIC_LIB_DEBUG_DYNAMIC_LIBS) $(SYSTEM_LIBS)
+	
+$(STATIC_LIB_PROD_TARGET): $(PROD_OBJECTS)
+	@echo
+	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS) $(STATIC_LIB_PROD_TARGET) $(PROD_OBJECTS)
+
+$(STATIC_LIB_DEBUG_TARGET): $(DEBUG_OBJECTS)
+	@echo
+	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS) $(STATIC_LIB_DEBUG_TARGET) $(DEBUG_OBJECTS)
+
+clean:
+	@echo
+	rm -f $(PROD_DEPENDS) $(DEBUG_DEPENDS) $(PROD_SO_DEPENDS) $(DEBUG_SO_DEPENDS)	
+	rm -f $(PROD_OBJECTS) $(DEBUG_OBJECTS) $(PROD_SO_OBJECTS) $(DEBUG_SO_OBJECTS)
+	rm -f $(EXE_PROD_TARGET) $(EXE_DEBUG_TARGET) $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LIB_DEBUG_TARGET) $(STATIC_LIB_PROD_TARGET) $(STATIC_LIB_DEBUG_TARGET)
+
+remake: clean all

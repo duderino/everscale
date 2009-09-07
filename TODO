@@ -1,0 +1,11 @@
+poll on state machines, not fds.  1 state machine == 1+ fds
+openssl/HTTPS support
+Better proxying - extend state machine to socket tuples
+kevent support (OSX)
+JNI wrappers - lazy UTF-8 to UTF-16 conversion string class
+Optional encoding of HTML entities - no XSS attacks
+Request-URI validation - no path traversal attacks
+Review HTTP header correctness
+Revisit autotools?
+Add cache
+Add router

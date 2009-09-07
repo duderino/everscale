@@ -1,0 +1,12 @@
+GET http://vip-wsmt-cp.back.sc.p4pnet.net:7005/ HTTP/1.1
+Host: vip-wsmt-cp.back.sc.p4pnet.net:7005
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.7.8) Gecko/20050512 Red Hat/1.0.4-1.4.1 Firefox/1.0.4
+Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+Accept-Language: en-us,en;q=0.5
+Accept-Encoding: gzip,deflate
+Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+Keep-Alive: 300
+Connection: keep-alive
+Cookie: BX=0c4h9dt25fp5s&b=3&s=ba
+Cache-Control: max-age=0
+

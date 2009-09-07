@@ -1,0 +1,240 @@
+
+HTTP/1.1 200 OK
+Date: Wed, 12 Jul 2006 17:22:25 GMT
+Content-Length: 11830
+Connection: close
+Content-Type: text/xml; charset=utf-8
+
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="urn:yahoo:searchmarketing:research:1.0" xmlns:impl="urn:yahoo:searchmarketing:research:1.0" xmlns:aws="urn:yahoo:ysm:aws" xmlns:wsse="http://schemas.xmlsoap.org/ws/2002/07/secext" xmlns:intf="urn:yahoo:searchmarketing:research:1.0" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsrt="http://schemas.xmlsoap.org/ws/2002/04/rp" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <schema elementFormDefault="qualified" targetNamespace="urn:yahoo:searchmarketing:research:1.0" xmlns="http://www.w3.org/2001/XMLSchema">
+   <element name="GetKeywordsBySubphraseRequest">
+    <complexType>
+     <sequence>
+      <element name="Market" nillable="true" type="xsd:string"/>
+      <element name="Keyword" nillable="true" type="xsd:string"/>
+     </sequence>
+    </complexType>
+   </element>
+   <complexType name="KeywordType">
+    <sequence>
+     <element maxOccurs="1" minOccurs="0" name="Raw" nillable="true" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="Phrase" nillable="true" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="Canonical" nillable="true" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="Common" nillable="true" type="xsd:string"/>
+    </sequence>
+   </complexType>
+   <complexType name="KeywordDetailType">
+    <complexContent>
+     <extension base="impl:KeywordType">
+      <sequence>
+       <element maxOccurs="1" minOccurs="0" name="Searches" nillable="true" type="xsd:long"/>
+       <element maxOccurs="1" minOccurs="0" name="Tier" nillable="true" type="xsd:int"/>
+       <element maxOccurs="1" minOccurs="0" name="AdvancedImpressions" nillable="true" type="xsd:long"/>
+       <element maxOccurs="1" minOccurs="0" name="TopBid" nillable="true" type="xsd:decimal"/>
+       <element maxOccurs="1" minOccurs="0" name="MinimumBid" nillable="true" type="xsd:decimal"/>
+       <element maxOccurs="1" minOccurs="0" name="Duplicate" nillable="true" type="xsd:boolean"/>
+       <element maxOccurs="1" minOccurs="0" name="ContentMatchImpressions" nillable="true" type="xsd:long"/>
+       <element maxOccurs="1" minOccurs="0" name="ContentMatchPos1Clicks" nillable="true" type="xsd:int"/>
+       <element maxOccurs="1" minOccurs="0" name="ContentMatchPos2Clicks" nillable="true" type="xsd:int"/>
+       <element maxOccurs="1" minOccurs="0" name="ContentMatchPos3Clicks" nillable="true" type="xsd:int"/>
+      </sequence>
+     </extension>
+    </complexContent>
+   </complexType>
+   <element name="GetKeywordsBySubphraseResponse">
+    <complexType>
+     <sequence>
+      <element name="InputKeyword" nillable="true" type="impl:KeywordType"/>
+      <element maxOccurs="unbounded" minOccurs="0" name="RelatedKeyword" nillable="true" type="impl:KeywordDetailType"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="GetKeywordStatisticsRequest">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" name="Keyword" nillable="true" type="xsd:string"/>
+      <element name="Market" nillable="true" type="xsd:string"/>
+      <element name="GetTopBid" type="xsd:boolean"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="GetKeywordStatisticsResponse">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" name="Keyword" nillable="true" type="impl:KeywordDetailType"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="GetKeywordMonthlyReportRequest">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" name="Keyword" nillable="true" type="xsd:string"/>
+      <element name="Market" nillable="true" type="xsd:string"/>
+     </sequence>
+    </complexType>
+   </element>
+   <complexType name="KeywordMonthlyReportType">
+    <complexContent>
+     <extension base="impl:KeywordType">
+      <sequence>
+       <element maxOccurs="1" minOccurs="0" name="Searches" nillable="true" type="xsd:long"/>
+       <element maxOccurs="1" minOccurs="0" name="AdvancedImpressions" nillable="true" type="xsd:long"/>
+       <element maxOccurs="1" minOccurs="0" name="Duplicate" nillable="true" type="xsd:boolean"/>
+       <element maxOccurs="1" minOccurs="0" name="ContentMatchImpressions" nillable="true" type="xsd:long"/>
+       <element maxOccurs="1" minOccurs="0" name="MaxBid" nillable="true" type="xsd:decimal"/>
+       <element maxOccurs="1" minOccurs="0" name="MaxCost" nillable="true" type="xsd:decimal"/>
+      </sequence>
+     </extension>
+    </complexContent>
+   </complexType>
+   <element name="GetKeywordMonthlyReportResponse">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" name="Keyword" nillable="true" type="impl:KeywordMonthlyReportType"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="GetCanonicalizationRequest">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" name="Keyword" nillable="true" type="xsd:string"/>
+      <element name="Market" nillable="true" type="xsd:string"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="GetCanonicalizationResponse">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" name="Keyword" nillable="true" type="impl:KeywordDetailType"/>
+     </sequence>
+    </complexType>
+   </element>
+  </schema>
+    <schema targetNamespace="http://schemas.xmlsoap.org/ws/2002/07/secext" 
+            xmlns="http://www.w3.org/2001/XMLSchema">
+  <element name="Security" type="wsse:Security"/>
+  <complexType name="Security">
+
+   <sequence>
+    <element name="UsernameToken" type="wsse:UsernameToken"/>
+   </sequence>
+  </complexType>
+  <complexType name="UsernameToken">
+   <sequence>
+    <element name="Username" type="string"/>
+    <element name="Password" type="string"/>
+   </sequence>
+  </complexType>
+ </schema>
+    <schema targetNamespace="urn:yahoo:ysm:aws"
+      xmlns="http://www.w3.org/2001/XMLSchema">
+     <simpleType name="licensekey">
+        <restriction base="string"/>
+       </simpleType>
+   <element name="licensekey" type="aws:licensekey"/>
+ </schema> 
+  </wsdl:types>
+  <wsdl:message name="WSSecurity">
+    <wsdl:part name="WSSecurityLiteral" element="wsse:Security"/>
+  </wsdl:message>
+  <wsdl:message name="AWSLicenseKey">
+    <wsdl:part name="AWSLicenseKeyLiteral" element="aws:licensekey"/>
+  </wsdl:message>
+  <wsdl:message name="GetKeywordsBySubphraseRequest">
+    <wsdl:part name="GetKeywordsBySubphraseRequest" element="impl:GetKeywordsBySubphraseRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetCanonicalizationRequest">
+    <wsdl:part name="GetCanonicalizationRequest" element="impl:GetCanonicalizationRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetKeywordsBySubphraseResponse">
+    <wsdl:part name="GetKeywordsBySubphraseResponse" element="impl:GetKeywordsBySubphraseResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetKeywordMonthlyReportResponse">
+    <wsdl:part name="GetKeywordMonthlyReportResponse" element="impl:GetKeywordMonthlyReportResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetKeywordStatisticsRequest">
+    <wsdl:part name="GetKeywordStatisticsRequest" element="impl:GetKeywordStatisticsRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetKeywordMonthlyReportRequest">
+    <wsdl:part name="GetKeywordMonthlyReportRequest" element="impl:GetKeywordMonthlyReportRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetCanonicalizationResponse">
+    <wsdl:part name="GetCanonicalizationResponse" element="impl:GetCanonicalizationResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetKeywordStatisticsResponse">
+    <wsdl:part name="GetKeywordStatisticsResponse" element="impl:GetKeywordStatisticsResponse"/>
+  </wsdl:message>
+  <wsdl:portType name="ResearchService">
+    <wsdl:operation name="GetKeywordsBySubphrase" parameterOrder="GetKeywordsBySubphraseRequest">
+      <wsdl:input name="GetKeywordsBySubphraseRequest" message="impl:GetKeywordsBySubphraseRequest"/>
+      <wsdl:output name="GetKeywordsBySubphraseResponse" message="impl:GetKeywordsBySubphraseResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetKeywordStatistics" parameterOrder="GetKeywordStatisticsRequest">
+      <wsdl:input name="GetKeywordStatisticsRequest" message="impl:GetKeywordStatisticsRequest"/>
+      <wsdl:output name="GetKeywordStatisticsResponse" message="impl:GetKeywordStatisticsResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetKeywordMonthlyReport" parameterOrder="GetKeywordMonthlyReportRequest">
+      <wsdl:input name="GetKeywordMonthlyReportRequest" message="impl:GetKeywordMonthlyReportRequest"/>
+      <wsdl:output name="GetKeywordMonthlyReportResponse" message="impl:GetKeywordMonthlyReportResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetCanonicalization" parameterOrder="GetCanonicalizationRequest">
+      <wsdl:input name="GetCanonicalizationRequest" message="impl:GetCanonicalizationRequest"/>
+      <wsdl:output name="GetCanonicalizationResponse" message="impl:GetCanonicalizationResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="ResearchServiceSoapBinding" type="impl:ResearchService">
+    <wsdlsoap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="GetKeywordsBySubphrase">
+      <wsdlsoap:operation soapAction="GetKeywordsBySubphrase"/>
+      <wsdl:input name="GetKeywordsBySubphraseRequest">
+        <wsdlsoap:body use="literal"/>
+        <wsdlsoap:header message="impl:WSSecurity" part="WSSecurityLiteral" use="literal"/>
+        <wsdlsoap:header message="impl:AWSLicenseKey" part="AWSLicenseKeyLiteral" use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetKeywordsBySubphraseResponse">
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetKeywordStatistics">
+      <wsdlsoap:operation soapAction="GetKeywordStatistics"/>
+      <wsdl:input name="GetKeywordStatisticsRequest">
+        <wsdlsoap:body use="literal"/>
+        <wsdlsoap:header message="impl:WSSecurity" part="WSSecurityLiteral" use="literal"/>
+        <wsdlsoap:header message="impl:AWSLicenseKey" part="AWSLicenseKeyLiteral" use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetKeywordStatisticsResponse">
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetKeywordMonthlyReport">
+      <wsdlsoap:operation soapAction="GetKeywordMonthlyReport"/>
+      <wsdl:input name="GetKeywordMonthlyReportRequest">
+        <wsdlsoap:body use="literal"/>
+        <wsdlsoap:header message="impl:WSSecurity" part="WSSecurityLiteral" use="literal"/>
+        <wsdlsoap:header message="impl:AWSLicenseKey" part="AWSLicenseKeyLiteral" use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetKeywordMonthlyReportResponse">
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCanonicalization">
+      <wsdlsoap:operation soapAction="GetCanonicalization"/>
+      <wsdl:input name="GetCanonicalizationRequest">
+        <wsdlsoap:body use="literal"/>
+        <wsdlsoap:header message="impl:WSSecurity" part="WSSecurityLiteral" use="literal"/>
+        <wsdlsoap:header message="impl:AWSLicenseKey" part="AWSLicenseKeyLiteral" use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetCanonicalizationResponse">
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="Research">
+    <wsdl:port name="ResearchService" binding="impl:ResearchServiceSoapBinding">
+      <wsdlsoap:address location="https://vip-aws.back.den.p4pnet.net/Research/V1"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
+

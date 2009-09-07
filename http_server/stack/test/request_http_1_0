@@ -1,0 +1,11 @@
+POST /autoreview/services/CheckService HTTP/1.0
+Content-Type: text/xml; charset=utf-8
+Accept: application/soap+xml, application/dime, multipart/related, text/*
+User-Agent: Axis/1.3
+Host: deveps-001.ysm.oc2.yahoo.com:8090
+Cache-Control: no-cache
+Pragma: no-cache
+SOAPAction: ""
+Content-Length: 522
+
+<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soapenv:Body><termCheckRequest xmlns="urn:yahoo:sm:eps:check:1.0"><item xmlns=""><userLocale><country>US</country><language>en</language></userLocale><type>MR_FULL_AD_HOC</type><term><id>0</id><exact>poker</exact><phrase>poker games</phrase></term></item></termCheckRequest></soapenv:Body></soapenv:Envelope>
