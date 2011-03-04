@@ -10,8 +10,8 @@ ESFBufferTest.cpp \
 ESFBufferTestMain.cpp
 
 STATIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation \
-$(BASE)/sparrowhawk/test_framework/libtest_framework
+$(BASE)/lib/libfoundation \
+$(BASE)/lib/libtest_framework
 
 DEBUG_ONLY=1
 EXE=buffer_test

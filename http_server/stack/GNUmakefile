@@ -60,9 +60,9 @@ AWSAveragingCounter.cpp\
 AWSHttpServerCounters.cpp
 
 DYNAMIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation
+$(BASE)/lib/libfoundation
 
-LIB=libredux_http_parser
+LIB=$(BASE)/lib/libredux_http_stack
 
 all: $(LIB)
 

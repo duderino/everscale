@@ -23,21 +23,13 @@ AWSHttpEchoServerHandler.cpp\
 AWSHttpEchoServerContext.cpp\
 AWSHttpEchoServerMain.cpp
 
-EXE_DEBUG_TARGET=http_echo_server_debug
-EXE_PROD_TARGET=http_echo_server
+EXE=$(BASE)/bin/http_echo_server
 
-EXE_DEBUG_DYNAMIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation_debug.so\
-$(BASE)/http_server/stack/libredux_http_parser_debug.so
-
-EXE_PROD_DYNAMIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation.so\
-$(BASE)/http_server/stack/libredux_http_parser.so
-
-EXE_PROD_FLAGS = -Wl,-rpath,/home/y/lib
-EXE_DEBUG_FLAGS = -Wl,-rpath,/home/y/lib
+STATIC_LIBS =\
+$(BASE)/lib/libredux_http_stack \
+$(BASE)/lib/libfoundation \
  
-all: $(EXE_DEBUG_TARGET) $(EXE_PROD_TARGET)
+all: $(EXE)
 
 include $(BASE)/GNUmakevars
 

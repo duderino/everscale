@@ -14,7 +14,7 @@ ESTFRepetitionDecorator.cpp\
 ESTFResultCollector.cpp\
 ESTFThread.cpp
 
-LIB=libtest_framework
+LIB=$(BASE)/lib/libtest_framework
 
 all: $(LIB)
 

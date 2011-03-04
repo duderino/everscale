@@ -54,7 +54,7 @@ ifeq ($(uname),Linux)
     SOURCES += ESFEpollMultiplexer.cpp ESFEpollMultiplexerFactory.cpp
 endif
 
-LIB = libfoundation
+LIB = $(BASE)/lib/libfoundation
 
 all: $(LIB) 
 

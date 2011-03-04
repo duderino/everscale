@@ -10,10 +10,10 @@ AWSClientSocketFactory.cpp\
 AWSRawEchoClientMain.cpp\
 AWSPerformanceCounter.cpp
 
-EXE=raw_echo_client
+EXE=$(BASE)/bin/raw_echo_client
 
 STATIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation
+$(BASE)/lib/libfoundation
  
 all: $(EXE)
 

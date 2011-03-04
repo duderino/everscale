@@ -14,10 +14,10 @@ AWSListeningSocket.cpp\
 AWSRawEchoServerMain.cpp\
 AWSServerSocket.cpp
 
-EXE=raw_echo_server
+EXE=$(BASE)/bin/raw_echo_server
 
 STATIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation
+$(BASE)/lib/libfoundation
  
 all: $(EXE)
 

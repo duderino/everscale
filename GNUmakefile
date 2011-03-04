@@ -1,7 +1,8 @@
 DIRS=\
 sparrowhawk\
 raw_echo_server\
-http_server
+http_server\
+http_server/stack/test
 
 all: 
 	@for d in $(DIRS); do \
