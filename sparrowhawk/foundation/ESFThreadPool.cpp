@@ -207,7 +207,7 @@ void ESFThreadPoolWorker::run() {
     bool cleanup = false;
 
     while (isRunning() && errorCount < 10) {
-        error = _queue->pop((ESFEmbeddedListElement **) &command);
+        command = (ESFCommand *) _queue->pop(&error);
 
         if (ESF_SHUTDOWN == error) {
             if (_logger->isLoggable(ESFLogger::Debug)) {

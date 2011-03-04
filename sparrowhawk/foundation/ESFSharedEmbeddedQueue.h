@@ -73,11 +73,12 @@ public:
     /** Pop an element from the queue, blocking until an element
      *  is available if necessary.
      *
-     * @param element The element to remove
-     * @return ESF_SUCCESS if successful, ESF_SHUTDOWN if the queue has been
+     * @param error An optional ESFError to receive the result.  Will be
+     *  set to ESF_SUCCESS if successful, ESF_SHUTDOWN if the queue has been
      *  stopped, another error code otherwise.
+     * @return An element or NULL if the operation failed.
      */
-    ESFError pop(ESFEmbeddedListElement **element);
+    ESFEmbeddedListElement *pop(ESFError *error = 0);
 
     /** Stop the queue.  This will do three things.  New pushes will
      *  fail with the error ESF_SHUTDOWN.  Threads blocked on pop calls will

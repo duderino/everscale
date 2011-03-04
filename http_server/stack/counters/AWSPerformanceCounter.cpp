@@ -69,7 +69,7 @@ void AWSPerformanceCounter::printSummary() const
 {
     fprintf(stdout, "%s Summary:\n", getName());
 
-    fprintf(stdout, "\tThroughput: %d\n", getThroughput());
+    fprintf(stdout, "\tThroughput: %lu\n", getThroughput());
     fprintf(stdout, "\tAverage Latency Msec: %f\n", getAverageLatencyMsec());
     fprintf(stdout, "\tMin Latency Msec: %f\n", getMinLatencyMsec());
     fprintf(stdout, "\tMax Latency Msec: %f\n", getMaxLatencyMsec());

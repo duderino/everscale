@@ -194,7 +194,7 @@ bool ParseRequest(const char *inputFileName)
 
             InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
 
-            if (1 < Debug) fprintf(stderr, "read %d bytes from file %s\n", result, inputFileName);
+            if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int) result, inputFileName);
 
             continue;
         }
@@ -367,13 +367,13 @@ bool ParseRequest(const char *inputFileName)
 
             if (0 == result)
             {
-                fprintf(stderr, "EOF reading body\n", inputFileName);
+                fprintf(stderr, "EOF reading body from: %s\n", inputFileName);
                 break;
             }
 
             InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
 
-            if (1 < Debug) fprintf(stderr, "read %d bytes from file %s\n", result, inputFileName);
+            if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int) result, inputFileName);
 
             continue;
         }
@@ -590,7 +590,7 @@ bool ParseRequest(const char *inputFileName)
 
             InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
 
-            if (1 < Debug) fprintf(stderr, "read %d bytes from file %s\n", result, inputFileName);
+            if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int) result, inputFileName);
 
             continue;
         }
@@ -701,7 +701,7 @@ bool ParseResponse(const char *inputFileName)
 
             InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
 
-            if (1 < Debug) fprintf(stderr, "read %d bytes from file %s\n", result, inputFileName);
+            if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int) result, inputFileName);
 
             continue;
         }
@@ -845,7 +845,7 @@ bool ParseResponse(const char *inputFileName)
 
             InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
 
-            if (1 < Debug) fprintf(stderr, "read %d bytes from file %s\n", result, inputFileName);
+            if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int) result, inputFileName);
 
             continue;
         }
@@ -1062,7 +1062,7 @@ bool ParseResponse(const char *inputFileName)
 
             InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
 
-            if (1 < Debug) fprintf(stderr, "read %d bytes from file %s\n", result, inputFileName);
+            if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int) result, inputFileName);
 
             continue;
         }

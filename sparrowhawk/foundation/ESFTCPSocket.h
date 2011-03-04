@@ -113,7 +113,7 @@ public:
      *  @param isBlocking Whether or not the socket is blocking.
      *  @return ESF_SUCCESS if successful, another error code otherwise.
      */
-    static ESFError ESFTCPSocket::SetBlocking(SOCKET sockFd, bool isBlocking);
+    static ESFError SetBlocking(SOCKET sockFd, bool isBlocking);
 
     /** Get the socket's socket descriptor.
      *

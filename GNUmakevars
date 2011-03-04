@@ -19,103 +19,223 @@ ifeq ($(uname),Darwin)
     DYNAMIC_LINKER_FLAGS += -dynamiclib
 endif
 
-COMPILER = g++
-PROD_COMPILER_FLAGS += -O2 -g $(COMPILER_FLAGS) -DNDEBUG
-PROD_SO_COMPILER_FLAGS += -fPIC $(PROD_COMPILER_FLAGS)
-DEBUG_COMPILER_FLAGS += -O0 -g $(COMPILER_FLAGS) -DDEBUG -DUSE_SMART_POINTER_DEBUGGER
-DEBUG_SO_COMPILER_FLAGS += -fPIC $(DEBUG_COMPILER_FLAGS)
-DYNAMIC_LINKER = g++
-STATIC_LINKER = ar
-STATIC_LINKER_FLAGS = rs
+COMPILER = g++ 
 
-# Automatically generated dependencies will be stored here
+COMPILER_FLAGS_64 = -$(COMPILER_FLAGS)
+COMPILER_FLAGS_32 = -m32 $(COMPILER_FLAGS)
+
+COMPILER_FLAGS_PROD_PDC_64 += -O2 -g $(COMPILER_FLAGS_64) -DNDEBUG
+COMPILER_FLAGS_PROD_PDC_32 = -O2 -g $(COMPILER_FLAGS_32) -DNDEBUG
+
+COMPILER_FLAGS_PROD_PIC_64 += -fPIC $(COMPILER_FLAGS_PROD_PDC_64) 
+COMPILER_FLAGS_PROD_PIC_32 += -fPIC $(COMPILER_FLAGS_PROD_PDC_32) 
+
+COMPILER_FLAGS_DEBUG_PDC_64 += -O0 -g $(COMPILER_FLAGS_64) -DDEBUG -DUSE_SMART_POINTER_DEBUGGER 
+COMPILER_FLAGS_DEBUG_PDC_32 += -O0 -g $(COMPILER_FLAGS_32) -DDEBUG -DUSE_SMART_POINTER_DEBUGGER 
+
+COMPILER_FLAGS_DEBUG_PIC_64 += -fPIC $(COMPILER_FLAGS_DEBUG_PDC_64)
+COMPILER_FLAGS_DEBUG_PIC_32 += -fPIC $(COMPILER_FLAGS_DEBUG_PDC_32)
+
+DYNAMIC_LINKER = g++ 
+DYNAMIC_LINKER_FLAGS_64 = $(DYNAMIC_LINKER_FLAGS)
+DYNAMIC_LINKER_FLAGS_32 = -m32 $(DYNAMIC_LINKER_FLAGS)
+
+EXE_LINKER = g++
+EXE_LINKER_FLAGS_64 =
+EXE_LINKER_FLAGS_32 = -m32
+
+STATIC_LINKER = ar
+STATIC_LINKER_FLAGS_64 = rs
+STATIC_LINKER_FLAGS_32 = $(STATIC_LINKER_FLAGS_64)
+
+# Automatically generated dependency includes will be stored here
 DEPENDS_DIR = .depends/
 
 # Generated object files will be stored here
 OBJECTS_DIR = .objects/
 
-$(DEPENDS_DIR)%_prod.d: %.cpp
+$(DEPENDS_DIR)%_prod_pdc_64.d: %.cpp
 	@echo
 	@mkdir -p $(DEPENDS_DIR)
-	set -e; $(COMPILER) -M $(PROD_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_PROD_PDC_64) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod_pdc_64.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
 
-$(DEPENDS_DIR)%_debug.d: %.cpp
+$(DEPENDS_DIR)%_debug_pdc_64.d: %.cpp
 	@echo
 	@mkdir -p $(DEPENDS_DIR)
-	set -e; $(COMPILER) -M $(DEBUG_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_DEBUG_PDC_64) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug_pdc_64.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
 
-$(OBJECTS_DIR)%_prod.o: %.cpp
+$(OBJECTS_DIR)%_prod_pdc_64.o: %.cpp
 	@echo
 	@mkdir -p $(OBJECTS_DIR)
-	$(COMPILER) -c -o $@ $(INCLUDE) $(PROD_COMPILER_FLAGS) $<
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_PROD_PDC_64) $<
 
-$(OBJECTS_DIR)%_debug.o: %.cpp
+$(OBJECTS_DIR)%_debug_pdc_64.o: %.cpp
 	@echo
 	@mkdir -p $(OBJECTS_DIR)
-	$(COMPILER) -c -o $@ $(INCLUDE) $(DEBUG_COMPILER_FLAGS) $<
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_DEBUG_PDC_64) $<
 
-$(DEPENDS_DIR)%_prod_so.d: %.cpp
+$(DEPENDS_DIR)%_prod_pic_64.d: %.cpp
 	@echo
 	@mkdir -p $(DEPENDS_DIR)
-	set -e; $(COMPILER) -M $(PROD_SO_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod_so.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_PROD_PIC_64) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod_pic_64.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
 
-$(DEPENDS_DIR)%_debug_so.d: %.cpp
+$(DEPENDS_DIR)%_debug_pic_64.d: %.cpp
 	@echo
 	@mkdir -p $(DEPENDS_DIR)
-	set -e; $(COMPILER) -M $(DEBUG_SO_COMPILER_FLAGS) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug_so.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_DEBUG_PIC_64) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug_pic_64.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
 
-$(OBJECTS_DIR)%_prod_so.o: %.cpp
+$(OBJECTS_DIR)%_prod_pic_64.o: %.cpp
 	@echo
 	@mkdir -p $(OBJECTS_DIR)
-	$(COMPILER) -c -o $@ $(INCLUDE) $(PROD_SO_COMPILER_FLAGS) $<
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_PROD_PIC_64) $<
 
-$(OBJECTS_DIR)%_debug_so.o: %.cpp
+$(OBJECTS_DIR)%_debug_pic_64.o: %.cpp
 	@echo
 	@mkdir -p $(OBJECTS_DIR)
-	$(COMPILER) -c -o $@ $(INCLUDE) $(DEBUG_SO_COMPILER_FLAGS) $<
-
-PROD_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod.o))
-DEBUG_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug.o))
-PROD_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod.d))
-DEBUG_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug.d))
-PROD_SO_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod_so.o))
-DEBUG_SO_OBJECTS = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug_so.o))
-PROD_SO_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod_so.d))
-DEBUG_SO_DEPENDS= $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug_so.d))
-
-include $(PROD_DEPENDS)
-include $(DEBUG_DEPENDS)
-include $(PROD_SO_DEPENDS)
-include $(DEBUG_SO_DEPENDS)
-
-$(EXE_PROD_TARGET): $(PROD_OBJECTS) $(EXE_PROD_STATIC_LIBS) $(EXE_PROD_DYNAMIC_LIB_DEPENDENCIES)
-	@echo
-	$(COMPILER) -o $(EXE_PROD_TARGET) $(PROD_OBJECTS) $(EXE_PROD_STATIC_LIBS) $(EXE_PROD_FLAGS) $(DYNAMIC_LIB_PATH) $(EXE_PROD_DYNAMIC_LIBS) $(SYSTEM_LIBS)
-
-$(EXE_DEBUG_TARGET): $(DEBUG_OBJECTS) $(EXE_DEBUG_STATIC_LIBS) $(EXE_DEBUG_DYNAMIC_LIB_DEPENDENCIES)
-	@echo
-	$(COMPILER) -o $(EXE_DEBUG_TARGET) $(DEBUG_OBJECTS) $(EXE_DEBUG_STATIC_LIBS) $(EXE_DEBUG_FLAGS) $(DYNAMIC_LIB_PATH) $(EXE_DEBUG_DYNAMIC_LIBS) $(SYSTEM_LIBS)
-
-$(DYNAMIC_LIB_PROD_TARGET): $(PROD_SO_OBJECTS) $(DYNAMIC_LIB_PROD_DYNAMIC_LIBS)
-	@echo
-	$(DYNAMIC_LINKER) -o $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LINKER_FLAGS) $(PROD_SO_OBJECTS) $(DYNAMIC_LIB_PATH) $(DYNAMIC_LIB_PROD_DYNAMIC_LIBS) $(SYSTEM_LIBS)
-
-$(DYNAMIC_LIB_DEBUG_TARGET): $(DEBUG_SO_OBJECTS) $(DYNAMIC_LIB_DEBUG_DYNAMIC_LIBS)
-	@echo
-	$(DYNAMIC_LINKER) -o $(DYNAMIC_LIB_DEBUG_TARGET) $(DYNAMIC_LINKER_FLAGS) $(DEBUG_SO_OBJECTS) $(DYNAMIC_LIB_PATH) $(DYNAMIC_LIB_DEBUG_DYNAMIC_LIBS) $(SYSTEM_LIBS)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_DEBUG_PIC_64) $<
 	
-$(STATIC_LIB_PROD_TARGET): $(PROD_OBJECTS)
+$(DEPENDS_DIR)%_prod_pdc_32.d: %.cpp
 	@echo
-	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS) $(STATIC_LIB_PROD_TARGET) $(PROD_OBJECTS)
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_PROD_PDC_32) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod_pdc_32.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
 
-$(STATIC_LIB_DEBUG_TARGET): $(DEBUG_OBJECTS)
+$(DEPENDS_DIR)%_debug_pdc_32.d: %.cpp
 	@echo
-	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS) $(STATIC_LIB_DEBUG_TARGET) $(DEBUG_OBJECTS)
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_DEBUG_PDC_32) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug_pdc_32.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(OBJECTS_DIR)%_prod_pdc_32.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_PROD_PDC_32) $<
+
+$(OBJECTS_DIR)%_debug_pdc_32.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_DEBUG_PDC_32) $<
+
+$(DEPENDS_DIR)%_prod_pic_32.d: %.cpp
+	@echo
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_PROD_PIC_32) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_prod_pic_32.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(DEPENDS_DIR)%_debug_pic_32.d: %.cpp
+	@echo
+	@mkdir -p $(DEPENDS_DIR)
+	set -e; $(COMPILER) -M $(COMPILER_FLAGS_DEBUG_PIC_32) $(INCLUDE) $< | sed 's/\($*\)\.o[ :]*/$(subst /,\/, $(OBJECTS_DIR)$*_debug_pic_32.o) $(subst /,\/, $@) :  /g' > $@; [ -s $@ ] || rm -f $@
+
+$(OBJECTS_DIR)%_prod_pic_32.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_PROD_PIC_32) $<
+
+$(OBJECTS_DIR)%_debug_pic_32.o: %.cpp
+	@echo
+	@mkdir -p $(OBJECTS_DIR)
+	$(COMPILER) -c -o $@ $(INCLUDE) $(COMPILER_FLAGS_DEBUG_PIC_32) $<
+
+OBJECTS_PROD_PDC_64 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod_pdc_64.o))
+OBJECTS_DEBUG_PDC_64 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug_pdc_64.o))
+DEPENDS_PROD_PDC_64 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod_pdc_64.d))
+DEPENDS_DEBUG_PDC_64 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug_pdc_64.d))
+OBJECTS_PROD_PIC_64 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod_pic_64.o))
+OBJECTS_DEBUG_PIC_64 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug_pic_64.o))
+DEPENDS_PROD_PIC_64 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod_pic_64.d))
+DEPENDS_DEBUG_PIC_64 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug_pic_64.d))
+
+OBJECTS_PROD_PDC_32 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod_pdc_32.o))
+OBJECTS_DEBUG_PDC_32 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug_pdc_32.o))
+DEPENDS_PROD_PDC_32 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod_pdc_32.d))
+DEPENDS_DEBUG_PDC_32 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug_pdc_32.d))
+OBJECTS_PROD_PIC_32 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_prod_pic_32.o))
+OBJECTS_DEBUG_PIC_32 = $(addprefix $(OBJECTS_DIR), $(SOURCES:.cpp=_debug_pic_32.o))
+DEPENDS_PROD_PIC_32 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_prod_pic_32.d))
+DEPENDS_DEBUG_PIC_32 = $(addprefix $(DEPENDS_DIR), $(SOURCES:.cpp=_debug_pic_32.d))
+
+include $(DEPENDS_PROD_PDC_64)
+include $(DEPENDS_DEBUG_PDC_64)
+include $(DEPENDS_PROD_PIC_64)
+include $(DEPENDS_DEBUG_PIC_64)
+include $(DEPENDS_PROD_PDC_64)
+include $(DEPENDS_DEBUG_PDC_64)
+include $(DEPENDS_PROD_PIC_64)
+include $(DEPENDS_DEBUG_PIC_64)
+
+include $(DEPENDS_PROD_PDC_32)
+include $(DEPENDS_DEBUG_PDC_32)
+include $(DEPENDS_PROD_PIC_32)
+include $(DEPENDS_DEBUG_PIC_32)
+include $(DEPENDS_PROD_PDC_32)
+include $(DEPENDS_DEBUG_PDC_32)
+include $(DEPENDS_PROD_PIC_32)
+include $(DEPENDS_DEBUG_PIC_32)
+
+$(EXE)_prod_64: $(OBJECTS_PROD_PDC_64) $(addsuffix _prod_64.so, $(DYNAMIC_LIBS)) $(addsuffix _prod_64.a, $(STATIC_LIBS))
+	@echo
+	$(EXE_LINKER) $(EXE_LINKER_FLAGS_64) -o $(EXE)_prod_64 $(OBJECTS_PROD_PDC_64) $(EXE_FLAGS) $(addsuffix _prod_64.so, $(DYNAMIC_LIBS)) $(addsuffix _prod_64.a, $(STATIC_LIBS)) $(SYSTEM_LIBS)
+
+$(EXE)_debug_64: $(OBJECTS_DEBUG_PDC_64) $(addsuffix _debug_64.so, $(DYNAMIC_LIBS)) $(addsuffix _debug_64.a, $(STATIC_LIBS))
+	@echo
+	$(EXE_LINKER) $(EXE_LINKER_FLAGS_64) -o $(EXE)_debug_64 $(OBJECTS_DEBUG_PDC_64) $(EXE_FLAGS) $(addsuffix _debug_64.so, $(DYNAMIC_LIBS)) $(addsuffix _debug_64.a, $(STATIC_LIBS)) $(SYSTEM_LIBS)
+
+$(EXE)_prod_32: $(OBJECTS_PROD_PDC_32) $(addsuffix _prod_32.so, $(DYNAMIC_LIBS)) $(addsuffix _prod_32.a, $(STATIC_LIBS))
+	@echo
+	$(EXE_LINKER) $(EXE_LINKER_FLAGS_32) -o $(EXE)_prod_32 $(OBJECTS_PROD_PDC_32) $(EXE_FLAGS)  $(addsuffix _prod_32.so, $(DYNAMIC_LIBS)) $(addsuffix _prod_32.a, $(STATIC_LIBS)) $(SYSTEM_LIBS)
+
+$(EXE)_debug_32: $(OBJECTS_DEBUG_PDC_32)  $(addsuffix _debug_32.so, $(DYNAMIC_LIBS)) $(addsuffix _debug_32.a, $(STATIC_LIBS))
+	@echo
+	$(EXE_LINKER) $(EXE_LINKER_FLAGS_32) -o $(EXE)_debug_32 $(OBJECTS_DEBUG_PDC_32) $(EXE_FLAGS) $(addsuffix _debug_32.so, $(DYNAMIC_LIBS)) $(addsuffix _debug_32.a, $(STATIC_LIBS)) $(SYSTEM_LIBS)
+
+ifeq ($(DEBUG_ONLY),1)
+EXES = $(EXE)_debug_64 $(EXE)_debug_32
+else
+EXES = $(EXE)_prod_64 $(EXE)_debug_64 $(EXE)_prod_32 $(EXE)_debug_32
+endif
+
+$(EXE): $(EXES)
+
+$(LIB)_prod_64.so: $(OBJECTS_PROD_PIC_64) $(addsuffix _prod_64.so, $(DEPENDENT_LIBS))
+	@echo
+	$(DYNAMIC_LINKER) -o $(LIB)_prod_64.so $(DYNAMIC_LINKER_FLAGS_64) $(OBJECTS_PROD_PIC_64) $(addsuffix _prod_64.so, $(DEPENDENT_LIBS)) $(SYSTEM_LIBS)
+
+$(LIB)_debug_64.so: $(OBJECTS_DEBUG_PIC_64) $(addsuffix _debug_64.so, $(DEPENDENT_LIBS))
+	@echo
+	$(DYNAMIC_LINKER) -o $(LIB)_debug_64.so $(DYNAMIC_LINKER_FLAGS_64) $(OBJECTS_DEBUG_PIC_64) $(addsuffix _debug_64.so, $(DEPENDENT_LIBS)) $(SYSTEM_LIBS)
+	
+$(LIB)_prod_32.so: $(OBJECTS_PROD_PIC_32) $(addsuffix _prod_32.so, $(DEPENDENT_LIBS))
+	@echo
+	$(DYNAMIC_LINKER) -o $(LIB)_prod_32.so $(DYNAMIC_LINKER_FLAGS_32) $(OBJECTS_PROD_PIC_32) $(addsuffix _prod_32.so, $(DEPENDENT_LIBS)) $(SYSTEM_LIBS)
+
+$(LIB)_debug_32.so: $(OBJECTS_DEBUG_PIC_32) $(addsuffix _debug_32.so, $(DEPENDENT_LIBS))
+	@echo
+	$(DYNAMIC_LINKER) -o $(LIB)_debug_32.so $(DYNAMIC_LINKER_FLAGS_32) $(OBJECTS_DEBUG_PIC_32) $(addsuffix _debug_32.so, $(DEPENDENT_LIBS)) $(SYSTEM_LIBS)
+	
+$(LIB)_prod_64.a: $(OBJECTS_PROD_PDC_64)
+	@echo
+	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS_64) $(LIB)_prod_64.a $(OBJECTS_PROD_PDC_64)
+
+$(LIB)_debug_64.a: $(OBJECTS_DEBUG_PDC_64)
+	@echo
+	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS_64) $(LIB)_debug_64.a $(OBJECTS_DEBUG_PDC_64)
+	
+$(LIB)_prod_32.a: $(OBJECTS_PROD_PDC_32)
+	@echo
+	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS_32) $(LIB)_prod_32.a $(OBJECTS_PROD_PDC_32)
+
+$(LIB)_debug_32.a: $(OBJECTS_DEBUG_PDC_32)
+	@echo
+	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS_32) $(LIB)_debug_32.a $(OBJECTS_DEBUG_PDC_32)	
+
+LIBS = $(LIB)_prod_64.a $(LIB)_debug_64.a $(LIB)_prod_32.a $(LIB)_debug_32.a $(LIB)_prod_64.so $(LIB)_debug_64.so $(LIB)_prod_32.so $(LIB)_debug_32.so
+
+$(LIB): $(LIBS)
 
 clean:
 	@echo
-	rm -f $(PROD_DEPENDS) $(DEBUG_DEPENDS) $(PROD_SO_DEPENDS) $(DEBUG_SO_DEPENDS)	
-	rm -f $(PROD_OBJECTS) $(DEBUG_OBJECTS) $(PROD_SO_OBJECTS) $(DEBUG_SO_OBJECTS)
-	rm -f $(EXE_PROD_TARGET) $(EXE_DEBUG_TARGET) $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LIB_DEBUG_TARGET) $(STATIC_LIB_PROD_TARGET) $(STATIC_LIB_DEBUG_TARGET)
+	rm -f $(DEPENDS_PROD_PDC_64) $(DEPENDS_DEBUG_PDC_64) $(DEPENDS_PROD_PIC_64) $(DEPENDS_DEBUG_PIC_64)	
+	rm -f $(OBJECTS_PROD_PDC_64) $(OBJECTS_DEBUG_PDC_64) $(OBJECTS_PROD_PIC_64) $(OBJECTS_DEBUG_PIC_64)
+	rm -f $(DEPENDS_PROD_PDC_32) $(DEPENDS_DEBUG_PDC_32) $(DEPENDS_PROD_PIC_32) $(DEPENDS_DEBUG_PIC_32)	
+	rm -f $(OBJECTS_PROD_PDC_32) $(OBJECTS_DEBUG_PDC_32) $(OBJECTS_PROD_PIC_32) $(OBJECTS_DEBUG_PIC_32)
+	rm -f $(LIBS) $(EXES)
 
 remake: clean all

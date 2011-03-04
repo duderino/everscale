@@ -58,12 +58,10 @@ ESFError ESFList::pushFront(void *element) {
         return ESF_OVERFLOW;
     }
 
-    ESFListNode *node = 0;
+    ESFListNode *node = (ESFListNode *) _allocator->allocate(sizeof(ESFListNode));
 
-    ESFError error = _allocator->allocate((void **) &node, sizeof(ESFListNode));
-
-    if (ESF_SUCCESS != error) {
-        return error;
+    if (0 == node) {
+        return ESF_OUT_OF_MEMORY;
     }
 
     ESF_ASSERT( node );
@@ -105,12 +103,10 @@ ESFError ESFList::pushBack(void *element) {
         return ESF_OVERFLOW;
     }
 
-    ESFListNode *node = 0;
+    ESFListNode *node = (ESFListNode *)  _allocator->allocate(sizeof(ESFListNode));
 
-    ESFError error = _allocator->allocate((void **) &node, sizeof(ESFListNode));
-
-    if (ESF_SUCCESS != error) {
-        return error;
+    if (0 == node) {
+        return ESF_OUT_OF_MEMORY;
     }
 
     ESF_ASSERT( node );

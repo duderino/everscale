@@ -54,11 +54,8 @@ ifeq ($(uname),Linux)
     SOURCES += ESFEpollMultiplexer.cpp ESFEpollMultiplexerFactory.cpp
 endif
 
-STATIC_LIB_PROD_TARGET=libfoundation.a
-STATIC_LIB_DEBUG_TARGET=libfoundation_debug.a
-DYNAMIC_LIB_PROD_TARGET=libfoundation.so
-DYNAMIC_LIB_DEBUG_TARGET=libfoundation_debug.so
+LIB = libfoundation
 
-all: $(STATIC_LIB_PROD_TARGET) $(STATIC_LIB_DEBUG_TARGET) $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LIB_DEBUG_TARGET)
+all: $(LIB) 
 
 include $(BASE)/GNUmakevars

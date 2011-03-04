@@ -59,11 +59,11 @@ AWSHttpClientSocket.cpp\
 AWSAveragingCounter.cpp\
 AWSHttpServerCounters.cpp
 
-STATIC_LIB_PROD_TARGET=libredux_http_parser.a
-STATIC_LIB_DEBUG_TARGET=libredux_http_parser_debug.a
-DYNAMIC_LIB_PROD_TARGET=libredux_http_parser.so
-DYNAMIC_LIB_DEBUG_TARGET=libredux_http_parser_debug.so
+DYNAMIC_LIBS =\
+$(BASE)/sparrowhawk/foundation/libfoundation
 
-all: $(STATIC_LIB_PROD_TARGET) $(STATIC_LIB_DEBUG_TARGET) $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LIB_DEBUG_TARGET)
+LIB=libredux_http_parser
+
+all: $(LIB)
 
 include $(BASE)/GNUmakevars

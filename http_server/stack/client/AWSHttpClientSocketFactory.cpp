@@ -35,338 +35,298 @@
 #include <ESFWriteScopeLock.h>
 #endif
 
-class AddressComparator : public ESFComparator
-{
+class AddressComparator: public ESFComparator {
 public:
 
-    /** Default constructor.
-     */
-    AddressComparator();
+	/** Default constructor.
+	 */
+	AddressComparator();
 
-    /** Default destructor.
-     */
-    virtual ~AddressComparator();
+	/** Default destructor.
+	 */
+	virtual ~AddressComparator();
 
-    /** Compare two locations.
-     *
-     *  @param first The first location to compare.
-     *  @param second The second location to compare.
-     *  @return 0 if both locations are equal, a negative number if the first
-     *      location is less than the second, or a positive number if the first
-     *      location is greater than the second.
-     */
-    virtual int compare(const void *first, const void *second) const;
+	/** Compare two locations.
+	 *
+	 *  @param first The first location to compare.
+	 *  @param second The second location to compare.
+	 *  @return 0 if both locations are equal, a negative number if the first
+	 *      location is less than the second, or a positive number if the first
+	 *      location is greater than the second.
+	 */
+	virtual int compare(const void *first, const void *second) const;
 };
 
-AddressComparator::AddressComparator()
-{
+AddressComparator::AddressComparator() {
 }
 
-AddressComparator::~AddressComparator()
-{
+AddressComparator::~AddressComparator() {
 }
 
-int AddressComparator::compare(const void *first, const void *second) const
-{
-    ESFSocketAddress *address1 = (ESFSocketAddress *) first;
-    ESFSocketAddress *address2 = (ESFSocketAddress *) second;
+int AddressComparator::compare(const void *first, const void *second) const {
+	ESFSocketAddress *address1 = (ESFSocketAddress *) first;
+	ESFSocketAddress *address2 = (ESFSocketAddress *) second;
 
-    ESF_ASSERT(address1);
-    ESF_ASSERT(address2);
+	ESF_ASSERT(address1);
+	ESF_ASSERT(address2);
 
-    return memcmp(address1->getAddress(), address2->getAddress(), sizeof(*address1->getAddress()));
+	return memcmp(address1->getAddress(), address2->getAddress(),
+			sizeof(*address1->getAddress()));
 }
 
 static AddressComparator AddressComparator;
 
-AWSHttpClientSocketFactory::AWSHttpClientSocketFactory(AWSPerformanceCounter *successCounter,
-                                                       AWSPerformanceCounter *failureCounter,
-                                                       ESFLogger *logger) :
-    _logger(logger ? logger : ESFNullLogger::GetInstance()),
-    _successCounter(successCounter),
-    _failureCounter(failureCounter),
-    _allocator(),
-    _map(true,
-         &AddressComparator,
-         &_allocator, // Will result in a leak if erase(), clear(), or insert() with a uniqueness violation
-         ESFNullLock::Instance()),
-    _embeddedList(),
-    _mutex(),
-    _cleanupHandler(this)
-{
+AWSHttpClientSocketFactory::AWSHttpClientSocketFactory(
+		AWSPerformanceCounter *successCounter,
+		AWSPerformanceCounter *failureCounter, ESFLogger *logger) :
+	_logger(logger ? logger : ESFNullLogger::GetInstance()),
+			_successCounter(successCounter), _failureCounter(failureCounter),
+			_allocator(), _map(true, &AddressComparator, &_allocator, // Will result in a leak if erase(), clear(), or insert() with a uniqueness violation
+					ESFNullLock::Instance()), _embeddedList(), _mutex(),
+			_cleanupHandler(this) {
 }
 
-ESFError AWSHttpClientSocketFactory::initialize()
-{
-    return _allocator.initialize(ESF_WORD_ALIGN(sizeof(AWSHttpClientSocket)) * 1000,
-                                 ESFSystemAllocator::GetInstance());
+ESFError AWSHttpClientSocketFactory::initialize() {
+	return _allocator.initialize(
+			ESF_WORD_ALIGN(sizeof(AWSHttpClientSocket)) * 1000,
+			ESFSystemAllocator::GetInstance());
 }
 
-void AWSHttpClientSocketFactory::destroy()
-{
-    AWSHttpClientSocket *socket = (AWSHttpClientSocket *) _embeddedList.removeFirst();
+void AWSHttpClientSocketFactory::destroy() {
+	AWSHttpClientSocket *socket =
+			(AWSHttpClientSocket *) _embeddedList.removeFirst();
 
-    while (socket)
-    {
-        socket->~AWSHttpClientSocket();
+	while (socket) {
+		socket->~AWSHttpClientSocket();
 
-        socket = (AWSHttpClientSocket *) _embeddedList.removeFirst();
-    }
+		socket = (AWSHttpClientSocket *) _embeddedList.removeFirst();
+	}
 
-    ESFSocketAddress *address = 0;
+	ESFSocketAddress *address = 0;
 
-    for (ESFMapIterator iterator = _map.getMinimumIterator();
-         false == iterator.isNull();
-         iterator = iterator.getNext())
-    {
-        address = (ESFSocketAddress *) iterator.getKey();
+	for (ESFMapIterator iterator = _map.getMinimumIterator(); false
+			== iterator.isNull(); iterator = iterator.getNext()) {
+		address = (ESFSocketAddress *) iterator.getKey();
 
-        ESF_ASSERT(address);
+		ESF_ASSERT(address);
 
-        address->~ESFSocketAddress();
+		address->~ESFSocketAddress();
 
-        socket = (AWSHttpClientSocket *) iterator.getValue();
+		socket = (AWSHttpClientSocket *) iterator.getValue();
 
-        ESF_ASSERT(socket);
+		ESF_ASSERT(socket);
 
-        socket->~AWSHttpClientSocket();
-    }
+		socket->~AWSHttpClientSocket();
+	}
 
-    _allocator.destroy();
+	_allocator.destroy();
 }
 
-AWSHttpClientSocketFactory::~AWSHttpClientSocketFactory()
-{
+AWSHttpClientSocketFactory::~AWSHttpClientSocketFactory() {
 }
 
-AWSHttpClientSocket *AWSHttpClientSocketFactory::create(AWSHttpConnectionPool *pool,
-                                                        AWSHttpClientTransaction *transaction)
-{
-    AWSHttpClientSocket *socket = 0;
+AWSHttpClientSocket *AWSHttpClientSocketFactory::create(
+		AWSHttpConnectionPool *pool, AWSHttpClientTransaction *transaction) {
+	AWSHttpClientSocket *socket = 0;
 
-    {
-        ESFWriteScopeLock scopeLock(_mutex);
+	{
+		ESFWriteScopeLock scopeLock(_mutex);
 
-        ESFEmbeddedList *list = 0;
+		ESFEmbeddedList *list = (ESFEmbeddedList *) _map.find(transaction->getPeerAddress());
 
-        ESFError error = _map.find(transaction->getPeerAddress(), (void **) &list);
+		if (list) {
+			socket = (AWSHttpClientSocket *) list->removeLast();
 
-        if (ESF_SUCCESS == error)
-        {
-            ESF_ASSERT(list);
+			if (socket) {
+				if (_logger->isLoggable(ESFLogger::Debug)) {
+					char buffer[16];
 
-            socket = (AWSHttpClientSocket *) list->removeLast();
+					transaction->getPeerAddress()->getIPAddress(buffer,
+							sizeof(buffer));
 
-            if (socket)
-            {
-                if (_logger->isLoggable(ESFLogger::Debug))
-                {
-                    char buffer[16];
+					_logger->log(ESFLogger::Debug, __FILE__, __LINE__,
+							"[pool] Reusing connection for %s:%d", buffer,
+							transaction->getPeerAddress()->getPort());
+				}
 
-                    transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+				ESF_ASSERT(socket->isConnected());
 
-                    _logger->log(ESFLogger::Debug, __FILE__, __LINE__,
-                                 "[pool] Reusing connection for %s:%d",
-                                 buffer, transaction->getPeerAddress()->getPort());
-                }
+				socket->reset(true, pool, transaction);
 
-                ESF_ASSERT(socket->isConnected());
+				return socket;
+			}
+		}
 
-                socket->reset(true, pool, transaction);
+		if (_logger->isLoggable(ESFLogger::Debug)) {
+			char buffer[16];
 
-                return socket;
-            }
-        }
+			transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
 
-        if (_logger->isLoggable(ESFLogger::Debug))
-        {
-            char buffer[16];
+			_logger->log(ESFLogger::Debug, __FILE__, __LINE__,
+					"[pool] Creating new connection for %s:%d", buffer,
+					transaction->getPeerAddress()->getPort());
+		}
 
-            transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+		// Try to reuse a dead socket
 
-            _logger->log(ESFLogger::Debug, __FILE__, __LINE__,
-                         "[pool] Creating new connection for %s:%d",
-                         buffer, transaction->getPeerAddress()->getPort());
-        }
+		socket = (AWSHttpClientSocket *) _embeddedList.removeLast();
+	}
 
-        // Try to reuse a dead socket
+	if (0 == socket) {
+		// Failing all else, allocate a new socket
 
-        socket = (AWSHttpClientSocket *) _embeddedList.removeLast();
-    }
+		socket = new (&_allocator) AWSHttpClientSocket(pool, transaction,
+				_successCounter, _failureCounter, &_cleanupHandler, _logger);
 
-    if (0 == socket)
-    {
-        // Failing all else, allocate a new socket
+		if (0 == socket) {
+			if (_logger->isLoggable(ESFLogger::Critical)) {
+				char buffer[16];
 
-        socket = new(&_allocator) AWSHttpClientSocket(pool,
-                                                      transaction,
-                                                      _successCounter,
-                                                      _failureCounter,
-                                                      &_cleanupHandler,
-                                                      _logger);
+				transaction->getPeerAddress()->getIPAddress(buffer,
+						sizeof(buffer));
 
-        if (0 == socket)
-        {
-            if (_logger->isLoggable(ESFLogger::Critical))
-            {
-                char buffer[16];
+				_logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+						"[pool] Cannot allocate new connection for %s:%d",
+						buffer, transaction->getPeerAddress()->getPort());
+			}
 
-                transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+			return 0;
+		}
 
-                _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                             "[pool] Cannot allocate new connection for %s:%d",
-                             buffer, transaction->getPeerAddress()->getPort());
-            }
+		return socket;
+	}
 
-            return 0;
-        }
+	ESF_ASSERT(false == socket->isConnected());
 
-        return socket;
-    }
+	socket->reset(false, pool, transaction);
 
-    ESF_ASSERT(false == socket->isConnected());
-
-    socket->reset(false, pool, transaction);
-
-    return socket;
+	return socket;
 }
 
-void AWSHttpClientSocketFactory::release(AWSHttpClientSocket *socket)
-{
-    if (! socket)
-    {
-        return;
-    }
+void AWSHttpClientSocketFactory::release(AWSHttpClientSocket *socket) {
+	if (!socket) {
+		return;
+	}
 
-    ESFWriteScopeLock scopeLock(_mutex);
+	ESFWriteScopeLock scopeLock(_mutex);
 
-    if (false == socket->isConnected())
-    {
-        if (_logger->isLoggable(ESFLogger::Debug))
-        {
-            char buffer[16];
+	if (false == socket->isConnected()) {
+		if (_logger->isLoggable(ESFLogger::Debug)) {
+			char buffer[16];
 
-            socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+			socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
 
-            _logger->log(ESFLogger::Debug, __FILE__, __LINE__,
-                         "[pool] Not returning connection for %s:%d to pool",
-                         buffer, socket->getPeerAddress()->getPort());
-        }
+			_logger->log(ESFLogger::Debug, __FILE__, __LINE__,
+					"[pool] Not returning connection for %s:%d to pool",
+					buffer, socket->getPeerAddress()->getPort());
+		}
 
-        socket->close();    // idempotent, just to be safe
+		socket->close(); // idempotent, just to be safe
 
-        _embeddedList.addLast(socket);
+		_embeddedList.addLast(socket);
 
-        return;
-    }
+		return;
+	}
 
-    ESFEmbeddedList *list = 0;
+	ESFEmbeddedList *list = (ESFEmbeddedList *) _map.find(socket->getPeerAddress());
 
-    ESFError error = _map.find(socket->getPeerAddress(), (void **) &list);
+	if (list) {
+		if (_logger->isLoggable(ESFLogger::Debug)) {
+			char buffer[16];
 
-    if (ESF_SUCCESS == error)
-    {
-        if (_logger->isLoggable(ESFLogger::Debug))
-        {
-            char buffer[16];
+			socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
 
-            socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+			_logger->log(ESFLogger::Debug, __FILE__, __LINE__,
+					"[pool] Returning connection for %s:%d to pool", buffer,
+					socket->getPeerAddress()->getPort());
+		}
 
-            _logger->log(ESFLogger::Debug, __FILE__, __LINE__,
-                         "[pool] Returning connection for %s:%d to pool",
-                         buffer, socket->getPeerAddress()->getPort());
-        }
+		list->addLast(socket);
 
-        ESF_ASSERT(list);
+		return;
+	}
 
-        list->addLast(socket);
+	ESFSocketAddress *address = new (&_allocator) ESFSocketAddress(
+			*socket->getPeerAddress());
 
-        return;
-    }
+	if (0 == address) {
+		if (_logger->isLoggable(ESFLogger::Warning)) {
+			char buffer[16];
 
-    ESFSocketAddress *address = new(&_allocator) ESFSocketAddress(*socket->getPeerAddress());
+			socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
 
-    if (0 == address)
-    {
-        if (_logger->isLoggable(ESFLogger::Warning))
-        {
-            char buffer[16];
+			_logger->log(
+					ESFLogger::Critical,
+					__FILE__,
+					__LINE__,
+					"[pool] Cannot return connection for %s:%d to pool: bad alloc",
+					buffer, socket->getPeerAddress()->getPort());
+		}
 
-            socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+		socket->close();
 
-            _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                             "[pool] Cannot return connection for %s:%d to pool: bad alloc",
-                             buffer, socket->getPeerAddress()->getPort());
-        }
+		_embeddedList.addLast(socket);
 
-        socket->close();
+		return;
+	}
 
-        _embeddedList.addLast(socket);
+	list = new (&_allocator) ESFEmbeddedList();
 
-        return;
-    }
+	if (0 == list) {
+		if (_logger->isLoggable(ESFLogger::Warning)) {
+			char buffer[16];
 
-    list = new(&_allocator) ESFEmbeddedList();
+			socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
 
-    if (0 == list)
-    {
-        if (_logger->isLoggable(ESFLogger::Warning))
-        {
-            char buffer[16];
+			_logger->log(
+					ESFLogger::Critical,
+					__FILE__,
+					__LINE__,
+					"[pool] Cannot return connection for %s:%d to pool: bad alloc",
+					buffer, socket->getPeerAddress()->getPort());
+		}
 
-            socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+		socket->close();
 
-            _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                             "[pool] Cannot return connection for %s:%d to pool: bad alloc",
-                             buffer, socket->getPeerAddress()->getPort());
-        }
+		_embeddedList.addLast(socket);
 
-        socket->close();
+		return;
+	}
 
-        _embeddedList.addLast(socket);
+	list->addLast(socket);
 
-        return;
-    }
+	ESFError error = _map.insert(address, list);
 
-    list->addLast(socket);
+	if (ESF_SUCCESS != error) {
+		char buffer[1024];
 
-    error = _map.insert(address, list);
+		ESFDescribeError(error, buffer, sizeof(buffer));
 
-    if (ESF_SUCCESS != error)
-    {
-        char buffer[1024];
+		if (_logger->isLoggable(ESFLogger::Warning)) {
+			char dottedIP[16];
 
-        ESFDescribeError(error, buffer, sizeof(buffer));
+			socket->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
 
-        if (_logger->isLoggable(ESFLogger::Warning))
-        {
-            char dottedIP[16];
+			_logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+					"[pool] Cannot return connection for %s:%d to pool: %s",
+					dottedIP, socket->getPeerAddress()->getPort(), buffer);
+		}
 
-            socket->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
+		socket->close();
 
-            _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                             "[pool] Cannot return connection for %s:%d to pool: %s",
-                             dottedIP, socket->getPeerAddress()->getPort(), buffer);
-        }
-
-        socket->close();
-
-        _embeddedList.addLast(socket);
-    }
+		_embeddedList.addLast(socket);
+	}
 }
 
-AWSHttpClientSocketFactory::CleanupHandler::CleanupHandler(AWSHttpClientSocketFactory *factory) :
-    ESFCleanupHandler(),
-    _factory(factory)
-{
+AWSHttpClientSocketFactory::CleanupHandler::CleanupHandler(
+		AWSHttpClientSocketFactory *factory) :
+	ESFCleanupHandler(), _factory(factory) {
 }
 
-AWSHttpClientSocketFactory::CleanupHandler::~CleanupHandler()
-{
+AWSHttpClientSocketFactory::CleanupHandler::~CleanupHandler() {
 }
 
-void AWSHttpClientSocketFactory::CleanupHandler::destroy(ESFObject *object)
-{
-    _factory->release((AWSHttpClientSocket *) object);
+void AWSHttpClientSocketFactory::CleanupHandler::destroy(ESFObject *object) {
+	_factory->release((AWSHttpClientSocket *) object);
 }
 

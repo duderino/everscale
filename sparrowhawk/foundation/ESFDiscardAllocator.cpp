@@ -51,25 +51,9 @@ ESFDiscardAllocator::~ESFDiscardAllocator() {
 }
 
 void *ESFDiscardAllocator::allocate(ESFUWord size) {
-    void *chunk = 0;
-
-    if (ESF_SUCCESS == allocate(&chunk, size)) {
-        return chunk;
-    }
-
-    return 0;
-}
-
-ESFError ESFDiscardAllocator::allocate(void **block, ESFUWord size) {
-    if (!block) {
-        return ESF_NULL_POINTER;
-    }
-
     if (1 > size) {
-        return ESF_INVALID_ARGUMENT;
+        return 0;
     }
-
-    ESFError error = 0;
 
     //
     // If asked for a block of memory larger than the chunk size, bypass
@@ -79,12 +63,10 @@ ESFError ESFDiscardAllocator::allocate(void **block, ESFUWord size) {
     //
 
     if (size > _chunkSize) {
-        Chunk *chunk = 0;
+        Chunk *chunk = allocateChunk(size);
 
-        error = allocateChunk(&chunk, size);
-
-        if (ESF_SUCCESS != error) {
-            return error;
+        if (0 == chunk) {
+            return 0;
         }
 
         chunk->_idx = chunk->_size;
@@ -96,39 +78,36 @@ ESFError ESFDiscardAllocator::allocate(void **block, ESFUWord size) {
             _head = chunk;
         }
 
-        *block = chunk->_data;
-
-        return ESF_SUCCESS;
+        return chunk->_data;
     }
 
     if (!_head) {
-        error = allocateChunk(&_head, _chunkSize);
+        _head = allocateChunk(_chunkSize);
 
-        if (ESF_SUCCESS != error) {
-            return error;
+        if (0 == _head) {
+        	return 0;
         }
     }
-
-    ESF_ASSERT(_head);
 
     if (size > (_head->_idx > _head->_size ? 0 : _head->_size - _head->_idx)) {
         Chunk *oldHead = _head;
 
-        error = allocateChunk(&_head, _chunkSize);
+        _head = allocateChunk(_chunkSize);
 
-        if (ESF_SUCCESS != error) {
-            return error;
+        if (0 == _head) {
+        	_head = oldHead;
+        	return 0;
         }
 
         _head->_next = oldHead;
     }
 
-    *block = _head->_data + _head->_idx;
+    void *block = _head->_data + _head->_idx;
 
     // Always keep the next available block word-aligned
     _head->_idx += ESF_WORD_ALIGN(size);
 
-    return ESF_SUCCESS;
+    return block;
 }
 
 ESFError ESFDiscardAllocator::deallocate(void *block) {
@@ -203,16 +182,12 @@ ESFSize ESFDiscardAllocator::GetOverheadSize() {
     return ESF_WORD_ALIGN(sizeof(Chunk));
 }
 
-ESFError ESFDiscardAllocator::allocateChunk(Chunk **chunk, int chunkSize) {
-    Chunk *tmp = 0;
+ESFDiscardAllocator::Chunk *ESFDiscardAllocator::allocateChunk(int chunkSize) {
+    Chunk *tmp = (Chunk *) _source->allocate(ESF_WORD_ALIGN(sizeof(Chunk)) + chunkSize);
 
-    int error = _source->allocate((void **) &tmp, ESF_WORD_ALIGN(sizeof(Chunk)) + chunkSize);
-
-    if (ESF_SUCCESS != error) {
-        return error;
+    if (0 == tmp) {
+        return 0;
     }
-
-    ESF_ASSERT(tmp);
 
     tmp->_next = 0;
     tmp->_idx = 0;
@@ -221,7 +196,5 @@ ESFError ESFDiscardAllocator::allocateChunk(Chunk **chunk, int chunkSize) {
     // Always keep the next available block word-aligned
     tmp->_data = ((char *) tmp) + ESF_WORD_ALIGN(sizeof(Chunk));
 
-    *chunk = tmp;
-
-    return ESF_SUCCESS;
+    return tmp;
 }

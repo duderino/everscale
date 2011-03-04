@@ -56,14 +56,6 @@ public:
      */
     virtual void *allocate(ESFUWord size);
 
-    /** Allocate a word-aligned memory block of at least size bytes.
-     *
-     *  @param block The block to allocate (pointer to a pointer)
-     *  @param size The minimum number of bytes to allocate.
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError allocate(void **block, ESFUWord size);
-
     /** Deallocate a memory block allocated by this allocator or by its
      *  failover allocators.
      *

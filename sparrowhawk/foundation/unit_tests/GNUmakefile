@@ -13,19 +13,21 @@ ESFBufferTestMain.mak
 all:
 	@for d in $(TESTS); do \
 		echo; \
-		$(MAKE) -f $$d; \
+		$(MAKE) -f $$d || exit 1; \
 	done
 
 clean:
 	@for d in $(TESTS); do \
 		echo; \
-		$(MAKE) -f $$d clean; \
+		$(MAKE) -f $$d clean || exit 1; \
 	done
 	
 run:
 	@for d in $(TESTS); do \
 		echo; \
-		$(MAKE) -f $$d run; \
+		$(MAKE) -f $$d run || exit 1; \
 	done
+
+test: run
 	
 remake: clean all

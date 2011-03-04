@@ -14,11 +14,8 @@ ESTFRepetitionDecorator.cpp\
 ESTFResultCollector.cpp\
 ESTFThread.cpp
 
-STATIC_LIB_PROD_TARGET=libtest_framework.a
-STATIC_LIB_DEBUG_TARGET=libtest_framework_debug.a
-DYNAMIC_LIB_PROD_TARGET=libtest_framework.so
-DYNAMIC_LIB_DEBUG_TARGET=libtest_framework_debug.so
+LIB=libtest_framework
 
-all: $(STATIC_LIB_PROD_TARGET) $(STATIC_LIB_DEBUG_TARGET) $(DYNAMIC_LIB_PROD_TARGET) $(DYNAMIC_LIB_DEBUG_TARGET)
+all: $(LIB)
 
 include $(BASE)/GNUmakevars

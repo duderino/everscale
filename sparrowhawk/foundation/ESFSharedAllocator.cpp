@@ -43,24 +43,6 @@ ESFSharedAllocator::allocate(ESFUWord size) {
     return block;
 }
 
-ESFError ESFSharedAllocator::allocate(void **block, ESFUWord size) {
-    if (!block) {
-        return ESF_NULL_POINTER;
-    }
-
-    ESFError error = _mutex.writeAcquire();
-
-    if (ESF_SUCCESS != error) {
-        return error;
-    }
-
-    error = _allocator->allocate(block, size);
-
-    _mutex.writeRelease();
-
-    return error;
-}
-
 ESFError ESFSharedAllocator::deallocate(void *block) {
     if (!block) {
         return ESF_NULL_POINTER;

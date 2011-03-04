@@ -53,42 +53,6 @@ ESFFixedAllocator::allocate(ESFUWord size) {
     return elem;
 }
 
-ESFError ESFFixedAllocator::allocate(void **block, ESFUWord size) {
-    if (!block) {
-        return ESF_NULL_POINTER;
-    }
-
-    if (0 == size) {
-        return ESF_INVALID_ARGUMENT;
-    }
-
-    if (!_pool) {
-        ESFError error = initialize();
-
-        if (ESF_SUCCESS != error) {
-            return error;
-        }
-    }
-
-    if (!_availList || size > _blockSize) {
-        if (_failoverAllocator) {
-            return _failoverAllocator->allocate(block, size);
-        }
-
-        return ESF_OUT_OF_MEMORY;
-    }
-
-    void *tmp = allocate(size);
-
-    if (!tmp) {
-        return ESF_OUT_OF_MEMORY;
-    }
-
-    *block = tmp;
-
-    return ESF_SUCCESS;
-}
-
 ESFError ESFFixedAllocator::deallocate(void *block) {
     if (!block) {
         return ESF_NULL_POINTER;
@@ -100,8 +64,7 @@ ESFError ESFFixedAllocator::deallocate(void *block) {
 
     char *elem = ((char *) block) - sizeof(AvailListElem);
 
-    if (elem < _pool || elem > _pool + (_blocks * (_blockSize + sizeof(AvailListElem)) - _blockSize
-            - sizeof(AvailListElem))) {
+    if (elem < _pool || elem > (char *) _pool + (_blocks * (_blockSize + sizeof(AvailListElem)) - _blockSize - sizeof(AvailListElem))) {
         if (_failoverAllocator) {
             return _failoverAllocator->deallocate(block);
         }
@@ -124,19 +87,17 @@ ESFError ESFFixedAllocator::initialize() {
         return ESF_INVALID_STATE;
     }
 
-    ESFError error;
+    _pool = _sourceAllocator->allocate(_blocks * (_blockSize + sizeof(AvailListElem)));
 
-    error = _sourceAllocator->allocate((void **) &_pool, _blocks * (_blockSize + sizeof(AvailListElem)));
-
-    if (ESF_SUCCESS != error) {
-        return error;
+    if (0 == _pool) {
+        return ESF_OUT_OF_MEMORY;
     }
 
     ESF_ASSERT( _pool );
 
     _availList = (AvailListElem *) _pool;
 
-    char *elem = _pool;
+    char *elem = (char *) _pool;
     char *next = 0;
 
     for (int i = 0; i < _blocks - 1; ++i) {

@@ -114,17 +114,6 @@ public:
      */
     virtual void *allocate(ESFUWord size);
 
-    /** Allocate a word-aligned memory block of at least size bytes.
-     *
-     *  @param block The block to allocate (pointer to a pointer)
-     *  @param size The minimum number of bytes to allocate.  If the size
-     *      exceeds the chunkSize argument passed to the constructor, this
-     *      allocation will be passed to the failover allocator if set or
-     *      rejected if not set.
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError allocate(void **block, ESFUWord size);
-
     /** Deallocate a memory block allocated by this allocator.  This is
      *  a no-op and need not be called unless its possible another
      *  allocator might one day be used by the same code (using the
@@ -237,7 +226,7 @@ private:
         char *_data;
     } Chunk;
 
-    ESFError allocateChunk(Chunk **chunk, int chunkSize);
+    Chunk *allocateChunk(int chunkSize);
 
     Chunk *_head;
 

@@ -226,7 +226,7 @@ ESFError ESFBuddyAllocator::deallocate(void *block) {
 
     char *trueAddress = ((char *) block) - sizeof(AvailListElem);
 
-    if (trueAddress < _pool || trueAddress >= _pool + (ESF_UWORD_C(1) << _poolKVal)) {
+    if (trueAddress < (char *) _pool || trueAddress >= (char *) _pool + (ESF_UWORD_C(1) << _poolKVal)) {
         if (_failoverAllocator) {
             return _failoverAllocator->deallocate(block);
         }
@@ -268,7 +268,7 @@ ESFError ESFBuddyAllocator::deallocate(void *block) {
             break;
         }
 
-        ESFUWord elemAddress = (ESFUWord) (((char *) elem) - _pool);
+        ESFUWord elemAddress = (ESFUWord) (((char *) elem) - (char *) _pool);
 
         if (0 == elemAddress % (ESF_UWORD_C(1) << (elem->_kVal + 1))) {
             //
@@ -351,10 +351,10 @@ ESFError ESFBuddyAllocator::initialize() {
         return ESF_INVALID_STATE;
     }
 
-    ESFError error = _sourceAllocator->allocate((void **) &_pool, ESF_UWORD_C(1) << _poolKVal);
+    _pool = _sourceAllocator->allocate(ESF_UWORD_C(1) << _poolKVal);
 
-    if (ESF_SUCCESS != error) {
-        return error;
+    if (0 == _pool) {
+        return ESF_OUT_OF_MEMORY;
     }
 
     ESF_ASSERT( _pool );

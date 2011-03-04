@@ -70,19 +70,18 @@ ESFError ESFSharedEmbeddedQueue::push(ESFEmbeddedListElement *element) {
     return ESF_SUCCESS;
 }
 
-ESFError ESFSharedEmbeddedQueue::pop(ESFEmbeddedListElement **element) {
-    if (0 == element) {
-        return ESF_NULL_POINTER;
-    }
-
+ESFEmbeddedListElement *ESFSharedEmbeddedQueue::pop(ESFError *result) {
     ESFEmbeddedListElement *tmp = 0;
+
+    if (result) *result = ESF_SUCCESS;
 
 #if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_WAIT
 
     ESFError error = ESFConvertError(pthread_mutex_lock(&_mutex));
 
     if (ESF_SUCCESS != error) {
-        return error;
+    	if (result) *result = error;
+        return 0;
     }
 
     do {
@@ -99,7 +98,8 @@ ESFError ESFSharedEmbeddedQueue::pop(ESFEmbeddedListElement **element) {
         error = ESFConvertError(pthread_cond_wait(&_signal, &_mutex));
 
         if (ESF_SUCCESS != error && ESF_INTR != error) {
-            return error;
+        	if (result) *result = error;
+            return 0;
         }
     } while (0 == tmp);
 
@@ -110,12 +110,14 @@ ESFError ESFSharedEmbeddedQueue::pop(ESFEmbeddedListElement **element) {
 #endif
 
     if (tmp) {
-        *element = tmp;
-
-        return ESF_SUCCESS;
+    	return tmp;
     }
 
-    return ESF_SHUTDOWN;
+    if (result) {
+    	*result = ESF_SHUTDOWN;
+    }
+
+    return 0;
 }
 
 void ESFSharedEmbeddedQueue::stop() {

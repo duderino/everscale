@@ -9,15 +9,19 @@ SOURCES=\
 ESFSmartPointerTest.cpp \
 ESFSmartPointerTestMain.cpp
 
-EXE_DEBUG_TARGET=smart_pointer_tests
+STATIC_LIBS =\
+$(BASE)/sparrowhawk/foundation/libfoundation \
+$(BASE)/sparrowhawk/test_framework/libtest_framework
 
-EXE_DEBUG_DYNAMIC_LIBS =\
-$(BASE)/sparrowhawk/foundation/libfoundation_debug.so\
-$(BASE)/sparrowhawk/test_framework/libtest_framework_debug.so
+DEBUG_ONLY=1
+EXE=smart_pointer_test
 
-all: $(EXE_DEBUG_TARGET)
+all: $(EXE)
 
 run:
-	./$(EXE_DEBUG_TARGET)
+	@echo "32 bit test"
+	./$(EXE)_debug_32
+	@echo "64 bit test"
+	./$(EXE)_debug_64
 
 include $(BASE)/GNUmakevars

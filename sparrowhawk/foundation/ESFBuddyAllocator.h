@@ -223,7 +223,7 @@ private:
 
     ESFAllocator *_failoverAllocator;
     ESFAllocator *_sourceAllocator;
-    char *_pool;
+    void *_pool;
     ESFUWord _poolKVal;
 };
 
