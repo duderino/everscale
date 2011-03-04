@@ -1,0 +1,7 @@
+environment
+*.o
+*.d
+*.a
+*.so
+bin/*
+lib/*
