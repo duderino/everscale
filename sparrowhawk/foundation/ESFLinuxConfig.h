@@ -19,6 +19,8 @@
 #define ESF_LINUX_CONFIG_H
 
 #include <stdint.h>
+#include <string.h>
+#include <stdio.h>
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define ESF_BIG_ENDIAN
@@ -88,14 +90,6 @@
 #define HAVE_SIGNAL_H
 #define HAVE_SIGACTION
 #define HAVE_STRUCT_SIGACTION
-
-#define HAVE_SEMAPHORE_H
-#define HAVE_SEM_T
-#define HAVE_SEM_INIT
-#define HAVE_SEM_DESTROY
-#define HAVE_SEM_WAIT
-#define HAVE_SEM_TRYWAIT
-#define HAVE_SEM_POST
 
 #ifdef USE_ATOMIC
 #define HAVE_ATOMIC_H

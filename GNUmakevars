@@ -169,6 +169,7 @@ include $(DEPENDS_DEBUG_PDC_64)
 include $(DEPENDS_PROD_PIC_64)
 include $(DEPENDS_DEBUG_PIC_64)
 
+ifeq ($(BUILD32),1)
 include $(DEPENDS_PROD_PDC_32)
 include $(DEPENDS_DEBUG_PDC_32)
 include $(DEPENDS_PROD_PIC_32)
@@ -177,6 +178,7 @@ include $(DEPENDS_PROD_PDC_32)
 include $(DEPENDS_DEBUG_PDC_32)
 include $(DEPENDS_PROD_PIC_32)
 include $(DEPENDS_DEBUG_PIC_32)
+endif
 
 $(EXE)_prod_64: $(OBJECTS_PROD_PDC_64) $(addsuffix _prod_64.so, $(DYNAMIC_LIBS)) $(addsuffix _prod_64.a, $(STATIC_LIBS))
 	@echo
@@ -197,14 +199,6 @@ $(EXE)_debug_32: $(OBJECTS_DEBUG_PDC_32)  $(addsuffix _debug_32.so, $(DYNAMIC_LI
 	@echo
 	@mkdir -p $(dir $@)
 	$(EXE_LINKER) $(EXE_LINKER_FLAGS_32) -o $@ $(OBJECTS_DEBUG_PDC_32) $(EXE_FLAGS) $(addsuffix _debug_32.so, $(DYNAMIC_LIBS)) $(addsuffix _debug_32.a, $(STATIC_LIBS)) $(SYSTEM_LIBS)
-
-ifeq ($(DEBUG_ONLY),1)
-EXES = $(EXE)_debug_64 $(EXE)_debug_32
-else
-EXES = $(EXE)_prod_64 $(EXE)_debug_64 $(EXE)_prod_32 $(EXE)_debug_32
-endif
-
-$(EXE): $(EXES)
 
 $(LIB)_prod_64.so: $(OBJECTS_PROD_PIC_64) $(addsuffix _prod_64.so, $(DEPENDENT_LIBS))
 	@echo
@@ -246,8 +240,25 @@ $(LIB)_debug_32.a: $(OBJECTS_DEBUG_PDC_32)
 	@mkdir -p $(dir $@)
 	$(STATIC_LINKER) $(STATIC_LINKER_FLAGS_32) $@ $(OBJECTS_DEBUG_PDC_32)	
 
-LIBS = $(LIB)_prod_64.a $(LIB)_debug_64.a $(LIB)_prod_32.a $(LIB)_debug_32.a $(LIB)_prod_64.so $(LIB)_debug_64.so $(LIB)_prod_32.so $(LIB)_debug_32.so
+ifeq ($(BUILD32),1)
+    ifeq ($(DEBUG_ONLY),1)
+        EXES = $(EXE)_debug_64 $(EXE)_debug_32
+        LIBS = $(LIB)_debug_64.a $(LIB)_debug_32.a $(LIB)_debug_64.so $(LIB)_debug_32.so
+    else
+        EXES = $(EXE)_prod_64 $(EXE)_debug_64 $(EXE)_prod_32 $(EXE)_debug_32
+        LIBS = $(LIB)_prod_64.a $(LIB)_debug_64.a $(LIB)_prod_32.a $(LIB)_debug_32.a $(LIB)_prod_64.so $(LIB)_debug_64.so $(LIB)_prod_32.so $(LIB)_debug_32.so
+    endif
+else
+    ifeq ($(DEBUG_ONLY),1)
+        EXES = $(EXE)_debug_64 
+        LIBS = $(LIB)_debug_64.a $(LIB)_debug_64.so
+    else
+        EXES = $(EXE)_prod_64 $(EXE)_debug_64 
+        LIBS = $(LIB)_prod_64.a $(LIB)_debug_64.a $(LIB)_prod_64.so $(LIB)_debug_64.so
+    endif
+endif
 
+$(EXE): $(EXES)
 $(LIB): $(LIBS)
 
 clean:

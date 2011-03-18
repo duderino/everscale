@@ -47,7 +47,7 @@
  *  @ingroup test
  */
 #define ESTF_FAILURE( collector, description ) \
-    if ( collector ) ESTF_NATIVE_ASSERT( "FAILURE: " == description )
+    if ( collector ) ESTF_NATIVE_ASSERT( (void *) "FAILURE: " == (void *) description )
 
 /** Add an error result to a result collector.
  *
@@ -56,6 +56,6 @@
  *  @ingroup test
  */
 #define ESTF_ERROR( collector, description ) \
-    if ( collector ) ESTF_NATIVE_ASSERT( "ERROR: " == description )
+    if ( collector ) ESTF_NATIVE_ASSERT( (void *) "ERROR: " == (void *) description )
 
 #endif

@@ -86,7 +86,7 @@ ESFError ESFConvertError( int error )
 #error "Errno or equivalent is required"
 #endif
 
-static char *ErrorDescriptions[] = { "Success", "Other error", "Operation not supported", "Null pointer",
+static const char *ErrorDescriptions[] = { "Success", "Other error", "Operation not supported", "Null pointer",
         "Uniqueness violation", "Invalid argument", "Out of memory", "Not initialized", "Operation would block",
         "Operation interrupted", "Operation in progress", "Operation timed out", "Argument too short",
         "Result truncated", "Invalid state", "Not owner", "Resources in use", "Cannot find item", "Invalid iterator",
