@@ -19,6 +19,14 @@
 #include <AWSHttpDefaultResolver.h>
 #endif
 
+#ifndef AWS_HTTP_CLIENT_SIMPLE_COUNTERS_H
+#include <AWSHttpClientSimpleCounters.h>
+#endif
+
+#ifndef AWS_HTTP_SERVER_SIMPLE_COUNTERS_H
+#include <AWSHttpServerSimpleCounters.h>
+#endif
+
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -110,8 +118,10 @@ int main(int argc, char **argv)
 
     AWSHttpEchoServerHandler handler(logger);
     AWSHttpDefaultResolver resolver(logger);
+    AWSHttpClientSimpleCounters clientCounters;
+    AWSHttpServerSimpleCounters serverCounters;
 
-    AWSHttpStack stack(&handler, &resolver, port, threads, logger);
+    AWSHttpStack stack(&handler, &resolver, port, threads, &clientCounters, &serverCounters, logger);
 
     ESFError error = stack.initialize();
 
@@ -139,7 +149,7 @@ int main(int argc, char **argv)
         return -3;
     }
 
-    stack.getServerCounters()->printSummary();
+    serverCounters.printSummary(stdout);
 
     stack.destroy();
 

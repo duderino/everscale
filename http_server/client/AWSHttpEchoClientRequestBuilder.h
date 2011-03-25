@@ -14,6 +14,8 @@
 #include <AWSHttpClientTransaction.h>
 #endif
 
-extern ESFError AWSHttpEchoClientRequestBuilder(const char *host, int port, AWSHttpClientTransaction *transaction);
+extern ESFError AWSHttpEchoClientRequestBuilder(const char *host, int port,
+		const char *absPath, const char *method, const char *contentType,
+		AWSHttpClientTransaction *transaction);
 
 #endif

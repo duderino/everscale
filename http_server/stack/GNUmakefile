@@ -53,11 +53,17 @@ AWSHttpRequestUriFormatter.cpp\
 AWSHttpRequestFormatter.cpp\
 AWSHttpUtil.cpp\
 AWSPerformanceCounter.cpp\
+AWSHistoricalPerformanceCounter.cpp\
+AWSSimplePerformanceCounter.cpp\
 AWSHttpConnectionPool.cpp\
 AWSHttpClientSocketFactory.cpp\
 AWSHttpClientSocket.cpp\
 AWSAveragingCounter.cpp\
-AWSHttpServerCounters.cpp
+AWSHttpServerCounters.cpp\
+AWSHttpServerSimpleCounters.cpp\
+AWSHttpClientCounters.cpp\
+AWSHttpClientSimpleCounters.cpp\
+AWSHttpClientHistoricalCounters.cpp
 
 DYNAMIC_LIBS =\
 $(BASE)/lib/libfoundation

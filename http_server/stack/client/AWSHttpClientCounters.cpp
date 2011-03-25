@@ -3,15 +3,13 @@
  * under the BSD (revised) open source license.
  */
 
-#ifndef AWS_HTTP_SERVER_COUNTERS_H
-#include <AWSHttpServerCounters.h>
+#ifndef AWS_HTTP_CLIENT_COUNTERS_H
+#include <AWSHttpClientCounters.h>
 #endif
 
-#include <stdio.h>
-
-AWSHttpServerCounters::AWSHttpServerCounters() {
+AWSHttpClientCounters::AWSHttpClientCounters() {
 }
 
-AWSHttpServerCounters::~AWSHttpServerCounters() {
+AWSHttpClientCounters::~AWSHttpClientCounters() {
 }
 

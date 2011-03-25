@@ -30,13 +30,11 @@
 #define ESF_MIN_BLOCK_SIZE 128
 
 ESFDiscardAllocator::ESFDiscardAllocator(int chunkSize, ESFAllocator *source) :
-    _head(0), _chunkSize(ESF_MIN_BLOCK_SIZE> chunkSize ? ESF_MIN_BLOCK_SIZE : chunkSize), _source(source ? source
-            : ESFSystemAllocator::GetInstance()) {
+    _head(0), _chunkSize(ESF_MIN_BLOCK_SIZE > chunkSize ? ESF_MIN_BLOCK_SIZE : chunkSize), _source(source ? source : ESFSystemAllocator::GetInstance()) {
 }
 
 ESFDiscardAllocator::ESFDiscardAllocator() :
-    _head(0), _chunkSize(ESF_MIN_BLOCK_SIZE),
-    _source(ESFSystemAllocator::GetInstance()) {
+    _head(0), _chunkSize(ESF_MIN_BLOCK_SIZE), _source(ESFSystemAllocator::GetInstance()) {
 }
 
 ESFError ESFDiscardAllocator::initialize(int chunkSize, ESFAllocator *source) {
@@ -85,7 +83,7 @@ void *ESFDiscardAllocator::allocate(ESFUWord size) {
         _head = allocateChunk(_chunkSize);
 
         if (0 == _head) {
-        	return 0;
+            return 0;
         }
     }
 
@@ -95,8 +93,8 @@ void *ESFDiscardAllocator::allocate(ESFUWord size) {
         _head = allocateChunk(_chunkSize);
 
         if (0 == _head) {
-        	_head = oldHead;
-        	return 0;
+            _head = oldHead;
+            return 0;
         }
 
         _head->_next = oldHead;

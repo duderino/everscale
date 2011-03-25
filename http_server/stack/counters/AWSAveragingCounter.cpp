@@ -8,27 +8,19 @@
 #endif
 
 AWSAveragingCounter::AWSAveragingCounter() :
-    _value(0.0),
-    _observations(0.0),
-    _lock()
-{
+    _value(0.0), _observations(0.0), _lock() {
 }
 
-AWSAveragingCounter::~AWSAveragingCounter()
-{
+AWSAveragingCounter::~AWSAveragingCounter() {
 }
 
-
-void AWSAveragingCounter::addValue(double value)
-{
+void AWSAveragingCounter::addValue(double value) {
     _lock.writeAcquire();
 
     _observations = _observations + 1.0;
 
-    _value = (value * (1.0 / _observations)) +
-             (_value * ((_observations - 1.0) / _observations));
+    _value = (value * (1.0 / _observations)) + (_value * ((_observations - 1.0) / _observations));
 
     _lock.writeRelease();
 }
-
 

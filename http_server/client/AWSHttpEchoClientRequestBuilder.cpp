@@ -7,56 +7,42 @@
 #include <AWSHttpEchoClientRequestBuilder.h>
 #endif
 
-ESFError AWSHttpEchoClientRequestBuilder(const char *host, int port, AWSHttpClientTransaction *transaction)
-{
-    if (0 == transaction)
-    {
+ESFError AWSHttpEchoClientRequestBuilder(const char *host, int port, const char *absPath, const char *method, const char *contentType,
+        AWSHttpClientTransaction *transaction) {
+    if (0 == host || 0 == absPath || 0 == method || 0 == transaction) {
         return ESF_NULL_POINTER;
+    }
+
+    if (0 > port || 65536 <= port) {
+        return ESF_INVALID_ARGUMENT;
     }
 
     AWSHttpRequest *request = transaction->getRequest();
     AWSHttpRequestUri *requestUri = request->getRequestUri();
 
     requestUri->setType(AWSHttpRequestUri::AWS_URI_HTTP);
-    requestUri->setAbsPath((const unsigned char *) "/Echo/V1/EchoOperation");
 
-    request->setMethod((const unsigned char *) "POST");
+    requestUri->setAbsPath((const unsigned char *) absPath);
 
-    ESFError error = request->addHeader(transaction->getAllocator(),
-                                        (const unsigned char *) "Host",
-                                        (const unsigned char *) "%s:%d",
-                                        host,
-                                        port);
+    request->setMethod((const unsigned char *) method);
 
-    if (ESF_SUCCESS != error)
-    {
+    ESFError error = request->addHeader(transaction->getAllocator(), (const unsigned char *) "Host", (const unsigned char *) "%s:%d", host, port);
+
+    if (ESF_SUCCESS != error) {
         return error;
     }
 
-    error = request->addHeader((const unsigned char *) "Content-Type",
-                               (const unsigned char *) "text/xml; charset=utf-8",
-                               transaction->getAllocator());
+    if (contentType) {
+        error = request->addHeader((const unsigned char *) "Content-Type", (const unsigned char *) contentType, transaction->getAllocator());
 
-    if (ESF_SUCCESS != error)
-    {
-        return error;
+        if (ESF_SUCCESS != error) {
+            return error;
+        }
     }
 
-    error = request->addHeader((const unsigned char *) "SOAPAction",
-                               (const unsigned char *) "\"urn:yahoo:overture:aws:echo:Echo\"",
-                               transaction->getAllocator());
+    error = request->addHeader((const unsigned char *) "Transfer-Encoding", (const unsigned char *) "chunked", transaction->getAllocator());
 
-    if (ESF_SUCCESS != error)
-    {
-        return error;
-    }
-
-    error = request->addHeader((const unsigned char *) "Transfer-Encoding",
-                               (const unsigned char *) "chunked",
-                               transaction->getAllocator());
-
-    if (ESF_SUCCESS != error)
-    {
+    if (ESF_SUCCESS != error) {
         return error;
     }
 

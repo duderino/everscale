@@ -26,11 +26,11 @@
 #include <AWSHttpConnectionPool.h>
 #endif
 
-class AWSHttpEchoClientHandler : public AWSHttpClientHandler
-{
+class AWSHttpEchoClientHandler: public AWSHttpClientHandler {
 public:
 
-    AWSHttpEchoClientHandler(int totalTransactions, AWSHttpConnectionPool *pool, ESFLogger *logger);
+    AWSHttpEchoClientHandler(const char *absPath, const char *method, const char *contentType, const unsigned char *body,
+            int bodySize, int totalTransactions, AWSHttpConnectionPool *pool, ESFLogger *logger);
 
     virtual ~AWSHttpEchoClientHandler();
 
@@ -58,9 +58,7 @@ public:
      * @param chunkSize The size of the buffer to fill.  This may be less than the size requested by
      *   the requestRequestChunk method.
      */
-    virtual void fillRequestChunk(AWSHttpTransaction *transaction,
-                                  unsigned char *chunk,
-                                  unsigned int chunkSize);
+    virtual void fillRequestChunk(AWSHttpTransaction *transaction, unsigned char *chunk, unsigned int chunkSize);
 
     /**
      * Process a request's HTTP headers.
@@ -80,9 +78,7 @@ public:
      * @param chunkSize The size of the buffer to drain, or 0 if the body is finished.
      * @return a result code
      */
-    virtual Result receiveResponseBody(AWSHttpTransaction *transaction,
-                                    unsigned const char *chunk,
-                                    unsigned int chunkSize);
+    virtual Result receiveResponseBody(AWSHttpTransaction *transaction, unsigned const char *chunk, unsigned int chunkSize);
 
     /**
      * Handle the end of a transaction.  This is called regardless of the transaction's success
@@ -91,21 +87,10 @@ public:
      * @param transaction The http transaction - contains request and response objects, etc
      * @param state The state at which the transaction ended
      */
-     virtual void end(AWSHttpTransaction *transaction, State state);
+    virtual void end(AWSHttpTransaction *transaction, State state);
 
-    inline void setStartTime()
-    {
-        AWSPerformanceCounter::GetTime(&_start);
-    }
-
-    inline const struct timeval *getStartTime() const
-    {
-        return &_start;
-    }
-
-    inline const struct timeval *getStopTime() const
-    {
-        return &_stop;
+    inline bool isFinished() const {
+        return _totalTransactions <= _completedTransactions.get();
     }
 
 private:
@@ -113,22 +98,16 @@ private:
     AWSHttpEchoClientHandler(const AWSHttpEchoClientHandler &clientHandler);
     void operator=(const AWSHttpEchoClientHandler &clientHandler);
 
-    inline void setStopTime()
-    {
-        AWSPerformanceCounter::GetTime(&_stop);
-    }
-
+    const char *_absPath;
+    const char *_method;
+    const char *_contentType;
+    const unsigned char *_body;
+    const int _bodySize;
     int _totalTransactions;
     AWSHttpConnectionPool *_pool;
     ESFLogger *_logger;
     ESFSharedCounter _completedTransactions;
-    struct timeval _start;
-    struct timeval _stop;
 };
 
 #endif
-
-
-
-
 

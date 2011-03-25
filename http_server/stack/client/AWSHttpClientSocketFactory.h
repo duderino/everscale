@@ -1,4 +1,4 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
+/* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
  * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
  * under the BSD (revised) open source license.
  */
@@ -50,20 +50,20 @@
 #include <AWSHttpConnectionPool.h>
 #endif
 
+#ifndef AWS_HTTP_CLIENT_COUNTERS_H
+#include <AWSHttpClientCounters.h>
+#endif
+
 /** A factory that creates and reuses AWSHttpClientSockets
  */
-class AWSHttpClientSocketFactory
-{
+class AWSHttpClientSocketFactory {
 public:
 
     /** Constructor
      *
-     * @param maxSockets The maximum number of sockets the factory will have to create
      * @param logger A logger
      */
-    AWSHttpClientSocketFactory(AWSPerformanceCounter *successCounter,
-                               AWSPerformanceCounter *failureCounter,
-                               ESFLogger *logger);
+    AWSHttpClientSocketFactory(AWSHttpClientCounters *clientCounters, ESFLogger *logger);
 
     /** Destructor.
      */
@@ -73,8 +73,7 @@ public:
 
     void destroy();
 
-    AWSHttpClientSocket *create(AWSHttpConnectionPool *pool,
-                                AWSHttpClientTransaction *transaction);
+    AWSHttpClientSocket *create(AWSHttpConnectionPool *pool, AWSHttpClientTransaction *transaction);
 
     void release(AWSHttpClientSocket *socket);
 
@@ -83,8 +82,7 @@ private:
     AWSHttpClientSocketFactory(const AWSHttpClientSocketFactory &);
     AWSHttpClientSocketFactory &operator=(const AWSHttpClientSocketFactory &);
 
-    class CleanupHandler : public ESFCleanupHandler
-    {
+    class CleanupHandler: public ESFCleanupHandler {
     public:
         /** Constructor
          */
@@ -109,8 +107,7 @@ private:
     };
 
     ESFLogger *_logger;
-    AWSPerformanceCounter *_successCounter;
-    AWSPerformanceCounter *_failureCounter;
+    AWSHttpClientCounters *_clientCounters;
     ESFDiscardAllocator _allocator;
     ESFMap _map;
     ESFEmbeddedList _embeddedList;

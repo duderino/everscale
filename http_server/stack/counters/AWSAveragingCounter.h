@@ -10,30 +10,36 @@
 #include <ESFMutex.h>
 #endif
 
-class AWSAveragingCounter
-{
+class AWSAveragingCounter {
 public:
 
     AWSAveragingCounter();
 
     virtual ~AWSAveragingCounter();
 
-    inline void setValue(double value, double observations)
-    {
+    inline void setValue(double value, double observations) {
         _observations = observations;
         _value = value;
     }
 
     void addValue(double value);
 
-    inline double getValue() const
-    {
+    inline double getValue() const {
         return _value;
     }
 
-    inline double getObservations() const
-    {
+    inline double getObservations() const {
         return _observations;
+    }
+
+    /** Placement new.
+     *
+     *  @param size The size of the object.
+     *  @param allocator The source of the object's memory.
+     *  @return Memory for the new object or NULL if the memory allocation failed.
+     */
+    inline void *operator new(size_t size, ESFAllocator *allocator) {
+        return allocator->allocate(size);
     }
 
 private:

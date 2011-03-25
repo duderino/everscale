@@ -46,10 +46,10 @@ public:
      *  will actually request from the source allocator is blocks * blockSize
      *  plus one word per block.
      *
-     *    @param blocks The number of blocks this allocator can allocate before
+     *  @param blocks The number of blocks this allocator can allocate before
      *      exhausting its memory pool.
      *  @param blockSize The size in bytes of each block.
-     *    @param source The allocator to use to allocate the memory pool.
+     *  @param source The allocator to use to allocate the memory pool.
      */
     ESFFixedAllocator(int blocks, int blockSize, ESFAllocator *source);
 

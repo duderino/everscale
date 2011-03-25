@@ -78,17 +78,26 @@
 #include <AWSHttpResolver.h>
 #endif
 
-class AWSHttpStack : public AWSHttpConnectionPool
-{
+#ifndef AWS_HTTP_CLIENT_COUNTERS_H
+#include <AWSHttpClientCounters.h>
+#endif
+
+#ifndef AWS_HTTP_SERVER_COUNTERS_H
+#include <AWSHttpServerCounters.h>
+#endif
+
+class AWSHttpStack: public AWSHttpConnectionPool {
 public:
 
-    AWSHttpStack(AWSHttpServerHandler *serverHandler,
-                 AWSHttpResolver *resolver,
-                 int port,
-                 int threads,
-                 ESFLogger *logger);
+    /**
+     * Create a client and server stack.
+     */
+    AWSHttpStack(AWSHttpServerHandler *serverHandler, AWSHttpResolver *resolver, int port, int threads, AWSHttpClientCounters *clientCounters, AWSHttpServerCounters *serverCounters, ESFLogger *logger);
 
-    AWSHttpStack(AWSHttpResolver *resolver, int threads, ESFLogger *logger);
+    /**
+     * Create only a client stack.
+     */
+    AWSHttpStack(AWSHttpResolver *resolver, int threads, AWSHttpClientCounters *clientCounters, ESFLogger *logger);
 
     virtual ~AWSHttpStack();
 
@@ -129,19 +138,20 @@ public:
      */
     virtual void destroyClientTransaction(AWSHttpClientTransaction *transaction);
 
-    inline const AWSPerformanceCounter *getClientSuccessCounter() const
-    {
-        return &_clientSuccessCounter;
+    inline AWSHttpClientCounters *getClientCounters() {
+        return _clientCounters;
     }
 
-    inline const AWSPerformanceCounter *getClientFailureCounter() const
-    {
-        return &_clientFailureCounter;
+    inline const AWSHttpClientCounters *getClientCounters() const {
+        return _clientCounters;
     }
 
-    inline AWSHttpServerCounters *getServerCounters()
-    {
-        return &_serverCounters;
+    inline AWSHttpServerCounters *getServerCounters() {
+        return _serverCounters;
+    }
+
+    inline const AWSHttpServerCounters *getServerCounters() const {
+        return _serverCounters;
     }
 
 private:
@@ -149,12 +159,8 @@ private:
     AWSHttpStack(const AWSHttpStack &);
     void operator=(const AWSHttpStack &);
 
-    typedef enum
-    {
-        AWS_HTTP_STACK_IS_INITIALIZED = 0,
-        AWS_HTTP_STACK_IS_STARTED = 1,
-        AWS_HTTP_STACK_IS_STOPPED = 2,
-        AWS_HTTP_STACK_IS_DESTROYED = 3
+    typedef enum {
+        AWS_HTTP_STACK_IS_INITIALIZED = 0, AWS_HTTP_STACK_IS_STARTED = 1, AWS_HTTP_STACK_IS_STOPPED = 2, AWS_HTTP_STACK_IS_DESTROYED = 3
     } AWSHttpStackState;
 
     int _port;
@@ -163,15 +169,14 @@ private:
     AWSHttpResolver *_resolver;
     ESFLogger *_logger;
     AWSHttpServerHandler *_serverHandler;
+    AWSHttpServerCounters *_serverCounters;
+    AWSHttpClientCounters *_clientCounters;
     ESFDiscardAllocator _discardAllocator;
     ESFSharedAllocator _rootAllocator;
     ESFAllocatorCleanupHandler _rootAllocatorCleanupHandler;
     ESFEpollMultiplexerFactory _epollFactory;
     ESFListeningTCPSocket _listeningSocket;
-    AWSHttpServerCounters _serverCounters;
     AWSHttpServerSocketFactory _serverSocketFactory;
-    AWSPerformanceCounter _clientSuccessCounter;
-    AWSPerformanceCounter _clientFailureCounter;
     AWSHttpClientSocketFactory _clientSocketFactory;
     AWSHttpClientTransactionFactory _clientTransactionFactory;
     ESFSocketMultiplexerDispatcher _dispatcher;

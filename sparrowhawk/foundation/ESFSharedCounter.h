@@ -1,7 +1,7 @@
 /** @file ESFSharedCounter.h
  *  @brief A threadsafe counter
  *
- * Copyright (c) 2009 Yahoo! Inc.
+ * Copyright (c) 2011 Yahoo! Inc.
  * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
  * under the BSD (revised) open source license.
  *
@@ -55,7 +55,7 @@ public:
         _counter = value;
     }
 
-    inline int get() {
+    inline int get() const {
         return _counter;
     }
 

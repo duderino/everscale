@@ -1,4 +1,4 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
+/* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
  * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
  * under the BSD (revised) open source license.
  */
@@ -18,8 +18,8 @@
 #include <ESFLogger.h>
 #endif
 
-#ifndef AWS_PERFORMANCE_COUNTER_H
-#include <AWSPerformanceCounter.h>
+#ifndef AWS_HTTP_CLIENT_COUNTERS_H
+#include <AWSHttpClientCounters.h>
 #endif
 
 #ifndef AWS_HTTP_CLIENT_TRANSACTION_H
@@ -30,13 +30,11 @@
 #include <AWSHttpConnectionPool.h>
 #endif
 
-
 /** A socket that receives and echoes back HTTP requests
  *
  * TODO implement idle check
  */
-class AWSHttpClientSocket : public ESFMultiplexedSocket
-{
+class AWSHttpClientSocket: public ESFMultiplexedSocket {
 public:
 
     /** Constructor
@@ -46,12 +44,8 @@ public:
      * @param cleanupHandler An object that can be used to destroy this one
      * @param logger A logger
      */
-    AWSHttpClientSocket(AWSHttpConnectionPool *pool,
-                        AWSHttpClientTransaction *transaction,
-                        AWSPerformanceCounter *successCounter,
-                        AWSPerformanceCounter *failureCounter,
-                        ESFCleanupHandler *cleanupHandler,
-                        ESFLogger *logger);
+    AWSHttpClientSocket(AWSHttpConnectionPool *pool, AWSHttpClientTransaction *transaction, AWSHttpClientCounters *counters, ESFCleanupHandler *cleanupHandler,
+            ESFLogger *logger);
 
     /** Destructor.
      */
@@ -218,23 +212,19 @@ public:
      */
     ESFError reset(bool reused, AWSHttpConnectionPool *pool, AWSHttpClientTransaction *transaction);
 
-    inline void close()
-    {
+    inline void close() {
         _socket.close();
     }
 
-    inline ESFError connect()
-    {
+    inline ESFError connect() {
         return _socket.connect();
     }
 
-    inline bool isConnected()
-    {
+    inline bool isConnected() {
         return _socket.isConnected();
     }
 
-    inline const ESFSocketAddress *getPeerAddress() const
-    {
+    inline const ESFSocketAddress *getPeerAddress() const {
         return &_socket.getPeerAddress();
     }
 
@@ -244,18 +234,15 @@ public:
      *  @param allocator The source of the object's memory.
      *  @return Memory for the new object or NULL if the memory allocation failed.
      */
-    inline void *operator new(size_t size, ESFAllocator *allocator)
-    {
+    inline void *operator new(size_t size, ESFAllocator *allocator) {
         return allocator->allocate(size);
     }
 
-    static inline void SetReuseConnections(bool reuseConnections)
-    {
+    static inline void SetReuseConnections(bool reuseConnections) {
         _ReuseConnections = reuseConnections;
     }
 
-    static inline bool GetReuseConnections()
-    {
+    static inline bool GetReuseConnections() {
         return _ReuseConnections;
     }
 
@@ -278,8 +265,7 @@ private:
     int _bodyBytesWritten;
     AWSHttpConnectionPool *_pool;
     AWSHttpClientTransaction *_transaction;
-    AWSPerformanceCounter *_successCounter;
-    AWSPerformanceCounter *_failureCounter;
+    AWSHttpClientCounters *_counters;
     ESFLogger *_logger;
     ESFCleanupHandler *_cleanupHandler;
     ESFConnectedTCPSocket _socket;
