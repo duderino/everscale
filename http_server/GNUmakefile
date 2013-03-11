@@ -16,4 +16,10 @@ clean:
 		cd $(CURDIR)/$$d && $(MAKE) clean || exit 1; \
 	done
 
+test:
+	@for d in $(DIRS); do \
+		cd $(CURDIR)/$$d && $(MAKE) test || exit 1; \
+	done
+
+
 remake: clean all

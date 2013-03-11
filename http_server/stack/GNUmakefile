@@ -72,4 +72,6 @@ LIB=$(BASE)/lib/libredux_http_stack
 
 all: $(LIB)
 
+test:
+
 include $(BASE)/GNUmakevars

@@ -31,5 +31,7 @@ $(BASE)/dependencies/sparrowhawk/lib/libsparrowhawk
  
 all: $(EXE)
 
+test:
+
 include $(BASE)/GNUmakevars
 
