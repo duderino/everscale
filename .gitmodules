@@ -1,0 +1,3 @@
+[submodule "dependencies/sparrowhawk"]
+	path = dependencies/sparrowhawk
+	url = git@github.com:duderino/sparrowhawk.git

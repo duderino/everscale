@@ -1,7 +1,7 @@
 BASE=../..
 
 INCLUDE = \
--I$(BASE)/sparrowhawk/foundation\
+-I$(BASE)/dependencies/sparrowhawk/include\
 -I$(BASE)/raw_echo_server/client
 
 SOURCES=\
@@ -13,7 +13,7 @@ AWSPerformanceCounter.cpp
 EXE=$(BASE)/bin/raw_echo_client
 
 STATIC_LIBS =\
-$(BASE)/lib/libfoundation
+$(BASE)/dependencies/sparrowhawk/lib/libsparrowhawk
  
 all: $(EXE)
 

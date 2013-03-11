@@ -1,7 +1,7 @@
 BASE=../..
 
 INCLUDE = \
--I$(BASE)/sparrowhawk/foundation\
+-I$(BASE)/dependencies/sparrowhawk/include\
 -I$(BASE)/http_server/stack/formatter\
 -I$(BASE)/http_server/stack/parser\
 -I$(BASE)/http_server/stack/message\
@@ -66,7 +66,7 @@ AWSHttpClientSimpleCounters.cpp\
 AWSHttpClientHistoricalCounters.cpp
 
 DYNAMIC_LIBS =\
-$(BASE)/lib/libfoundation
+$(BASE)/dependencies/sparrowhawk/lib/libsparrowhawk
 
 LIB=$(BASE)/lib/libredux_http_stack
 

@@ -1,7 +1,7 @@
 BASE=../..
 
 INCLUDE = \
--I$(BASE)/sparrowhawk/foundation\
+-I$(BASE)/dependencies/sparrowhawk/include\
 -I$(BASE)/raw_echo_server/server\
 -I$(BASE)/raw_echo_server/common
 
@@ -17,7 +17,7 @@ AWSServerSocket.cpp
 EXE=$(BASE)/bin/raw_echo_server
 
 STATIC_LIBS =\
-$(BASE)/lib/libfoundation
+$(BASE)/dependencies/sparrowhawk/lib/libsparrowhawk
  
 all: $(EXE)
 

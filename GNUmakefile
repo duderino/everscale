@@ -1,15 +1,19 @@
 DIRS=\
-sparrowhawk\
+dependencies/sparrowhawk\
 raw_echo_server\
 http_server\
 http_server/stack/test
 
-all: 
+all: init
 	@for d in $(DIRS); do \
 		echo; \
 		cd $(CURDIR)/$$d && $(MAKE) || exit 1; \
 		echo; \
 	done
+
+init:
+	@git submodule init
+	@git submodule update
 
 clean:
 	@for d in $(DIRS); do \
