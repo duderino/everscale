@@ -737,7 +737,6 @@ bool ESFMap::isEmpty() const {
 #ifdef DEBUG
 bool ESFMap::isBalanced() const {
 	int height = 0;
-	int blackHeight = 0;
 	bool unbalanced = false;
 
 	height = getHeight(_root);
@@ -761,7 +760,7 @@ bool ESFMap::isBalanced() const {
 	//  same number of black nodes."
 	//
 
-	blackHeight = getBlackHeight(_root, &unbalanced);
+	getBlackHeight(_root, &unbalanced);
 
 	return !unbalanced;
 }

@@ -1108,29 +1108,30 @@ bool CompareFiles(int fd1, int fd2)
 
     char buffer1[4096];
     char buffer2[4096];
-    ssize_t result;
+    ssize_t result1;
+    ssize_t result2;
 
     while (true)
     {
-        result = read(fd1, buffer1, sizeof(buffer1));
+        result1 = read(fd1, buffer1, sizeof(buffer1));
 
-        if (0 > result)
+        if (0 > result1)
         {
             fprintf(stderr, "cannot read 1: %s\n", strerror(errno));
             return false;
         }
 
-        if (0 == result)
+        if (0 == result1)
         {
-            result = read(fd2, buffer2, sizeof(buffer2));
+            result1 = read(fd2, buffer2, sizeof(buffer2));
 
-            if (0 > result)
+            if (0 > result1)
             {
                 fprintf(stderr, "cannot read 2: %s\n", strerror(errno));
                 return false;
             }
 
-            if (0 == result)
+            if (0 == result1)
             {
                 return true;
             }
@@ -1138,25 +1139,25 @@ bool CompareFiles(int fd1, int fd2)
             return false;
         }
 
-        result = read(fd2, buffer2, result);
+        result2 = read(fd2, buffer2, result1);
 
-        if (0 > result)
+        if (0 > result2)
         {
             fprintf(stderr, "cannot read 2: %s\n", strerror(errno));
             return false;
         }
 
-        if (0 == result)
+        if (0 == result2)
         {
             return false;
         }
 
-        if (result != result)
+        if (result1 != result2)
         {
             return false;
         }
 
-        for (int i = 0; i < result; ++i)
+        for (int i = 0; i < result2; ++i)
         {
             if (buffer1[i] != buffer2[i])
             {
