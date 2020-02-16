@@ -1,7 +1,6 @@
-environment
-*.o
-*.d
 *.a
 *.so
-bin/*
-lib/*
+CMakeCache.txt
+*/CMakeFiles/*
+Makefile
+cmake_install.cmake
