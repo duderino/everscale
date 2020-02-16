@@ -17,7 +17,7 @@
 #include <ESTFConfig.h>
 #endif
 
-namespace  {
+namespace ESTF {
 
 /** Any class in the  test suite can inherit from Object to
  *  be used with ObjectPtr and it's macros.  Note that this must only
