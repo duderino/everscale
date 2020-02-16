@@ -1,11 +1,14 @@
-poll on state machines, not fds.  1 state machine == 1+ fds
-openssl/HTTPS support
-Better proxying - extend state machine to socket tuples
-kevent support (OSX)
-JNI wrappers - lazy UTF-8 to UTF-16 conversion string class
-Optional encoding of HTML entities - no XSS attacks
-Request-URI validation - no path traversal attacks
-Review HTTP header correctness
-Revisit autotools?
-Add cache
-Add router
+clang-format
+cmakeify
+replace platform config headers with cmake mechanism
+url canonicalization
+plugin api
+elementry waf impl of plugin api
+tls support
+h2 support
+xds support
+async dns client
+pin threads / fe-be connection alignment
+load shedding
+readiness and liveness check support - e2e vs local options
+

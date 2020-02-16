@@ -1,0 +1,27 @@
+#ifndef ESTF_LINUX_CONFIG_H
+#define ESTF_LINUX_CONFIG_H
+
+#include <assert.h>
+
+#define ESTF_NATIVE_ASSERT assert
+
+#define HAVE_SYS_TIME_H
+#define HAVE_STRUCT_TIMEVAL
+#define HAVE_GETTIMEOFDAY
+
+#define HAVE_STDLIB_H
+#define HAVE_RAND_R
+#define HAVE_DECL_RAND_MAX
+
+#define HAVE_PTHREAD_H
+#define HAVE_PTHREAD_T
+#define HAVE_PTHREAD_CREATE
+#define HAVE_PTHREAD_JOIN
+#define HAVE_PTHREAD_SELF
+#define HAVE_PTHREAD_YIELD
+
+#define HAVE_TIME_H
+#define HAVE_TIMESPEC_T
+#define HAVE_NANOSLEEP
+
+#endif
