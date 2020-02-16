@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_CLIENT_SOCKET_FACTORY_H
@@ -57,62 +57,63 @@
 /** A factory that creates and reuses AWSHttpClientSockets
  */
 class AWSHttpClientSocketFactory {
-public:
+ public:
+  /** Constructor
+   *
+   * @param logger A logger
+   */
+  AWSHttpClientSocketFactory(AWSHttpClientCounters *clientCounters,
+                             ESFLogger *logger);
 
+  /** Destructor.
+   */
+  virtual ~AWSHttpClientSocketFactory();
+
+  ESFError initialize();
+
+  void destroy();
+
+  AWSHttpClientSocket *create(AWSHttpConnectionPool *pool,
+                              AWSHttpClientTransaction *transaction);
+
+  void release(AWSHttpClientSocket *socket);
+
+ private:
+  // Disabled
+  AWSHttpClientSocketFactory(const AWSHttpClientSocketFactory &);
+  AWSHttpClientSocketFactory &operator=(const AWSHttpClientSocketFactory &);
+
+  class CleanupHandler : public ESFCleanupHandler {
+   public:
     /** Constructor
+     */
+    CleanupHandler(AWSHttpClientSocketFactory *factory);
+
+    /** Destructor
+     */
+    virtual ~CleanupHandler();
+
+    /** Destroy an object
      *
-     * @param logger A logger
+     * @param object The object to destroy
      */
-    AWSHttpClientSocketFactory(AWSHttpClientCounters *clientCounters, ESFLogger *logger);
+    virtual void destroy(ESFObject *object);
 
-    /** Destructor.
-     */
-    virtual ~AWSHttpClientSocketFactory();
-
-    ESFError initialize();
-
-    void destroy();
-
-    AWSHttpClientSocket *create(AWSHttpConnectionPool *pool, AWSHttpClientTransaction *transaction);
-
-    void release(AWSHttpClientSocket *socket);
-
-private:
+   private:
     // Disabled
-    AWSHttpClientSocketFactory(const AWSHttpClientSocketFactory &);
-    AWSHttpClientSocketFactory &operator=(const AWSHttpClientSocketFactory &);
+    CleanupHandler(const CleanupHandler &);
+    void operator=(const CleanupHandler &);
 
-    class CleanupHandler: public ESFCleanupHandler {
-    public:
-        /** Constructor
-         */
-        CleanupHandler(AWSHttpClientSocketFactory *factory);
+    AWSHttpClientSocketFactory *_factory;
+  };
 
-        /** Destructor
-         */
-        virtual ~CleanupHandler();
-
-        /** Destroy an object
-         *
-         * @param object The object to destroy
-         */
-        virtual void destroy(ESFObject *object);
-
-    private:
-        // Disabled
-        CleanupHandler(const CleanupHandler &);
-        void operator=(const CleanupHandler &);
-
-        AWSHttpClientSocketFactory *_factory;
-    };
-
-    ESFLogger *_logger;
-    AWSHttpClientCounters *_clientCounters;
-    ESFDiscardAllocator _allocator;
-    ESFMap _map;
-    ESFEmbeddedList _embeddedList;
-    ESFMutex _mutex;
-    CleanupHandler _cleanupHandler;
+  ESFLogger *_logger;
+  AWSHttpClientCounters *_clientCounters;
+  ESFDiscardAllocator _allocator;
+  ESFMap _map;
+  ESFEmbeddedList _embeddedList;
+  ESFMutex _mutex;
+  CleanupHandler _cleanupHandler;
 };
 
 #endif

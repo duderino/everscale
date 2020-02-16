@@ -35,3 +35,21 @@ target_compile_options(unit-tf PUBLIC
 	-DES_LINUX 
 	-D_REENTRANT
 )
+
+## Move this someplace common
+
+find_program(CLANG_FORMAT "clang-format")
+
+if(NOT CLANG_FORMAT)
+  message(STATUS "clang-format not found.")
+else()
+  message(STATUS "clang-format found: ${CLANG_FORMAT}")
+endif()
+
+## Invoke with a:
+##   cmake --build . --target format
+if(CLANG_FORMAT)
+  add_custom_target(format
+	  COMMAND ${CLANG_FORMAT} -i --style=Google include/*.h src/*.cpp
+  )
+endif()

@@ -3,11 +3,12 @@
  *      synchronization whatsoever
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -21,36 +22,20 @@
 
 ESFNullLock ESFNullLock::_Instance;
 
-ESFNullLock *ESFNullLock::Instance() {
-    return &_Instance;
-}
+ESFNullLock *ESFNullLock::Instance() { return &_Instance; }
 
-ESFNullLock::ESFNullLock() {
-}
+ESFNullLock::ESFNullLock() {}
 
-ESFNullLock::~ESFNullLock() {
-}
+ESFNullLock::~ESFNullLock() {}
 
-ESFError ESFNullLock::writeAcquire() {
-    return ESF_SUCCESS;
-}
+ESFError ESFNullLock::writeAcquire() { return ESF_SUCCESS; }
 
-ESFError ESFNullLock::readAcquire() {
-    return ESF_SUCCESS;
-}
+ESFError ESFNullLock::readAcquire() { return ESF_SUCCESS; }
 
-ESFError ESFNullLock::writeAttempt() {
-    return ESF_SUCCESS;
-}
+ESFError ESFNullLock::writeAttempt() { return ESF_SUCCESS; }
 
-ESFError ESFNullLock::readAttempt() {
-    return ESF_SUCCESS;
-}
+ESFError ESFNullLock::readAttempt() { return ESF_SUCCESS; }
 
-ESFError ESFNullLock::writeRelease() {
-    return ESF_SUCCESS;
-}
+ESFError ESFNullLock::writeRelease() { return ESF_SUCCESS; }
 
-ESFError ESFNullLock::readRelease() {
-    return ESF_SUCCESS;
-}
+ESFError ESFNullLock::readRelease() { return ESF_SUCCESS; }

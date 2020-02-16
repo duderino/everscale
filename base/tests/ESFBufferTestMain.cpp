@@ -34,36 +34,38 @@
 #endif
 
 int main() {
-    ESFBufferTestPtr bufferTest = new ESFBufferTest();
+  ESFBufferTestPtr bufferTest = new ESFBufferTest();
 
-    ESTFConcurrencyDecoratorPtr concurrencyDecorator = new ESTFConcurrencyDecorator(bufferTest, 3);
+  ESTFConcurrencyDecoratorPtr concurrencyDecorator =
+      new ESTFConcurrencyDecorator(bufferTest, 3);
 
-    ESTFCompositePtr composite = new ESTFComposite();
+  ESTFCompositePtr composite = new ESTFComposite();
 
-    composite->add(concurrencyDecorator);
+  composite->add(concurrencyDecorator);
 
-    ESTFRepetitionDecoratorPtr repetitionDecorator = new ESTFRepetitionDecorator(composite, 3);
+  ESTFRepetitionDecoratorPtr repetitionDecorator =
+      new ESTFRepetitionDecorator(composite, 3);
 
-    ESTFResultCollector collector;
+  ESTFResultCollector collector;
 
-    if (false == repetitionDecorator->setup()) {
-        cerr << "Testing framework setup failed" << endl;
-        return 1;
-    }
+  if (false == repetitionDecorator->setup()) {
+    cerr << "Testing framework setup failed" << endl;
+    return 1;
+  }
 
-    if (false == repetitionDecorator->run(&collector)) {
-        cerr << "Testing framework run failed" << endl;
-    }
+  if (false == repetitionDecorator->run(&collector)) {
+    cerr << "Testing framework run failed" << endl;
+  }
 
-    if (false == repetitionDecorator->tearDown()) {
-        cerr << "Testing framework tear down failed" << endl;
-    }
+  if (false == repetitionDecorator->tearDown()) {
+    cerr << "Testing framework tear down failed" << endl;
+  }
 
-    if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-        cout << "All test cases passed" << endl;
-    }
+  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
+    cout << "All test cases passed" << endl;
+  }
 
-    cout << collector << endl;
+  cout << collector << endl;
 
-    return 0;
+  return 0;
 }

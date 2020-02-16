@@ -40,60 +40,61 @@
  *
  *  @ingroup foundation_test
  */
-class ESFBufferTest: public ESTFComponent {
-public:
-    /** Constructor.
-     */
-    ESFBufferTest();
+class ESFBufferTest : public ESTFComponent {
+ public:
+  /** Constructor.
+   */
+  ESFBufferTest();
 
-    /** Destructor. */
-    virtual ~ESFBufferTest();
+  /** Destructor. */
+  virtual ~ESFBufferTest();
 
-    /** Run the component.
-     *
-     *  @param collector A result collector that will collect the results of
-     *      this test run.
-     *  @return true if the test run was successfully performed by the test
-     *      framework.  Application errors discovered during a test run do not
-     *      count, a false return means there was an error in the test suite
-     *      itself that prevented it from completing one or more test cases.
-     */
-    bool run(ESTFResultCollector *collector);
+  /** Run the component.
+   *
+   *  @param collector A result collector that will collect the results of
+   *      this test run.
+   *  @return true if the test run was successfully performed by the test
+   *      framework.  Application errors discovered during a test run do not
+   *      count, a false return means there was an error in the test suite
+   *      itself that prevented it from completing one or more test cases.
+   */
+  bool run(ESTFResultCollector *collector);
 
-    /** Perform a one-time initialization of the component.  Initializations
-     *  that must be performed on every run of a test case should be put in
-     *  the run method.
-     *
-     *  @return true if the one-time initialization was successfully performed,
-     *      false otherwise.
-     */
-    bool setup();
+  /** Perform a one-time initialization of the component.  Initializations
+   *  that must be performed on every run of a test case should be put in
+   *  the run method.
+   *
+   *  @return true if the one-time initialization was successfully performed,
+   *      false otherwise.
+   */
+  bool setup();
 
-    /** Perform a one-time tear down of the component.  Tear downs that must be
-     *  performed on every run of a test case should be put in the run method.
-     *
-     *  @return true if the one-time tear down was successfully performed,
-     *      false otherwise.
-     */
-    bool tearDown();
+  /** Perform a one-time tear down of the component.  Tear downs that must be
+   *  performed on every run of a test case should be put in the run method.
+   *
+   *  @return true if the one-time tear down was successfully performed,
+   *      false otherwise.
+   */
+  bool tearDown();
 
-    /** Returns a deep copy of the component.
-     *
-     *  @return A deep copy of the component.
-     */
-    ESTFComponentPtr clone();
+  /** Returns a deep copy of the component.
+   *
+   *  @return A deep copy of the component.
+   */
+  ESTFComponentPtr clone();
 
-private:
+ private:
+  void fillTest(ESTFResultCollector *collector, unsigned int startPosition,
+                unsigned int endPosition);
 
-    void fillTest(ESTFResultCollector *collector, unsigned int startPosition, unsigned int endPosition);
+  void drainTest(ESTFResultCollector *collector, unsigned int startPosition,
+                 unsigned int endPosition);
 
-    void drainTest(ESTFResultCollector *collector, unsigned int startPosition, unsigned int endPosition);
-
-    unsigned int _capacity;
-    ESTFRand _rand;
-    ESFBuffer _buffer;
+  unsigned int _capacity;
+  ESTFRand _rand;
+  ESFBuffer _buffer;
 };
 
-DEFINE_ESTF_OBJECT_PTR(ESFBufferTest,ESTFComponent)
+DEFINE_ESTF_OBJECT_PTR(ESFBufferTest, ESTFComponent)
 
-#endif                                 /* ! ESF_BUFFER_TEST_H */
+#endif /* ! ESF_BUFFER_TEST_H */

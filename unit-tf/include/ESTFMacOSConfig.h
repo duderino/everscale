@@ -2,11 +2,12 @@
  *  @brief A description of the Darwin (Mac OS X) platform.
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  */
 
 #ifndef ESTF_DARWIN_CONFIG_H

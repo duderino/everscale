@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_CLIENT_SIMPLE_COUNTERS_H
@@ -14,29 +14,29 @@
 #include <AWSSimplePerformanceCounter.h>
 #endif
 
-class AWSHttpClientSimpleCounters: public AWSHttpClientCounters {
-public:
-    AWSHttpClientSimpleCounters();
+class AWSHttpClientSimpleCounters : public AWSHttpClientCounters {
+ public:
+  AWSHttpClientSimpleCounters();
 
-    virtual ~AWSHttpClientSimpleCounters();
+  virtual ~AWSHttpClientSimpleCounters();
 
-    virtual void printSummary(FILE *file) const;
+  virtual void printSummary(FILE *file) const;
 
-    virtual AWSPerformanceCounter *getSuccesses();
+  virtual AWSPerformanceCounter *getSuccesses();
 
-    virtual const AWSPerformanceCounter *getSuccesses() const;
+  virtual const AWSPerformanceCounter *getSuccesses() const;
 
-    virtual AWSPerformanceCounter *getFailures();
+  virtual AWSPerformanceCounter *getFailures();
 
-    virtual const AWSPerformanceCounter *getFailures() const;
+  virtual const AWSPerformanceCounter *getFailures() const;
 
-private:
-    // Disabled
-    AWSHttpClientSimpleCounters(const AWSHttpClientSimpleCounters &counters);
-    void operator=(const AWSHttpClientSimpleCounters &counters);
+ private:
+  // Disabled
+  AWSHttpClientSimpleCounters(const AWSHttpClientSimpleCounters &counters);
+  void operator=(const AWSHttpClientSimpleCounters &counters);
 
-    AWSSimplePerformanceCounter _successes;
-    AWSSimplePerformanceCounter _failures;
+  AWSSimplePerformanceCounter _successes;
+  AWSSimplePerformanceCounter _failures;
 };
 
 #endif

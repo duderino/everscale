@@ -8,58 +8,51 @@
 
 namespace ESTF {
 
-Date::~Date()
-{
+Date::~Date() {}
+
+Date &Date::operator+=(const Date &date) {
+  _seconds += date._seconds;
+
+  _seconds += (_microSeconds + date._microSeconds) / 1000000L;
+  _microSeconds = (_microSeconds + date._microSeconds) % 1000000L;
+
+  return *this;
 }
 
-Date &Date::operator+=( const Date &date )
-{
-    _seconds += date._seconds;
+Date &Date::operator-=(const Date &date) {
+  _seconds -= date._seconds;
+  _microSeconds -= date._microSeconds;
 
-    _seconds += ( _microSeconds + date._microSeconds ) / 1000000L;
-    _microSeconds = ( _microSeconds + date._microSeconds ) % 1000000L;
+  if (0 > _microSeconds) {
+    --_seconds;
+    _microSeconds += 1000000L;
+  }
 
-    return *this;
+  return *this;
 }
 
-Date &Date::operator-=( const Date &date )
-{
-    _seconds -= date._seconds;
-    _microSeconds -= date._microSeconds;
-
-    if ( 0 > _microSeconds )
-    {
-        --_seconds;
-        _microSeconds += 1000000L;
-    }
-
-    return *this;
-}
-
-Date Date::GetSystemTime()
-{
-    Date currentTime;
+Date Date::GetSystemTime() {
+  Date currentTime;
 
 #if defined HAVE_GETTIMEOFDAY && defined HAVE_STRUCT_TIMEVAL
-    struct timeval tv;
+  struct timeval tv;
 
-    gettimeofday( &tv, 0 );
+  gettimeofday(&tv, 0);
 
-    currentTime.setSeconds( tv.tv_sec );
-    currentTime.setMicroSeconds( tv.tv_usec );
+  currentTime.setSeconds(tv.tv_sec);
+  currentTime.setMicroSeconds(tv.tv_usec);
 #else
 #error "gettimeofday or equivalent is required"
 #endif
 
-    return currentTime;
+  return currentTime;
 }
 
-std::ostream &Date::print( std::ostream &output ) const
-{
-    output << _seconds << "." << _microSeconds;
+std::ostream &Date::print(std::ostream &output) const {
+  output << _seconds << "." << _microSeconds;
 
-    /** @todo add date formatting */
-    return output;
+  /** @todo add date formatting */
+  return output;
 }
 
-}
+}  // namespace ESTF

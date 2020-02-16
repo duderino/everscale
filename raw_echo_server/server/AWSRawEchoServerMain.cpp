@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef ESF_CONSOLE_LOGGER_H
@@ -44,280 +44,242 @@
 #endif
 
 #include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 static void AWSRawEchoServerSignalHandler(int signal);
 static volatile ESFWord IsRunning = 1;
 
-static void printHelp()
-{
-    fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
+static void printHelp() {
+  fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
 }
 
-int main(int argc, char **argv)
-{
-    ESFUInt16 port = 8080;
-    ESFUInt16 multiplexerCount = 4;
-    int logLevel = ESFLogger::Notice;
+int main(int argc, char **argv) {
+  ESFUInt16 port = 8080;
+  ESFUInt16 multiplexerCount = 4;
+  int logLevel = ESFLogger::Notice;
 
-    {
-        int result = 0;
+  {
+    int result = 0;
 
-        while (true)
-        {
-            result = getopt(argc, argv, "l:m:p:");
+    while (true) {
+      result = getopt(argc, argv, "l:m:p:");
 
-            if (0 > result)
-            {
-                break;
-            }
+      if (0 > result) {
+        break;
+      }
 
-            switch (result)
-            {
-                case 'l':
+      switch (result) {
+        case 'l':
 
-                    /*
-                    None = 0,
-                    Emergency = 1,   System-wide non-recoverable error.
-                    Alert = 2,       System-wide non-recoverable error imminent.
-                    Critical = 3,    System-wide potentially recoverable error.
-                    Error = 4,       Localized non-recoverable error.
-                    Warning = 5,     Localized potentially recoverable error.
-                    Notice = 6,      Important non-error event.
-                    Info = 7,        Non-error event.
-                    Debug = 8        Debugging event.
-                    */
+          /*
+          None = 0,
+          Emergency = 1,   System-wide non-recoverable error.
+          Alert = 2,       System-wide non-recoverable error imminent.
+          Critical = 3,    System-wide potentially recoverable error.
+          Error = 4,       Localized non-recoverable error.
+          Warning = 5,     Localized potentially recoverable error.
+          Notice = 6,      Important non-error event.
+          Info = 7,        Non-error event.
+          Debug = 8        Debugging event.
+          */
 
-                    logLevel = atoi(optarg);
-                    break;
+          logLevel = atoi(optarg);
+          break;
 
-                case 'm':
+        case 'm':
 
-                    multiplexerCount = atoi(optarg);
-                    break;
+          multiplexerCount = atoi(optarg);
+          break;
 
-                case 'p':
+        case 'p':
 
-                    port = atoi(optarg);
-                    break;
+          port = atoi(optarg);
+          break;
 
-                default:
+        default:
 
-                    printHelp();
+          printHelp();
 
-                    return 2;
-            }
-        }
+          return 2;
+      }
+    }
+  }
+
+  ESFConsoleLogger::Initialize((ESFLogger::Severity)logLevel);
+  ESFLogger *logger = ESFConsoleLogger::Instance();
+
+  if (logger->isLoggable(ESFLogger::Notice)) {
+    logger->log(ESFLogger::Notice, __FILE__, __LINE__,
+                "[main] starting. logLevel: %d, threads: %d, port: %d",
+                logLevel, multiplexerCount, port);
+  }
+
+  //
+  // Install signal handlers
+  //
+
+  signal(SIGHUP, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGINT, AWSRawEchoServerSignalHandler);
+  signal(SIGQUIT, AWSRawEchoServerSignalHandler);
+  signal(SIGTERM, AWSRawEchoServerSignalHandler);
+
+  ESFDiscardAllocator discardAllocator(4000, ESFSystemAllocator::GetInstance());
+  ESFSharedAllocator rootAllocator(&discardAllocator);
+  ESFAllocatorCleanupHandler rootAllocatorCleanupHandler(&rootAllocator);
+
+  ESFError error = rootAllocator.initialize();
+
+  if (ESF_SUCCESS != error) {
+    if (logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
+
+      ESFDescribeError(error, buffer, sizeof(buffer));
+
+      logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                  "[main] Cannot initialize root allocator: %s", buffer);
     }
 
-    ESFConsoleLogger::Initialize((ESFLogger::Severity) logLevel);
-    ESFLogger *logger = ESFConsoleLogger::Instance();
+    return error;
+  }
 
-    if (logger->isLoggable(ESFLogger::Notice))
-    {
-        logger->log(ESFLogger::Notice, __FILE__, __LINE__,
-                    "[main] starting. logLevel: %d, threads: %d, port: %d",
-                    logLevel, multiplexerCount, port);
+  ESFEpollMultiplexerFactory epollFactory("EpollMultiplexer", logger,
+                                          &rootAllocator);
+
+  ESFUInt16 maxSockets = ESFSocketMultiplexerDispatcher::GetMaximumSockets();
+
+  if (logger->isLoggable(ESFLogger::Notice)) {
+    logger->log(ESFLogger::Notice, __FILE__, __LINE__,
+                "[main] Maximum sockets %d", maxSockets);
+  }
+
+  ESFFixedAllocator fixedAllocator(maxSockets, sizeof(AWSServerSocket),
+                                   ESFSystemAllocator::GetInstance());
+  ESFSharedAllocator socketAllocator(&fixedAllocator);
+  ESFAllocatorCleanupHandler socketAllocatorCleanupHandler(&socketAllocator);
+
+  error = socketAllocator.initialize();
+
+  if (ESF_SUCCESS != error) {
+    if (logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
+
+      ESFDescribeError(error, buffer, sizeof(buffer));
+
+      logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                  "[main] Cannot initialize socket allocator: %s", buffer);
     }
 
-    //
-    // Install signal handlers
-    //
+    return error;
+  }
 
-    signal(SIGHUP, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGINT, AWSRawEchoServerSignalHandler);
-    signal(SIGQUIT, AWSRawEchoServerSignalHandler);
-    signal(SIGTERM, AWSRawEchoServerSignalHandler);
+  ESFListeningTCPSocket listeningSocket(port, ESF_UINT16_MAX, false);
 
-    ESFDiscardAllocator discardAllocator(4000, ESFSystemAllocator::GetInstance());
-    ESFSharedAllocator rootAllocator(&discardAllocator);
-    ESFAllocatorCleanupHandler rootAllocatorCleanupHandler(&rootAllocator);
+  error = listeningSocket.bind();
 
-    ESFError error = rootAllocator.initialize();
+  if (ESF_SUCCESS != error) {
+    if (logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
 
-    if (ESF_SUCCESS != error)
-    {
-        if (logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+      ESFDescribeError(error, buffer, sizeof(buffer));
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
-
-            logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[main] Cannot initialize root allocator: %s", buffer);
-        }
-
-        return error;
+      logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                  "[main] Cannot bind to port %d: %s", port, buffer);
     }
 
-    ESFEpollMultiplexerFactory epollFactory("EpollMultiplexer",
-                                            logger,
-                                            &rootAllocator);
+    return error;
+  }
 
-    ESFUInt16 maxSockets = ESFSocketMultiplexerDispatcher::GetMaximumSockets();
+  error = listeningSocket.listen();
 
-    if (logger->isLoggable(ESFLogger::Notice))
-    {
-        logger->log(ESFLogger::Notice, __FILE__, __LINE__,
-                    "[main] Maximum sockets %d", maxSockets);
+  if (ESF_SUCCESS != error) {
+    if (logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
+
+      ESFDescribeError(error, buffer, sizeof(buffer));
+
+      logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                  "[main] Cannot listen on port %d: %s", port, buffer);
     }
 
-    ESFFixedAllocator fixedAllocator(maxSockets,
-                                     sizeof(AWSServerSocket),
-                                     ESFSystemAllocator::GetInstance());
-    ESFSharedAllocator socketAllocator(&fixedAllocator);
-    ESFAllocatorCleanupHandler socketAllocatorCleanupHandler(&socketAllocator);
+    return error;
+  }
 
-    error = socketAllocator.initialize();
+  ESFSocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount,
+                                            &epollFactory, &rootAllocator,
+                                            "EpollDispatcher", logger);
 
-    if (ESF_SUCCESS != error)
-    {
-        if (logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+  error = dispatcher.start();
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
+  if (ESF_SUCCESS != error) {
+    if (logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
 
-            logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[main] Cannot initialize socket allocator: %s", buffer);
-        }
+      ESFDescribeError(error, buffer, sizeof(buffer));
 
-        return error;
+      logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                  "[main] Cannot start multiplexer dispatcher: %s", buffer);
     }
 
-    ESFListeningTCPSocket listeningSocket(port, ESF_UINT16_MAX, false);
+    return error;
+  }
 
-    error = listeningSocket.bind();
+  AWSListeningSocket *socket = 0;
 
-    if (ESF_SUCCESS != error)
-    {
-        if (logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+  for (int i = 0; i < multiplexerCount; ++i) {
+    socket = new (&rootAllocator) AWSListeningSocket(
+        &listeningSocket, &socketAllocator, &dispatcher, logger,
+        &rootAllocatorCleanupHandler, &socketAllocatorCleanupHandler);
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
+    if (!socket) {
+      if (logger->isLoggable(ESFLogger::Critical)) {
+        logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                    "[main] Cannot allocate new listening socket");
+      }
 
-            logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[main] Cannot bind to port %d: %s", port, buffer);
-        }
-
-        return error;
+      return ESF_OUT_OF_MEMORY;
     }
 
-    error = listeningSocket.listen();
+    error = dispatcher.addMultiplexedSocket(i, socket);
 
-    if (ESF_SUCCESS != error)
-    {
-        if (logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+    if (ESF_SUCCESS != error) {
+      if (logger->isLoggable(ESFLogger::Critical)) {
+        char buffer[100];
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
+        ESFDescribeError(error, buffer, sizeof(buffer));
 
-            logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[main] Cannot listen on port %d: %s", port, buffer);
-        }
+        logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                    "[main] Cannot add listening socket to multiplexer: %s",
+                    buffer);
+      }
 
-        return error;
+      return error;
     }
+  }
 
-    ESFSocketMultiplexerDispatcher dispatcher(maxSockets,
-                                              multiplexerCount,
-                                              &epollFactory,
-                                              &rootAllocator,
-                                              "EpollDispatcher",
-                                              logger);
+  if (logger->isLoggable(ESFLogger::Notice)) {
+    logger->log(ESFLogger::Notice, __FILE__, __LINE__, "[main] started");
+  }
 
+  while (IsRunning) {
+    sleep(60);
+  }
 
-    error = dispatcher.start();
+  if (logger->isLoggable(ESFLogger::Notice)) {
+    logger->log(ESFLogger::Notice, __FILE__, __LINE__, "[main] stopping");
+  }
 
-    if (ESF_SUCCESS != error)
-    {
-        if (logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+  dispatcher.stop();
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
+  if (logger->isLoggable(ESFLogger::Notice)) {
+    logger->log(ESFLogger::Notice, __FILE__, __LINE__, "[main] stopped");
+  }
 
-            logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[main] Cannot start multiplexer dispatcher: %s", buffer);
-        }
+  ESFConsoleLogger::Destroy();
 
-        return error;
-    }
-
-    AWSListeningSocket *socket = 0;
-
-    for (int i = 0; i < multiplexerCount; ++i)
-    {
-        socket = new(&rootAllocator) AWSListeningSocket(&listeningSocket,
-                                                        &socketAllocator,
-                                                        &dispatcher,
-                                                        logger,
-                                                        &rootAllocatorCleanupHandler,
-                                                        &socketAllocatorCleanupHandler);
-
-        if (! socket)
-        {
-            if (logger->isLoggable(ESFLogger::Critical))
-            {
-                logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                            "[main] Cannot allocate new listening socket");
-            }
-
-            return ESF_OUT_OF_MEMORY;
-        }
-
-        error = dispatcher.addMultiplexedSocket(i, socket);
-
-        if (ESF_SUCCESS != error)
-        {
-            if (logger->isLoggable(ESFLogger::Critical))
-            {
-                char buffer[100];
-
-                ESFDescribeError(error, buffer, sizeof(buffer));
-
-                logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                            "[main] Cannot add listening socket to multiplexer: %s", buffer);
-            }
-
-            return error;
-        }
-    }
-
-    if (logger->isLoggable(ESFLogger::Notice))
-    {
-        logger->log(ESFLogger::Notice, __FILE__, __LINE__, "[main] started");
-    }
-
-    while (IsRunning)
-    {
-        sleep(60);
-    }
-
-    if (logger->isLoggable(ESFLogger::Notice))
-    {
-        logger->log(ESFLogger::Notice, __FILE__, __LINE__, "[main] stopping");
-    }
-
-    dispatcher.stop();
-
-    if (logger->isLoggable(ESFLogger::Notice))
-    {
-        logger->log(ESFLogger::Notice, __FILE__, __LINE__, "[main] stopped");
-    }
-
-    ESFConsoleLogger::Destroy();
-
-    return ESF_SUCCESS;
+  return ESF_SUCCESS;
 }
 
-void AWSRawEchoServerSignalHandler(int signal)
-{
-    IsRunning = 0;
-}
-
+void AWSRawEchoServerSignalHandler(int signal) { IsRunning = 0; }

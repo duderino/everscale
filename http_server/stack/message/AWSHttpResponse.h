@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_RESPONSE_H
@@ -13,44 +13,31 @@
 /**
  * A HTTP Response as defined in RFC 2616 and RFC 2396
  */
-class AWSHttpResponse : public AWSHttpMessage
-{
-public:
+class AWSHttpResponse : public AWSHttpMessage {
+ public:
+  AWSHttpResponse();
 
-    AWSHttpResponse();
+  virtual ~AWSHttpResponse();
 
-    virtual ~AWSHttpResponse();
+  void reset();
 
-    void reset();
+  inline void setStatusCode(int statusCode) { _statusCode = statusCode; }
 
-    inline void setStatusCode(int statusCode)
-    {
-        _statusCode = statusCode;
-    }
+  inline int getStatusCode() const { return _statusCode; }
 
-    inline int getStatusCode() const
-    {
-        return _statusCode;
-    }
+  inline void setReasonPhrase(const unsigned char *reasonPhrase) {
+    _reasonPhrase = reasonPhrase;
+  }
 
-    inline void setReasonPhrase(const unsigned char *reasonPhrase)
-    {
-        _reasonPhrase = reasonPhrase;
-    }
+  inline const unsigned char *getReasonPhrase() const { return _reasonPhrase; }
 
-    inline const unsigned char *getReasonPhrase() const
-    {
-        return _reasonPhrase;
-    }
+ private:
+  // Disabled
+  AWSHttpResponse(const AWSHttpResponse &);
+  void operator=(const AWSHttpResponse &);
 
-private:
-
-    // Disabled
-    AWSHttpResponse(const AWSHttpResponse &);
-    void operator=(const AWSHttpResponse &);
-
-    int _statusCode;
-    unsigned const char *_reasonPhrase;
+  int _statusCode;
+  unsigned const char *_reasonPhrase;
 };
 
 #endif

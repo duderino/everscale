@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_TRANSACTION_H
@@ -52,151 +52,101 @@
 
 // TODO buffers should not be exposed here.  Move to a subclass that is not
 // visible to the client and server handlers.
-class AWSHttpTransaction : public ESFEmbeddedListElement
-{
-public:
+class AWSHttpTransaction : public ESFEmbeddedListElement {
+ public:
+  AWSHttpTransaction(ESFCleanupHandler *cleanupHandler);
 
-    AWSHttpTransaction(ESFCleanupHandler *cleanupHandler);
+  AWSHttpTransaction(ESFSocketAddress *peerAddress,
+                     ESFCleanupHandler *cleanupHandler);
 
-    AWSHttpTransaction(ESFSocketAddress *peerAddress, ESFCleanupHandler *cleanupHandler);
+  virtual ~AWSHttpTransaction();
 
-    virtual ~AWSHttpTransaction();
+  inline const ESFSocketAddress *getPeerAddress() const {
+    return &_peerAddress;
+  }
 
-    inline const ESFSocketAddress *getPeerAddress() const
-    {
-        return &_peerAddress;
+  inline ESFSocketAddress *getPeerAddress() { return &_peerAddress; }
+
+  inline void setPeerAddress(const ESFSocketAddress *peerAddress) {
+    if (peerAddress) {
+      _peerAddress = *peerAddress;
     }
+  }
 
-    inline ESFSocketAddress *getPeerAddress()
-    {
-        return &_peerAddress;
-    }
+  virtual void reset();
 
-    inline void setPeerAddress(const ESFSocketAddress *peerAddress)
-    {
-        if (peerAddress)
-        {
-            _peerAddress = *peerAddress;
-        }
-    }
+  inline unsigned char *duplicate(unsigned char *value) {
+    return AWSHttpUtil::Duplicate(&_allocator, value);
+  }
 
-    virtual void reset();
+  AWSHttpHeader *createHeader(unsigned const char *name,
+                              unsigned const char *value);
 
-    inline unsigned char *duplicate(unsigned char *value)
-    {
-        return AWSHttpUtil::Duplicate(&_allocator, value);
-    }
+  inline ESFAllocator *getAllocator() { return &_allocator; }
 
-    AWSHttpHeader *createHeader(unsigned const char *name, unsigned const char *value);
+  inline const AWSHttpRequest *getRequest() const { return &_request; }
 
-    inline ESFAllocator *getAllocator()
-    {
-        return &_allocator;
-    }
+  inline AWSHttpRequest *getRequest() { return &_request; }
 
-    inline const AWSHttpRequest *getRequest() const
-    {
-        return &_request;
-    }
+  inline const AWSHttpResponse *getResponse() const { return &_response; }
 
-    inline AWSHttpRequest *getRequest()
-    {
-        return &_request;
-    }
+  inline AWSHttpResponse *getResponse() { return &_response; }
 
-    inline const AWSHttpResponse *getResponse() const
-    {
-        return &_response;
-    }
+  inline void setApplicationContext(void *appContext) {
+    _appContext = appContext;
+  }
 
-    inline AWSHttpResponse *getResponse()
-    {
-        return &_response;
-    }
+  inline void *getApplicationContext() { return _appContext; }
 
-    inline void setApplicationContext(void *appContext)
-    {
-        _appContext = appContext;
-    }
+  inline const void *getApplicationContext() const { return _appContext; }
 
-    inline void *getApplicationContext()
-    {
-        return _appContext;
-    }
+  inline ESFBuffer *getIOBuffer() { return &_ioBuffer; }
 
-    inline const void *getApplicationContext() const
-    {
-        return _appContext;
-    }
+  inline const ESFBuffer *getIOBuffer() const { return &_ioBuffer; }
 
-    inline ESFBuffer *getIOBuffer()
-    {
-        return &_ioBuffer;
-    }
+  inline ESFBuffer *getWorkingBuffer() { return &_workingBuffer; }
 
-    inline const ESFBuffer *getIOBuffer() const
-    {
-        return &_ioBuffer;
-    }
+  inline const ESFBuffer *getWorkingBuffer() const { return &_workingBuffer; }
 
-    inline ESFBuffer *getWorkingBuffer()
-    {
-        return &_workingBuffer;
-    }
+  /** Return an optional handler that can destroy the element.
+   *
+   * @return A handler to destroy the element or NULL if the element should not
+   * be destroyed.
+   */
+  virtual ESFCleanupHandler *getCleanupHandler();
 
-    inline const ESFBuffer *getWorkingBuffer() const
-    {
-        return &_workingBuffer;
-    }
+  inline void setStartTime() { AWSPerformanceCounter::GetTime(&_start); }
 
-    /** Return an optional handler that can destroy the element.
-     *
-     * @return A handler to destroy the element or NULL if the element should not be destroyed.
-     */
-    virtual ESFCleanupHandler *getCleanupHandler();
+  inline const struct timeval *getStartTime() const { return &_start; }
 
-    inline void setStartTime()
-    {
-        AWSPerformanceCounter::GetTime(&_start);
-    }
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-    inline const struct timeval *getStartTime() const
-    {
-        return &_start;
-    }
+ protected:
+  ESFDiscardAllocator _allocator;
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return Memory for the new object or NULL if the memory allocation failed.
-     */
-    inline void *operator new(size_t size, ESFAllocator *allocator)
-    {
-        return allocator->allocate(size);
-    }
+ private:
+  // Disabled
+  AWSHttpTransaction(const AWSHttpTransaction &transaction);
+  void operator=(const AWSHttpTransaction &transaction);
 
-protected:
-
-    ESFDiscardAllocator _allocator;
-
-private:
-
-    // Disabled
-    AWSHttpTransaction(const AWSHttpTransaction &transaction);
-    void operator=(const AWSHttpTransaction &transaction);
-
-    void *_appContext;
-    ESFCleanupHandler *_cleanupHandler;
-    struct timeval _start;
-    ESFSocketAddress _peerAddress;
-    AWSHttpRequest _request;
-    AWSHttpResponse _response;
-    ESFBuffer _ioBuffer;
-    ESFBuffer _workingBuffer;
-    unsigned char _ioBufferStorage[AWS_HTTP_IO_BUFFER_SIZE];
-    unsigned char _workingBufferStorage[AWS_HTTP_WORKING_BUFFER_SIZE];
+  void *_appContext;
+  ESFCleanupHandler *_cleanupHandler;
+  struct timeval _start;
+  ESFSocketAddress _peerAddress;
+  AWSHttpRequest _request;
+  AWSHttpResponse _response;
+  ESFBuffer _ioBuffer;
+  ESFBuffer _workingBuffer;
+  unsigned char _ioBufferStorage[AWS_HTTP_IO_BUFFER_SIZE];
+  unsigned char _workingBufferStorage[AWS_HTTP_WORKING_BUFFER_SIZE];
 };
 
 #endif
-

@@ -1,5 +1,6 @@
 /**	@file ESFSharedCounterTest.cpp
- *	@brief ESFSharedCounterTest is the unit test for the ESFSharedCounter class.
+ *	@brief ESFSharedCounterTest is the unit test for the ESFSharedCounter
+ *class.
  *
  *  Copyright 2005 Joshua Blatt, Yahoo! Inc.
  *
@@ -32,56 +33,51 @@
 ESFSharedCounter ESFSharedCounterTest::_Counter;
 int ESFSharedCounterTest::_UnprotectedCounter;
 
-ESFSharedCounterTest::ESFSharedCounterTest() {
-}
+ESFSharedCounterTest::ESFSharedCounterTest() {}
 
-ESFSharedCounterTest::~ESFSharedCounterTest() {
-}
+ESFSharedCounterTest::~ESFSharedCounterTest() {}
 
 bool ESFSharedCounterTest::run(ESTFResultCollector *collector) {
-    int value = 0;
+  int value = 0;
 
-    for (int i = 0; i < 100000; ++i) {
-        _Counter.add(1);
+  for (int i = 0; i < 100000; ++i) {
+    _Counter.add(1);
 
-        ++_UnprotectedCounter;
+    ++_UnprotectedCounter;
 
-        value = _Counter.inc();
+    value = _Counter.inc();
 
-        ++_UnprotectedCounter;
+    ++_UnprotectedCounter;
 
-        //fprintf(stderr, "Value: %d, shared counter: %d, unprotected counter %d\n", value, _Counter.get(), _UnprotectedCounter);
-    }
+    // fprintf(stderr, "Value: %d, shared counter: %d, unprotected counter
+    // %d\n", value, _Counter.get(), _UnprotectedCounter);
+  }
 
-    fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n", value, _Counter.get(),
-            _UnprotectedCounter);
+  fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
+          value, _Counter.get(), _UnprotectedCounter);
 
-    for (int i = 0; i < 100000; ++i) {
-        _Counter.sub(1);
+  for (int i = 0; i < 100000; ++i) {
+    _Counter.sub(1);
 
-        --_UnprotectedCounter;
+    --_UnprotectedCounter;
 
-        value = _Counter.dec();
+    value = _Counter.dec();
 
-        --_UnprotectedCounter;
-    }
+    --_UnprotectedCounter;
+  }
 
-    fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n", value, _Counter.get(),
-            _UnprotectedCounter);
+  fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
+          value, _Counter.get(), _UnprotectedCounter);
 
-    return true;
+  return true;
 }
 
-bool ESFSharedCounterTest::setup() {
-    return true;
-}
+bool ESFSharedCounterTest::setup() { return true; }
 
-bool ESFSharedCounterTest::tearDown() {
-    return true;
-}
+bool ESFSharedCounterTest::tearDown() { return true; }
 
 ESTFComponentPtr ESFSharedCounterTest::clone() {
-    ESTFComponentPtr component(this);
+  ESTFComponentPtr component(this);
 
-    return component;
+  return component;
 }

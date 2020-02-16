@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_PERFORMANCE_COUNTER_H
@@ -17,25 +17,26 @@
 #include <sys/time.h>
 
 class AWSPerformanceCounter : public ESFEmbeddedListElement {
-public:
-    AWSPerformanceCounter();
+ public:
+  AWSPerformanceCounter();
 
-    virtual ~AWSPerformanceCounter();
+  virtual ~AWSPerformanceCounter();
 
-    static void GetTime(struct timeval *now);
+  static void GetTime(struct timeval *now);
 
-    virtual void addObservation(const struct timeval *start) = 0;
+  virtual void addObservation(const struct timeval *start) = 0;
 
-    virtual void addObservation(const struct timeval *start, const struct timeval *stop) = 0;
+  virtual void addObservation(const struct timeval *start,
+                              const struct timeval *stop) = 0;
 
-    virtual void printSummary(FILE *file) const = 0;
+  virtual void printSummary(FILE *file) const = 0;
 
-    virtual ESFCleanupHandler *getCleanupHandler();
+  virtual ESFCleanupHandler *getCleanupHandler();
 
-private:
-    // Disabled
-    AWSPerformanceCounter(const AWSPerformanceCounter &counter);
-    AWSPerformanceCounter *operator=(const AWSPerformanceCounter &counter);
+ private:
+  // Disabled
+  AWSPerformanceCounter(const AWSPerformanceCounter &counter);
+  AWSPerformanceCounter *operator=(const AWSPerformanceCounter &counter);
 };
 
 #endif

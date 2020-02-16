@@ -33,90 +33,82 @@
 #include <ESTFThread.h>
 #endif
 
-ESFLockableTest::ESFLockableTest(ESFLockable &lockable) :
-    ESTFComponent(), _lock(lockable), _counter1(0), _counter2(0) {
-}
+ESFLockableTest::ESFLockableTest(ESFLockable &lockable)
+    : ESTFComponent(), _lock(lockable), _counter1(0), _counter2(0) {}
 
-ESFLockableTest::~ESFLockableTest() {
-}
+ESFLockableTest::~ESFLockableTest() {}
 
 bool ESFLockableTest::run(ESTFResultCollector *collector) {
-    int counter1;
-    ESFError error;
-    char buffer[256];
+  int counter1;
+  ESFError error;
+  char buffer[256];
 
-    for (int i = 0; i < 100; ++i) {
-        error = _lock.readAcquire();
+  for (int i = 0; i < 100; ++i) {
+    error = _lock.readAcquire();
 
-        if (ESF_SUCCESS != error) {
-            ESFDescribeError(error, buffer, sizeof(buffer));
-            ESTF_FAILURE( collector, buffer );
-        }
-
-        ESTF_ASSERT( collector, ESF_SUCCESS == error );
-
-        for ( int i = 0; i < 10; ++i )
-        {
-            counter1 = _counter1;
-
-            ESTFThread::Yield();
-
-            ESTF_ASSERT( collector, counter1 == _counter2 );
-        }
-
-        error = _lock.readRelease();
-
-        if ( ESF_SUCCESS != error )
-        {
-            ESFDescribeError( error, buffer, sizeof( buffer ) );
-            ESTF_FAILURE( collector, buffer );
-        }
-
-        error = _lock.writeAcquire();
-
-        if ( ESF_SUCCESS != error )
-        {
-            ESFDescribeError( error, buffer, sizeof( buffer ) );
-            ESTF_FAILURE( collector, buffer );
-        }
-
-        ++_counter1;
-
-        ESTFThread::Yield();
-
-        ++_counter2;
-
-        ESTF_ASSERT( collector, _counter1 == _counter2 );
-
-        error = _lock.writeRelease();
-
-        if ( ESF_SUCCESS != error )
-        {
-            ESFDescribeError( error, buffer, sizeof( buffer ) );
-            ESTF_FAILURE( collector, buffer );
-        }
+    if (ESF_SUCCESS != error) {
+      ESFDescribeError(error, buffer, sizeof(buffer));
+      ESTF_FAILURE(collector, buffer);
     }
 
-    return true;
+    ESTF_ASSERT(collector, ESF_SUCCESS == error);
+
+    for (int i = 0; i < 10; ++i) {
+      counter1 = _counter1;
+
+      ESTFThread::Yield();
+
+      ESTF_ASSERT(collector, counter1 == _counter2);
+    }
+
+    error = _lock.readRelease();
+
+    if (ESF_SUCCESS != error) {
+      ESFDescribeError(error, buffer, sizeof(buffer));
+      ESTF_FAILURE(collector, buffer);
+    }
+
+    error = _lock.writeAcquire();
+
+    if (ESF_SUCCESS != error) {
+      ESFDescribeError(error, buffer, sizeof(buffer));
+      ESTF_FAILURE(collector, buffer);
+    }
+
+    ++_counter1;
+
+    ESTFThread::Yield();
+
+    ++_counter2;
+
+    ESTF_ASSERT(collector, _counter1 == _counter2);
+
+    error = _lock.writeRelease();
+
+    if (ESF_SUCCESS != error) {
+      ESFDescribeError(error, buffer, sizeof(buffer));
+      ESTF_FAILURE(collector, buffer);
+    }
+  }
+
+  return true;
 }
 
 bool ESFLockableTest::setup() {
-    _counter1 = 0;
-    _counter2 = 0;
+  _counter1 = 0;
+  _counter2 = 0;
 
-    return true;
+  return true;
 }
 
-bool ESFLockableTest::tearDown() {
-    return true;
-}
+bool ESFLockableTest::tearDown() { return true; }
 
 ESTFComponentPtr ESFLockableTest::clone() {
-    //
-    //	Do a shallow clone so cloned instances will share the lock and the
-    //	counters when they are wrapped in the concurrency decorator.
-    //
-    ESTFComponentPtr component(this);
+  //
+  //	Do a shallow clone so cloned instances will share the lock and the
+  //	counters when they are wrapped in the concurrency decorator.
+  //
+  ESTFComponentPtr component(this);
 
-    return component;
+  return component;
 }

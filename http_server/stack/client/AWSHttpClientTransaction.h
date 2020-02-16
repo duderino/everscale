@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_CLIENT_TRANSACTION_H
@@ -22,77 +22,57 @@
 #include <AWSHttpResponseParser.h>
 #endif
 
-class AWSHttpClientTransaction : public AWSHttpTransaction
-{
-public:
+class AWSHttpClientTransaction : public AWSHttpTransaction {
+ public:
+  AWSHttpClientTransaction(AWSHttpClientHandler *clientHandler,
+                           ESFCleanupHandler *cleanupHandler);
 
-    AWSHttpClientTransaction(AWSHttpClientHandler *clientHandler,
-                             ESFCleanupHandler *cleanupHandler);
+  AWSHttpClientTransaction(AWSHttpClientHandler *clientHandler,
+                           ESFSocketAddress *peerAddress,
+                           ESFCleanupHandler *cleanupHandler);
 
-    AWSHttpClientTransaction(AWSHttpClientHandler *clientHandler,
-                             ESFSocketAddress *peerAddress,
-                             ESFCleanupHandler *cleanupHandler);
+  virtual ~AWSHttpClientTransaction();
 
-    virtual ~AWSHttpClientTransaction();
+  virtual void reset();
 
-    virtual void reset();
+  inline void setHandler(AWSHttpClientHandler *clientHandler) {
+    _clientHandler = clientHandler;
+  }
 
-    inline void setHandler(AWSHttpClientHandler *clientHandler)
-    {
-        _clientHandler = clientHandler;
-    }
+  inline const AWSHttpClientHandler *getHandler() const {
+    return _clientHandler;
+  }
 
-    inline const AWSHttpClientHandler *getHandler() const
-    {
-        return _clientHandler;
-    }
+  inline AWSHttpClientHandler *getHandler() { return _clientHandler; }
 
-    inline AWSHttpClientHandler *getHandler()
-    {
-        return _clientHandler;
-    }
+  inline AWSHttpResponseParser *getParser() { return &_parser; }
 
-    inline AWSHttpResponseParser *getParser()
-    {
-        return &_parser;
-    }
+  inline const AWSHttpResponseParser *getParser() const { return &_parser; }
 
-    inline const AWSHttpResponseParser *getParser() const
-    {
-        return &_parser;
-    }
+  inline AWSHttpRequestFormatter *getFormatter() { return &_formatter; }
 
-    inline AWSHttpRequestFormatter *getFormatter()
-    {
-        return &_formatter;
-    }
+  inline const AWSHttpRequestFormatter *getFormatter() const {
+    return &_formatter;
+  }
 
-    inline const AWSHttpRequestFormatter *getFormatter() const
-    {
-        return &_formatter;
-    }
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return Memory for the new object or NULL if the memory allocation failed.
-     */
-    inline void *operator new(size_t size, ESFAllocator *allocator)
-    {
-        return allocator->allocate(size);
-    }
+ private:
+  // Disabled
+  AWSHttpClientTransaction(const AWSHttpClientTransaction &transaction);
+  void operator=(const AWSHttpClientTransaction &transaction);
 
-private:
-
-    // Disabled
-    AWSHttpClientTransaction(const AWSHttpClientTransaction &transaction);
-    void operator=(const AWSHttpClientTransaction &transaction);
-
-    AWSHttpClientHandler *_clientHandler;
-    AWSHttpResponseParser _parser;
-    AWSHttpRequestFormatter _formatter;
+  AWSHttpClientHandler *_clientHandler;
+  AWSHttpResponseParser _parser;
+  AWSHttpRequestFormatter _formatter;
 };
 
 #endif
-

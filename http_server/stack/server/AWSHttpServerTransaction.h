@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_SERVER_TRANSACTION_H
@@ -22,56 +22,41 @@
 #include <AWSHttpResponseFormatter.h>
 #endif
 
-class AWSHttpServerTransaction : public AWSHttpTransaction
-{
-public:
+class AWSHttpServerTransaction : public AWSHttpTransaction {
+ public:
+  AWSHttpServerTransaction();
 
-    AWSHttpServerTransaction();
+  virtual ~AWSHttpServerTransaction();
 
-    virtual ~AWSHttpServerTransaction();
+  virtual void reset();
 
-    virtual void reset();
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return Memory for the new object or NULL if the memory allocation failed.
-     */
-    inline void *operator new(size_t size, ESFAllocator *allocator)
-    {
-        return allocator->allocate(size);
-    }
+  inline AWSHttpRequestParser *getParser() { return &_parser; }
 
-    inline AWSHttpRequestParser *getParser()
-    {
-        return &_parser;
-    }
+  inline const AWSHttpRequestParser *getParser() const { return &_parser; }
 
-    inline const AWSHttpRequestParser *getParser() const
-    {
-        return &_parser;
-    }
+  inline AWSHttpResponseFormatter *getFormatter() { return &_formatter; }
 
-    inline AWSHttpResponseFormatter *getFormatter()
-    {
-        return &_formatter;
-    }
+  inline const AWSHttpResponseFormatter *getFormatter() const {
+    return &_formatter;
+  }
 
-    inline const AWSHttpResponseFormatter *getFormatter() const
-    {
-        return &_formatter;
-    }
+ private:
+  // Disabled
+  AWSHttpServerTransaction(const AWSHttpServerTransaction &transaction);
+  void operator=(const AWSHttpServerTransaction &transaction);
 
-private:
-
-    // Disabled
-    AWSHttpServerTransaction(const AWSHttpServerTransaction &transaction);
-    void operator=(const AWSHttpServerTransaction &transaction);
-
-    AWSHttpRequestParser _parser;
-    AWSHttpResponseFormatter _formatter;
+  AWSHttpRequestParser _parser;
+  AWSHttpResponseFormatter _formatter;
 };
 
 #endif
-

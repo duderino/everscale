@@ -3,11 +3,12 @@
  *  interface.
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -38,7 +39,7 @@
 #include <semaphore.h>
 #endif
 
-#if ! defined HAVE_SEMAPHORE_H && defined HAVE_PTHREAD_H
+#if !defined HAVE_SEMAPHORE_H && defined HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
 
@@ -53,91 +54,89 @@
  *
  *  @ingroup lockable
  */
-class ESFCountingSemaphore: public ESFLockable {
-public:
-    /**    Default constructor. */
-    ESFCountingSemaphore();
+class ESFCountingSemaphore : public ESFLockable {
+ public:
+  /**    Default constructor. */
+  ESFCountingSemaphore();
 
-    /** Default destructor. */
-    virtual ~ESFCountingSemaphore();
+  /** Default destructor. */
+  virtual ~ESFCountingSemaphore();
 
-    /**    Block the calling thread until write access is granted.
-     *
-     *    @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError writeAcquire();
+  /**    Block the calling thread until write access is granted.
+   *
+   *    @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError writeAcquire();
 
-    /**    Block the calling thread until read access is granted.
-     *
-     *    @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError readAcquire();
+  /**    Block the calling thread until read access is granted.
+   *
+   *    @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError readAcquire();
 
-    /**    Attempt to gain write access, returning immediately if access could not
-     *    be granted.
-     *
-     *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
-     *      not be immediately granted, or another error code if an error
-     *      occurred.
-     */
-    virtual ESFError writeAttempt();
+  /**    Attempt to gain write access, returning immediately if access could not
+   *    be granted.
+   *
+   *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
+   *      not be immediately granted, or another error code if an error
+   *      occurred.
+   */
+  virtual ESFError writeAttempt();
 
-    /**    Attempt to gain read access, returning immediately if access could not
-     *    be granted.
-     *
-     *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
-     *      not be immediately granted, or another error code if an error
-     *      occurred.
-     */
-    virtual ESFError readAttempt();
+  /**    Attempt to gain read access, returning immediately if access could not
+   *    be granted.
+   *
+   *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
+   *      not be immediately granted, or another error code if an error
+   *      occurred.
+   */
+  virtual ESFError readAttempt();
 
-    /**    Release the lock after write access was granted.
-     *
-     *    @return ESF_SUCCESS if successful, another error code otherwise.
-     *      ESF_OVERFLOW will be returned if the maximum count is reached.
-     */
-    virtual ESFError writeRelease();
+  /**    Release the lock after write access was granted.
+   *
+   *    @return ESF_SUCCESS if successful, another error code otherwise.
+   *      ESF_OVERFLOW will be returned if the maximum count is reached.
+   */
+  virtual ESFError writeRelease();
 
-    /**    Release the lock after read access was granted.
-     *
-     *    @return ESF_SUCCESS if successful, another error code otherwise.
-     *      ESF_OVERFLOW will be returned if the maximum count is reached.
-     */
-    virtual ESFError readRelease();
+  /**    Release the lock after read access was granted.
+   *
+   *    @return ESF_SUCCESS if successful, another error code otherwise.
+   *      ESF_OVERFLOW will be returned if the maximum count is reached.
+   */
+  virtual ESFError readRelease();
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, ESFAllocator *allocator) {
-        return allocator->allocate(size);
-    }
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return The new object or NULL of the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-private:
-
-    //  Disabled
-    ESFCountingSemaphore(const ESFCountingSemaphore &);
-    ESFCountingSemaphore &operator=(const ESFCountingSemaphore &);
+ private:
+  //  Disabled
+  ESFCountingSemaphore(const ESFCountingSemaphore &);
+  ESFCountingSemaphore &operator=(const ESFCountingSemaphore &);
 
 #ifdef HAVE_SEM_T
-    typedef sem_t CountingSemaphore;
+  typedef sem_t CountingSemaphore;
 #elif defined HAVE_PTHREAD_MUTEX_T && defined HAVE_PTHREAD_COND_T
-    typedef struct
-    {
-        ESFInt32 _count;
-        pthread_mutex_t _mutex;
-        pthread_cond_t _cond;
-    }CountingSemaphore;
+  typedef struct {
+    ESFInt32 _count;
+    pthread_mutex_t _mutex;
+    pthread_cond_t _cond;
+  } CountingSemaphore;
 #elif defined HAVE_HANDLE
-    typedef HANDLE CountingSemaphore;
+  typedef HANDLE CountingSemaphore;
 #else
 #error "sem_t or equivalent is required"
 #endif
 
-    CountingSemaphore _semaphore;
-    ESFUInt8 _magic;
+  CountingSemaphore _semaphore;
+  ESFUInt8 _magic;
 };
 
 #endif /* ! ESF_COUNTING_SEMAPHORE_H */

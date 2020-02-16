@@ -39,37 +39,37 @@
 #endif
 
 int main() {
-    ESFListTestPtr listTest = new ESFListTest();
+  ESFListTestPtr listTest = new ESFListTest();
 
-    ESTFConcurrencyDecoratorPtr listDecorator = new ESTFConcurrencyDecorator(listTest, 3);
+  ESTFConcurrencyDecoratorPtr listDecorator =
+      new ESTFConcurrencyDecorator(listTest, 3);
 
-    ESTFCompositePtr testSuite = new ESTFComposite();
+  ESTFCompositePtr testSuite = new ESTFComposite();
 
-    testSuite->add(listDecorator);
+  testSuite->add(listDecorator);
 
-    ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 3);
+  ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 3);
 
-    ESTFResultCollector collector;
+  ESTFResultCollector collector;
 
-    if (false == root->setup()) {
-        cerr << "Testing framework setup failed" << endl;
-        return 1;
-    }
+  if (false == root->setup()) {
+    cerr << "Testing framework setup failed" << endl;
+    return 1;
+  }
 
-    if (false == root->run(&collector)) {
-        cerr << "Testing framework run failed" << endl;
-    }
+  if (false == root->run(&collector)) {
+    cerr << "Testing framework run failed" << endl;
+  }
 
-    if (false == root->tearDown()) {
-        cerr << "Testing framework tear down failed" << endl;
-    }
+  if (false == root->tearDown()) {
+    cerr << "Testing framework tear down failed" << endl;
+  }
 
-    if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-        cout << "All test cases passed" << endl;
-    }
+  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
+    cout << "All test cases passed" << endl;
+  }
 
-    cout << collector << endl;
+  cout << collector << endl;
 
-    return 0;
+  return 0;
 }
-

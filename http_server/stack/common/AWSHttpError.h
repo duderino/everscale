@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_ERROR_H
@@ -27,9 +27,8 @@
 #define AWS_HTTP_PARSER_JAMMED -117
 #define AWS_HTTP_FORMATTER_JAMMED -118
 
-inline bool AWSHttpIsHttpError(int error)
-{
-    return error <= AWS_HTTP_BAD_CRLF && error >= AWS_HTTP_FORMATTER_JAMMED;
+inline bool AWSHttpIsHttpError(int error) {
+  return error <= AWS_HTTP_BAD_CRLF && error >= AWS_HTTP_FORMATTER_JAMMED;
 }
 
 #endif

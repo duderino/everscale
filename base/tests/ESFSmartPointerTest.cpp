@@ -1,5 +1,6 @@
 /**	@file ESFSmartPointerTest.cpp
- *	@brief ESFSmartPointerTest is the unit test for ESFSmartPointer and ESFReferenceCount.
+ *	@brief ESFSmartPointerTest is the unit test for ESFSmartPointer and
+ *ESFReferenceCount.
  *
  *  Copyright 2005 Joshua Blatt, Yahoo! Inc.
  *
@@ -45,23 +46,16 @@
 #include <ESFFixedAllocator.h>
 #endif
 
-class ESFReferenceCountSubclass: public ESFReferenceCount {
-public:
+class ESFReferenceCountSubclass : public ESFReferenceCount {
+ public:
+  ESFReferenceCountSubclass() : _theNumber(12) {}
 
-    ESFReferenceCountSubclass() :
-        _theNumber(12) {
-    }
+  ~ESFReferenceCountSubclass() {}
 
-    ~ESFReferenceCountSubclass() {
-    }
+  int getNumber() { return _theNumber; }
 
-    int getNumber() {
-        return _theNumber;
-    }
-
-private:
-
-    int _theNumber;
+ private:
+  int _theNumber;
 };
 
 /** ESFReferenceCountSubclassPointer will be a subclass of ESFSmartPointer.
@@ -75,92 +69,86 @@ private:
  *  for this to work.  Also, ESFSmartPointer must (and does) encapsulate an
  *  ESFReferenceCount pointer.
  */
-DEFINE_ESF_SMART_POINTER( ESFReferenceCountSubclass,
-        ESFReferenceCountSubclassPointer,
-        ESFSmartPointer );
+DEFINE_ESF_SMART_POINTER(ESFReferenceCountSubclass,
+                         ESFReferenceCountSubclassPointer, ESFSmartPointer);
 
-ESFSmartPointerTest::ESFSmartPointerTest() {
-}
+ESFSmartPointerTest::ESFSmartPointerTest() {}
 
-ESFSmartPointerTest::~ESFSmartPointerTest() {
-}
+ESFSmartPointerTest::~ESFSmartPointerTest() {}
 
 bool ESFSmartPointerTest::run(ESTFResultCollector *collector) {
-    ESFSmartPointerDebugger *debugger = ESFSmartPointerDebugger::Instance();
+  ESFSmartPointerDebugger *debugger = ESFSmartPointerDebugger::Instance();
 
-    ESTFRand generator;
+  ESTFRand generator;
 
-    ESFAllocator *source = ESFSystemAllocator::GetInstance();
+  ESFAllocator *source = ESFSystemAllocator::GetInstance();
 
-    ESFReferenceCountSubclassPointer *array = (ESFReferenceCountSubclassPointer *) source->allocate(
-            sizeof(ESFReferenceCountSubclassPointer) * 1000);
+  ESFReferenceCountSubclassPointer *array =
+      (ESFReferenceCountSubclassPointer *)source->allocate(
+          sizeof(ESFReferenceCountSubclassPointer) * 1000);
 
-    ESFFixedAllocator allocator(1000, sizeof(ESFReferenceCountSubclass), source);
+  ESFFixedAllocator allocator(1000, sizeof(ESFReferenceCountSubclass), source);
 
-    int initialRefs = debugger->getSize();
+  int initialRefs = debugger->getSize();
 
-    int activeRefs = initialRefs;
+  int activeRefs = initialRefs;
 
-    int randIdx = 0;
+  int randIdx = 0;
 
-    for (int i = 0; i < 10000; ++i) {
-        randIdx = generator.generateRandom(0, 999);
+  for (int i = 0; i < 10000; ++i) {
+    randIdx = generator.generateRandom(0, 999);
 
-        // Each iteration, 1/4 chance to delete, else, create.
+    // Each iteration, 1/4 chance to delete, else, create.
 
-        if (1 == generator.generateRandom(1, 4)) {
-            if (array[randIdx].isNull()) {
-                continue;
-            }
+    if (1 == generator.generateRandom(1, 4)) {
+      if (array[randIdx].isNull()) {
+        continue;
+      }
 
-            --activeRefs;
+      --activeRefs;
 
-            array[randIdx].setNull();
+      array[randIdx].setNull();
 
-            ESTF_ASSERT( collector, activeRefs == debugger->getSize() );
+      ESTF_ASSERT(collector, activeRefs == debugger->getSize());
 
-            continue;
-        }
-
-        if (array[randIdx].isNull()) {
-            ++activeRefs;
-        }
-
-        // Alternate between the fixed length allocator and the system allocator
-        // The smart pointer will keep track.
-
-        if (1 == generator.generateRandom(1, 2)) {
-            array[randIdx] = new (&allocator) ESFReferenceCountSubclass();
-        } else {
-            array[randIdx] = new ESFReferenceCountSubclass();
-        }
-
-        ESTF_ASSERT( collector, activeRefs == debugger->getSize() );
-
-        ESTF_ASSERT( collector, 12 == array[randIdx]->getNumber() );
+      continue;
     }
 
-    ESTF_ASSERT( collector, activeRefs == debugger->getSize() );
-
-    for (int i = 0; i < 1000; ++i) {
-        array[i].setNull();
+    if (array[randIdx].isNull()) {
+      ++activeRefs;
     }
 
-    ESTF_ASSERT( collector, initialRefs == debugger->getSize() );
+    // Alternate between the fixed length allocator and the system allocator
+    // The smart pointer will keep track.
 
-    return true;
+    if (1 == generator.generateRandom(1, 2)) {
+      array[randIdx] = new (&allocator) ESFReferenceCountSubclass();
+    } else {
+      array[randIdx] = new ESFReferenceCountSubclass();
+    }
+
+    ESTF_ASSERT(collector, activeRefs == debugger->getSize());
+
+    ESTF_ASSERT(collector, 12 == array[randIdx]->getNumber());
+  }
+
+  ESTF_ASSERT(collector, activeRefs == debugger->getSize());
+
+  for (int i = 0; i < 1000; ++i) {
+    array[i].setNull();
+  }
+
+  ESTF_ASSERT(collector, initialRefs == debugger->getSize());
+
+  return true;
 }
 
-bool ESFSmartPointerTest::setup() {
-    return true;
-}
+bool ESFSmartPointerTest::setup() { return true; }
 
-bool ESFSmartPointerTest::tearDown() {
-    return true;
-}
+bool ESFSmartPointerTest::tearDown() { return true; }
 
 ESTFComponentPtr ESFSmartPointerTest::clone() {
-    ESTFComponentPtr component(new ESFSmartPointerTest());
+  ESTFComponentPtr component(new ESFSmartPointerTest());
 
-    return component;
+  return component;
 }

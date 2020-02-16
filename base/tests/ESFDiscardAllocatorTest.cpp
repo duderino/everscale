@@ -31,108 +31,97 @@ static const int AllocationsPerIteration = 10000;
 
 static int GlobalUnsynchronizedCounter = 0;
 
-ESFDiscardAllocatorTest::ESFDiscardAllocatorTest() :
-    _rand(ESFDate::GetSystemTime().getMicroSeconds() + GlobalUnsynchronizedCounter++), _allocator(ChunkSize,
-            ESFSystemAllocator::GetInstance()) {
-}
+ESFDiscardAllocatorTest::ESFDiscardAllocatorTest()
+    : _rand(ESFDate::GetSystemTime().getMicroSeconds() +
+            GlobalUnsynchronizedCounter++),
+      _allocator(ChunkSize, ESFSystemAllocator::GetInstance()) {}
 
-ESFDiscardAllocatorTest::~ESFDiscardAllocatorTest() {
-}
+ESFDiscardAllocatorTest::~ESFDiscardAllocatorTest() {}
 
 bool ESFDiscardAllocatorTest::run(ESTFResultCollector *collector) {
-    ESFError error;
-    char buffer[256];
+  ESFError error;
+  char buffer[256];
 
-    error = _allocator.initialize();
+  error = _allocator.initialize();
+
+  if (ESF_SUCCESS != error) {
+    ESFDescribeError(error, buffer, sizeof(buffer));
+
+    ESTF_FAILURE(collector, buffer);
+    ESTF_ERROR(collector, "Failed to initialize allocator");
+
+    return false;
+  }
+
+  char *data = 0;
+  int allocSize = 0;
+
+  for (int i = 0; i < Iterations; ++i) {
+    for (int j = 0; j < AllocationsPerIteration; ++j) {
+      allocSize = generateAllocSize();
+      data = (char *)_allocator.allocate(allocSize);
+
+      ESTF_ASSERT(collector, data);
+
+      for (int k = 0; k < allocSize; ++k) {
+        data[k] = 'b';
+      }
+    }
+
+    error = _allocator.reset();
 
     if (ESF_SUCCESS != error) {
-        ESFDescribeError(error, buffer, sizeof(buffer));
+      ESFDescribeError(error, buffer, sizeof(buffer));
 
-        ESTF_FAILURE(collector, buffer);
-        ESTF_ERROR(collector, "Failed to initialize allocator");
+      ESTF_FAILURE(collector, buffer);
 
-        return false;
+      ESTF_ERROR(collector, "Failed to reset allocator");
+
+      return false;
     }
+  }
 
-    char *data = 0;
-    int allocSize = 0;
+  error = _allocator.destroy();
 
-    for (int i = 0; i < Iterations; ++i)
-    {
-        for (int j = 0; j < AllocationsPerIteration; ++j)
-        {
-            allocSize = generateAllocSize();
-            data = (char *) _allocator.allocate(allocSize);
+  if (ESF_SUCCESS != error) {
+    ESFDescribeError(error, buffer, sizeof(buffer));
+    ESTF_FAILURE(collector, buffer);
+    ESTF_ERROR(collector, "Failed to destroy allocator");
 
-            ESTF_ASSERT(collector, data);
+    return false;
+  }
 
-            for (int k = 0; k < allocSize; ++k)
-            {
-                data[k] = 'b';
-            }
-        }
+  ESTF_ASSERT(collector, ESF_SUCCESS == error);
 
-        error = _allocator.reset();
-
-        if (ESF_SUCCESS != error)
-        {
-            ESFDescribeError(error, buffer, sizeof(buffer));
-
-            ESTF_FAILURE(collector, buffer);
-
-            ESTF_ERROR(collector, "Failed to reset allocator");
-
-            return false;
-        }
-    }
-
-    error = _allocator.destroy();
-
-    if (ESF_SUCCESS != error)
-    {
-        ESFDescribeError(error, buffer, sizeof( buffer ));
-        ESTF_FAILURE(collector, buffer);
-        ESTF_ERROR(collector, "Failed to destroy allocator");
-
-        return false;
-    }
-
-    ESTF_ASSERT( collector, ESF_SUCCESS == error );
-
-    return true;
+  return true;
 }
 
-bool ESFDiscardAllocatorTest::setup() {
-    return true;
-}
+bool ESFDiscardAllocatorTest::setup() { return true; }
 
-bool ESFDiscardAllocatorTest::tearDown() {
-    return true;
-}
+bool ESFDiscardAllocatorTest::tearDown() { return true; }
 
 ESTFComponentPtr ESFDiscardAllocatorTest::clone() {
-    ESTFComponentPtr component(new ESFDiscardAllocatorTest());
+  ESTFComponentPtr component(new ESFDiscardAllocatorTest());
 
-    return component;
+  return component;
 }
 
 int ESFDiscardAllocatorTest::generateAllocSize() {
-    int uniformDeviate = _rand.generateRandom(1, 10);
+  int uniformDeviate = _rand.generateRandom(1, 10);
 
-    // 80% of allocations are less than 1/10 the chunksize
+  // 80% of allocations are less than 1/10 the chunksize
 
-    if (9 > uniformDeviate) {
-        return _rand.generateRandom(1, ChunkSize / 10);
-    }
+  if (9 > uniformDeviate) {
+    return _rand.generateRandom(1, ChunkSize / 10);
+  }
 
-    // 10% of allocations are between 1/10 and the chunksize
+  // 10% of allocations are between 1/10 and the chunksize
 
-    if (9 == uniformDeviate) {
-        return _rand.generateRandom(ChunkSize / 10, ChunkSize);
-    }
+  if (9 == uniformDeviate) {
+    return _rand.generateRandom(ChunkSize / 10, ChunkSize);
+  }
 
-    // 10% exceed the chunksize
+  // 10% exceed the chunksize
 
-    return _rand.generateRandom(ChunkSize, ChunkSize * 2);
+  return _rand.generateRandom(ChunkSize, ChunkSize * 2);
 }
-

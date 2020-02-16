@@ -1,5 +1,6 @@
 /**	@file ESFSharedQueueProducer.cpp
- *	@brief ESFSharedQueueProducer is part of the unit test for ESFSharedQueue
+ *	@brief ESFSharedQueueProducer is part of the unit test for
+ *ESFSharedQueue
  *
  *  Copyright 2005 Joshua Blatt
  *
@@ -33,49 +34,44 @@
 #include <ESTFAssert.h>
 #endif
 
-ESFSharedQueueProducer::ESFSharedQueueProducer(int id, ESFSharedQueue &queue, ESFUInt32 items) :
-    _id(id), _items(items), _queue(queue) {
-}
+ESFSharedQueueProducer::ESFSharedQueueProducer(int id, ESFSharedQueue &queue,
+                                               ESFUInt32 items)
+    : _id(id), _items(items), _queue(queue) {}
 
-ESFSharedQueueProducer::~ESFSharedQueueProducer() {
-}
+ESFSharedQueueProducer::~ESFSharedQueueProducer() {}
 
 bool ESFSharedQueueProducer::run(ESTFResultCollector *collector) {
-    ESFUInt32 i = 0;
-    ESFError error;
-    ESTFRand rand;
+  ESFUInt32 i = 0;
+  ESFError error;
+  ESTFRand rand;
 
-    while (i < _items) {
-        if (1 == rand.generateRandom(1, 2)) {
-            ESTF_ASSERT( collector, ESF_SUCCESS == _queue.push( &_id ) );
+  while (i < _items) {
+    if (1 == rand.generateRandom(1, 2)) {
+      ESTF_ASSERT(collector, ESF_SUCCESS == _queue.push(&_id));
 
-            ++i;
+      ++i;
 
-            continue;
-        }
-
-        error = _queue.tryPush(&_id);
-
-        ESTF_ASSERT( collector, ESF_SUCCESS == error || ESF_AGAIN == error );
-
-        if (ESF_SUCCESS == error) {
-            ++i;
-        }
+      continue;
     }
 
-    return true;
+    error = _queue.tryPush(&_id);
+
+    ESTF_ASSERT(collector, ESF_SUCCESS == error || ESF_AGAIN == error);
+
+    if (ESF_SUCCESS == error) {
+      ++i;
+    }
+  }
+
+  return true;
 }
 
-bool ESFSharedQueueProducer::setup() {
-    return true;
-}
+bool ESFSharedQueueProducer::setup() { return true; }
 
-bool ESFSharedQueueProducer::tearDown() {
-    return true;
-}
+bool ESFSharedQueueProducer::tearDown() { return true; }
 
 ESTFComponentPtr ESFSharedQueueProducer::clone() {
-    ESTFComponentPtr component(new ESFSharedQueueProducer(_id, _queue, _items));
+  ESTFComponentPtr component(new ESFSharedQueueProducer(_id, _queue, _items));
 
-    return component;
+  return component;
 }

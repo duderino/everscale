@@ -3,11 +3,12 @@
  *      lifetime.
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -64,174 +65,172 @@
  *
  *  @ingroup allocator
  */
-class ESFDiscardAllocator: public ESFAllocator {
-public:
+class ESFDiscardAllocator : public ESFAllocator {
+ public:
+  /** Constructor.  The allocator will request memory from the source
+   *  allocator in chunkSize + overhead sized chunks.  The overhead reflects
+   *  the allocator's own internal state that it needs to manage each chunk.
+   *  Any allocation larger than chunkSize will be passed to the failover
+   *  allocator if one has been configured.
+   *
+   *  @param chunkSize The size of the chunks the allocator uses.
+   *  @param source The allocator to use to allocate any chunks.
+   *        This is probably the system allocator.
+   *  @see GetOverhead To determine how much extra memory the allocator
+   *      will request from the source allocator for each chunk.
+   */
+  ESFDiscardAllocator(int chunkSize, ESFAllocator *source);
 
-    /** Constructor.  The allocator will request memory from the source
-     *  allocator in chunkSize + overhead sized chunks.  The overhead reflects
-     *  the allocator's own internal state that it needs to manage each chunk.
-     *  Any allocation larger than chunkSize will be passed to the failover
-     *  allocator if one has been configured.
-     *
-     *  @param chunkSize The size of the chunks the allocator uses.
-     *  @param source The allocator to use to allocate any chunks.
-     *        This is probably the system allocator.
-     *  @see GetOverhead To determine how much extra memory the allocator
-     *      will request from the source allocator for each chunk.
-     */
-    ESFDiscardAllocator(int chunkSize, ESFAllocator *source);
+  /** Constructor.
+   */
+  ESFDiscardAllocator();
 
-    /** Constructor.
-     */
-    ESFDiscardAllocator();
+  /** Initializer.  The allocator will request memory from the source
+   *  allocator in chunkSize + overhead sized chunks.  The overhead reflects
+   *  the allocator's own internal state that it needs to manage each chunk.
+   *  Any allocation larger than chunkSize will be passed to the failover
+   *  allocator if one has been configured.
+   *
+   *  @param chunkSize The size of the chunks the allocator uses.
+   *  @param source The allocator to use to allocate any chunks.
+   *        This is probably the system allocator.
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  ESFError initialize(int chunkSize, ESFAllocator *source);
 
-    /** Initializer.  The allocator will request memory from the source
-     *  allocator in chunkSize + overhead sized chunks.  The overhead reflects
-     *  the allocator's own internal state that it needs to manage each chunk.
-     *  Any allocation larger than chunkSize will be passed to the failover
-     *  allocator if one has been configured.
-     *
-     *  @param chunkSize The size of the chunks the allocator uses.
-     *  @param source The allocator to use to allocate any chunks.
-     *        This is probably the system allocator.
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    ESFError initialize(int chunkSize, ESFAllocator *source);
+  /** Destructor.  Any memory still used by the allocator will be return to
+   *  the source allocator at this point.
+   */
+  virtual ~ESFDiscardAllocator();
 
-    /** Destructor.  Any memory still used by the allocator will be return to
-     *  the source allocator at this point.
-     */
-    virtual ~ESFDiscardAllocator();
+  /** Allocate a word-aligned memory block of at least size bytes.
+   *
+   *  @param size The minimum number of bytes to allocate.  If the size
+   *      exceeds the chunkSize argument passed to the constructor, this
+   *      allocation will be passed to the failover allocator if set or
+   *      rejected if not set.
+   *  @return a word-aligned memory block of at least size bytes if
+   *      successful, NULL otherwise.
+   */
+  virtual void *allocate(ESFUWord size);
 
-    /** Allocate a word-aligned memory block of at least size bytes.
-     *
-     *  @param size The minimum number of bytes to allocate.  If the size
-     *      exceeds the chunkSize argument passed to the constructor, this
-     *      allocation will be passed to the failover allocator if set or
-     *      rejected if not set.
-     *  @return a word-aligned memory block of at least size bytes if
-     *      successful, NULL otherwise.
-     */
-    virtual void *allocate(ESFUWord size);
+  /** Deallocate a memory block allocated by this allocator.  This is
+   *  a no-op and need not be called unless its possible another
+   *  allocator might one day be used by the same code (using the
+   *  ESFAllocator interface).
+   *
+   *  @param block The block to deallocate
+   *  @return ESF_SUCCESS if the block was successfully deallocated, another
+   *      error code otherwise.  ESF_NOT_OWNER will be returned if the
+   *      block was not allocated by this allocator.
+   */
+  virtual ESFError deallocate(void *block);
 
-    /** Deallocate a memory block allocated by this allocator.  This is
-     *  a no-op and need not be called unless its possible another
-     *  allocator might one day be used by the same code (using the
-     *  ESFAllocator interface).
-     *
-     *  @param block The block to deallocate
-     *  @return ESF_SUCCESS if the block was successfully deallocated, another
-     *      error code otherwise.  ESF_NOT_OWNER will be returned if the
-     *      block was not allocated by this allocator.
-     */
-    virtual ESFError deallocate(void *block);
+  /** Get the overhead in bytes of any additional control structures
+   *  attached to an allocated chunk.  This can be used to optimize
+   *  allocation requests for some allocators.  Power of two allocators,
+   *  for example, will always round the size requested + the overhead up
+   *  to the next power of two.  If the caller always requests powers of
+   *  two, then the allocator can waste a lot of memory.  If, however, the
+   *  caller requests a power of two minus the allocator overhead, then
+   *  the allocator will return the optimal amount of memory.
+   *
+   *  @return the allocator's overhead in bytes for each allocation.
+   */
+  virtual ESFUWord getOverhead();
 
-    /** Get the overhead in bytes of any additional control structures
-     *  attached to an allocated chunk.  This can be used to optimize
-     *  allocation requests for some allocators.  Power of two allocators,
-     *  for example, will always round the size requested + the overhead up
-     *  to the next power of two.  If the caller always requests powers of
-     *  two, then the allocator can waste a lot of memory.  If, however, the
-     *  caller requests a power of two minus the allocator overhead, then
-     *  the allocator will return the optimal amount of memory.
-     *
-     *  @return the allocator's overhead in bytes for each allocation.
-     */
-    virtual ESFUWord getOverhead();
+  /** Initialize this memory pool.
+   *
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError initialize();
 
-    /** Initialize this memory pool.
-     *
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError initialize();
+  /** Destroy this allocator.  The allocator will return all of the memory
+   *  it manages to its source allocator and return itself to a state where
+   *  initialize could be called again.  All memory should be returned to
+   *  the allocator before calling its destroy method.   Some implementations
+   *  may refuse to shutdown if they have outstanding allocations.
+   *
+   *  @return ESF_SUCCESS if the allocator could destroy itself, another
+   *      error code otherwise.  ESF_IN_USE will be returned if the
+   *      allocator has handed out memory that has not been returned.
+   *  @see initialize.
+   */
+  virtual ESFError destroy();
 
-    /** Destroy this allocator.  The allocator will return all of the memory
-     *  it manages to its source allocator and return itself to a state where
-     *  initialize could be called again.  All memory should be returned to
-     *  the allocator before calling its destroy method.   Some implementations
-     *  may refuse to shutdown if they have outstanding allocations.
-     *
-     *  @return ESF_SUCCESS if the allocator could destroy itself, another
-     *      error code otherwise.  ESF_IN_USE will be returned if the
-     *      allocator has handed out memory that has not been returned.
-     *  @see initialize.
-     */
-    virtual ESFError destroy();
+  /** Free all chunks used by this allocator except for the first chunk.
+   *  Mark the first chunk as available so it can be reused.
+   *
+   * @return ESF_SUCCESS if memory could be
+   */
+  ESFError reset();
 
-    /** Free all chunks used by this allocator except for the first chunk.
-     *  Mark the first chunk as available so it can be reused.
-     *
-     * @return ESF_SUCCESS if memory could be
-     */
-    ESFError reset();
+  /** Get the allocators current initialization state.
+   *
+   *  @return ESF_SUCCESS if the allocator is initialized,
+   *      ESF_NOT_INITIALIZED if the allocator has not been initialized,
+   *      another error code if an error occurred determining the
+   *      allocator's current state.
+   *  @see initialize.
+   */
+  virtual ESFError isInitialized();
 
-    /** Get the allocators current initialization state.
-     *
-     *  @return ESF_SUCCESS if the allocator is initialized,
-     *      ESF_NOT_INITIALIZED if the allocator has not been initialized,
-     *      another error code if an error occurred determining the
-     *      allocator's current state.
-     *  @see initialize.
-     */
-    virtual ESFError isInitialized();
+  /** This is a no-op.  The allocator passed to the constructor is always
+   *  used to allocate chunks.
+   *
+   *  @param allocator The failover allocator.  Set to NULL to clear an
+   *      already registered failover allocator.
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError setFailoverAllocator(ESFAllocator *allocator);
 
-    /** This is a no-op.  The allocator passed to the constructor is always
-     *  used to allocate chunks.
-     *
-     *  @param allocator The failover allocator.  Set to NULL to clear an
-     *      already registered failover allocator.
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError setFailoverAllocator(ESFAllocator *allocator);
+  /** Get the failover allocator used by this allocator.  This always
+   *  returns the allocator passed to the constructor.
+   *
+   *  @param allocator The failover allocator to get (pointer to a pointer).
+   *      This pointer will be set to NULL if no failover allocator exists.
+   *  @return ESF_SUCCESS if successful, another error code otherwise.  Note
+   *      that if no failover allocator exists, ESF_SUCCESS will be returned
+   *      and the allocator argument will be set to NULL.
+   *  @see setFailoverAllocator
+   */
+  virtual ESFError getFailoverAllocator(ESFAllocator **allocator);
 
-    /** Get the failover allocator used by this allocator.  This always
-     *  returns the allocator passed to the constructor.
-     *
-     *  @param allocator The failover allocator to get (pointer to a pointer).
-     *      This pointer will be set to NULL if no failover allocator exists.
-     *  @return ESF_SUCCESS if successful, another error code otherwise.  Note
-     *      that if no failover allocator exists, ESF_SUCCESS will be returned
-     *      and the allocator argument will be set to NULL.
-     *  @see setFailoverAllocator
-     */
-    virtual ESFError getFailoverAllocator(ESFAllocator **allocator);
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return The new object or NULL of the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, ESFAllocator *allocator) {
-        return allocator->allocate(size);
-    }
+  /** Get the size of the extra overhead the allocator adds to every chunk
+   *  allocation.
+   *
+   *  @return The size in bytes of the allocator's overhead per chunk.
+   */
+  static ESFSize GetOverheadSize();
 
-    /** Get the size of the extra overhead the allocator adds to every chunk
-     *  allocation.
-     *
-     *  @return The size in bytes of the allocator's overhead per chunk.
-     */
-    static ESFSize GetOverheadSize();
+ private:
+  //  Disabled
+  ESFDiscardAllocator(const ESFDiscardAllocator &);
+  ESFDiscardAllocator &operator=(const ESFDiscardAllocator &);
 
-private:
+  typedef struct Chunk {
+    Chunk *_next;
+    ESFUWord _idx;
+    ESFUWord _size;
+    char *_data;
+  } Chunk;
 
-    //  Disabled
-    ESFDiscardAllocator(const ESFDiscardAllocator &);
-    ESFDiscardAllocator &operator=(const ESFDiscardAllocator &);
+  Chunk *allocateChunk(int chunkSize);
 
-    typedef struct Chunk {
-        Chunk *_next;
-        ESFUWord _idx;
-        ESFUWord _size;
-        char *_data;
-    } Chunk;
+  Chunk *_head;
 
-    Chunk *allocateChunk(int chunkSize);
-
-    Chunk *_head;
-
-    ESFUWord _chunkSize;
-    ESFAllocator *_source;
+  ESFUWord _chunkSize;
+  ESFAllocator *_source;
 };
 
 #endif /* ! ESF_DISCARD_ALLOCATOR_H */

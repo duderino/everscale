@@ -54,86 +54,80 @@
  *
  *  @ingroup foundation_test
  */
-class ESFListTest: public ESTFComponent {
-public:
-    /**	Constructor.
-     */
-    ESFListTest();
+class ESFListTest : public ESTFComponent {
+ public:
+  /**	Constructor.
+   */
+  ESFListTest();
 
-    /** Destructor. */
-    virtual ~ESFListTest();
+  /** Destructor. */
+  virtual ~ESFListTest();
 
-    /** Run the component.
-     *
-     *	@param collector A result collector that will collect the results of
-     *		this test run.
-     *	@return true if the test run was successfully performed by the test
-     *		framework.  Application errors discovered during a test run do not
-     *		count, a false return means there was an error in the test suite
-     *		itself that prevented it from completing one or more test cases.
-     */
-    bool run(ESTFResultCollector *collector);
+  /** Run the component.
+   *
+   *	@param collector A result collector that will collect the results of
+   *		this test run.
+   *	@return true if the test run was successfully performed by the test
+   *		framework.  Application errors discovered during a test run do
+   *not count, a false return means there was an error in the test suite itself
+   *that prevented it from completing one or more test cases.
+   */
+  bool run(ESTFResultCollector *collector);
 
-    /** Perform a one-time initialization of the component.  Initializations
-     *	that must be performed on every run of a test case should be put in
-     *	the run method.
-     *
-     *	@return true if the one-time initialization was successfully performed,
-     *		false otherwise.
-     */
-    bool setup();
+  /** Perform a one-time initialization of the component.  Initializations
+   *	that must be performed on every run of a test case should be put in
+   *	the run method.
+   *
+   *	@return true if the one-time initialization was successfully performed,
+   *		false otherwise.
+   */
+  bool setup();
 
-    /** Perform a one-time tear down of the component.  Tear downs that must be
-     *	performed on every run of a test case should be put in the run method.
-     *
-     *	@return true if the one-time tear down was successfully performed,
-     *		false otherwise.
-     */
-    bool tearDown();
+  /** Perform a one-time tear down of the component.  Tear downs that must be
+   *	performed on every run of a test case should be put in the run method.
+   *
+   *	@return true if the one-time tear down was successfully performed,
+   *		false otherwise.
+   */
+  bool tearDown();
 
-    /** Returns a deep copy of the component.
-     *
-     *	@return A deep copy of the component.
-     */
-    ESTFComponentPtr clone();
+  /** Returns a deep copy of the component.
+   *
+   *	@return A deep copy of the component.
+   */
+  ESTFComponentPtr clone();
 
-private:
+ private:
+  class Record {
+   public:
+    Record() : _value(0), _lifetime(0), _useIterator(true), _iterator() {}
 
-    class Record {
-    public:
+    virtual ~Record() {}
 
-        Record() :
-            _value(0), _lifetime(0), _useIterator(true), _iterator() {
-        }
+    char *_value;
+    int _lifetime;
+    bool _useIterator;
+    ESFListIterator _iterator;
+  };
 
-        virtual ~Record() {
-        }
+  typedef std::list<char *>::iterator STLListIterator;
 
-        char *_value;
-        int _lifetime;
-        bool _useIterator;
-        ESFListIterator _iterator;
-    };
+  char *generateValue(int i, int j);
+  int generateLifetime();
+  ESFListIterator findIterator(void *value);
+  bool findSTLIterator(void *value, STLListIterator *);
+  void validateList(ESTFResultCollector *collector);
 
-    typedef std::list<char *>::iterator STLListIterator;
+  static const int _Iterations;
+  static const int _Records;
+  static ESFNullLock _Lock;
 
-    char *generateValue(int i, int j);
-    int generateLifetime();
-    ESFListIterator findIterator(void *value);
-    bool findSTLIterator(void *value, STLListIterator *);
-    void validateList(ESTFResultCollector *collector);
-
-    static const int _Iterations;
-    static const int _Records;
-    static ESFNullLock _Lock;
-
-    Record *_records;
-    ESTFRand _rand;
-    ESFList _list;
-    std::list<char *> _stlList;
-
+  Record *_records;
+  ESTFRand _rand;
+  ESFList _list;
+  std::list<char *> _stlList;
 };
 
-DEFINE_ESTF_OBJECT_PTR(ESFListTest,ESTFComponent)
+DEFINE_ESTF_OBJECT_PTR(ESFListTest, ESTFComponent)
 
-#endif                                 /* ! ESF_LIST_TEST_H */
+#endif /* ! ESF_LIST_TEST_H */

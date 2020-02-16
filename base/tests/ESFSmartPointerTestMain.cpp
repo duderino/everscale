@@ -51,39 +51,39 @@
 #endif
 
 int main() {
-    ESFSmartPointerDebugger::Initialize();
+  ESFSmartPointerDebugger::Initialize();
 
-    ESFSmartPointerTestPtr objectPtrTest = new ESFSmartPointerTest();
+  ESFSmartPointerTestPtr objectPtrTest = new ESFSmartPointerTest();
 
-    ESTFCompositePtr testSuite = new ESTFComposite();
+  ESTFCompositePtr testSuite = new ESTFComposite();
 
-    testSuite->add(objectPtrTest);
+  testSuite->add(objectPtrTest);
 
-    ESTFResultCollector collector;
+  ESTFResultCollector collector;
 
-    if (false == testSuite->setup()) {
-        cerr << "Testing framework setup failed" << endl;
-        return 1;
-    }
+  if (false == testSuite->setup()) {
+    cerr << "Testing framework setup failed" << endl;
+    return 1;
+  }
 
-    if (false == testSuite->run(&collector)) {
-        cerr << "Testing framework run failed" << endl;
-    }
+  if (false == testSuite->run(&collector)) {
+    cerr << "Testing framework run failed" << endl;
+  }
 
-    if (false == testSuite->tearDown()) {
-        cerr << "Testing framework tear down failed" << endl;
-    }
+  if (false == testSuite->tearDown()) {
+    cerr << "Testing framework tear down failed" << endl;
+  }
 
-    if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-        cout << "All test cases passed" << endl;
-    }
+  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
+    cout << "All test cases passed" << endl;
+  }
 
-    cout << collector << endl;
+  cout << collector << endl;
 
-    cout << "Remaining ESFObject references: " << ESFSmartPointerDebugger::Instance()->getSize() << endl;
+  cout << "Remaining ESFObject references: "
+       << ESFSmartPointerDebugger::Instance()->getSize() << endl;
 
-    ESFSmartPointerDebugger::Destroy();
+  ESFSmartPointerDebugger::Destroy();
 
-    return 0;
+  return 0;
 }
-

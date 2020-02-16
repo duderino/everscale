@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_STACK_H
@@ -86,100 +86,104 @@
 #include <AWSHttpServerCounters.h>
 #endif
 
-class AWSHttpStack: public AWSHttpConnectionPool {
-public:
+class AWSHttpStack : public AWSHttpConnectionPool {
+ public:
+  /**
+   * Create a client and server stack.
+   */
+  AWSHttpStack(AWSHttpServerHandler *serverHandler, AWSHttpResolver *resolver,
+               int port, int threads, AWSHttpClientCounters *clientCounters,
+               AWSHttpServerCounters *serverCounters, ESFLogger *logger);
 
-    /**
-     * Create a client and server stack.
-     */
-    AWSHttpStack(AWSHttpServerHandler *serverHandler, AWSHttpResolver *resolver, int port, int threads, AWSHttpClientCounters *clientCounters, AWSHttpServerCounters *serverCounters, ESFLogger *logger);
+  /**
+   * Create only a client stack.
+   */
+  AWSHttpStack(AWSHttpResolver *resolver, int threads,
+               AWSHttpClientCounters *clientCounters, ESFLogger *logger);
 
-    /**
-     * Create only a client stack.
-     */
-    AWSHttpStack(AWSHttpResolver *resolver, int threads, AWSHttpClientCounters *clientCounters, ESFLogger *logger);
+  virtual ~AWSHttpStack();
 
-    virtual ~AWSHttpStack();
+  ESFError initialize();
 
-    ESFError initialize();
+  ESFError start();
 
-    ESFError start();
+  ESFError stop();
 
-    ESFError stop();
+  void destroy();
 
-    void destroy();
+  /**
+   * Create a new client transaction
+   *
+   * @param handler The handler
+   * @return a new client transaction if successful, null otherwise
+   */
+  virtual AWSHttpClientTransaction *createClientTransaction(
+      AWSHttpClientHandler *clientHandler);
 
-    /**
-     * Create a new client transaction
-     *
-     * @param handler The handler
-     * @return a new client transaction if successful, null otherwise
-     */
-    virtual AWSHttpClientTransaction *createClientTransaction(AWSHttpClientHandler *clientHandler);
+  /**
+   * Execute the client transaction.  If this method returns ESF_SUCCESS, then
+   * the transaction will be cleaned up automatically after it finishes.  If
+   * this method returns anything else then the caller should clean it up with
+   * destroyClientTransaction
+   *
+   * @param transaction The transaction
+   * @return ESF_SUCCESS if the transaction was successfully started, another
+   * error code otherwise.  If error, cleanup the transaction with the
+   * destroyClientTransaction method.
+   */
+  virtual ESFError executeClientTransaction(
+      AWSHttpClientTransaction *transaction);
 
-    /**
-     * Execute the client transaction.  If this method returns ESF_SUCCESS, then the
-     * transaction will be cleaned up automatically after it finishes.  If this method
-     * returns anything else then the caller should clean it up with
-     * destroyClientTransaction
-     *
-     * @param transaction The transaction
-     * @return ESF_SUCCESS if the transaction was successfully started, another error
-     *   code otherwise.  If error, cleanup the transaction with the destroyClientTransaction
-     *   method.
-     */
-    virtual ESFError executeClientTransaction(AWSHttpClientTransaction *transaction);
+  /**
+   * Cleanup the client transaction.  Note that this will not free any
+   * app-specific context.  Call this only if executeClientTransaction doesn't
+   * return ESF_SUCCESS
+   *
+   * @param transaction The transaction to cleanup.
+   */
+  virtual void destroyClientTransaction(AWSHttpClientTransaction *transaction);
 
-    /**
-     * Cleanup the client transaction.  Note that this will not free any app-specific
-     * context.  Call this only if executeClientTransaction doesn't return ESF_SUCCESS
-     *
-     * @param transaction The transaction to cleanup.
-     */
-    virtual void destroyClientTransaction(AWSHttpClientTransaction *transaction);
+  inline AWSHttpClientCounters *getClientCounters() { return _clientCounters; }
 
-    inline AWSHttpClientCounters *getClientCounters() {
-        return _clientCounters;
-    }
+  inline const AWSHttpClientCounters *getClientCounters() const {
+    return _clientCounters;
+  }
 
-    inline const AWSHttpClientCounters *getClientCounters() const {
-        return _clientCounters;
-    }
+  inline AWSHttpServerCounters *getServerCounters() { return _serverCounters; }
 
-    inline AWSHttpServerCounters *getServerCounters() {
-        return _serverCounters;
-    }
+  inline const AWSHttpServerCounters *getServerCounters() const {
+    return _serverCounters;
+  }
 
-    inline const AWSHttpServerCounters *getServerCounters() const {
-        return _serverCounters;
-    }
+ private:
+  // disabled
+  AWSHttpStack(const AWSHttpStack &);
+  void operator=(const AWSHttpStack &);
 
-private:
-    // disabled
-    AWSHttpStack(const AWSHttpStack &);
-    void operator=(const AWSHttpStack &);
+  typedef enum {
+    AWS_HTTP_STACK_IS_INITIALIZED = 0,
+    AWS_HTTP_STACK_IS_STARTED = 1,
+    AWS_HTTP_STACK_IS_STOPPED = 2,
+    AWS_HTTP_STACK_IS_DESTROYED = 3
+  } AWSHttpStackState;
 
-    typedef enum {
-        AWS_HTTP_STACK_IS_INITIALIZED = 0, AWS_HTTP_STACK_IS_STARTED = 1, AWS_HTTP_STACK_IS_STOPPED = 2, AWS_HTTP_STACK_IS_DESTROYED = 3
-    } AWSHttpStackState;
-
-    int _port;
-    int _threads;
-    volatile AWSHttpStackState _state;
-    AWSHttpResolver *_resolver;
-    ESFLogger *_logger;
-    AWSHttpServerHandler *_serverHandler;
-    AWSHttpServerCounters *_serverCounters;
-    AWSHttpClientCounters *_clientCounters;
-    ESFDiscardAllocator _discardAllocator;
-    ESFSharedAllocator _rootAllocator;
-    ESFAllocatorCleanupHandler _rootAllocatorCleanupHandler;
-    ESFEpollMultiplexerFactory _epollFactory;
-    ESFListeningTCPSocket _listeningSocket;
-    AWSHttpServerSocketFactory _serverSocketFactory;
-    AWSHttpClientSocketFactory _clientSocketFactory;
-    AWSHttpClientTransactionFactory _clientTransactionFactory;
-    ESFSocketMultiplexerDispatcher _dispatcher;
+  int _port;
+  int _threads;
+  volatile AWSHttpStackState _state;
+  AWSHttpResolver *_resolver;
+  ESFLogger *_logger;
+  AWSHttpServerHandler *_serverHandler;
+  AWSHttpServerCounters *_serverCounters;
+  AWSHttpClientCounters *_clientCounters;
+  ESFDiscardAllocator _discardAllocator;
+  ESFSharedAllocator _rootAllocator;
+  ESFAllocatorCleanupHandler _rootAllocatorCleanupHandler;
+  ESFEpollMultiplexerFactory _epollFactory;
+  ESFListeningTCPSocket _listeningSocket;
+  AWSHttpServerSocketFactory _serverSocketFactory;
+  AWSHttpClientSocketFactory _clientSocketFactory;
+  AWSHttpClientTransactionFactory _clientTransactionFactory;
+  ESFSocketMultiplexerDispatcher _dispatcher;
 };
 
 #endif

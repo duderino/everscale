@@ -12,8 +12,8 @@
  *  @param expr The expression to test
  *  @ingroup unit-test
  */
-#define ESTF_ASSERT( collector, expr ) \
-    if ( collector ) ESTF_NATIVE_ASSERT( expr );
+#define ESTF_ASSERT(collector, expr) \
+  if (collector) ESTF_NATIVE_ASSERT(expr);
 
 /** Add a success result to a result collector.
  *
@@ -21,8 +21,9 @@
  *  @param description The description of the success result.
  *  @ingroup unit-test
  */
-#define ESTF_SUCCESS( collector, description )  \
-    if ( collector );
+#define ESTF_SUCCESS(collector, description) \
+  if (collector)                             \
+    ;
 
 /** Add a failure result to a result collector.
  *
@@ -30,8 +31,8 @@
  *  @param description The description of the failure result.
  *  @ingroup unit-test
  */
-#define ESTF_FAILURE( collector, description ) \
-    if ( collector ) ESTF_NATIVE_ASSERT( (void *) "FAILURE: " == (void *) description )
+#define ESTF_FAILURE(collector, description) \
+  if (collector) ESTF_NATIVE_ASSERT((void *)"FAILURE: " == (void *)description)
 
 /** Add an error result to a result collector.
  *
@@ -39,7 +40,7 @@
  *  @param description The description of the error condition.
  *  @ingroup unit-test
  */
-#define ESTF_ERROR( collector, description ) \
-    if ( collector ) ESTF_NATIVE_ASSERT( (void *) "ERROR: " == (void *) description )
+#define ESTF_ERROR(collector, description) \
+  if (collector) ESTF_NATIVE_ASSERT((void *)"ERROR: " == (void *)description)
 
 #endif

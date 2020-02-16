@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_SERVER_SIMPLE_COUNTERS_H
@@ -22,96 +22,97 @@
 #include <AWSSimplePerformanceCounter.h>
 #endif
 
-class AWSHttpServerSimpleCounters: public AWSHttpServerCounters {
-public:
-    AWSHttpServerSimpleCounters();
+class AWSHttpServerSimpleCounters : public AWSHttpServerCounters {
+ public:
+  AWSHttpServerSimpleCounters();
 
-    virtual ~AWSHttpServerSimpleCounters();
+  virtual ~AWSHttpServerSimpleCounters();
 
-    virtual void printSummary(FILE *file) const;
+  virtual void printSummary(FILE *file) const;
 
-    virtual AWSPerformanceCounter *getSuccessfulTransactions();
+  virtual AWSPerformanceCounter *getSuccessfulTransactions();
 
-    virtual const AWSPerformanceCounter *getSuccessfulTransactions() const;
+  virtual const AWSPerformanceCounter *getSuccessfulTransactions() const;
 
-    virtual AWSPerformanceCounter *getRequestHeaderErrors();
+  virtual AWSPerformanceCounter *getRequestHeaderErrors();
 
-    virtual const AWSPerformanceCounter *getRequestHeaderErrors() const;
+  virtual const AWSPerformanceCounter *getRequestHeaderErrors() const;
 
-    virtual AWSPerformanceCounter *getRequestHeaderFailures();
+  virtual AWSPerformanceCounter *getRequestHeaderFailures();
 
-    virtual const AWSPerformanceCounter *getRequestHeaderFailures() const;
+  virtual const AWSPerformanceCounter *getRequestHeaderFailures() const;
 
-    virtual AWSPerformanceCounter *getRequestHeaderTimeouts();
+  virtual AWSPerformanceCounter *getRequestHeaderTimeouts();
 
-    virtual const AWSPerformanceCounter *getRequestHeaderTimeouts() const;
+  virtual const AWSPerformanceCounter *getRequestHeaderTimeouts() const;
 
-    virtual AWSPerformanceCounter *getRequestBodyErrors();
+  virtual AWSPerformanceCounter *getRequestBodyErrors();
 
-    virtual const AWSPerformanceCounter *getRequestBodyErrors() const;
+  virtual const AWSPerformanceCounter *getRequestBodyErrors() const;
 
-    virtual AWSPerformanceCounter *getRequestBodyFailures();
+  virtual AWSPerformanceCounter *getRequestBodyFailures();
 
-    virtual const AWSPerformanceCounter *getRequestBodyFailures() const;
+  virtual const AWSPerformanceCounter *getRequestBodyFailures() const;
 
-    virtual AWSPerformanceCounter *getRequestBodyTimeouts();
+  virtual AWSPerformanceCounter *getRequestBodyTimeouts();
 
-    virtual const AWSPerformanceCounter *getRequestBodyTimeouts() const;
+  virtual const AWSPerformanceCounter *getRequestBodyTimeouts() const;
 
-    virtual AWSPerformanceCounter *getResponseHeaderErrors();
+  virtual AWSPerformanceCounter *getResponseHeaderErrors();
 
-    virtual const AWSPerformanceCounter *getResponseHeaderErrors() const;
+  virtual const AWSPerformanceCounter *getResponseHeaderErrors() const;
 
-    virtual AWSPerformanceCounter *getResponseHeaderFailures();
+  virtual AWSPerformanceCounter *getResponseHeaderFailures();
 
-    virtual const AWSPerformanceCounter *getResponseHeaderFailures() const;
+  virtual const AWSPerformanceCounter *getResponseHeaderFailures() const;
 
-    virtual AWSPerformanceCounter *getResponseHeaderTimeouts();
+  virtual AWSPerformanceCounter *getResponseHeaderTimeouts();
 
-    virtual const AWSPerformanceCounter *getResponseHeaderTimeouts() const;
+  virtual const AWSPerformanceCounter *getResponseHeaderTimeouts() const;
 
-    virtual AWSPerformanceCounter *getResponseBodyErrors();
+  virtual AWSPerformanceCounter *getResponseBodyErrors();
 
-    virtual const AWSPerformanceCounter *getResponseBodyErrors() const;
+  virtual const AWSPerformanceCounter *getResponseBodyErrors() const;
 
-    virtual AWSPerformanceCounter *getResponseBodyFailures();
+  virtual AWSPerformanceCounter *getResponseBodyFailures();
 
-    virtual const AWSPerformanceCounter *getResponseBodyFailures() const;
+  virtual const AWSPerformanceCounter *getResponseBodyFailures() const;
 
-    virtual AWSPerformanceCounter *getResponseBodyTimeouts();
+  virtual AWSPerformanceCounter *getResponseBodyTimeouts();
 
-    virtual const AWSPerformanceCounter *getResponseBodyTimeouts() const;
+  virtual const AWSPerformanceCounter *getResponseBodyTimeouts() const;
 
-    virtual ESFSharedCounter *getTotalConnections();
+  virtual ESFSharedCounter *getTotalConnections();
 
-    virtual const ESFSharedCounter *getTotalConnections() const;
+  virtual const ESFSharedCounter *getTotalConnections() const;
 
-    virtual AWSAveragingCounter *getAverageTransactionsPerConnection();
+  virtual AWSAveragingCounter *getAverageTransactionsPerConnection();
 
-    virtual const AWSAveragingCounter *getAverageTransactionsPerConnection() const;
+  virtual const AWSAveragingCounter *getAverageTransactionsPerConnection()
+      const;
 
-private:
-    // Disabled
-    AWSHttpServerSimpleCounters(const AWSHttpServerSimpleCounters &counters);
-    void operator=(const AWSHttpServerSimpleCounters &counters);
+ private:
+  // Disabled
+  AWSHttpServerSimpleCounters(const AWSHttpServerSimpleCounters &counters);
+  void operator=(const AWSHttpServerSimpleCounters &counters);
 
-    AWSSimplePerformanceCounter _successfulTransactions;
+  AWSSimplePerformanceCounter _successfulTransactions;
 
-    AWSSimplePerformanceCounter _requestHeaderErrors;
-    AWSSimplePerformanceCounter _requestHeaderFailures;
-    AWSSimplePerformanceCounter _requestHeaderTimeouts;
-    AWSSimplePerformanceCounter _requestBodyErrors;
-    AWSSimplePerformanceCounter _requestBodyFailures;
-    AWSSimplePerformanceCounter _requestBodyTimeouts;
-    AWSSimplePerformanceCounter _responseHeaderErrors;
-    AWSSimplePerformanceCounter _responseHeaderFailures;
-    AWSSimplePerformanceCounter _responseHeaderTimeouts;
-    AWSSimplePerformanceCounter _responseBodyErrors;
-    AWSSimplePerformanceCounter _responseBodyFailures;
-    AWSSimplePerformanceCounter _responseBodyTimeouts;
+  AWSSimplePerformanceCounter _requestHeaderErrors;
+  AWSSimplePerformanceCounter _requestHeaderFailures;
+  AWSSimplePerformanceCounter _requestHeaderTimeouts;
+  AWSSimplePerformanceCounter _requestBodyErrors;
+  AWSSimplePerformanceCounter _requestBodyFailures;
+  AWSSimplePerformanceCounter _requestBodyTimeouts;
+  AWSSimplePerformanceCounter _responseHeaderErrors;
+  AWSSimplePerformanceCounter _responseHeaderFailures;
+  AWSSimplePerformanceCounter _responseHeaderTimeouts;
+  AWSSimplePerformanceCounter _responseBodyErrors;
+  AWSSimplePerformanceCounter _responseBodyFailures;
+  AWSSimplePerformanceCounter _responseBodyTimeouts;
 
-    ESFSharedCounter _totalConnections;
-    AWSAveragingCounter _averageTransactionsPerConnection;
+  ESFSharedCounter _totalConnections;
+  AWSAveragingCounter _averageTransactionsPerConnection;
 };
 
 #endif

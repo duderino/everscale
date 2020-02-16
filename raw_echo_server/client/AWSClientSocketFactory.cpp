@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_CLIENT_SOCKET_FACTORY_H
@@ -15,103 +15,84 @@
 #include <AWSClientSocket.h>
 #endif
 
-AWSClientSocketFactory::AWSClientSocketFactory(int maxSockets,
-                                               AWSPerformanceCounter *successCounter,
-                                               ESFSocketMultiplexerDispatcher *dispatcher,
-                                               ESFLogger *logger) :
-    _dispatcher(dispatcher),
-    _successCounter(successCounter),
-    _logger(logger),
-    _fixedAllocator(maxSockets + 10, sizeof(AWSClientSocket), ESFSystemAllocator::GetInstance()),
-    _sharedAllocator(&_fixedAllocator),
-    _cleanupHandler(&_sharedAllocator)
-{
-}
+AWSClientSocketFactory::AWSClientSocketFactory(
+    int maxSockets, AWSPerformanceCounter *successCounter,
+    ESFSocketMultiplexerDispatcher *dispatcher, ESFLogger *logger)
+    : _dispatcher(dispatcher),
+      _successCounter(successCounter),
+      _logger(logger),
+      _fixedAllocator(maxSockets + 10, sizeof(AWSClientSocket),
+                      ESFSystemAllocator::GetInstance()),
+      _sharedAllocator(&_fixedAllocator),
+      _cleanupHandler(&_sharedAllocator) {}
 
-AWSClientSocketFactory::~AWSClientSocketFactory()
-{
-}
+AWSClientSocketFactory::~AWSClientSocketFactory() {}
 
-ESFError AWSClientSocketFactory::initialize()
-{
-    return _sharedAllocator.initialize();
+ESFError AWSClientSocketFactory::initialize() {
+  return _sharedAllocator.initialize();
 }
 
 #include <errno.h>
 
-ESFError AWSClientSocketFactory::addNewConnection(const ESFSocketAddress &address)
-{
-    AWSClientSocket *socket = new(&_sharedAllocator) AWSClientSocket(this,
-                                                                     _successCounter,
-                                                                     -1,
-                                                                     address,
-                                                                     &_cleanupHandler,
-                                                                     _logger);
+ESFError AWSClientSocketFactory::addNewConnection(
+    const ESFSocketAddress &address) {
+  AWSClientSocket *socket = new (&_sharedAllocator) AWSClientSocket(
+      this, _successCounter, -1, address, &_cleanupHandler, _logger);
 
-    if (! socket)
-    {
-        if (_logger->isLoggable(ESFLogger::Critical))
-        {
-            _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[factory] Cannot allocate new client socket");
-        }
-
-        return ESF_OUT_OF_MEMORY;
+  if (!socket) {
+    if (_logger->isLoggable(ESFLogger::Critical)) {
+      _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                   "[factory] Cannot allocate new client socket");
     }
 
-    ESFError error = ESF_SUCCESS;
+    return ESF_OUT_OF_MEMORY;
+  }
 
-    while (true)
-    {
-        error = socket->connect();
+  ESFError error = ESF_SUCCESS;
 
-        if (EADDRNOTAVAIL == errno)
-        {
-            if (_logger->isLoggable(ESFLogger::Warning))
-            {
-                _logger->log(ESFLogger::Warning, __FILE__, __LINE__,
-                             "[factory] Spurious EADDRNOTAVAIL on connect");
-            }
+  while (true) {
+    error = socket->connect();
 
-            continue;
-        }
+    if (EADDRNOTAVAIL == errno) {
+      if (_logger->isLoggable(ESFLogger::Warning)) {
+        _logger->log(ESFLogger::Warning, __FILE__, __LINE__,
+                     "[factory] Spurious EADDRNOTAVAIL on connect");
+      }
 
-        break;
+      continue;
     }
 
-    if (ESF_SUCCESS != error)
-    {
-        if (_logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+    break;
+  }
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
+  if (ESF_SUCCESS != error) {
+    if (_logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
 
-            _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[factory] Cannot connect to peer: %s", buffer);
-        }
+      ESFDescribeError(error, buffer, sizeof(buffer));
 
-        return error;
+      _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                   "[factory] Cannot connect to peer: %s", buffer);
     }
 
-    error = _dispatcher->addMultiplexedSocket(socket);
+    return error;
+  }
 
-    if (ESF_SUCCESS != error)
-    {
-        if (_logger->isLoggable(ESFLogger::Critical))
-        {
-            char buffer[100];
+  error = _dispatcher->addMultiplexedSocket(socket);
 
-            ESFDescribeError(error, buffer, sizeof(buffer));
+  if (ESF_SUCCESS != error) {
+    if (_logger->isLoggable(ESFLogger::Critical)) {
+      char buffer[100];
 
-            _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
-                        "[factory] Cannot add client socket to multiplexer: %s", buffer);
-        }
+      ESFDescribeError(error, buffer, sizeof(buffer));
 
-        return error;
+      _logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+                   "[factory] Cannot add client socket to multiplexer: %s",
+                   buffer);
     }
 
-    return ESF_SUCCESS;
+    return error;
+  }
+
+  return ESF_SUCCESS;
 }
-
-

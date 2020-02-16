@@ -14,29 +14,25 @@
  *  @ingroup collection
  */
 class ESFCleanupHandler {
-public:
-    /** Constructor
-     */
-    ESFCleanupHandler() {
-    }
-    ;
+ public:
+  /** Constructor
+   */
+  ESFCleanupHandler(){};
 
-    /** Destructor
-     */
-    virtual ~ESFCleanupHandler() {
-    }
-    ;
+  /** Destructor
+   */
+  virtual ~ESFCleanupHandler(){};
 
-    /** Destroy an object
-     *
-     * @param object The object to destroy
-     */
-    virtual void destroy(ESFObject *object) = 0;
+  /** Destroy an object
+   *
+   * @param object The object to destroy
+   */
+  virtual void destroy(ESFObject *object) = 0;
 
-private:
-    // Disabled
-    ESFCleanupHandler(const ESFCleanupHandler &);
-    void operator=(const ESFCleanupHandler &);
+ private:
+  // Disabled
+  ESFCleanupHandler(const ESFCleanupHandler &);
+  void operator=(const ESFCleanupHandler &);
 };
 
 #endif /* ! ESF_CLEANUP_HANDLER_H */

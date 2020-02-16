@@ -39,43 +39,43 @@
 #endif
 
 int main() {
-    ESFSharedCounterTestPtr sharedCounterTest = new ESFSharedCounterTest();
+  ESFSharedCounterTestPtr sharedCounterTest = new ESFSharedCounterTest();
 
-    ESTFConcurrencyDecoratorPtr sharedCounterDecorator = new ESTFConcurrencyDecorator(sharedCounterTest, 100);
+  ESTFConcurrencyDecoratorPtr sharedCounterDecorator =
+      new ESTFConcurrencyDecorator(sharedCounterTest, 100);
 
-    ESTFCompositePtr testSuite = new ESTFComposite();
+  ESTFCompositePtr testSuite = new ESTFComposite();
 
-    testSuite->add(sharedCounterDecorator);
+  testSuite->add(sharedCounterDecorator);
 
-    ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 1);
+  ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 1);
 
-    ESTFResultCollector collector;
+  ESTFResultCollector collector;
 
-    if (false == root->setup()) {
-        cerr << "Testing framework setup failed" << endl;
-        return 1;
-    }
+  if (false == root->setup()) {
+    cerr << "Testing framework setup failed" << endl;
+    return 1;
+  }
 
-    if (false == root->run(&collector)) {
-        cerr << "Testing framework run failed" << endl;
-    }
+  if (false == root->run(&collector)) {
+    cerr << "Testing framework run failed" << endl;
+  }
 
-    if (0 != sharedCounterTest->getCounter()) {
-        cerr << "Counter inc and dec was not atomic!" << endl;
+  if (0 != sharedCounterTest->getCounter()) {
+    cerr << "Counter inc and dec was not atomic!" << endl;
 
-        return 1;
-    }
+    return 1;
+  }
 
-    if (false == root->tearDown()) {
-        cerr << "Testing framework tear down failed" << endl;
-    }
+  if (false == root->tearDown()) {
+    cerr << "Testing framework tear down failed" << endl;
+  }
 
-    if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-        cout << "All test cases passed" << endl;
-    }
+  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
+    cout << "All test cases passed" << endl;
+  }
 
-    cout << collector << endl;
+  cout << collector << endl;
 
-    return 0;
+  return 0;
 }
-

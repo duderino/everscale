@@ -3,11 +3,12 @@
  *      receiving incoming connections.
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ *Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ *both BSD and Apache 2.0 licenses
+ *(http://sourceforge.net/projects/sparrowhawk/).
  *
  *	$Author: blattj $
  *	$Date: 2009/05/25 21:51:08 $
@@ -39,83 +40,86 @@
 #include <fcntl.h>
 #endif
 
-ESFListeningTCPSocket::ESFListeningTCPSocket(ESFUInt16 port, int backlog, bool isBlocking) :
-    ESFTCPSocket(isBlocking), _backlog(backlog), _listeningAddress() {
-    _listeningAddress.setPort(port);
-    _listeningAddress.setTransport(ESFSocketAddress::TCP);
+ESFListeningTCPSocket::ESFListeningTCPSocket(ESFUInt16 port, int backlog,
+                                             bool isBlocking)
+    : ESFTCPSocket(isBlocking), _backlog(backlog), _listeningAddress() {
+  _listeningAddress.setPort(port);
+  _listeningAddress.setTransport(ESFSocketAddress::TCP);
 }
 
-ESFListeningTCPSocket::ESFListeningTCPSocket(ESFSocketAddress &address, int backlog, bool isBlocking) :
-    ESFTCPSocket(isBlocking), _backlog(backlog), _listeningAddress(address) {
-}
+ESFListeningTCPSocket::ESFListeningTCPSocket(ESFSocketAddress &address,
+                                             int backlog, bool isBlocking)
+    : ESFTCPSocket(isBlocking), _backlog(backlog), _listeningAddress(address) {}
 
-ESFListeningTCPSocket::~ESFListeningTCPSocket() {
-}
+ESFListeningTCPSocket::~ESFListeningTCPSocket() {}
 
 ESFError ESFListeningTCPSocket::bind() {
-    ESFError error = ESF_SUCCESS;
+  ESFError error = ESF_SUCCESS;
 
-    if (INVALID_SOCKET != _sockFd) {
-        return ESF_INVALID_STATE;
-    }
+  if (INVALID_SOCKET != _sockFd) {
+    return ESF_INVALID_STATE;
+  }
 
 #ifdef HAVE_SOCKET
-    _sockFd = socket(AF_INET,SOCK_STREAM, 0);
+  _sockFd = socket(AF_INET, SOCK_STREAM, 0);
 #else
 #error "socket or equivalent is required"
 #endif
 
-    if (INVALID_SOCKET == _sockFd) {
-        return ESFGetLastError();
-    }
+  if (INVALID_SOCKET == _sockFd) {
+    return ESFGetLastError();
+  }
 
-    error = setBlocking(_isBlocking);
+  error = setBlocking(_isBlocking);
 
-    if (ESF_SUCCESS != error) {
-        close();
+  if (ESF_SUCCESS != error) {
+    close();
 
-        return error;
-    }
+    return error;
+  }
 
 #ifdef HAVE_SETSOCKOPT
-    int value = 1;
+  int value = 1;
 
-    if (SOCKET_ERROR == setsockopt(_sockFd, SOL_SOCKET, SO_REUSEADDR, (const char *) &value, sizeof(value))) {
-        close();
+  if (SOCKET_ERROR == setsockopt(_sockFd, SOL_SOCKET, SO_REUSEADDR,
+                                 (const char *)&value, sizeof(value))) {
+    close();
 
-        return ESFGetLastError();
-    }
+    return ESFGetLastError();
+  }
 #else
 #error "setsockopt or equivalent is required"
 #endif
 
 #if defined HAVE_BIND && defined HAVE_STRUCT_SOCKADDR
-    if (SOCKET_ERROR == ::bind(_sockFd, (sockaddr *) _listeningAddress.getAddress(), sizeof(ESFSocketAddress::Address))) {
-        close();
+  if (SOCKET_ERROR == ::bind(_sockFd,
+                             (sockaddr *)_listeningAddress.getAddress(),
+                             sizeof(ESFSocketAddress::Address))) {
+    close();
 
-        return ESFGetLastError();
-    }
+    return ESFGetLastError();
+  }
 #else
 #error "bind and sockaddr or equivalent is required."
 #endif
 
-    return ESF_SUCCESS;
+  return ESF_SUCCESS;
 }
 
 ESFError ESFListeningTCPSocket::listen() {
-    if (INVALID_SOCKET == _sockFd) {
-        ESF_ASSERT( 0 == "Attempted to listen on an invalid socket." );
+  if (INVALID_SOCKET == _sockFd) {
+    ESF_ASSERT(0 == "Attempted to listen on an invalid socket.");
 
-        return ESF_INVALID_STATE;
-    }
+    return ESF_INVALID_STATE;
+  }
 
 #ifdef HAVE_LISTEN
 
-    if (SOCKET_ERROR == ::listen(_sockFd, _backlog)) {
-        return ESFGetLastError();
-    }
+  if (SOCKET_ERROR == ::listen(_sockFd, _backlog)) {
+    return ESFGetLastError();
+  }
 
-    return ESF_SUCCESS;
+  return ESF_SUCCESS;
 
 #else
 #error "listen or equivalent is required."
@@ -123,48 +127,48 @@ ESFError ESFListeningTCPSocket::listen() {
 }
 
 ESFError ESFListeningTCPSocket::accept(AcceptData *data) {
-    if (!data) {
-        return ESF_NULL_POINTER;
-    }
+  if (!data) {
+    return ESF_NULL_POINTER;
+  }
 
 #ifdef HAVE_SOCKLEN_T
-    socklen_t addressSize;
+  socklen_t addressSize;
 #else
-    int addressSize;
+  int addressSize;
 #endif
 
 #if defined HAVE_ACCEPT && defined HAVE_STRUCT_SOCKADDR
 
-    addressSize = sizeof(ESFSocketAddress::Address);
+  addressSize = sizeof(ESFSocketAddress::Address);
 
-    data->_sockFd = ::accept(_sockFd, (sockaddr *) data->_peerAddress.getAddress(), &addressSize);
+  data->_sockFd = ::accept(_sockFd, (sockaddr *)data->_peerAddress.getAddress(),
+                           &addressSize);
 
 #else
 #error "accept and sockaddr or equivalent is required."
 #endif
 
-    if (INVALID_SOCKET == data->_sockFd) {
-        return ESFGetLastError();
+  if (INVALID_SOCKET == data->_sockFd) {
+    return ESFGetLastError();
+  }
+
+  if (false == _isBlocking) {
+    ESFError error = ESFTCPSocket::SetBlocking(data->_sockFd, _isBlocking);
+
+    if (ESF_SUCCESS != error) {
+      ESFTCPSocket::Close(data->_sockFd);
+      data->_sockFd = -1;
+
+      return error;
     }
+  }
 
-    if (false == _isBlocking) {
-        ESFError error = ESFTCPSocket::SetBlocking(data->_sockFd, _isBlocking);
+  data->_listeningAddress = _listeningAddress;
+  data->_isBlocking = _isBlocking;
 
-        if (ESF_SUCCESS != error) {
-            ESFTCPSocket::Close(data->_sockFd);
-            data->_sockFd = -1;
-
-            return error;
-        }
-    }
-
-    data->_listeningAddress = _listeningAddress;
-    data->_isBlocking = _isBlocking;
-
-    return ESF_SUCCESS;
+  return ESF_SUCCESS;
 }
 
-const ESFSocketAddress &
-ESFListeningTCPSocket::getListeningAddress() const {
-    return _listeningAddress;
+const ESFSocketAddress &ESFListeningTCPSocket::getListeningAddress() const {
+  return _listeningAddress;
 }

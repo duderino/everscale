@@ -20,60 +20,47 @@ namespace ESTF {
  *
  *  @ingroup unit-test
  */
-class Rand
-{
-public:
+class Rand {
+ public:
+  /** Default constructor. */
+  Rand() { _seed = Date::GetSystemTime().getSeconds(); }
 
-    /** Default constructor. */
-    Rand()
-    {
-        _seed = Date::GetSystemTime().getSeconds();
-    }
+  Rand(unsigned int seed) : _seed(seed) {}
 
-    Rand(unsigned int seed) : _seed(seed)
-    {
-    }
+  /** Default destructor. */
+  inline ~Rand() {}
 
-    /** Default destructor. */
-    inline ~Rand()
-    {
-    }
-
-    /** Generate a random number between 0.0 inclusive and 1.0 exclusive.
-     *
-     *    @return A random number.
-     */
-    inline double generateRandom()
-    {
+  /** Generate a random number between 0.0 inclusive and 1.0 exclusive.
+   *
+   *    @return A random number.
+   */
+  inline double generateRandom() {
 #if defined HAVE_RAND_R && defined HAVE_DECL_RAND_MAX
-        return rand_r( &_seed ) / ( RAND_MAX + 1.0 );
+    return rand_r(&_seed) / (RAND_MAX + 1.0);
 #else
 #error "A random number generator is required"
 #endif
-    }
+  }
 
-    /** Generate a random integer within a given range.
-     *
-     *    @param lowerBound The lowerbound of the range.  Inclusive.
-     *    @param upperBound The upperbound of the range.  Inclusive.
-     *    @return A random number within the given range.
-     */
-    inline int generateRandom( int lowerBound, int upperBound )
-    {
+  /** Generate a random integer within a given range.
+   *
+   *    @param lowerBound The lowerbound of the range.  Inclusive.
+   *    @param upperBound The upperbound of the range.  Inclusive.
+   *    @return A random number within the given range.
+   */
+  inline int generateRandom(int lowerBound, int upperBound) {
 #if defined HAVE_RAND_R && defined HAVE_DECL_RAND_MAX
-        return lowerBound + ( int )
-            ( ( upperBound - lowerBound + 1.0 ) * rand_r( &_seed ) /
-              ( RAND_MAX + 1.0 ) );
+    return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) /
+                              (RAND_MAX + 1.0));
 #else
 #error "A random number generator is required"
 #endif
-    }
+  }
 
-private:
-
-    unsigned int _seed;
+ private:
+  unsigned int _seed;
 };
 
-}
+}  // namespace ESTF
 
 #endif

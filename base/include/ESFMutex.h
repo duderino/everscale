@@ -2,11 +2,12 @@
  *  @brief A simple mutual exclusion implementation of the ESFLockable interface
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -47,80 +48,79 @@
  *
  *  @ingroup lockable
  */
-class ESFMutex: public ESFLockable {
-public:
-    /**    Default constructor. */
-    ESFMutex();
+class ESFMutex : public ESFLockable {
+ public:
+  /**    Default constructor. */
+  ESFMutex();
 
-    /** Default destructor. */
-    virtual ~ESFMutex();
+  /** Default destructor. */
+  virtual ~ESFMutex();
 
-    /** Block the calling thread until write access is granted.
-     *
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError writeAcquire();
+  /** Block the calling thread until write access is granted.
+   *
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError writeAcquire();
 
-    /** Block the calling thread until read access is granted.
-     *
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError readAcquire();
+  /** Block the calling thread until read access is granted.
+   *
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError readAcquire();
 
-    /** Attempt to gain write access, returning immediately if access could not
-     *  be granted.
-     *
-     *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
-     *      not be immediately granted, or another error code if an error
-     *      occurred.
-     */
-    virtual ESFError writeAttempt();
+  /** Attempt to gain write access, returning immediately if access could not
+   *  be granted.
+   *
+   *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
+   *      not be immediately granted, or another error code if an error
+   *      occurred.
+   */
+  virtual ESFError writeAttempt();
 
-    /** Attempt to gain read access, returning immediately if access could not
-     *  be granted.
-     *
-     *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
-     *      not be immediately granted, or another error code if an error
-     *      occurred.
-     */
-    virtual ESFError readAttempt();
+  /** Attempt to gain read access, returning immediately if access could not
+   *  be granted.
+   *
+   *  @return ESF_SUCCESS if access was granted, ESF_AGAIN if access could
+   *      not be immediately granted, or another error code if an error
+   *      occurred.
+   */
+  virtual ESFError readAttempt();
 
-    /** Release the lock after write access was granted.
-     *
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError writeRelease();
+  /** Release the lock after write access was granted.
+   *
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError writeRelease();
 
-    /** Release the lock after read access was granted.
-     *
-     *  @return ESF_SUCCESS if successful, another error code otherwise.
-     */
-    virtual ESFError readRelease();
+  /** Release the lock after read access was granted.
+   *
+   *  @return ESF_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESFError readRelease();
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, ESFAllocator *allocator) {
-        return allocator->allocate(size);
-    }
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return The new object or NULL of the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-private:
-
-    //  disabled
-    ESFMutex(const ESFMutex &);
-    ESFMutex &operator=(const ESFMutex &);
+ private:
+  //  disabled
+  ESFMutex(const ESFMutex &);
+  ESFMutex &operator=(const ESFMutex &);
 
 #ifdef HAVE_PTHREAD_MUTEX_T
-    typedef pthread_mutex_t Mutex;
+  typedef pthread_mutex_t Mutex;
 #elif defined HAVE_HANDLE
-    typedef HANDLE Mutex;
+  typedef HANDLE Mutex;
 #endif
 
-    Mutex _mutex;
-    ESFUInt8 _magic;
+  Mutex _mutex;
+  ESFUInt8 _magic;
 };
 
 #endif /* ! ESF_MUTEX_H */

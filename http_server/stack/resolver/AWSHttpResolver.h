@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_RESOLVER_H
@@ -14,21 +14,19 @@
 #include <AWSHttpRequest.h>
 #endif
 
-class AWSHttpResolver
-{
-public:
+class AWSHttpResolver {
+ public:
+  AWSHttpResolver();
 
-    AWSHttpResolver();
+  virtual ~AWSHttpResolver();
 
-    virtual ~AWSHttpResolver();
+  virtual ESFError resolve(const AWSHttpRequest *request,
+                           ESFSocketAddress *address) = 0;
 
-    virtual ESFError resolve(const AWSHttpRequest *request, ESFSocketAddress *address) = 0;
-
-private:
-
-    // Disabled
-    AWSHttpResolver(const AWSHttpResolver &);
-    void operator=(const AWSHttpResolver &);
+ private:
+  // Disabled
+  AWSHttpResolver(const AWSHttpResolver &);
+  void operator=(const AWSHttpResolver &);
 };
 
 #endif

@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_SERVER_SOCKET_FACTORY_H
@@ -32,70 +32,67 @@
 
 /** A factory that creates and reuses AWSHttpServerSockets
  */
-class AWSHttpServerSocketFactory
-{
-public:
+class AWSHttpServerSocketFactory {
+ public:
+  AWSHttpServerSocketFactory(AWSHttpServerCounters *counters,
+                             ESFLogger *logger);
 
-    AWSHttpServerSocketFactory(AWSHttpServerCounters *counters,
-                               ESFLogger *logger);
+  virtual ~AWSHttpServerSocketFactory();
 
-    virtual ~AWSHttpServerSocketFactory();
+  ESFError initialize();
 
-    ESFError initialize();
+  void destroy();
 
-    void destroy();
+  AWSHttpServerSocket *create(AWSHttpServerHandler *handler,
+                              ESFTCPSocket::AcceptData *acceptData);
 
-    AWSHttpServerSocket *create(AWSHttpServerHandler *handler, ESFTCPSocket::AcceptData *acceptData);
+  void release(AWSHttpServerSocket *socket);
 
-    void release(AWSHttpServerSocket *socket);
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return Memory for the new object or NULL if the memory allocation failed.
+ private:
+  // Disabled
+  AWSHttpServerSocketFactory(const AWSHttpServerSocketFactory &);
+  AWSHttpServerSocketFactory &operator=(const AWSHttpServerSocketFactory &);
+
+  class CleanupHandler : public ESFCleanupHandler {
+   public:
+    /** Constructor
      */
-    inline void *operator new(size_t size, ESFAllocator *allocator)
-    {
-        return allocator->allocate( size );
-    }
+    CleanupHandler(AWSHttpServerSocketFactory *factory);
 
-private:
+    /** Destructor
+     */
+    virtual ~CleanupHandler();
+
+    /** Destroy an object
+     *
+     * @param object The object to destroy
+     */
+    virtual void destroy(ESFObject *object);
+
+   private:
     // Disabled
-    AWSHttpServerSocketFactory(const AWSHttpServerSocketFactory &);
-    AWSHttpServerSocketFactory &operator=(const AWSHttpServerSocketFactory &);
+    CleanupHandler(const CleanupHandler &);
+    void operator=(const CleanupHandler &);
 
-    class CleanupHandler : public ESFCleanupHandler
-    {
-    public:
-        /** Constructor
-         */
-        CleanupHandler(AWSHttpServerSocketFactory *factory);
+    AWSHttpServerSocketFactory *_factory;
+  };
 
-        /** Destructor
-         */
-        virtual ~CleanupHandler();
-
-        /** Destroy an object
-         *
-         * @param object The object to destroy
-         */
-        virtual void destroy(ESFObject *object);
-
-    private:
-        // Disabled
-        CleanupHandler(const CleanupHandler &);
-        void operator=(const CleanupHandler &);
-
-        AWSHttpServerSocketFactory *_factory;
-    };
-
-    ESFLogger *_logger;
-    AWSHttpServerCounters *_counters;
-    ESFDiscardAllocator _allocator;
-    ESFEmbeddedList _embeddedList;
-    ESFMutex _mutex;
-    CleanupHandler _cleanupHandler;
+  ESFLogger *_logger;
+  AWSHttpServerCounters *_counters;
+  ESFDiscardAllocator _allocator;
+  ESFEmbeddedList _embeddedList;
+  ESFMutex _mutex;
+  CleanupHandler _cleanupHandler;
 };
 
 #endif /* ! AWS_HTTP_SERVER_SOCKET_FACTORY_H */

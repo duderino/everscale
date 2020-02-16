@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_CLIENT_TRANSACTION_FACTORY_H
@@ -32,68 +32,65 @@
 
 /** A factory that creates and reuses AWSHttpClientTransactions
  */
-class AWSHttpClientTransactionFactory
-{
-public:
+class AWSHttpClientTransactionFactory {
+ public:
+  AWSHttpClientTransactionFactory();
 
-    AWSHttpClientTransactionFactory();
+  virtual ~AWSHttpClientTransactionFactory();
 
-    virtual ~AWSHttpClientTransactionFactory();
+  ESFError initialize();
 
-    ESFError initialize();
+  void destroy();
 
-    void destroy();
+  AWSHttpClientTransaction *create(AWSHttpClientHandler *clientHandler);
 
-    AWSHttpClientTransaction *create(AWSHttpClientHandler *clientHandler);
+  void release(AWSHttpClientTransaction *transaction);
 
-    void release(AWSHttpClientTransaction *transaction);
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESFAllocator *allocator) {
+    return allocator->allocate(size);
+  }
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return Memory for the new object or NULL if the memory allocation failed.
+ private:
+  // Disabled
+  AWSHttpClientTransactionFactory(const AWSHttpClientTransactionFactory &);
+  AWSHttpClientTransactionFactory &operator=(
+      const AWSHttpClientTransactionFactory &);
+
+  class CleanupHandler : public ESFCleanupHandler {
+   public:
+    /** Constructor
      */
-    inline void *operator new(size_t size, ESFAllocator *allocator)
-    {
-        return allocator->allocate( size );
-    }
+    CleanupHandler(AWSHttpClientTransactionFactory *factory);
 
-private:
+    /** Destructor
+     */
+    virtual ~CleanupHandler();
+
+    /** Destroy an object
+     *
+     * @param object The object to destroy
+     */
+    virtual void destroy(ESFObject *object);
+
+   private:
     // Disabled
-    AWSHttpClientTransactionFactory(const AWSHttpClientTransactionFactory &);
-    AWSHttpClientTransactionFactory &operator=(const AWSHttpClientTransactionFactory &);
+    CleanupHandler(const CleanupHandler &);
+    void operator=(const CleanupHandler &);
 
-    class CleanupHandler : public ESFCleanupHandler
-    {
-    public:
-        /** Constructor
-         */
-        CleanupHandler(AWSHttpClientTransactionFactory *factory);
+    AWSHttpClientTransactionFactory *_factory;
+  };
 
-        /** Destructor
-         */
-        virtual ~CleanupHandler();
-
-        /** Destroy an object
-         *
-         * @param object The object to destroy
-         */
-        virtual void destroy(ESFObject *object);
-
-    private:
-        // Disabled
-        CleanupHandler(const CleanupHandler &);
-        void operator=(const CleanupHandler &);
-
-        AWSHttpClientTransactionFactory *_factory;
-    };
-
-    ESFLogger *_logger;
-    ESFDiscardAllocator _allocator;
-    ESFEmbeddedList _embeddedList;
-    ESFMutex _mutex;
-    CleanupHandler _cleanupHandler;
+  ESFLogger *_logger;
+  ESFDiscardAllocator _allocator;
+  ESFEmbeddedList _embeddedList;
+  ESFMutex _mutex;
+  CleanupHandler _cleanupHandler;
 };
 
 #endif

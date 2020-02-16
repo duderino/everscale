@@ -55,49 +55,51 @@
 #endif
 
 int main() {
-    ESFMutex mutex;
-    ESFReadWriteLock rwLock;
-    ESFCountingSemaphore countingSemaphore;
+  ESFMutex mutex;
+  ESFReadWriteLock rwLock;
+  ESFCountingSemaphore countingSemaphore;
 
-    countingSemaphore.writeRelease(); // Using like a binary semaphore
+  countingSemaphore.writeRelease();  // Using like a binary semaphore
 
-    ESFLockableTestPtr mutexTest = new ESFLockableTest(mutex);
-    ESFLockableTestPtr rwLockTest = new ESFLockableTest(rwLock);
-    ESFLockableTestPtr semaphoreTest = new ESFLockableTest(countingSemaphore);
+  ESFLockableTestPtr mutexTest = new ESFLockableTest(mutex);
+  ESFLockableTestPtr rwLockTest = new ESFLockableTest(rwLock);
+  ESFLockableTestPtr semaphoreTest = new ESFLockableTest(countingSemaphore);
 
-    ESTFConcurrencyDecoratorPtr mutexDecorator = new ESTFConcurrencyDecorator(mutexTest, 10);
-    ESTFConcurrencyDecoratorPtr rwLockDecorator = new ESTFConcurrencyDecorator(rwLockTest, 10);
-    ESTFConcurrencyDecoratorPtr semaphoreDecorator = new ESTFConcurrencyDecorator(semaphoreTest, 10);
+  ESTFConcurrencyDecoratorPtr mutexDecorator =
+      new ESTFConcurrencyDecorator(mutexTest, 10);
+  ESTFConcurrencyDecoratorPtr rwLockDecorator =
+      new ESTFConcurrencyDecorator(rwLockTest, 10);
+  ESTFConcurrencyDecoratorPtr semaphoreDecorator =
+      new ESTFConcurrencyDecorator(semaphoreTest, 10);
 
-    ESTFCompositePtr testSuite = new ESTFComposite();
+  ESTFCompositePtr testSuite = new ESTFComposite();
 
-    testSuite->add(mutexDecorator);
-    testSuite->add(rwLockDecorator);
-    testSuite->add(semaphoreDecorator);
+  testSuite->add(mutexDecorator);
+  testSuite->add(rwLockDecorator);
+  testSuite->add(semaphoreDecorator);
 
-    ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 3);
+  ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 3);
 
-    ESTFResultCollector collector;
+  ESTFResultCollector collector;
 
-    if (false == root->setup()) {
-        cerr << "Testing framework setup failed" << endl;
-        return 1;
-    }
+  if (false == root->setup()) {
+    cerr << "Testing framework setup failed" << endl;
+    return 1;
+  }
 
-    if (false == root->run(&collector)) {
-        cerr << "Testing framework run failed" << endl;
-    }
+  if (false == root->run(&collector)) {
+    cerr << "Testing framework run failed" << endl;
+  }
 
-    if (false == root->tearDown()) {
-        cerr << "Testing framework tear down failed" << endl;
-    }
+  if (false == root->tearDown()) {
+    cerr << "Testing framework tear down failed" << endl;
+  }
 
-    if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-        cout << "All test cases passed" << endl;
-    }
+  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
+    cout << "All test cases passed" << endl;
+  }
 
-    cout << collector << endl;
+  cout << collector << endl;
 
-    return 0;
+  return 0;
 }
-

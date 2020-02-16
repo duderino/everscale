@@ -2,11 +2,12 @@
  *  @brief A generic logging interface with support for severity levels
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -65,50 +66,50 @@
  *  @ingroup log
  */
 class ESFLogger {
-public:
-    /** Severity-level.
-     */
-    typedef enum {
-        None = 0, Emergency = 1, /**< System-wide non-recoverable error. */
-        Alert = 2, /**< System-wide non-recoverable error imminent. */
-        Critical = 3, /**< System-wide potentially recoverable error. */
-        Error = 4, /**< Localized non-recoverable error. */
-        Warning = 5, /**< Localized potentially recoverable error. */
-        Notice = 6, /**< Important non-error event. */
-        Info = 7, /**< Non-error event. */
-        Debug = 8
+ public:
+  /** Severity-level.
+   */
+  typedef enum {
+    None = 0,
+    Emergency = 1, /**< System-wide non-recoverable error. */
+    Alert = 2,     /**< System-wide non-recoverable error imminent. */
+    Critical = 3,  /**< System-wide potentially recoverable error. */
+    Error = 4,     /**< Localized non-recoverable error. */
+    Warning = 5,   /**< Localized potentially recoverable error. */
+    Notice = 6,    /**< Important non-error event. */
+    Info = 7,      /**< Non-error event. */
+    Debug = 8
     /**< Debugging event. */
-    } Severity;
+  } Severity;
 
-    /** Destructor
-     */
-    virtual ~ESFLogger() {
-    }
-    ;
+  /** Destructor
+   */
+  virtual ~ESFLogger(){};
 
-    /** Determine whether a log message will really be logged.
-     *
-     * @param severity The severity of the message to be logged
-     * @return true if the messages will really be logged, false otherwise.
-     */
-    virtual bool isLoggable(Severity severity) = 0;
+  /** Determine whether a log message will really be logged.
+   *
+   * @param severity The severity of the message to be logged
+   * @return true if the messages will really be logged, false otherwise.
+   */
+  virtual bool isLoggable(Severity severity) = 0;
 
-    /** Set the severity level at which messages will be logged.
-     *
-     *  @param severity Messages with a severity greater than or equal to
-     *      this severity level will be logged
-     */
-    virtual void setSeverity(Severity severity) = 0;
+  /** Set the severity level at which messages will be logged.
+   *
+   *  @param severity Messages with a severity greater than or equal to
+   *      this severity level will be logged
+   */
+  virtual void setSeverity(Severity severity) = 0;
 
-    /** Log a message.
-     *
-     *  @param severity The severity of the event.
-     *  @param file The name of the file logging the message.
-     *  @param line The line of the file that the message was logged.
-     *  @param format A printf-style format string.
-     *  @return ESF_SUCCESS if successful, another value otherwise.
-     */
-    virtual ESFError log(Severity severity, const char *file, int line, const char *format, ...) = 0;
+  /** Log a message.
+   *
+   *  @param severity The severity of the event.
+   *  @param file The name of the file logging the message.
+   *  @param line The line of the file that the message was logged.
+   *  @param format A printf-style format string.
+   *  @return ESF_SUCCESS if successful, another value otherwise.
+   */
+  virtual ESFError log(Severity severity, const char *file, int line,
+                       const char *format, ...) = 0;
 };
 
 #endif /* ! ESF_LOGGER_H */

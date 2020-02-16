@@ -2,11 +2,12 @@
  *  @brief A collection of primitive type abstractions
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -29,7 +30,7 @@
 #include <basetsd.h>
 #endif
 
-#if ! ( defined ESF_BIG_ENDIAN || defined ESF_LITTLE_ENDIAN )
+#if !(defined ESF_BIG_ENDIAN || defined ESF_LITTLE_ENDIAN)
 #error "Endianness of target is unknown"
 #endif
 
@@ -44,7 +45,7 @@ typedef char ESFInt8;
 
 #if 8 == SIZEOF_UNSIGNED_CHAR
 typedef unsigned char ESFUInt8;
-#define ESF_UINT8_C(c) c ## U
+#define ESF_UINT8_C(c) c##U
 #define ESF_UINT8_MAX 255U
 #define ESF_UINT8_MIN 0U
 #else
@@ -62,7 +63,7 @@ typedef short ESFInt16;
 
 #if 16 == SIZEOF_UNSIGNED_SHORT
 typedef unsigned short ESFUInt16;
-#define ESF_UINT16_C(c) c ## U
+#define ESF_UINT16_C(c) c##U
 #define ESF_UINT16_MAX 65535U
 #define ESF_UINT16_MIN 0U
 #else
@@ -73,14 +74,14 @@ typedef unsigned short ESFUInt16;
 typedef int ESFInt32;
 #define ESF_INT32_C(c) c
 #define ESF_INT32_MAX 2147483647
-#define ESF_INT32_MIN (-(ESF_INT32_MAX+1))
+#define ESF_INT32_MIN (-(ESF_INT32_MAX + 1))
 #else
 #error "32 bit integer required"
 #endif
 
 #if 32 == SIZEOF_UNSIGNED_INT
 typedef unsigned int ESFUInt32;
-#define ESF_UINT32_C(c) c ## U
+#define ESF_UINT32_C(c) c##U
 #define ESF_UINT32_MAX 4294967295U
 #define ESF_UINT32_MIN 0U
 #else
@@ -89,36 +90,36 @@ typedef unsigned int ESFUInt32;
 
 #if 64 == SIZEOF_LONG
 typedef long ESFInt64;
-#define ESF_INT64_C(c) c ## L
+#define ESF_INT64_C(c) c##L
 #define ESF_INT64_MAX 9223372036854775807L
-#define ESF_INT64_MIN (-(ESF_INT64_MAX+1L))
+#define ESF_INT64_MIN (-(ESF_INT64_MAX + 1L))
 #elif 64 == SIZEOF_LONG_LONG
 typedef long long ESFInt64;
-#define ESF_INT64_C(c) c ## LL
+#define ESF_INT64_C(c) c##LL
 #define ESF_INT64_MAX 9223372036854775807LL
-#define ESF_INT64_MIN (-(ESF_INT64_MAX+1LL))
+#define ESF_INT64_MIN (-(ESF_INT64_MAX + 1LL))
 #elif 64 == SIZEOF___INT64
 typedef __int64 ESFInt64;
-#define ESF_INT64_C(c) c ## i64
+#define ESF_INT64_C(c) c##i64
 #define ESF_INT64_MAX 9223372036854775807i64
-#define ESF_INT64_MIN -(ESF_INT64_MAX+1i64)
+#define ESF_INT64_MIN -(ESF_INT64_MAX + 1i64)
 #else
 #error "64 bit integer required"
 #endif
 
 #if 64 == SIZEOF_UNSIGNED_LONG
 typedef unsigned long ESFUInt64;
-#define ESF_UINT64_C(c) c ## UL
+#define ESF_UINT64_C(c) c##UL
 #define ESF_UINT64_MAX 18446744073709551615UL
 #define ESF_UINT64_MIN 0UL
 #elif 64 == SIZEOF_UNSIGNED_LONG_LONG
 typedef unsigned long long ESFUInt64;
-#define ESF_UINTT64_C(c) c ## ULL
+#define ESF_UINTT64_C(c) c##ULL
 #define ESF_UINT64_MAX 18446744073709551615ULL
 #define ESF_UINT64_MIN 0ULL
 #elif 64 == SIZEOF_UNSIGNED___INT64
 typedef unsigned __int64 ESFUInt64;
-#define ESF_UINT64_C(c) c ## ui64
+#define ESF_UINT64_C(c) c##ui64
 #define ESF_UINT64_MAX 9223372036854775807ui64
 #define ESF_UINT64_MIN 0ui64
 #else
@@ -165,7 +166,10 @@ typedef SSIZE_T ESFSSize;
 
 #define ESF_MAGIC ESF_UINT8_C(0x23)
 
-#define ESF_WORD_ALIGN(value) (((value) % sizeof(ESFWord)) ? (((value) & ~(sizeof(ESFWord) - 1)) + sizeof(ESFWord)) : (value))
+#define ESF_WORD_ALIGN(value)                                   \
+  (((value) % sizeof(ESFWord))                                  \
+       ? (((value) & ~(sizeof(ESFWord) - 1)) + sizeof(ESFWord)) \
+       : (value))
 
 #define ESF_MIN(a, b) ((a) > (b) ? (b) : (a))
 

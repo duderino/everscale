@@ -45,46 +45,40 @@
 #include <ESTFConcurrencyComposite.h>
 #endif
 
-ESFSharedQueueTest::ESFSharedQueueTest() {
-}
+ESFSharedQueueTest::ESFSharedQueueTest() {}
 
-ESFSharedQueueTest::~ESFSharedQueueTest() {
-}
+ESFSharedQueueTest::~ESFSharedQueueTest() {}
 
 bool ESFSharedQueueTest::run(ESTFResultCollector *collector) {
-    ESTFComponentPtr component;
-    ESFSharedQueue queue(ESFSystemAllocator::GetInstance(), 20);
-    ESTFConcurrencyComposite composite;
+  ESTFComponentPtr component;
+  ESFSharedQueue queue(ESFSystemAllocator::GetInstance(), 20);
+  ESTFConcurrencyComposite composite;
 
-    for (int i = 0; i < 9; ++i) {
-        component = new ESFSharedQueueProducer(i, queue, ESF_UINT32_C( 10000 ) );
+  for (int i = 0; i < 9; ++i) {
+    component = new ESFSharedQueueProducer(i, queue, ESF_UINT32_C(10000));
 
-        composite.add(component);
-    }
+    composite.add(component);
+  }
 
-    for (int i = 0; i < 3; ++i) {
-        component = new ESFSharedQueueConsumer(queue, ESF_UINT32_C( 30000 ) );
+  for (int i = 0; i < 3; ++i) {
+    component = new ESFSharedQueueConsumer(queue, ESF_UINT32_C(30000));
 
-        composite.add(component);
-    }
+    composite.add(component);
+  }
 
-    bool result = composite.run(collector);
+  bool result = composite.run(collector);
 
-    composite.clear();
+  composite.clear();
 
-    return result;
+  return result;
 }
 
-bool ESFSharedQueueTest::setup() {
-    return true;
-}
+bool ESFSharedQueueTest::setup() { return true; }
 
-bool ESFSharedQueueTest::tearDown() {
-    return true;
-}
+bool ESFSharedQueueTest::tearDown() { return true; }
 
 ESTFComponentPtr ESFSharedQueueTest::clone() {
-    ESTFComponentPtr component(new ESFSharedQueueTest());
+  ESTFComponentPtr component(new ESFSharedQueueTest());
 
-    return component;
+  return component;
 }

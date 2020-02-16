@@ -12,21 +12,20 @@
 
 namespace ESB {
 
-AllocatorCleanupHandler::AllocatorCleanupHandler(Allocator *allocator) :
-    _allocator(allocator) {
-    ESB_ASSERT(_allocator);
+AllocatorCleanupHandler::AllocatorCleanupHandler(Allocator *allocator)
+    : _allocator(allocator) {
+  ESB_ASSERT(_allocator);
 }
 
-AllocatorCleanupHandler::~AllocatorCleanupHandler() {
-}
+AllocatorCleanupHandler::~AllocatorCleanupHandler() {}
 
 void AllocatorCleanupHandler::destroy(Object *object) {
-    if (!_allocator || !object) {
-        return;
-    }
+  if (!_allocator || !object) {
+    return;
+  }
 
-    object->~Object();
-    _allocator->deallocate(object);
+  object->~Object();
+  _allocator->deallocate(object);
 }
 
-}
+}  // namespace ESB

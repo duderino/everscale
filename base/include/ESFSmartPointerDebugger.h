@@ -3,11 +3,12 @@
  *      reference-counted objects used by smart pointers in the system
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  * $Author: blattj $
  * $Date: 2009/05/25 21:51:08 $
@@ -42,67 +43,65 @@
  *  @ingroup object
  */
 class ESFSmartPointerDebugger {
-public:
+ public:
+  /** Get an instance of the global ESFSmartPointerDebugger
+   *
+   *  @return A ESFSmartPointerDebugger reference
+   */
+  static ESFSmartPointerDebugger *Instance();
 
-    /** Get an instance of the global ESFSmartPointerDebugger
-     *
-     *  @return A ESFSmartPointerDebugger reference
-     */
-    static ESFSmartPointerDebugger *Instance();
+  /** Initialize the global ESFSmartPointerDebugger
+   *
+   *  @return true if successful, false otherwise.
+   */
+  static bool Initialize();
 
-    /** Initialize the global ESFSmartPointerDebugger
-     *
-     *  @return true if successful, false otherwise.
-     */
-    static bool Initialize();
+  /** Destroy the global ESFSmartPointerDebugger
+   *
+   *  @return true if successful, false otherwise.
+   */
+  static bool Destroy();
 
-    /** Destroy the global ESFSmartPointerDebugger
-     *
-     *  @return true if successful, false otherwise.
-     */
-    static bool Destroy();
+  /** Destructor */
+  virtual ~ESFSmartPointerDebugger();
 
-    /** Destructor */
-    virtual ~ESFSmartPointerDebugger();
+  /** Register an ESFReferenceCount instance with the debugger.  This method
+   *  will be called when a ESFReferenceCount or ESFReferenceCount subclass is
+   *  assigned to an ESFSmartPointer or ESFSmartPointer subclass.  This
+   *  method is idempotent.  It can be called multiple times for the same
+   *  ESFReferenceCount or ESFReferenceCount subclass without ill effect.
+   *
+   *  @param object The object to register.
+   */
+  void insert(ESFReferenceCount *object);
 
-    /** Register an ESFReferenceCount instance with the debugger.  This method
-     *  will be called when a ESFReferenceCount or ESFReferenceCount subclass is
-     *  assigned to an ESFSmartPointer or ESFSmartPointer subclass.  This
-     *  method is idempotent.  It can be called multiple times for the same
-     *  ESFReferenceCount or ESFReferenceCount subclass without ill effect.
-     *
-     *  @param object The object to register.
-     */
-    void insert(ESFReferenceCount *object);
+  /** Unregister an ESFReferenceCount instance from the debugger.  This method
+   *  will be called whenever an ESFReferenceCount or ESFReferenceCount
+   *  subclass's reference count is decremented to 0.
+   *
+   *  @param object The object to unregister.
+   */
+  void erase(ESFReferenceCount *object);
 
-    /** Unregister an ESFReferenceCount instance from the debugger.  This method
-     *  will be called whenever an ESFReferenceCount or ESFReferenceCount
-     *  subclass's reference count is decremented to 0.
-     *
-     *  @param object The object to unregister.
-     */
-    void erase(ESFReferenceCount *object);
+  /** Get the current number of registered objects.  That is, the current
+   *  number of active object references.
+   *
+   *  @return The current number of registered objects.
+   */
+  int getSize();
 
-    /** Get the current number of registered objects.  That is, the current
-     *  number of active object references.
-     *
-     *  @return The current number of registered objects.
-     */
-    int getSize();
+ private:
+  /** Constructor */
+  ESFSmartPointerDebugger();
 
-private:
+  // Disabled
+  ESFSmartPointerDebugger(const ESFSmartPointerDebugger &);
+  // Disabled
+  ESFSmartPointerDebugger *operator=(const ESFSmartPointerDebugger &);
 
-    /** Constructor */
-    ESFSmartPointerDebugger();
+  static ESFSmartPointerDebugger _Instance;
 
-    // Disabled
-    ESFSmartPointerDebugger(const ESFSmartPointerDebugger &);
-    // Disabled
-    ESFSmartPointerDebugger *operator=(const ESFSmartPointerDebugger &);
-
-    static ESFSmartPointerDebugger _Instance;
-
-    ESFMap _references;
+  ESFMap _references;
 };
 
 #endif /* defined USE_SMART_POINTER_DEBUGGER */

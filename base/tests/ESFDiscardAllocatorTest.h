@@ -40,56 +40,56 @@
  *
  *  @ingroup foundation_test
  */
-class ESFDiscardAllocatorTest: public ESTFComponent {
-public:
-    /** Constructor.
-     */
-    ESFDiscardAllocatorTest();
+class ESFDiscardAllocatorTest : public ESTFComponent {
+ public:
+  /** Constructor.
+   */
+  ESFDiscardAllocatorTest();
 
-    /** Destructor. */
-    virtual ~ESFDiscardAllocatorTest();
+  /** Destructor. */
+  virtual ~ESFDiscardAllocatorTest();
 
-    /** Run the component.
-     *
-     *  @param collector A result collector that will collect the results of
-     *      this test run.
-     *  @return true if the test run was successfully performed by the test
-     *      framework.  Application errors discovered during a test run do not
-     *      count, a false return means there was an error in the test suite
-     *      itself that prevented it from completing one or more test cases.
-     */
-    bool run(ESTFResultCollector *collector);
+  /** Run the component.
+   *
+   *  @param collector A result collector that will collect the results of
+   *      this test run.
+   *  @return true if the test run was successfully performed by the test
+   *      framework.  Application errors discovered during a test run do not
+   *      count, a false return means there was an error in the test suite
+   *      itself that prevented it from completing one or more test cases.
+   */
+  bool run(ESTFResultCollector *collector);
 
-    /** Perform a one-time initialization of the component.  Initializations
-     *  that must be performed on every run of a test case should be put in
-     *  the run method.
-     *
-     *  @return true if the one-time initialization was successfully performed,
-     *      false otherwise.
-     */
-    bool setup();
+  /** Perform a one-time initialization of the component.  Initializations
+   *  that must be performed on every run of a test case should be put in
+   *  the run method.
+   *
+   *  @return true if the one-time initialization was successfully performed,
+   *      false otherwise.
+   */
+  bool setup();
 
-    /** Perform a one-time tear down of the component.  Tear downs that must be
-     *  performed on every run of a test case should be put in the run method.
-     *
-     *  @return true if the one-time tear down was successfully performed,
-     *      false otherwise.
-     */
-    bool tearDown();
+  /** Perform a one-time tear down of the component.  Tear downs that must be
+   *  performed on every run of a test case should be put in the run method.
+   *
+   *  @return true if the one-time tear down was successfully performed,
+   *      false otherwise.
+   */
+  bool tearDown();
 
-    /** Returns a deep copy of the component.
-     *
-     *  @return A deep copy of the component.
-     */
-    ESTFComponentPtr clone();
+  /** Returns a deep copy of the component.
+   *
+   *  @return A deep copy of the component.
+   */
+  ESTFComponentPtr clone();
 
-private:
-    int generateAllocSize();
+ private:
+  int generateAllocSize();
 
-    ESTFRand _rand;
-    ESFDiscardAllocator _allocator;
+  ESTFRand _rand;
+  ESFDiscardAllocator _allocator;
 };
 
-DEFINE_ESTF_OBJECT_PTR(ESFDiscardAllocatorTest,ESTFComponent)
+DEFINE_ESTF_OBJECT_PTR(ESFDiscardAllocatorTest, ESTFComponent)
 
-#endif                                 /* ! ESF_DISCARD_ALLOCATOR_TEST_H */
+#endif /* ! ESF_DISCARD_ALLOCATOR_TEST_H */

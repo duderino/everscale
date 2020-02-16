@@ -39,40 +39,41 @@
 #endif
 
 int main() {
-    ESFMapTestPtr mapTest = new ESFMapTest(true);
-    ESFMapTestPtr multiMapTest = new ESFMapTest(false);
+  ESFMapTestPtr mapTest = new ESFMapTest(true);
+  ESFMapTestPtr multiMapTest = new ESFMapTest(false);
 
-    ESTFConcurrencyDecoratorPtr mapDecorator = new ESTFConcurrencyDecorator(mapTest, 10);
-    ESTFConcurrencyDecoratorPtr multiMapDecorator = new ESTFConcurrencyDecorator(multiMapTest, 1);
+  ESTFConcurrencyDecoratorPtr mapDecorator =
+      new ESTFConcurrencyDecorator(mapTest, 10);
+  ESTFConcurrencyDecoratorPtr multiMapDecorator =
+      new ESTFConcurrencyDecorator(multiMapTest, 1);
 
-    ESTFCompositePtr testSuite = new ESTFComposite();
+  ESTFCompositePtr testSuite = new ESTFComposite();
 
-    testSuite->add(mapDecorator);
-    //testSuite->add( multiMapDecorator );
+  testSuite->add(mapDecorator);
+  // testSuite->add( multiMapDecorator );
 
-    ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 3);
+  ESTFRepetitionDecoratorPtr root = new ESTFRepetitionDecorator(testSuite, 3);
 
-    ESTFResultCollector collector;
+  ESTFResultCollector collector;
 
-    if (false == root->setup()) {
-        cerr << "Testing framework setup failed" << endl;
-        return 1;
-    }
+  if (false == root->setup()) {
+    cerr << "Testing framework setup failed" << endl;
+    return 1;
+  }
 
-    if (false == root->run(&collector)) {
-        cerr << "Testing framework run failed" << endl;
-    }
+  if (false == root->run(&collector)) {
+    cerr << "Testing framework run failed" << endl;
+  }
 
-    if (false == root->tearDown()) {
-        cerr << "Testing framework tear down failed" << endl;
-    }
+  if (false == root->tearDown()) {
+    cerr << "Testing framework tear down failed" << endl;
+  }
 
-    if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-        cout << "All test cases passed" << endl;
-    }
+  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
+    cout << "All test cases passed" << endl;
+  }
 
-    cout << collector << endl;
+  cout << collector << endl;
 
-    return 0;
+  return 0;
 }
-

@@ -2,11 +2,12 @@
  *  @brief A synchronized doubly linked list of ESFEmbeddedListElements
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *
  *    $Author: blattj $
@@ -41,93 +42,89 @@
  *  @ingroup util
  */
 class ESFSharedEmbeddedList {
-public:
-    /** Constructor.
-     */
-    ESFSharedEmbeddedList(ESFLockable *lockable);
+ public:
+  /** Constructor.
+   */
+  ESFSharedEmbeddedList(ESFLockable *lockable);
 
-    /** Destructor.
-     */
-    virtual ~ESFSharedEmbeddedList();
+  /** Destructor.
+   */
+  virtual ~ESFSharedEmbeddedList();
 
-    inline bool isEmpty() {
-        ESFReadScopeLock scopeLock(_lockable);
+  inline bool isEmpty() {
+    ESFReadScopeLock scopeLock(_lockable);
 
-        return _embeddedList.isEmpty();
-    }
+    return _embeddedList.isEmpty();
+  }
 
-    inline int length() {
-        ESFReadScopeLock scopeLock(_lockable);
+  inline int length() {
+    ESFReadScopeLock scopeLock(_lockable);
 
-        return _embeddedList.length();
-    }
+    return _embeddedList.length();
+  }
 
-    inline ESFEmbeddedListElement *getFirst() {
-        ESFReadScopeLock scopeLock(_lockable);
+  inline ESFEmbeddedListElement *getFirst() {
+    ESFReadScopeLock scopeLock(_lockable);
 
-        return _embeddedList.getFirst();
-    }
+    return _embeddedList.getFirst();
+  }
 
-    inline ESFEmbeddedListElement *removeFirst() {
-        ESFWriteScopeLock scopeLock(_lockable);
+  inline ESFEmbeddedListElement *removeFirst() {
+    ESFWriteScopeLock scopeLock(_lockable);
 
-        return _embeddedList.removeFirst();
-    }
+    return _embeddedList.removeFirst();
+  }
 
-    inline void prepend(ESFEmbeddedListElement *element) {
-        ESFWriteScopeLock scopeLock(_lockable);
+  inline void prepend(ESFEmbeddedListElement *element) {
+    ESFWriteScopeLock scopeLock(_lockable);
 
-        _embeddedList.prepend(element);
-    }
+    _embeddedList.prepend(element);
+  }
 
-    inline ESFEmbeddedListElement *getLast() {
-        ESFReadScopeLock scopeLock(_lockable);
+  inline ESFEmbeddedListElement *getLast() {
+    ESFReadScopeLock scopeLock(_lockable);
 
-        return _embeddedList.getLast();
-    }
+    return _embeddedList.getLast();
+  }
 
-    inline ESFEmbeddedListElement *removeLast() {
-        ESFWriteScopeLock scopeLock(_lockable);
+  inline ESFEmbeddedListElement *removeLast() {
+    ESFWriteScopeLock scopeLock(_lockable);
 
-        return _embeddedList.removeLast();
-    }
+    return _embeddedList.removeLast();
+  }
 
-    inline void append(ESFEmbeddedListElement *element) {
-        ESFWriteScopeLock scopeLock(_lockable);
+  inline void append(ESFEmbeddedListElement *element) {
+    ESFWriteScopeLock scopeLock(_lockable);
 
-        _embeddedList.append(element);
-    }
+    _embeddedList.append(element);
+  }
 
-    inline void writeLock() {
-        _lockable->writeAcquire();
-    }
+  inline void writeLock() { _lockable->writeAcquire(); }
 
-    inline void writeUnlock() {
-        _lockable->writeRelease();
-    }
+  inline void writeUnlock() { _lockable->writeRelease(); }
 
-    inline void readLock() {
-        _lockable->
+  inline void readLock() {
+    _lockable->
 
         /** Placement new.
          *
          *  @param size The size of the object.
          *  @param allocator The source of the object's memory.
-         *  @return Memory for the new object or NULL if the memory allocation failed.
+         *  @return Memory for the new object or NULL if the memory allocation
+         * failed.
          */
-        inline void *operator new(size_t size, ESFAllocator *allocator)
-        {
-            return allocator->allocate(size);
-        }
-
-    private:
-        // Disabled
-        ESFSharedEmbeddedList(const ESFSharedEmbeddedList &);
-        ESFSharedEmbeddedList &operator=(const ESFSharedEmbeddedList &);
-
-        ESFEmbeddedList _embeddedList;
-        ESFMutex _lock;
+        inline void *
+        operator new(size_t size, ESFAllocator *allocator) {
+      return allocator->allocate(size);
     }
-    ;
+
+   private:
+    // Disabled
+    ESFSharedEmbeddedList(const ESFSharedEmbeddedList &);
+    ESFSharedEmbeddedList &operator=(const ESFSharedEmbeddedList &);
+
+    ESFEmbeddedList _embeddedList;
+    ESFMutex _lock;
+  };
 
 #endif /* ! ESF_SHARED_EMBEDDED_LIST_H */

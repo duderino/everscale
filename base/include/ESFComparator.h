@@ -3,11 +3,12 @@
  *      order sets of keys.
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -31,25 +32,24 @@
  *  @ingroup collection
  */
 class ESFComparator {
-public:
+ public:
+  /** Default constructor.
+   */
+  ESFComparator();
 
-    /** Default constructor.
-     */
-    ESFComparator();
+  /** Default destructor.
+   */
+  virtual ~ESFComparator();
 
-    /** Default destructor.
-     */
-    virtual ~ESFComparator();
-
-    /** Compare two locations.
-     *
-     *  @param first The first location to compare.
-     *  @param second The second location to compare.
-     *  @return 0 if both locations are equal, a negative number if the first
-     *      location is less than the second, or a positive number if the first
-     *      location is greater than the second.
-     */
-    virtual int compare(const void *first, const void *second) const = 0;
+  /** Compare two locations.
+   *
+   *  @param first The first location to compare.
+   *  @param second The second location to compare.
+   *  @return 0 if both locations are equal, a negative number if the first
+   *      location is less than the second, or a positive number if the first
+   *      location is greater than the second.
+   */
+  virtual int compare(const void *first, const void *second) const = 0;
 };
 
 #endif /* ! ESF_COMPARATOR_H */

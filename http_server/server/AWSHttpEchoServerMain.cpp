@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef ESF_CONSOLE_LOGGER_H
@@ -28,138 +28,125 @@
 #endif
 
 #include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 static void AWSHttpEchoServerSignalHandler(int signal);
 static volatile ESFWord IsRunning = 1;
 
-static void printHelp()
-{
-    fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
+static void printHelp() {
+  fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
 }
 
-int main(int argc, char **argv)
-{
-    int port = 8080;
-    int threads = 4;
-    int logLevel = ESFLogger::Debug;
+int main(int argc, char **argv) {
+  int port = 8080;
+  int threads = 4;
+  int logLevel = ESFLogger::Debug;
 
-    {
-        int result = 0;
+  {
+    int result = 0;
 
-        while (true)
-        {
-            result = getopt(argc, argv, "l:m:p:");
+    while (true) {
+      result = getopt(argc, argv, "l:m:p:");
 
-            if (0 > result)
-            {
-                break;
-            }
+      if (0 > result) {
+        break;
+      }
 
-            switch (result)
-            {
-                case 'l':
+      switch (result) {
+        case 'l':
 
-                    /*
-                    None = 0,
-                    Emergency = 1,   System-wide non-recoverable error.
-                    Alert = 2,       System-wide non-recoverable error imminent.
-                    Critical = 3,    System-wide potentially recoverable error.
-                    Error = 4,       Localized non-recoverable error.
-                    Warning = 5,     Localized potentially recoverable error.
-                    Notice = 6,      Important non-error event.
-                    Info = 7,        Non-error event.
-                    Debug = 8        Debugging event.
-                    */
+          /*
+          None = 0,
+          Emergency = 1,   System-wide non-recoverable error.
+          Alert = 2,       System-wide non-recoverable error imminent.
+          Critical = 3,    System-wide potentially recoverable error.
+          Error = 4,       Localized non-recoverable error.
+          Warning = 5,     Localized potentially recoverable error.
+          Notice = 6,      Important non-error event.
+          Info = 7,        Non-error event.
+          Debug = 8        Debugging event.
+          */
 
-                    logLevel = atoi(optarg);
-                    break;
+          logLevel = atoi(optarg);
+          break;
 
-                case 'm':
+        case 'm':
 
-                    threads = atoi(optarg);
-                    break;
+          threads = atoi(optarg);
+          break;
 
-                case 'p':
+        case 'p':
 
-                    port = atoi(optarg);
-                    break;
+          port = atoi(optarg);
+          break;
 
-                default:
+        default:
 
-                    printHelp();
+          printHelp();
 
-                    return 2;
-            }
-        }
+          return 2;
+      }
     }
+  }
 
-    ESFConsoleLogger::Initialize((ESFLogger::Severity) logLevel);
-    ESFLogger *logger = ESFConsoleLogger::Instance();
+  ESFConsoleLogger::Initialize((ESFLogger::Severity)logLevel);
+  ESFLogger *logger = ESFConsoleLogger::Instance();
 
-    if (logger->isLoggable(ESFLogger::Notice))
-    {
-        logger->log(ESFLogger::Notice, __FILE__, __LINE__,
-                    "[main] starting. logLevel: %d, threads: %d, port: %d",
-                    logLevel, threads, port);
-    }
+  if (logger->isLoggable(ESFLogger::Notice)) {
+    logger->log(ESFLogger::Notice, __FILE__, __LINE__,
+                "[main] starting. logLevel: %d, threads: %d, port: %d",
+                logLevel, threads, port);
+  }
 
-    //
-    // Install signal handlers
-    //
+  //
+  // Install signal handlers
+  //
 
-    signal(SIGHUP, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGINT, AWSHttpEchoServerSignalHandler);
-    signal(SIGQUIT, AWSHttpEchoServerSignalHandler);
-    signal(SIGTERM, AWSHttpEchoServerSignalHandler);
+  signal(SIGHUP, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGINT, AWSHttpEchoServerSignalHandler);
+  signal(SIGQUIT, AWSHttpEchoServerSignalHandler);
+  signal(SIGTERM, AWSHttpEchoServerSignalHandler);
 
-    AWSHttpEchoServerHandler handler(logger);
-    AWSHttpDefaultResolver resolver(logger);
-    AWSHttpClientSimpleCounters clientCounters;
-    AWSHttpServerSimpleCounters serverCounters;
+  AWSHttpEchoServerHandler handler(logger);
+  AWSHttpDefaultResolver resolver(logger);
+  AWSHttpClientSimpleCounters clientCounters;
+  AWSHttpServerSimpleCounters serverCounters;
 
-    AWSHttpStack stack(&handler, &resolver, port, threads, &clientCounters, &serverCounters, logger);
+  AWSHttpStack stack(&handler, &resolver, port, threads, &clientCounters,
+                     &serverCounters, logger);
 
-    ESFError error = stack.initialize();
+  ESFError error = stack.initialize();
 
-    if (ESF_SUCCESS != error)
-    {
-        return -1;
-    }
+  if (ESF_SUCCESS != error) {
+    return -1;
+  }
 
-    error = stack.start();
+  error = stack.start();
 
-    if (ESF_SUCCESS != error)
-    {
-        return -2;
-    }
+  if (ESF_SUCCESS != error) {
+    return -2;
+  }
 
-    while (IsRunning)
-    {
-        sleep(60);
-    }
+  while (IsRunning) {
+    sleep(60);
+  }
 
-    error = stack.stop();
+  error = stack.stop();
 
-    if (ESF_SUCCESS != error)
-    {
-        return -3;
-    }
+  if (ESF_SUCCESS != error) {
+    return -3;
+  }
 
-    serverCounters.printSummary(stdout);
+  serverCounters.printSummary(stdout);
 
-    stack.destroy();
+  stack.destroy();
 
-    ESFConsoleLogger::Destroy();
+  ESFConsoleLogger::Destroy();
 
-    return 0;
+  return 0;
 }
 
-void AWSHttpEchoServerSignalHandler(int signal)
-{
-    IsRunning = 0;
-}
-
+void AWSHttpEchoServerSignalHandler(int signal) { IsRunning = 0; }

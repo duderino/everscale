@@ -1,6 +1,6 @@
 /* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  */
 
 #ifndef AWS_HTTP_RESPONSE_PARSER_H
@@ -24,246 +24,218 @@
 #define AWS_PARSING_REASON_PHRASE (1 << 2)
 #define AWS_PARSE_COMPLETE (1 << 3)
 
-AWSHttpResponseParser::AWSHttpResponseParser(ESFBuffer *workingBuffer, ESFDiscardAllocator *allocator) :
-    AWSHttpMessageParser(workingBuffer, allocator),
-    _responseState(0x00)
-{
+AWSHttpResponseParser::AWSHttpResponseParser(ESFBuffer *workingBuffer,
+                                             ESFDiscardAllocator *allocator)
+    : AWSHttpMessageParser(workingBuffer, allocator), _responseState(0x00) {}
+
+AWSHttpResponseParser::~AWSHttpResponseParser() {}
+
+void AWSHttpResponseParser::reset() {
+  AWSHttpMessageParser::reset();
+
+  _responseState = 0x00;
 }
 
-AWSHttpResponseParser::~AWSHttpResponseParser()
-{
-}
+ESFError AWSHttpResponseParser::parseStartLine(ESFBuffer *inputBuffer,
+                                               AWSHttpMessage *message) {
+  // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
 
-void AWSHttpResponseParser::reset()
-{
-    AWSHttpMessageParser::reset();
-
-    _responseState = 0x00;
-}
-
-ESFError AWSHttpResponseParser::parseStartLine(ESFBuffer *inputBuffer, AWSHttpMessage *message)
-{
-    // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
-
-    if (AWS_PARSE_COMPLETE & _responseState)
-    {
-        return ESF_INVALID_STATE;
-    }
-
-    if (0x00 == _responseState)
-    {
-        _responseState = AWS_PARSING_VERSION;
-
-        inputBuffer->readMark();
-        _workingBuffer->clear();
-    }
-
-    AWSHttpResponse *response = (AWSHttpResponse *) message;
-
-    ESFError error = ESF_SUCCESS;
-
-    if (AWS_PARSING_VERSION & _responseState)
-    {
-        error = parseVersion(inputBuffer, response, true);
-
-        if (ESF_SUCCESS != error)
-        {
-            return error;
-        }
-
-        _responseState &= ~AWS_PARSING_VERSION;
-        _responseState |= AWS_PARSING_STATUS_CODE;
-
-        inputBuffer->readMark();
-        _workingBuffer->clear();
-    }
-
-    if (AWS_PARSING_STATUS_CODE & _responseState)
-    {
-        error = parseStatusCode(inputBuffer, response);
-
-        if (ESF_SUCCESS != error)
-        {
-            return error;
-        }
-
-        _responseState &= ~AWS_PARSING_STATUS_CODE;
-        _responseState |= AWS_PARSING_REASON_PHRASE;
-
-        inputBuffer->readMark();
-        _workingBuffer->clear();
-    }
-
-    if (AWS_PARSING_REASON_PHRASE & _responseState)
-    {
-        error = parseReasonPhrase(inputBuffer, response);
-
-        if (ESF_SUCCESS != error)
-        {
-            return error;
-        }
-
-        _responseState &= ~AWS_PARSING_REASON_PHRASE;
-        _responseState |= AWS_PARSE_COMPLETE;
-
-        inputBuffer->readMark();
-        _workingBuffer->clear();
-
-        return ESF_SUCCESS;
-    }
-
+  if (AWS_PARSE_COMPLETE & _responseState) {
     return ESF_INVALID_STATE;
-}
+  }
 
-ESFError AWSHttpResponseParser::parseStatusCode(ESFBuffer *inputBuffer, AWSHttpResponse *response)
-{
-    // Status-Code    = 3DIGIT
+  if (0x00 == _responseState) {
+    _responseState = AWS_PARSING_VERSION;
 
-    ESF_ASSERT(AWS_PARSING_STATUS_CODE & _responseState);
+    inputBuffer->readMark();
+    _workingBuffer->clear();
+  }
 
-    // Clients SHOULD be tolerant in parsing the Status-Line and servers
-    // tolerant when parsing the Request-Line. In particular, they SHOULD
-    // accept any amount of SP or HT characters between fields, even though
-    // only a single SP is required.
+  AWSHttpResponse *response = (AWSHttpResponse *)message;
 
-    AWSHttpUtil::SkipSpaces(inputBuffer);
+  ESFError error = ESF_SUCCESS;
 
-    if (4 > inputBuffer->getReadable())
-    {
-        return ESF_AGAIN;
+  if (AWS_PARSING_VERSION & _responseState) {
+    error = parseVersion(inputBuffer, response, true);
+
+    if (ESF_SUCCESS != error) {
+      return error;
     }
 
-    int statusCode = 0;
-    unsigned char octet;
+    _responseState &= ~AWS_PARSING_VERSION;
+    _responseState |= AWS_PARSING_STATUS_CODE;
 
-    for (int i = 0; i < 3; ++i)
-    {
-        ESF_ASSERT(inputBuffer->isReadable());
+    inputBuffer->readMark();
+    _workingBuffer->clear();
+  }
 
-        octet = inputBuffer->getNext();
+  if (AWS_PARSING_STATUS_CODE & _responseState) {
+    error = parseStatusCode(inputBuffer, response);
 
-        if (false == AWSHttpUtil::IsDigit(octet))
-        {
-            return AWS_HTTP_BAD_STATUS_CODE;
-        }
-
-        statusCode = (statusCode * 10) + (octet - '0');
+    if (ESF_SUCCESS != error) {
+      return error;
     }
 
-    ESF_ASSERT(inputBuffer->isReadable());
+    _responseState &= ~AWS_PARSING_STATUS_CODE;
+    _responseState |= AWS_PARSING_REASON_PHRASE;
 
-    if (false == AWSHttpUtil::IsSpace(inputBuffer->getNext()))
-    {
-        return AWS_HTTP_BAD_STATUS_CODE;
+    inputBuffer->readMark();
+    _workingBuffer->clear();
+  }
+
+  if (AWS_PARSING_REASON_PHRASE & _responseState) {
+    error = parseReasonPhrase(inputBuffer, response);
+
+    if (ESF_SUCCESS != error) {
+      return error;
     }
 
-    response->setStatusCode(statusCode);
+    _responseState &= ~AWS_PARSING_REASON_PHRASE;
+    _responseState |= AWS_PARSE_COMPLETE;
+
+    inputBuffer->readMark();
+    _workingBuffer->clear();
 
     return ESF_SUCCESS;
+  }
+
+  return ESF_INVALID_STATE;
 }
 
+ESFError AWSHttpResponseParser::parseStatusCode(ESFBuffer *inputBuffer,
+                                                AWSHttpResponse *response) {
+  // Status-Code    = 3DIGIT
 
-ESFError AWSHttpResponseParser::parseReasonPhrase(ESFBuffer *inputBuffer, AWSHttpResponse *response)
-{
-    // Reason-Phrase  = *<TEXT, excluding CR, LF>
+  ESF_ASSERT(AWS_PARSING_STATUS_CODE & _responseState);
 
-    ESF_ASSERT(AWS_PARSING_REASON_PHRASE & _responseState);
+  // Clients SHOULD be tolerant in parsing the Status-Line and servers
+  // tolerant when parsing the Request-Line. In particular, they SHOULD
+  // accept any amount of SP or HT characters between fields, even though
+  // only a single SP is required.
 
-    ESFError error;
-    unsigned char octet;
+  AWSHttpUtil::SkipSpaces(inputBuffer);
 
-    while (true)
-    {
-        if (false == inputBuffer->isReadable())
-        {
-            return ESF_AGAIN;
-        }
+  if (4 > inputBuffer->getReadable()) {
+    return ESF_AGAIN;
+  }
 
-        if (false == _workingBuffer->isWritable())
-        {
-            return ESF_OVERFLOW;
-        }
+  int statusCode = 0;
+  unsigned char octet;
 
-        octet = inputBuffer->getNext();
+  for (int i = 0; i < 3; ++i) {
+    ESF_ASSERT(inputBuffer->isReadable());
 
-        if (AWSHttpUtil::IsLWS(octet))
-        {
-            inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+    octet = inputBuffer->getNext();
 
-            error = AWSHttpUtil::SkipLWS(inputBuffer);
+    if (false == AWSHttpUtil::IsDigit(octet)) {
+      return AWS_HTTP_BAD_STATUS_CODE;
+    }
 
-            switch (error)
-            {
-                case ESF_SUCCESS:
+    statusCode = (statusCode * 10) + (octet - '0');
+  }
 
-                    // newline encountered - save reason phrase
+  ESF_ASSERT(inputBuffer->isReadable());
 
-                    {
-                        unsigned char *reasonPhrase = _workingBuffer->duplicate(_allocator, true);    // trims trailing whitespace
+  if (false == AWSHttpUtil::IsSpace(inputBuffer->getNext())) {
+    return AWS_HTTP_BAD_STATUS_CODE;
+  }
 
-                        if (! reasonPhrase)
-                        {
-                            return ESF_OUT_OF_MEMORY;
-                        }
+  response->setStatusCode(statusCode);
 
-                        response->setReasonPhrase(reasonPhrase);
-                    }
+  return ESF_SUCCESS;
+}
 
-                    return ESF_SUCCESS;
+ESFError AWSHttpResponseParser::parseReasonPhrase(ESFBuffer *inputBuffer,
+                                                  AWSHttpResponse *response) {
+  // Reason-Phrase  = *<TEXT, excluding CR, LF>
 
-                case ESF_INPROGRESS:
+  ESF_ASSERT(AWS_PARSING_REASON_PHRASE & _responseState);
 
-                    // LWS encountered - replace with a single space & trim leading white space
+  ESFError error;
+  unsigned char octet;
 
-                    if (0 < _workingBuffer->getWritePosition())
-                    {
-                        _workingBuffer->putNext(' ');
-                    }
+  while (true) {
+    if (false == inputBuffer->isReadable()) {
+      return ESF_AGAIN;
+    }
 
-                    break;
+    if (false == _workingBuffer->isWritable()) {
+      return ESF_OVERFLOW;
+    }
 
-                default:
+    octet = inputBuffer->getNext();
 
-                    return error;
+    if (AWSHttpUtil::IsLWS(octet)) {
+      inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+
+      error = AWSHttpUtil::SkipLWS(inputBuffer);
+
+      switch (error) {
+        case ESF_SUCCESS:
+
+          // newline encountered - save reason phrase
+
+          {
+            unsigned char *reasonPhrase = _workingBuffer->duplicate(
+                _allocator, true);  // trims trailing whitespace
+
+            if (!reasonPhrase) {
+              return ESF_OUT_OF_MEMORY;
             }
 
-            continue;
-        }
+            response->setReasonPhrase(reasonPhrase);
+          }
 
-        if (AWSHttpUtil::IsText(octet))
-        {
-            _workingBuffer->putNext(octet);
-            continue;
-        }
+          return ESF_SUCCESS;
 
-        return AWS_HTTP_BAD_REASON_PHRASE;
-    }
-}
+        case ESF_INPROGRESS:
 
-bool AWSHttpResponseParser::isBodyNotAllowed(AWSHttpMessage *message)
-{
-    // For response messages, whether or not a message-body is included with
-    // a message is dependent on both the request method and the response
-    // status code (section 6.1.1). All responses to the HEAD request method
-    // MUST NOT include a message-body, even though the presence of entity-
-    // header fields might lead one to believe they do. All 1xx
-    // (informational), 204 (no content), and 304 (not modified) responses
-    // MUST NOT include a message-body. All other responses do include a
-    // message-body, although it MAY be of zero length
+          // LWS encountered - replace with a single space & trim leading white
+          // space
 
-    AWSHttpResponse *response = (AWSHttpResponse *) message;
+          if (0 < _workingBuffer->getWritePosition()) {
+            _workingBuffer->putNext(' ');
+          }
 
-    switch (response->getStatusCode())
-    {
-        case 204:
-        case 304:
-
-            return true;
+          break;
 
         default:
 
-            return 200 <= response->getStatusCode();
+          return error;
+      }
+
+      continue;
     }
+
+    if (AWSHttpUtil::IsText(octet)) {
+      _workingBuffer->putNext(octet);
+      continue;
+    }
+
+    return AWS_HTTP_BAD_REASON_PHRASE;
+  }
 }
 
+bool AWSHttpResponseParser::isBodyNotAllowed(AWSHttpMessage *message) {
+  // For response messages, whether or not a message-body is included with
+  // a message is dependent on both the request method and the response
+  // status code (section 6.1.1). All responses to the HEAD request method
+  // MUST NOT include a message-body, even though the presence of entity-
+  // header fields might lead one to believe they do. All 1xx
+  // (informational), 204 (no content), and 304 (not modified) responses
+  // MUST NOT include a message-body. All other responses do include a
+  // message-body, although it MAY be of zero length
 
+  AWSHttpResponse *response = (AWSHttpResponse *)message;
+
+  switch (response->getStatusCode()) {
+    case 204:
+    case 304:
+
+      return true;
+
+    default:
+
+      return 200 <= response->getStatusCode();
+  }
+}

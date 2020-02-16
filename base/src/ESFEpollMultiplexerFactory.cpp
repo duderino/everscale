@@ -2,11 +2,12 @@
  *  @brief A factory that creates epoll socket multiplexers
  *
  * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo! Inc.
- * under the BSD (revised) open source license.
+ * The copyrights embodied in the content of this file are licensed by Yahoo!
+ * Inc. under the BSD (revised) open source license.
  *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under both
- * BSD and Apache 2.0 licenses (http://sourceforge.net/projects/sparrowhawk/).
+ * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
+ * both BSD and Apache 2.0 licenses
+ * (http://sourceforge.net/projects/sparrowhawk/).
  *
  *    $Author: blattj $
  *    $Date: 2009/05/25 21:51:08 $
@@ -26,24 +27,25 @@
 #include <ESFSystemAllocator.h>
 #endif
 
-ESFEpollMultiplexerFactory::ESFEpollMultiplexerFactory(const char *name, ESFLogger *logger, ESFAllocator *allocator) :
-    _name(name), _logger(logger ? logger : ESFNullLogger::GetInstance()), _allocator(allocator ? allocator
-            : ESFSystemAllocator::GetInstance()) {
-}
+ESFEpollMultiplexerFactory::ESFEpollMultiplexerFactory(const char *name,
+                                                       ESFLogger *logger,
+                                                       ESFAllocator *allocator)
+    : _name(name),
+      _logger(logger ? logger : ESFNullLogger::GetInstance()),
+      _allocator(allocator ? allocator : ESFSystemAllocator::GetInstance()) {}
 
-ESFEpollMultiplexerFactory::~ESFEpollMultiplexerFactory() {
-}
+ESFEpollMultiplexerFactory::~ESFEpollMultiplexerFactory() {}
 
 ESFSocketMultiplexer *ESFEpollMultiplexerFactory::create(int maxSockets) {
-    return new (_allocator) ESFEpollMultiplexer(_name, maxSockets, _logger, _allocator);
+  return new (_allocator)
+      ESFEpollMultiplexer(_name, maxSockets, _logger, _allocator);
 }
 
 void ESFEpollMultiplexerFactory::destroy(ESFSocketMultiplexer *multiplexer) {
-    if (!multiplexer) {
-        return;
-    }
+  if (!multiplexer) {
+    return;
+  }
 
-    multiplexer->~ESFSocketMultiplexer();
-    _allocator->deallocate(multiplexer);
+  multiplexer->~ESFSocketMultiplexer();
+  _allocator->deallocate(multiplexer);
 }
-

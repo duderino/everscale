@@ -14,61 +14,43 @@ namespace ESTF {
  *
  *  @ingroup unit-test
  */
-class Object
-{
-public:
+class Object {
+ public:
+  /** Default constructor. */
+  inline Object() : _refCount(0) {}
 
-    /** Default constructor. */
-    inline Object() : _refCount(0)
-    {
-    }
+  /** Destructor. */
+  virtual ~Object() { ESTF_NATIVE_ASSERT(0 == _refCount); }
 
-    /** Destructor. */
-    virtual ~Object()
-    {
-        ESTF_NATIVE_ASSERT( 0 == _refCount );
-    }
+  /** Increment the reference count. */
+  inline void inc() { ++_refCount; }
 
-    /** Increment the reference count. */
-    inline void inc()
-    {
-        ++_refCount;
-    }
+  /** Decrement the reference count. */
+  inline void dec() { --_refCount; }
 
-    /** Decrement the reference count. */
-    inline void dec()
-    {
-        --_refCount;
-    }
+  /** Decrement the reference count and return true if new count is zero.
+   *
+   *    @return true if count is zero after the decrement.
+   */
+  inline bool decAndTest() {
+    bool result = (0 == --_refCount);
 
-    /** Decrement the reference count and return true if new count is zero.
-     *
-     *    @return true if count is zero after the decrement.
-     */
-    inline bool decAndTest()
-    {
-        bool result = ( 0 == --_refCount );
+    return result;
+  }
 
-        return result;
-    }
+  /** Get the current reference count.
+   *
+   *    @return The current reference count.
+   */
+  inline int getRefCount() { return _refCount; }
 
-    /** Get the current reference count.
-     *
-     *    @return The current reference count.
-     */
-    inline int getRefCount()
-    {
-        return _refCount;
-    }
+ private:
+  Object(const Object &);
+  Object &operator=(const Object &);
 
-private:
-
-    Object( const Object & );
-    Object &operator=( const Object & );
-
-    unsigned int _refCount;
+  unsigned int _refCount;
 };
 
-}
+}  // namespace ESTF
 
 #endif /* ! _OBJECT_H */
