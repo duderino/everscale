@@ -1,5 +1,5 @@
-#ifndef ESB_BUDDY_ALLOCATOR_H
-#define ESB_BUDDY_ALLOCATOR_H
+#ifndef ESB_FIXED_ALLOCATOR_H
+#define ESB_FIXED_ALLOCATOR_H
 
 #ifndef ESB_CONFIG_H
 #include <ESBConfig.h>
@@ -15,49 +15,34 @@
 
 namespace ESB {
 
-/** BuddyAllocator realizes the Allocator interface with an
- *  implementation of the Buddy System algorithm described in Donald
- *  Knuth's The Art of Computer Programming, Volume 1 Fundamental Algorithms
- *  Third Edition.  It's a variable length allocator with a good algorithm
- *  for compacting reclaimed memory.
- *
- *  The overhead of this allocator breaks down as follows:
- *
- *  MaxPoolSize = 32 for 32-bit architectures, 64 for 64-bit.
- *  MaxPoolSizeInBytes = 2^MaxPoolSize
- *  WordSize = 4 bytes for 32-bit architectures, 8 for 64-bit.
- *
- *  AdjustedSize = RequestedSize + ( 3 * WordSize )
- *  AllocatedSize = Smallest power of 2 sufficient to hold AdjustedSize
- *
- *  Fixed Overhead:
- *
- *    ( MaxPoolSize * WordSize ) + ( WordSize * 4 )
- *
- *  Overhead Per Allocation:
- *
- *    AllocatedSize - RequestedSize.
+/** FixedAllocator realizes the Allocator interface with a simple fixed
+ *  length allocator.  The FixedAllocator handles memory reservation and
+ *  compaction very efficiently with the low overhead of 1 word per
+ *  allocation because of its limitation that all allocations are always the
+ *  same, fixed size.
  *
  *  @ingroup allocator
  */
-class BuddyAllocator : public Allocator {
+class FixedAllocator : public Allocator {
  public:
-  /** Constructor.
+  /** Constructor.  Creates the FixedAllocator given the number of blocks
+   *  and size of each block for its memory pool and also a source allocator
+   *  from which it will request its memory pool.  The amount of memory it
+   *  will actually request from the source allocator is blocks * blockSize
+   *  plus one word per block.
    *
-   *    @param size The size of the memory pool that this allocator will
-   *        manage as a power of 2 (e.g., 16 will create a 2^16 byte pool).
-   *        Note that this pool will not be allocated until the initialize
-   *        method is called.
-   *    @param source The allocator to use to allocate the memory pool.
-   *        This is probably the system allocator.
+   *  @param blocks The number of blocks this allocator can allocate before
+   *      exhausting its memory pool.
+   *  @param blockSize The size in bytes of each block.
+   *  @param source The allocator to use to allocate the memory pool.
    */
-  BuddyAllocator(int size, Allocator *source);
+  FixedAllocator(int blocks, int blockSize, Allocator *source);
 
   /** Destructor.  If initialized, the allocator will call the its destroy
    *  method.  The destroy method may or may not return the allocator's
    *  managed memory to its source allocator.
    */
-  virtual ~BuddyAllocator();
+  virtual ~FixedAllocator();
 
   /** Allocate a word-aligned memory block of at least size bytes.
    *
@@ -66,14 +51,6 @@ class BuddyAllocator : public Allocator {
    *      successful, NULL otherwise.
    */
   virtual void *allocate(UWord size);
-
-  /** Allocate a word-aligned memory block of at least size bytes.
-   *
-   *  @param block The block to allocate (pointer to a pointer)
-   *  @param size The minimum number of bytes to allocate.
-   *  @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  virtual Error allocate(void **block, UWord size);
 
   /** Deallocate a memory block allocated by this allocator or by its
    *  failover allocators.
@@ -156,6 +133,12 @@ class BuddyAllocator : public Allocator {
    */
   virtual Error getFailoverAllocator(Allocator **allocator);
 
+  /** Get the size of the blocks allocated by this allocator.
+   *
+   *  @return The block size of this allocator.
+   */
+  int getBlockSize();
+
   /** Placement new.
    *
    *  @param size The size of the object.
@@ -167,40 +150,23 @@ class BuddyAllocator : public Allocator {
   }
 
  private:
-  // Disabled
-  BuddyAllocator(const BuddyAllocator &);
-  BuddyAllocator &operator=(const BuddyAllocator &);
-
-#ifdef ESB_64BIT
-#define ESB_AVAIL_LIST_LENGTH 64
-  typedef UInt32 KVal;
-  typedef UInt32 Tag;
-#elif defined ESB_32BIT
-#define ESB_AVAIL_LIST_LENGTH 32
-  typedef UInt16 KVal;
-  typedef UInt16 Tag;
-#else
-#error "Cannot determine architecture type"
-#endif
+  //  Disabled
+  FixedAllocator(const FixedAllocator &);
+  FixedAllocator &operator=(const FixedAllocator &);
 
   typedef struct AvailListElem {
-    AvailListElem *_linkB; /**< Backward link */
-    AvailListElem *_linkF; /**< Forward link */
-    KVal _kVal;            /**< k where 2^k is the size of this element. */
-    Tag _tag;              /**< 1 if available, 0 if in use. */
+    AvailListElem *_next;
   } AvailListElem;
 
-  static KVal GetKVal(UWord requestedSize);
-  AvailListElem *popAvailList(KVal kVal);
+  AvailListElem *popAvailList();
   void pushAvailList(AvailListElem *elem);
-  void removeFromAvailList(AvailListElem *elem);
 
-  AvailListElem *_availList[ESB_AVAIL_LIST_LENGTH];
-
-  Allocator *_failoverAllocator;
-  Allocator *_sourceAllocator;
+  AvailListElem *_availList;
   void *_pool;
-  UWord _poolKVal;
+  Allocator *_sourceAllocator;
+  Allocator *_failoverAllocator;
+  UWord _blockSize;
+  int _blocks;
 };
 
 }  // namespace ESB

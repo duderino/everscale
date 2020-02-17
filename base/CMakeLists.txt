@@ -3,6 +3,7 @@ project(base VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+
 set(SOURCE_FILES
     src/ESBAllocatorCleanupHandler.cpp
     src/ESBBuddyAllocator.cpp
@@ -54,7 +55,6 @@ add_library(base STATIC ${SOURCE_FILES})
 
 target_include_directories(base PRIVATE 
        	"${PROJECT_SOURCE_DIR}/src"
-       	"${PROJECT_SOURCE_DIR}/../unit-tf/include"
 )
 
 target_include_directories(base PUBLIC
@@ -72,9 +72,14 @@ target_compile_options(base PUBLIC
 	-D_REENTRANT
 )
 
+# dependencies
+
+add_library(unit-tf STATIC IMPORTED)
+set_property(TARGET unit-tf PROPERTY IMPORTED_LOCATION ../unit-tf/libunit-tf.a)
+
 macro(add_unit_test TESTNAME)
     add_executable(${TESTNAME} ${ARGN})
-    target_link_libraries(${TESTNAME} base unit-tf)
+    target_link_libraries(${TESTNAME} -pthread unit-tf base)
     target_include_directories(${TESTNAME} PRIVATE 
        	"${PROJECT_SOURCE_DIR}/src"
        	"${PROJECT_SOURCE_DIR}/../unit-tf/include"
@@ -82,5 +87,25 @@ macro(add_unit_test TESTNAME)
 endmacro()
 
 add_unit_test(buddy-allocator-test tests/ESBBuddyAllocatorTest.cpp)
+execute_process(COMMAND buddy-allocator-test)
+
+## Move this someplace common
+
+find_program(CLANG_FORMAT "clang-format")
+
+if(NOT CLANG_FORMAT)
+  message(STATUS "clang-format not found.")
+else()
+  message(STATUS "clang-format found: ${CLANG_FORMAT}")
+endif()
+
+## Invoke with a:
+##   cmake --build . --target format
+if(CLANG_FORMAT)
+  add_custom_target(format
+    COMMAND ${CLANG_FORMAT} -i --style=Google include/*.h src/*.cpp tests/*.h tests/*.cpp
+  )
+endif()
+
 
 

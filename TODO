@@ -1,14 +1,23 @@
-clang-format
 cmakeify
-replace platform config headers with cmake mechanism
+ - replace all makefiles
+ - common targets and flags
+ - how can one cmakefile depend on another - and cause that file to exec if needed? without using add_subdirectory
+ - unit test invocation
+ - replace config headers with feature discovery
+ - debug and release libs.  static and shared libs
+ - specify include dirs and link_directories relative to project root?  also source dirs.
+fix license - 3 levels of derivation
+replace homegrown atomics with libc++std ones. Flag, SharedCounter, 
+fix bug in date math in esb and estf
+no eval logging macros
+rotating file logger
+tls support
+async dns client
+xds support
+readiness and liveness check support - e2e vs local options
 url canonicalization
+load shedding
+pin threads / fe-be connection alignment
+h2 support
 plugin api
 elementry waf impl of plugin api
-tls support
-h2 support
-xds support
-async dns client
-pin threads / fe-be connection alignment
-load shedding
-readiness and liveness check support - e2e vs local options
-

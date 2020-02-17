@@ -1,13 +1,5 @@
-/** @file ESBBuddyAllocator.cpp
- *  @brief A ESBAllocator implementation good for variable-length allocations
- */
-
 #ifndef ESB_BUDDY_ALLOCATOR_H
 #include <ESBBuddyAllocator.h>
-#endif
-
-#ifndef ESB_ASSERT_H
-#include <ESBAssert.h>
 #endif
 
 namespace ESB {
@@ -25,7 +17,7 @@ BuddyAllocator::KVal BuddyAllocator::GetKVal(UWord requestedSize) {
 
 BuddyAllocator::AvailListElem *BuddyAllocator::popAvailList(
     BuddyAllocator::KVal kVal) {
-  ESB_ASSERT(kVal < ESB_AVAIL_LIST_LENGTH);
+  assert(kVal < ESB_AVAIL_LIST_LENGTH);
 
   AvailListElem *elem = _availList[kVal];
 
@@ -33,9 +25,9 @@ BuddyAllocator::AvailListElem *BuddyAllocator::popAvailList(
 
   AvailListElem *next = elem->_linkF;
 
-  ESB_ASSERT(0 == elem->_linkB);
-  ESB_ASSERT(kVal == elem->_kVal);
-  ESB_ASSERT(1 == elem->_tag);
+  assert(0 == elem->_linkB);
+  assert(kVal == elem->_kVal);
+  assert(1 == elem->_tag);
 
   elem->_linkB = 0;
   elem->_linkF = 0;
@@ -52,8 +44,8 @@ BuddyAllocator::AvailListElem *BuddyAllocator::popAvailList(
 }
 
 void BuddyAllocator::removeFromAvailList(BuddyAllocator::AvailListElem *elem) {
-  ESB_ASSERT(elem);
-  ESB_ASSERT(elem->_kVal < ESB_AVAIL_LIST_LENGTH);
+  assert(elem);
+  assert(elem->_kVal < ESB_AVAIL_LIST_LENGTH);
 
   if (elem->_linkB) {
     elem->_linkB->_linkF = elem->_linkF;
@@ -73,8 +65,8 @@ void BuddyAllocator::removeFromAvailList(BuddyAllocator::AvailListElem *elem) {
 }
 
 void BuddyAllocator::pushAvailList(AvailListElem *elem) {
-  ESB_ASSERT(elem);
-  ESB_ASSERT(elem->_kVal < ESB_AVAIL_LIST_LENGTH);
+  assert(elem);
+  assert(elem->_kVal < ESB_AVAIL_LIST_LENGTH);
 
   AvailListElem *next = _availList[elem->_kVal];
 
@@ -146,7 +138,7 @@ void *BuddyAllocator::allocate(UWord size) {
   //    Knuth R3 and R4
   //
 
-  ESB_ASSERT(actualKVal >= minimumKVal);
+  assert(actualKVal >= minimumKVal);
 
   AvailListElem *right = (AvailListElem *)elem;
   AvailListElem *left = 0;
@@ -166,7 +158,7 @@ void *BuddyAllocator::allocate(UWord size) {
     pushAvailList(left);
   }
 
-  ESB_ASSERT(right);
+  assert(right);
 
   return (void *)(((char *)right) + sizeof(AvailListElem));
 }
@@ -228,9 +220,9 @@ Error BuddyAllocator::deallocate(void *block) {
   AvailListElem *elem = (AvailListElem *)trueAddress;
   AvailListElem *buddy = 0;
 
-  ESB_ASSERT(0 == elem->_linkB);
-  ESB_ASSERT(0 == elem->_linkF);
-  ESB_ASSERT(0 == elem->_tag);
+  assert(0 == elem->_linkB);
+  assert(0 == elem->_linkF);
+  assert(0 == elem->_tag);
 
   //
   //  For as long as we can, start coalescing buddies.  Two buddies can be
@@ -246,7 +238,7 @@ Error BuddyAllocator::deallocate(void *block) {
     //    Base Case:  We've coalesced everything back into the original block.
     //
     if (elem->_kVal == _poolKVal) {
-      ESB_ASSERT((char *)elem == _pool);
+      assert((char *)elem == _pool);
 
       pushAvailList(elem);
 
@@ -263,7 +255,7 @@ Error BuddyAllocator::deallocate(void *block) {
       buddy =
           (AvailListElem *)(((char *)elem) + (ESB_UWORD_C(1) << elem->_kVal));
 
-      ESB_ASSERT(buddy->_kVal <= elem->_kVal);
+      assert(buddy->_kVal <= elem->_kVal);
 
       if (buddy->_tag && buddy->_kVal == elem->_kVal) {
         removeFromAvailList(buddy);
@@ -297,7 +289,7 @@ Error BuddyAllocator::deallocate(void *block) {
 
     buddy = (AvailListElem *)(((char *)elem) - (ESB_UWORD_C(1) << elem->_kVal));
 
-    ESB_ASSERT(buddy->_kVal <= elem->_kVal);
+    assert(buddy->_kVal <= elem->_kVal);
 
     if (buddy->_tag && buddy->_kVal == elem->_kVal) {
       removeFromAvailList(buddy);
@@ -331,7 +323,7 @@ Error BuddyAllocator::deallocate(void *block) {
 UWord BuddyAllocator::getOverhead() { return sizeof(AvailListElem); }
 
 Error BuddyAllocator::initialize() {
-  if (_pool || 1 > _poolKVal || _AVAIL_LIST_LENGTH <= _poolKVal) {
+  if (_pool || 1 > _poolKVal || ESB_AVAIL_LIST_LENGTH <= _poolKVal) {
     return ESB_INVALID_STATE;
   }
 
@@ -341,7 +333,7 @@ Error BuddyAllocator::initialize() {
     return ESB_OUT_OF_MEMORY;
   }
 
-  ESB_ASSERT(_pool);
+  assert(_pool);
 
   AvailListElem *elem = (AvailListElem *)_pool;
 
