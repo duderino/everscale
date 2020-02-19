@@ -6,12 +6,17 @@ cmakeify
  - replace config headers with feature discovery
  - debug and release libs.  static and shared libs
  - specify include dirs and link_directories relative to project root?  also source dirs.
+
 fix license - 3 levels of derivation
+
+incorporate and prefer atomic.h.
+  - https://www.bogotobogo.com/cplusplus/files/CplusplusConcurrencyInAction_PracticalMultithreading.pdf
+  - http://www.open-std.org/JTC1/SC22/WG21/docs/papers/2007/n2145.html
+  - http://www.cplusplus.com/reference/atomic/atomic_flag_test_and_set/
+
 addr space randomization
-replace homegrown atomics with libc++std ones. Flag, SharedCounter, 
 fix bug in date math in esb and estf
 no eval logging macros
-rotating file logger
 tls support
 async dns client
 xds support
@@ -22,3 +27,4 @@ pin threads / fe-be connection alignment
 h2 support
 plugin api
 elementry waf impl of plugin api
+rotating file logger

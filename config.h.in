@@ -65,5 +65,6 @@
 #cmakedefine HAVE_SIZE_T @HAVE_SIZE_T@
 #cmakedefine HAVE_SSIZE_T @HAVE_SSIZE_T@
 
+#cmakedefine HAVE_PTHREAD_MUTEX_T @HAVE_PTHREAD_MUTEX_T@
 
 #endif

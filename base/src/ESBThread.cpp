@@ -45,12 +45,12 @@ Error Thread::join() {
 Thread::ThreadId Thread::getThreadId() const { return _threadId; }
 
 void Thread::Yield() {
-#ifdef HAVE_PTHREAD_YIELD
-  pthread_yield();
-#elif defined HAVE_SCHED_YIELD
+#ifdef HAVE_SCHED_YIELD
   sched_yield();
+#elif defined HAVE_PTHREAD_YIELD
+  pthread_yield();
 #else
-#error "pthread_yield or equivalent is required"
+#error "sched_yield or equivalent is required"
 #endif
 }
 

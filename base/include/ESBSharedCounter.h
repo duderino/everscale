@@ -49,9 +49,7 @@ class SharedCounter {
                          : "memory");
 #else
     _lock.writeAcquire();
-
     counter = _counter++;
-
     _lock.writeRelease();
 #endif
 
@@ -68,9 +66,7 @@ class SharedCounter {
                          : "memory");
 #else
     _lock.writeAcquire();
-
     counter = _counter--;
-
     _lock.writeRelease();
 #endif
 
@@ -84,9 +80,7 @@ class SharedCounter {
                          : "ir"(value), "m"(_counter));
 #else
     _lock.writeAcquire();
-
     _counter += value;
-
     _lock.writeRelease();
 #endif
   }
@@ -98,20 +92,23 @@ class SharedCounter {
                          : "ir"(value), "m"(_counter));
 #else
     _lock.writeAcquire();
-
     _counter -= value;
-
     _lock.writeRelease();
 #endif
   }
 
   inline bool decAndTest() {
     unsigned char c;
-
+#ifdef HAVE_X86_ASM
     __asm__ __volatile__("lock ; decl %0; sete %1"
                          : "=m"(_counter), "=qm"(c)
                          : "m"(_counter)
                          : "memory");
+#else
+    _lock.writeAcquire();
+    c = --_counter;
+    _lock.writeRelease();
+#endif
     return c != 0;
   }
 

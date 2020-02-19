@@ -5,6 +5,7 @@ include(config.cmake)
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# TODO add -Wextra and make this portable
 set(CPP_FLAGS
 	-ansi 
 	-Wall 
