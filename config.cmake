@@ -34,14 +34,12 @@ check_include_file("stdio.h" HAVE_STDIO_H)
 check_include_file("string.h" HAVE_STRING_H)
 
 check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
-check_symbol_exists("off_t" "sys/types.h" HAVE_OFF_T)
-check_symbol_exists("size_t" "sys/types.h,stdlib.h,stddef.h" HAVE_SIZE_T)
-check_symbol_exists("ssize_t" "sys/types.h" HAVE_SSIZE_T)
-
+check_type_size("off_t" HAVE_OFF_T)
+check_type_size("size_t" HAVE_SIZE_T)
+check_type_size("ssize_t" HAVE_SSIZE_T)
 
 check_symbol_exists("getpagesize" "unistd.h" HAVE_GETPAGESIZE)
 check_symbol_exists("mmap" "sys/mman.h" HAVE_MMAP)
 check_symbol_exists("getrandom" "sys/random.h" HAVE_GETRANDOM)
-
 
 configure_file(config.h.in config.h @ONLY)
