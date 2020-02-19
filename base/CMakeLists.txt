@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(base VERSION 0.1.0 LANGUAGES CXX)
-include(../common.cmake)
+project(base VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
     src/ESBAllocatorCleanupHandler.cpp
@@ -60,11 +59,6 @@ target_include_directories(base PUBLIC
 )
 
 target_compile_options(base PUBLIC ${CPP_FLAGS})
-
-# dependencies
-
-add_library(unit-tf STATIC IMPORTED)
-set_property(TARGET unit-tf PROPERTY IMPORTED_LOCATION ../unit-tf/libunit-tf.a)
 
 # Unit tests
 

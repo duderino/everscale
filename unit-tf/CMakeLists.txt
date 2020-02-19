@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(unit-tf VERSION 0.1.0 LANGUAGES CXX)
-include(../common.cmake)
+project(unit-tf VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
 	src/ESTFDate.cpp

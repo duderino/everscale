@@ -1,0 +1,69 @@
+#ifndef ES_CONFIG_H
+#define ES_CONFIG_H
+
+#define ES_VERSION_STRING "@everscale_VERSION_MAJOR@.@everscale_VERSION_MINOR@.@everscale_VERSION_PATCH@"
+#define ES_VERSION_MINOR @everscale_VERSION_MINOR@
+#define ES_VERSION_MAJOR @everscale_VERSION_MAJOR@
+#define ES_VERSION_PATCH @everscale_VERSION_PATCH@
+
+#cmakedefine ESB_BIG_ENDIAN @ESB_BIG_ENDIAN@
+#cmakedefine ESB_LITTLE_ENDIAN @ESB_LITTLE_ENDIAN@
+
+#cmakedefine HAVE_WORDSIZE @HAVE_WORDSIZE@
+
+#ifndef HAVE_WORDSIZE
+#error "Cannot determine wordsize"
+#endif
+
+#if __WORDSIZE == 64
+#define ESB_64BIT
+#elif __WORDSIZE == 32
+#define ESB_32BITA
+#else
+#error "Invalid wordsize"
+#endif
+
+#define SIZEOF_CHAR (@SIZEOF_CHAR@*8)
+#define SIZEOF_UNSIGNED_CHAR (@SIZEOF_CHAR@*8)
+#define SIZEOF_SHORT (@SIZEOF_SHORT@*8)
+#define SIZEOF_UNSIGNED_SHORT (@SIZEOF_SHORT@*8)
+#define SIZEOF_INT (@SIZEOF_INT@*8)
+#define SIZEOF_UNSIGNED_INT (@SIZEOF_INT@*8)
+#define SIZEOF_LONG (@SIZEOF_LONG@*8)
+#define SIZEOF_UNSIGNED_LONG (@SIZEOF_LONG@*8)
+#define SIZEOF_LONG_LONG (@SIZEOF_LONG_LONG@*8)
+#define SIZEOF_UNSIGNED_LONG_LONG (@SIZEOF_LONG_LONG@*8)
+
+#cmakedefine HAVE_STDINT_H @HAVE_STDINT_H@
+#cmakedefine HAVE_ASSERT_H @HAVE_ASSERT_H@
+#cmakedefine HAVE_STDIO_H @HAVE_STDIO_H@
+#cmakedefine HAVE_STRING_H @HAVE_STRING_H@
+
+#ifndef HAVE_STDINT_H
+#error "stdint.h required"
+#endif
+
+#ifndef HAVE_ASSERT_H
+#error "assert.h required"
+#endif
+
+#ifndef HAVE_STDIO_H
+#error "stdio.h required"
+#endif
+
+#ifndef HAVE_STRING_H
+#error "string.h required"
+#endif
+
+#include <stdint.h>
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+#cmakedefine HAVE_SYS_TYPES_H @HAVE_SYS_TYPES_H@
+#cmakedefine HAVE_OFF_T @HAVE_OFF_T@
+#cmakedefine HAVE_SIZE_T @HAVE_SIZE_T@
+#cmakedefine HAVE_SSIZE_T @HAVE_SSIZE_T@
+
+
+#endif
