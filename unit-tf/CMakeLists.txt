@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(unit-tf VERSION 0.1.0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 98)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+include(../common.cmake)
 
 set(SOURCE_FILES
 	src/ESTFDate.cpp
@@ -25,31 +24,4 @@ target_include_directories(unit-tf PUBLIC
        	"${PROJECT_SOURCE_DIR}/include"
 )
 
-target_compile_options(unit-tf PUBLIC 
-	-ansi 
-	-Wall 
-	-Woverloaded-virtual 
-	-Werror 
-	-fno-exceptions 
-	-fno-rtti 
-	-DES_LINUX 
-	-D_REENTRANT
-)
-
-## Move this someplace common
-
-find_program(CLANG_FORMAT "clang-format")
-
-if(NOT CLANG_FORMAT)
-  message(STATUS "clang-format not found.")
-else()
-  message(STATUS "clang-format found: ${CLANG_FORMAT}")
-endif()
-
-## Invoke with a:
-##   cmake --build . --target format
-if(CLANG_FORMAT)
-  add_custom_target(format
-	  COMMAND ${CLANG_FORMAT} -i --style=Google include/*.h src/*.cpp
-  )
-endif()
+target_compile_options(unit-tf PUBLIC ${CPP_FLAGS})
