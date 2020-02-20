@@ -13,7 +13,7 @@
  *  @ingroup unit-test
  */
 #define ESTF_ASSERT(collector, expr) \
-  if (collector) ESTF_NATIVE_ASSERT(expr);
+  if (collector) assert(expr);
 
 /** Add a success result to a result collector.
  *
@@ -32,7 +32,7 @@
  *  @ingroup unit-test
  */
 #define ESTF_FAILURE(collector, description) \
-  if (collector) ESTF_NATIVE_ASSERT((void *)"FAILURE: " == (void *)description)
+  if (collector) assert((void *)"FAILURE: " == (void *)description)
 
 /** Add an error result to a result collector.
  *
@@ -41,6 +41,6 @@
  *  @ingroup unit-test
  */
 #define ESTF_ERROR(collector, description) \
-  if (collector) ESTF_NATIVE_ASSERT((void *)"ERROR: " == (void *)description)
+  if (collector) assert((void *)"ERROR: " == (void *)description)
 
 #endif

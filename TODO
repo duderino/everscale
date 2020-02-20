@@ -14,6 +14,9 @@ incorporate and prefer atomic.h.
   - http://www.open-std.org/JTC1/SC22/WG21/docs/papers/2007/n2145.html
   - http://www.cplusplus.com/reference/atomic/atomic_flag_test_and_set/
 
+ipv6 support
+start as root, bind to ports, drop privs
+use setrlimit to raise fd limits, etc
 addr space randomization
 fix bug in date math in esb and estf
 no eval logging macros

@@ -13,7 +13,6 @@ set(CPP_FLAGS
 	-Werror 
 	-fno-exceptions 
 	-fno-rtti 
-	-DES_LINUX 
 	-D_REENTRANT
 )
 

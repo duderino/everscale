@@ -19,11 +19,11 @@
 typedef int SOCKET;
 #endif
 
-#ifndef HAVE_DECL_INVALID_SOCKET
+#ifndef HAVE_INVALID_SOCKET
 #define INVALID_SOCKET -1
 #endif
 
-#ifndef HAVE_DECL_SOCKET_ERROR
+#ifndef HAVE_SOCKET_ERROR
 #define SOCKET_ERROR -1
 #endif
 

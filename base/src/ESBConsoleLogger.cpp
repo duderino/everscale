@@ -115,13 +115,8 @@ Error ConsoleLogger::log(Severity severity, const char *file, int line,
 #error "strlen or equivalent is required"
 #endif
 
-#ifdef HAVE_VA_LIST_T
-  va_list vaList;
-#else
-#error "va_list or equivalent is required"
-#endif
-
 #ifdef HAVE_VA_START
+  va_list vaList;
   va_start(vaList, format);
 #else
 #error "va_start or equivalent is required"
@@ -148,7 +143,7 @@ Error ConsoleLogger::log(Severity severity, const char *file, int line,
   char buffer[ESB_CONSOLE_LOGGER_BUFFER_SIZE];
 
 #ifdef HAVE_SNPRINTF
-  snprintf(buffer, sizeof(buffer), "%s,%s,%d," THREAD_ID_FORMAT " ",
+  snprintf(buffer, sizeof(buffer), "%s,%s,%d,%" ESB_THREAD_ID_FORMAT " ",
            CodeToString(severity), file, line, Thread::GetThreadId());
 #else
 #error "snprintf or equivalent is required"

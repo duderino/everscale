@@ -35,7 +35,7 @@ class Rand {
    *    @return A random number.
    */
   inline double generateRandom() {
-#if defined HAVE_RAND_R && defined HAVE_DECL_RAND_MAX
+#if defined HAVE_RAND_R && defined HAVE_RAND_MAX
     return rand_r(&_seed) / (RAND_MAX + 1.0);
 #else
 #error "A random number generator is required"
@@ -49,7 +49,7 @@ class Rand {
    *    @return A random number within the given range.
    */
   inline int generateRandom(int lowerBound, int upperBound) {
-#if defined HAVE_RAND_R && defined HAVE_DECL_RAND_MAX
+#if defined HAVE_RAND_R && defined HAVE_RAND_MAX
     return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) /
                               (RAND_MAX + 1.0));
 #else

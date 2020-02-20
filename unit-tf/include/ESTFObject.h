@@ -20,7 +20,7 @@ class Object {
   inline Object() : _refCount(0) {}
 
   /** Destructor. */
-  virtual ~Object() { ESTF_NATIVE_ASSERT(0 == _refCount); }
+  virtual ~Object() { assert(0 == _refCount); }
 
   /** Increment the reference count. */
   inline void inc() { ++_refCount; }

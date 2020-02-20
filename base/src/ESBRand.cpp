@@ -27,9 +27,9 @@ Rand::Rand(unsigned int seed) : _seed(seed) {}
 Rand::~Rand() {}
 
 double Rand::generateRandom() {
-#if defined HAVE_RAND_R && defined HAVE_DECL_RAND_MAX
+#if defined HAVE_RAND_R && defined HAVE_RAND_MAX
   return rand_r(&_seed) / (RAND_MAX + 1.0);
-#elif defined HAVE_RAND && defined HAVE_DECL_RAND_MAX
+#elif defined HAVE_RAND && defined HAVE_RAND_MAX
   return rand() / (RAND_MAX + 1.0);
 #else
 #error "rand_r and RAND_MAX or equivalent is required"
@@ -37,10 +37,10 @@ double Rand::generateRandom() {
 }
 
 int Rand::generateRandom(int lowerBound, int upperBound) {
-#if defined HAVE_RAND_R && defined HAVE_DECL_RAND_MAX
+#if defined HAVE_RAND_R && defined HAVE_RAND_MAX
   return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) /
                             (RAND_MAX + 1.0));
-#elif defined HAVE_RAND && defined HAVE_DECL_RAND_MAX
+#elif defined HAVE_RAND && defined HAVE_RAND_MAX
   return lowerBound +
          (int)((upperBound - lowerBound + 1.0) * rand() / (RAND_MAX + 1.0));
 #else

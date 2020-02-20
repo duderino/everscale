@@ -82,7 +82,7 @@ class ObjectPtr {
    *    @return a reference to the wrapped object.
    */
   inline Object &operator*() {
-    ESTF_NATIVE_ASSERT(_ptr);
+    assert(_ptr);
 
     return *_ptr;
   }
@@ -95,7 +95,7 @@ class ObjectPtr {
    *    @return a pointer to the wrapped object.
    */
   inline Object *operator->() {
-    ESTF_NATIVE_ASSERT(_ptr);
+    assert(_ptr);
 
     return _ptr;
   }
@@ -108,7 +108,7 @@ class ObjectPtr {
    *  @return a pointer to the wrapped object.
    */
   inline const Object *operator->() const {
-    ESTF_NATIVE_ASSERT(_ptr);
+    assert(_ptr);
 
     return _ptr;
   }
@@ -185,17 +185,17 @@ class ObjectPtr {
     }                                                          \
                                                                \
     inline CLASS &operator*() {                                \
-      ESTF_NATIVE_ASSERT(_ptr);                                \
+      assert(_ptr);                                            \
       return *((CLASS *)_ptr);                                 \
     }                                                          \
                                                                \
     inline CLASS *operator->() {                               \
-      ESTF_NATIVE_ASSERT(_ptr);                                \
+      assert(_ptr);                                            \
       return (CLASS *)_ptr;                                    \
     }                                                          \
                                                                \
     inline const CLASS *operator->() const {                   \
-      ESTF_NATIVE_ASSERT(_ptr);                                \
+      assert(_ptr);                                            \
       return (const CLASS *)_ptr;                              \
     }                                                          \
                                                                \

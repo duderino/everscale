@@ -54,7 +54,7 @@ ComponentPtr Composite::clone() {
   ComponentPtr object;
 
   if (composite.isNull()) {
-    ESTF_NATIVE_ASSERT(0 == "alloc failed");
+    assert(0 == "alloc failed");
     return composite;
   }
 

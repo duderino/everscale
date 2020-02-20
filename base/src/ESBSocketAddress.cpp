@@ -42,7 +42,7 @@ SocketAddress::SocketAddress() : _magic(0) {
 #ifdef HAVE_STRUCT_SOCKADDR_IN
   _address.sin_family = AF_INET;
   _address.sin_port = 0;
-#if defined HAVE_HTONL && defined HAVE_DECL_INADDR_ANY
+#if defined HAVE_HTONL && defined HAVE_INADDR_ANY
   _address.sin_addr.s_addr = htonl(INADDR_ANY);
 #else
 #error "htonl or equivalent is required."
@@ -76,7 +76,7 @@ SocketAddress::SocketAddress(const char *dottedIp, UInt16 port,
     _magic = 0;
   }
 
-#elif defined HAVE_INET_ADDR && defined HAVE_DECL_INADDR_NONE
+#elif defined HAVE_INET_ADDR && defined HAVE_INADDR_NONE
 
   UInt32 ip = inet_addr(dottedIp);
 
