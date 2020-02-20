@@ -16,6 +16,11 @@ set(CPP_FLAGS
 	-D_REENTRANT
 )
 
+# TODO make this portable
+set(LDFLAGS -pthread)
+
+enable_testing()
+
 find_program(CLANG_FORMAT "clang-format")
 
 if(NOT CLANG_FORMAT)

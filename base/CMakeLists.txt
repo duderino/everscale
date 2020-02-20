@@ -51,29 +51,27 @@ set(SOURCE_FILES
 add_library(base STATIC ${SOURCE_FILES})
 
 target_include_directories(base PRIVATE 
-       	"${PROJECT_SOURCE_DIR}/src"
+  "${PROJECT_SOURCE_DIR}/src"
 )
 
 target_include_directories(base PUBLIC
-       	"${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/include"
 )
 
 target_compile_options(base PUBLIC ${CPP_FLAGS})
 
 # Unit tests
 
-macro(add_unit_test TESTNAME)
-    add_executable(${TESTNAME} ${ARGN})
-    target_link_libraries(${TESTNAME} -pthread unit-tf base)
-    target_include_directories(${TESTNAME} PRIVATE 
-       	"${PROJECT_SOURCE_DIR}/src"
-       	"${PROJECT_SOURCE_DIR}/../unit-tf/include"
-    )
+macro(add_unit_test TEST_NAME)
+  add_executable(${TEST_NAME} ${ARGN})
+  target_link_libraries(${TEST_NAME} -pthread unit-tf base)
+  target_include_directories(${TEST_NAME} PRIVATE 
+    "${PROJECT_SOURCE_DIR}/include"
+    "${PROJECT_SOURCE_DIR}/src"
+    "${PROJECT_SOURCE_DIR}/../unit-tf/include"
+  )
+  add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endmacro()
 
 add_unit_test(buddy-allocator-test tests/ESBBuddyAllocatorTest.cpp)
-execute_process(COMMAND buddy-allocator-test)
-
-
-
 
