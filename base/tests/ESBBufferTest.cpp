@@ -111,9 +111,9 @@ ESTF_OBJECT_PTR(BufferTest, ESTF::Component)
 BufferTest::BufferTest()
     : _capacity(BufferSize),
       _rand(),
-      _buffer((unsigned char *) SystemAllocator::GetInstance()->allocate(
-                  BufferSize),
-              BufferSize) {}
+      _buffer(
+          (unsigned char *)SystemAllocator::GetInstance()->allocate(BufferSize),
+          BufferSize) {}
 
 BufferTest::~BufferTest() {}
 

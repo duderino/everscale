@@ -195,9 +195,9 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
           if (Debug) {
             std::cerr << "Inserted: " << (char *)_records[j]._value
-                 << " (List size: " << _list.getSize()
-                 << " stl size: " << _stlList.size() << ") at time " << i
-                 << std::endl;
+                      << " (List size: " << _list.getSize()
+                      << " stl size: " << _stlList.size() << ") at time " << i
+                      << std::endl;
           }
 
           validateList(collector);
@@ -224,7 +224,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           }
 
           if (Debug) {
-            std::cerr << "value[" << j << "]: " << _records[j]._value << std::endl;
+            std::cerr << "value[" << j << "]: " << _records[j]._value
+                      << std::endl;
           }
 
           stlResult = findSTLIterator(_records[j]._value, &stlIterator);
@@ -235,9 +236,9 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
           if (Debug) {
             std::cerr << "Deleted: " << (char *)_records[j]._value
-                 << " (list size: " << _list.getSize()
-                 << " stl size: " << _stlList.size() << ") at time " << i
-                 << std::endl;
+                      << " (list size: " << _list.getSize()
+                      << " stl size: " << _stlList.size() << ") at time " << i
+                      << std::endl;
           }
 
           delete[] _records[j]._value;
@@ -267,8 +268,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
       if (Debug) {
         std::cerr << "Deleted: " << value << " (List size: " << _list.getSize()
-             << " stl size: " << _stlList.size() << ") at cleanup stage"
-             << std::endl;
+                  << " stl size: " << _stlList.size() << ") at cleanup stage"
+                  << std::endl;
       }
 
       delete[] value;
@@ -391,7 +392,7 @@ int ListTest::generateLifetime() {
   return 10;
 }
 
-}
+}  // namespace ESB
 
 int main() {
   ESB::ListTestPtr listTest = new ESB::ListTest();
@@ -403,7 +404,8 @@ int main() {
 
   testSuite->add(listDecorator);
 
-  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root =
+      new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

@@ -103,8 +103,7 @@ static const int Blocks = 160;
 static const int BlockSize = 4096;
 
 FixedAllocatorTest::FixedAllocatorTest()
-    : _rand(),
-      _allocator(Blocks, BlockSize, SystemAllocator::GetInstance()) {}
+    : _rand(), _allocator(Blocks, BlockSize, SystemAllocator::GetInstance()) {}
 
 FixedAllocatorTest::~FixedAllocatorTest() {}
 
@@ -153,7 +152,7 @@ bool FixedAllocatorTest::run(ESTF::ResultCollector *collector) {
 
         if (Debug) {
           std::cerr << "Allocating block at time " << i << " with lifetime "
-               << allocations[j]._lifetime;
+                    << allocations[j]._lifetime;
         }
 
         allocations[j]._data = _allocator.allocate(BlockSize);
@@ -256,7 +255,7 @@ int FixedAllocatorTest::generateAllocLifetime() {
   return 10;
 }
 
-}
+}  // namespace ESB
 
 int main() {
   ESB::FixedAllocatorTestPtr fixedAllocatorTest = new ESB::FixedAllocatorTest();
@@ -268,7 +267,8 @@ int main() {
 
   testSuite->add(fixedAllocatorDecorator);
 
-  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root =
+      new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

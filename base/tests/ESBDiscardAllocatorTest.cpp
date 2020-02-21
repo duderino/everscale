@@ -200,7 +200,7 @@ int DiscardAllocatorTest::generateAllocSize() {
   return _rand.generateRandom(ChunkSize, ChunkSize * 2);
 }
 
-}
+}  // namespace ESB
 
 int main() {
   ESB::DiscardAllocatorTestPtr discardAllocatorTest =
@@ -213,7 +213,8 @@ int main() {
 
   testSuite->add(discardAllocatorDecorator);
 
-  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root =
+      new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 
