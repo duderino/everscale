@@ -77,4 +77,5 @@ add_unit_test(buddy-allocator-test tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test tests/ESBBufferTest.cpp)
 add_unit_test(discard-allocator-test tests/ESBDiscardAllocatorTest.cpp)
 add_unit_test(fixed-allocator-test tests/ESBFixedAllocatorTest.cpp)
+add_unit_test(list-test tests/ESBListTest.cpp)
 

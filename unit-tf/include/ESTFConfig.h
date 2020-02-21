@@ -199,4 +199,8 @@
 #include <string.h>
 #endif
 
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
 #endif
