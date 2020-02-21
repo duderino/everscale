@@ -74,4 +74,5 @@ macro(add_unit_test TEST_NAME)
 endmacro()
 
 add_unit_test(buddy-allocator-test tests/ESBBuddyAllocatorTest.cpp)
+add_unit_test(buffer-test tests/ESBBufferTest.cpp)
 
