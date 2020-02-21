@@ -79,6 +79,6 @@ class SharedQueueProducer : public ESTF::Component {
 
 ESTF_OBJECT_PTR(SharedQueueProducer, ESTF::Component)
 
-}
+}  // namespace ESB
 
 #endif

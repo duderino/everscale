@@ -1,19 +1,16 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef AWS_PERFORMANCE_COUNTER_H
-#define AWS_PERFORMANCE_COUNTER_H
+#ifndef EST_PERFORMANCE_COUNTER_H
+#define EST_PERFORMANCE_COUNTER_H
 
 #include <pthread.h>
 #include <sys/time.h>
 
-class AWSPerformanceCounter {
- public:
-  AWSPerformanceCounter(const char *name);
+namespace EST {
 
-  virtual ~AWSPerformanceCounter();
+class PerformanceCounter {
+ public:
+  PerformanceCounter(const char *name);
+
+  virtual ~PerformanceCounter();
 
   static void GetTime(struct timeval *now);
 
@@ -35,8 +32,8 @@ class AWSPerformanceCounter {
 
  private:
   // Disabled
-  AWSPerformanceCounter(const AWSPerformanceCounter &counter);
-  AWSPerformanceCounter *operator=(const AWSPerformanceCounter &counter);
+  PerformanceCounter(const PerformanceCounter &counter);
+  PerformanceCounter *operator=(const PerformanceCounter &counter);
 
   const char *_name;
   pthread_mutex_t _lock;
@@ -45,5 +42,7 @@ class AWSPerformanceCounter {
   double _maxLatencyMsec;
   unsigned long _throughput;
 };
+
+}  // namespace EST
 
 #endif

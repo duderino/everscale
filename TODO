@@ -1,26 +1,23 @@
 cmakeify
  - replace all makefiles
- - common targets and flags
- - how can one cmakefile depend on another - and cause that file to exec if needed? without using add_subdirectory
- - unit test invocation
- - replace config headers with feature discovery
  - debug and release libs.  static and shared libs
- - specify include dirs and link_directories relative to project root?  also source dirs.
-
+ - ctest memory checks, etc
+ - make test needs to rebuild everything
+tcp echo stuff
+ - make sure full duplex
+ - track bps
+ - move tcp echo client/server into ESB and turn into a unit test over loopback/same proc
+logging
+ - pretty print thread ids
+ - filenames, not full paths
+ - rotating file logger
 fix license - 3 levels of derivation
 fix multimap or replace with stl
-
-make test needs to rebuild everything
-
-debug and release configurations
-
-ctest memory checks, etc
-
+lockless datastructures - list.  hashmap.
 incorporate and prefer atomic.h.
   - https://www.bogotobogo.com/cplusplus/files/CplusplusConcurrencyInAction_PracticalMultithreading.pdf
   - http://www.open-std.org/JTC1/SC22/WG21/docs/papers/2007/n2145.html
   - http://www.cplusplus.com/reference/atomic/atomic_flag_test_and_set/
-
 ipv6 support
 start as root, bind to ports, drop privs
 use setrlimit to raise fd limits, etc
@@ -37,4 +34,8 @@ pin threads / fe-be connection alignment
 h2 support
 plugin api
 elementry waf impl of plugin api
-rotating file logger
+perfect forward secrecy
+sni
+boringssl
+tls staples
+ktls sockmap and splice

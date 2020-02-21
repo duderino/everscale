@@ -1,49 +1,52 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
+#ifndef EST_LISTENING_SOCKET_H
+#define EST_LISTENING_SOCKET_H
+
+#ifndef ESB_MULTIPLEXED_SOCKET_H
+#include <ESBMultiplexedSocket.h>
+#endif
+
+#ifndef ESB_LISTENING_TCP_SOCKET_H
+#include <ESBListeningTCPSocket.h>
+#endif
+
+#ifndef ESB_ALLOCATOR_H
+#include <ESBAllocator.h>
+#endif
+
+#ifndef ESB_SOCKET_MULTIPLEXER_DISPATCHER_H
+#include <ESBSocketMultiplexerDispatcher.h>
+#endif
+
+#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
+#include <ESBEmbeddedListElement.h>
+#endif
+
+namespace EST {
+
+/** A listening socket that creates ESTServerSockets
  */
-
-#ifndef AWS_SERVER_SOCKET_H
-#define AWS_SERVER_SOCKET_H
-
-#ifndef ESF_MULTIPLEXED_SOCKET_H
-#include <ESFMultiplexedSocket.h>
-#endif
-
-#ifndef ESF_CONNECTED_TCP_SOCKET_H
-#include <ESFConnectedTCPSocket.h>
-#endif
-
-#ifndef ESF_LOGGER_H
-#include <ESFLogger.h>
-#endif
-
-#ifndef ESF_BUFFER_H
-#include <ESFBuffer.h>
-#endif
-
-#ifndef ESF_BUFFER_POOL_H
-#include <ESFBufferPool.h>
-#endif
-
-/** A socket that receives and echoes back raw requests
- *
- * TODO implement idle check
- */
-class AWSServerSocket : public ESFMultiplexedSocket {
+class ListeningSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
    *
-   * @param acceptData A new connection accepted by a listening socket
-   * @param cleanupHandler An object that can be used to destroy this one
+   * @param socket A fully initialized (after bind() and listen()) listening
+   * socket to accept new requests from.
+   * @param allocator An allocator that will allocate new ESTServerSockets
+   * @param dispatcher A dispatcher to which newly accepted connections will be
+   * added.
    * @param logger A logger
+   * @param thisCleanupHandler A cleanup handler for this object
+   * @param socketCleanupHandler A cleanup handler for all ESTServerSockets
+   * created by this object.
    */
-  AWSServerSocket(ESFTCPSocket::AcceptData *acceptData,
-                  ESFCleanupHandler *cleanupHandler, ESFLogger *logger);
+  ListeningSocket(ESB::ListeningTCPSocket *socket, ESB::Allocator *allocator,
+                  ESB::SocketMultiplexerDispatcher *dispatcher,
+                  ESB::Logger *logger, ESB::CleanupHandler *thisCleanupHandler,
+                  ESB::CleanupHandler *socketCleanupHandler);
 
   /** Destructor.
    */
-  virtual ~AWSServerSocket();
+  virtual ~ListeningSocket();
 
   /** Does this socket want to accept a new connection?  Implies the
    * implementation is a listening socket.
@@ -93,7 +96,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleAcceptEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** Client connected socket has connected to the peer endpoint.
    *
@@ -105,7 +108,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleConnectEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** Data is ready to be read.
    *
@@ -117,7 +120,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleReadableEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** There is free space in the outgoing socket buffer.
    *
@@ -129,7 +132,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleWritableEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -142,10 +145,10 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor.
-   * @see ESFTCPSocket::getLastError to get the socket error
+   * @see ESBTCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESFError errorCode, ESFFlag *isRunning,
-                                ESFLogger *logger);
+  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::Flag *isRunning,
+                                ESB::Logger *logger);
 
   /** The socket's connection was closed.
    *
@@ -157,7 +160,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleEndOfFileEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** The socket's connection has been idle for too long
    *
@@ -169,7 +172,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleIdleEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** The socket has been removed from the multiplexer
    *
@@ -178,7 +181,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * @param logger Log messages should be sent to this object.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(ESFFlag *isRunning, ESFLogger *logger);
+  virtual bool handleRemoveEvent(ESB::Flag *isRunning, ESB::Logger *logger);
 
   /** Get the socket's socket descriptor.
    *
@@ -191,7 +194,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual ESFCleanupHandler *getCleanupHandler();
+  virtual ESB::CleanupHandler *getCleanupHandler();
 
   /** Get the name of the multiplexer.  This name can be used in logging
    * messages, etc.
@@ -206,7 +209,7 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    * thread isRunning, false when the controlling thread wants to shutdown.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool run(ESFFlag *isRunning);
+  virtual bool run(ESB::Flag *isRunning);
 
   /** Placement new.
    *
@@ -214,23 +217,23 @@ class AWSServerSocket : public ESFMultiplexedSocket {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESFAllocator *allocator) {
+  inline void *operator new(size_t size, ESB::Allocator *allocator) {
     return allocator->allocate(size);
   }
 
  private:
   // Disabled
-  AWSServerSocket(const AWSServerSocket &);
-  AWSServerSocket &operator=(const AWSServerSocket &);
+  ListeningSocket(const ListeningSocket &);
+  ListeningSocket &operator=(const ListeningSocket &);
 
-  bool _hasBeenRemoved;
-  bool _inReadMode;
-  ESFLogger *_logger;
-  ESFCleanupHandler *_cleanupHandler;
-  ESFBuffer *_buffer;
-  ESFConnectedTCPSocket _socket;
-
-  static ESFBufferPool _BufferPool;
+  ESB::ListeningTCPSocket *_socket;
+  ESB::Allocator *_allocator;
+  ESB::SocketMultiplexerDispatcher *_dispatcher;
+  ESB::Logger *_logger;
+  ESB::CleanupHandler *_thisCleanupHandler;
+  ESB::CleanupHandler *_socketCleanupHandler;
 };
 
-#endif /* ! AWS_SERVER_SOCKET_H */
+}  // namespace EST
+
+#endif

@@ -1,15 +1,12 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef AWS_PERFORMANCE_COUNTER_H
-#include <AWSPerformanceCounter.h>
+#ifndef EST_PERFORMANCE_COUNTER_H
+#include <ESTPerformanceCounter.h>
 #endif
 
 #include <stdio.h>
 
-AWSPerformanceCounter::AWSPerformanceCounter(const char *name)
+namespace EST {
+
+PerformanceCounter::PerformanceCounter(const char *name)
     : _name(name),
       _avgLatencyMsec(0.0),
       _minLatencyMsec(-1.0),
@@ -18,15 +15,11 @@ AWSPerformanceCounter::AWSPerformanceCounter(const char *name)
   pthread_mutex_init(&_lock, 0);
 }
 
-AWSPerformanceCounter::~AWSPerformanceCounter() {
-  pthread_mutex_destroy(&_lock);
-}
+PerformanceCounter::~PerformanceCounter() { pthread_mutex_destroy(&_lock); }
 
-void AWSPerformanceCounter::GetTime(struct timeval *now) {
-  gettimeofday(now, 0);
-}
+void PerformanceCounter::GetTime(struct timeval *now) { gettimeofday(now, 0); }
 
-void AWSPerformanceCounter::addObservation(struct timeval *start) {
+void PerformanceCounter::addObservation(struct timeval *start) {
   struct timeval now;
 
   gettimeofday(&now, 0);
@@ -57,7 +50,7 @@ void AWSPerformanceCounter::addObservation(struct timeval *start) {
   pthread_mutex_unlock(&_lock);
 }
 
-void AWSPerformanceCounter::printSummary() {
+void PerformanceCounter::printSummary() {
   fprintf(stdout, "%s Summary:\n", getName());
 
   fprintf(stdout, "\tThroughput: %lu\n", getThroughput());
@@ -65,3 +58,5 @@ void AWSPerformanceCounter::printSummary() {
   fprintf(stdout, "\tMin Latency Msec: %f\n", getMinLatencyMsec());
   fprintf(stdout, "\tMax Latency Msec: %f\n", getMaxLatencyMsec());
 }
+
+}  // namespace EST

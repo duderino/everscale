@@ -13,7 +13,7 @@
 namespace ESB {
 
 SharedQueueProducer::SharedQueueProducer(int id, SharedQueue &queue,
-                                               UInt32 items)
+                                         UInt32 items)
     : _id(id), _items(items), _queue(queue) {}
 
 SharedQueueProducer::~SharedQueueProducer() {}
@@ -52,4 +52,4 @@ ESTF::ComponentPtr SharedQueueProducer::clone() {
   return component;
 }
 
-}
+}  // namespace ESB

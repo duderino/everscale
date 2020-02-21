@@ -12,8 +12,7 @@
 
 namespace ESB {
 
-SharedQueueConsumer::SharedQueueConsumer(SharedQueue &queue,
-                                               UInt32 items)
+SharedQueueConsumer::SharedQueueConsumer(SharedQueue &queue, UInt32 items)
     : _items(items), _queue(queue) {}
 
 SharedQueueConsumer::~SharedQueueConsumer() {}
@@ -60,4 +59,4 @@ ESTF::ComponentPtr SharedQueueConsumer::clone() {
   return component;
 }
 
-}
+}  // namespace ESB
