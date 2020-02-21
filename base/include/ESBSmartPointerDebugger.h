@@ -1,8 +1,6 @@
 #ifndef ESB_SMART_POINTER_DEBUGGER_H
 #define ESB_SMART_POINTER_DEBUGGER_H
 
-#ifdef USE_SMART_POINTER_DEBUGGER
-
 #ifndef ESB_CONFIG_H
 #include <ESBConfig.h>
 #endif
@@ -90,5 +88,4 @@ class SmartPointerDebugger {
 
 }  // namespace ESB
 
-#endif /* defined USE_SMART_POINTER_DEBUGGER */
-#endif /* ! defined ESB_SMART_POINTER_DEBUGGER_H */
+#endif

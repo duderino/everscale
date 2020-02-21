@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(everscale VERSION ${VERSION} LANGUAGES CXX C)
+#enable_testing()
+include( CTest )
 include(config.cmake)
 
 set(CMAKE_CXX_STANDARD 98)
@@ -18,8 +20,6 @@ set(CPP_FLAGS
 
 # TODO make this portable
 set(LDFLAGS -pthread)
-
-enable_testing()
 
 find_program(CLANG_FORMAT "clang-format")
 

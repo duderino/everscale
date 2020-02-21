@@ -186,7 +186,7 @@ ESTF::ComponentPtr LockableTest::clone() {
   return component;
 }
 
-}
+}  // namespace ESB
 
 int main() {
   ESB::Mutex mutex;
@@ -212,7 +212,8 @@ int main() {
   testSuite->add(lockDecorator);
   testSuite->add(semaphoreDecorator);
 
-  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root =
+      new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 
@@ -223,17 +224,15 @@ int main() {
 
   if (false == root->run(&collector)) {
     std::cerr << "Testing framework run failed" << std::endl;
+    return 1;
   }
 
   if (false == root->tearDown()) {
     std::cerr << "Testing framework tear down failed" << std::endl;
-  }
-
-  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-    std::cout << "All test cases passed" << std::endl;
+    return 1;
   }
 
   std::cout << collector << std::endl;
 
-  return 0;
+  return collector.getStatus();
 }

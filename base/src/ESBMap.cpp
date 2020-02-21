@@ -2,9 +2,7 @@
 #include <ESBMap.h>
 #endif
 
-#ifdef DEBUG
 #include <math.h>
-#endif
 
 namespace ESB {
 
@@ -701,7 +699,6 @@ UInt32 Map::getSize() const { return _size; }
 
 bool Map::isEmpty() const { return 0 == _size; }
 
-#ifdef DEBUG
 bool Map::isBalanced() const {
   int height = 0;
   bool unbalanced = false;
@@ -715,7 +712,7 @@ bool Map::isBalanced() const {
   //  "A red-black tree with n internal nodes has a height at most 2lg(n+1).
   //
 
-  if (height > 2 * (log10(_size + 1) / log10(2))) {
+  if (height > 2 * (std::log10(_size + 1) / std::log10(2))) {
     return false;
   }
 
@@ -768,8 +765,6 @@ int Map::getHeight(MapNode *node) const {
 
   return (right > left) ? right + 1 : left + 1;
 }
-
-#endif /* defined DEBUG */
 
 Size Map::GetAllocationSize() { return sizeof(MapNode); }
 

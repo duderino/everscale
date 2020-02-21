@@ -227,29 +227,27 @@ int main() {
 
   composite->add(concurrencyDecorator);
 
-  ESTF::RepetitionDecoratorPtr repetitionDecorator =
+  ESTF::RepetitionDecoratorPtr root =
       new ESTF::RepetitionDecorator(composite, 3);
 
   ESTF::ResultCollector collector;
 
-  if (false == repetitionDecorator->setup()) {
+  if (false == root->setup()) {
     std::cerr << "Testing framework setup failed" << std::endl;
     return 1;
   }
 
-  if (false == repetitionDecorator->run(&collector)) {
+  if (false == root->run(&collector)) {
     std::cerr << "Testing framework run failed" << std::endl;
+    return 1;
   }
 
-  if (false == repetitionDecorator->tearDown()) {
+  if (false == root->tearDown()) {
     std::cerr << "Testing framework tear down failed" << std::endl;
-  }
-
-  if (0 == collector.getFailureCount() && 0 == collector.getErrorCount()) {
-    std::cout << "All test cases passed" << std::endl;
+    return 1;
   }
 
   std::cout << collector << std::endl;
 
-  return 0;
+  return collector.getStatus();
 }

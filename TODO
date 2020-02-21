@@ -8,6 +8,13 @@ cmakeify
  - specify include dirs and link_directories relative to project root?  also source dirs.
 
 fix license - 3 levels of derivation
+fix multimap or replace with stl
+
+make test needs to rebuild everything
+
+debug and release configurations
+
+ctest memory checks, etc
 
 incorporate and prefer atomic.h.
   - https://www.bogotobogo.com/cplusplus/files/CplusplusConcurrencyInAction_PracticalMultithreading.pdf

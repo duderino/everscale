@@ -2,8 +2,6 @@
 #include <ESBSmartPointerDebugger.h>
 #endif
 
-#ifdef USE_SMART_POINTER_DEBUGGER
-
 #ifndef ESB_MUTEX_H
 #include <ESBMutex.h>
 #endif
@@ -77,5 +75,3 @@ SmartPointerDebugger::SmartPointerDebugger()
                   &SmartPointerDebuggerMutex) {}
 
 }  // namespace ESB
-
-#endif

@@ -88,6 +88,12 @@ class ResultCollector {
    */
   inline int getErrorCount() { return _errors; }
 
+  /** Determine if test suite passed
+   *
+   * @return 0 if test suite passes, non-zero otherwise.
+   */
+  inline int getStatus() { return (0 == _failures && 0 == _errors) ? 0 : 1; }
+
   /** @todo maybe add the ability to iterate through the result set? */
 
   /** Defines the category of a test case's test result. */

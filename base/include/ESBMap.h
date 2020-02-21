@@ -275,13 +275,11 @@ class Map : public Lockable {
    */
   Size GetAllocationSize();
 
-#ifdef DEBUG
   /** Determine whether the tree is balanced.  Used only by the unit tests.
    *
    *  @return true if the tree is balanced, false otherwise.
    */
   bool isBalanced() const;
-#endif
 
   /** Placement new.
    *
@@ -309,10 +307,8 @@ class Map : public Lockable {
   void rightRotate(MapNode *x);
   void leftRotate(MapNode *x);
 
-#ifdef DEBUG
   int getBlackHeight(MapNode *node, bool *unbalanced) const;
   int getHeight(MapNode *node) const;
-#endif
 
   UInt32 _size;
   bool _isUnique;

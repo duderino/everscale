@@ -1,15 +1,3 @@
-/** @file ESTFResultCollectorAssert.h
- *  @brief Macros that record test case results in a ESTFResultCollector object.
- *
- * Copyright (c) 2009 Yahoo! Inc.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- *
- * Derived from code that is Copyright (c) 2009 Joshua Blatt and offered under
- * both BSD and Apache 2.0 licenses
- * (http://sourceforge.net/projects/sparrowhawk/).
- */
-
 #ifndef ESTF_RESULT_COLLECTOR_ASSERT_H
 #define ESTF_RESULT_COLLECTOR_ASSERT_H
 

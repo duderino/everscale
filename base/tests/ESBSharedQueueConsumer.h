@@ -1,29 +1,5 @@
-/**	@file ESFSharedQueueConsumer.h
- *	@brief ESFSharedQueueConsumer is part of the unit test for
- *ESFSharedQueue
- *
- *  Copyright 2005 Joshua Blatt
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  $Author: blattj $
- *  $Date: 2009/05/25 21:51:14 $
- *  $Name:  $
- *  $Revision: 1.3 $
- */
-
-#ifndef ESF_SHARED_QUEUE_CONSUMER_H
-#define ESF_SHARED_QUEUE_CONSUMER_H
+#ifndef ESB_SHARED_QUEUE_CONSUMER_H
+#define ESB_SHARED_QUEUE_CONSUMER_H
 
 #ifndef ESTF_RESULT_COLECTOR_H
 #include <ESTFResultCollector.h>
@@ -37,15 +13,17 @@
 #include <ESTFComponent.h>
 #endif
 
-#ifndef ESF_SHARED_QUEUE_H
-#include <ESFSharedQueue.h>
+#ifndef ESB_SHARED_QUEUE_H
+#include <ESBSharedQueue.h>
 #endif
 
-/**	ESTFSharedQueueConsumer is part of the unit test for ESFSharedQueue.
+namespace ESB {
+
+/** SharedQueueConsumer is part of the unit test for SharedQueue.
  *
  *  @ingroup foundation_test
  */
-class ESFSharedQueueConsumer : public ESTFComponent {
+class SharedQueueConsumer : public ESTF::Component {
  public:
   /**	Constructor.
    *
@@ -53,10 +31,10 @@ class ESFSharedQueueConsumer : public ESTFComponent {
    *  @param items The number of items to push into the shared queue before
    *      exiting
    */
-  ESFSharedQueueConsumer(ESFSharedQueue &queue, ESFUInt32 items);
+  SharedQueueConsumer(SharedQueue &queue, UInt32 items);
 
   /** Destructor. */
-  virtual ~ESFSharedQueueConsumer();
+  virtual ~SharedQueueConsumer();
 
   /** Run the component.
    *
@@ -67,7 +45,7 @@ class ESFSharedQueueConsumer : public ESTFComponent {
    *not count, a false return means there was an error in the test suite itself
    *that prevented it from completing one or more test cases.
    */
-  virtual bool run(ESTFResultCollector *collector);
+  virtual bool run(ESTF::ResultCollector *collector);
 
   /** Perform a one-time initialization of the component.  Initializations
    *	that must be performed on every run of a test case should be put in
@@ -90,13 +68,15 @@ class ESFSharedQueueConsumer : public ESTFComponent {
    *
    *	@return A deep copy of the component.
    */
-  virtual ESTFComponentPtr clone();
+  virtual ESTF::ComponentPtr clone();
 
  private:
-  ESFUInt32 _items;
-  ESFSharedQueue &_queue;
+  UInt32 _items;
+  SharedQueue &_queue;
 };
 
-DEFINE_ESTF_OBJECT_PTR(ESFSharedQueueConsumer, ESTFComponent)
+ESTF_OBJECT_PTR(SharedQueueConsumer, ESTF::Component)
 
-#endif /* ! ESF_SHARED_QUEUE_CONSUMER_H */
+}
+
+#endif
