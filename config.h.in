@@ -203,4 +203,6 @@
 #include <stdio.h>
 #endif
 
+#cmakedefine HAVE_FILE_T @HAVE_FILE_T@
+
 #endif

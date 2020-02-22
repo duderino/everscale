@@ -1,29 +1,24 @@
-/* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
+#ifndef ESB_SIMPLE_PERFORMANCE_COUNTER_H
+#define ESB_SIMPLE_PERFORMANCE_COUNTER_H
 
-#ifndef AWS_SIMPLE_PERFORMANCE_COUNTER_H
-#define AWS_SIMPLE_PERFORMANCE_COUNTER_H
-
-#ifndef ESF_MUTEX_H
-#include <ESFMutex.h>
+#ifndef ESB_MUTEX_H
+#include <ESBMutex.h>
 #endif
 
-#ifndef AWS_PERFORMANCE_COUNTER_H
-#include <AWSPerformanceCounter.h>
+#ifndef ESB_PERFORMANCE_COUNTER_H
+#include <ESBPerformanceCounter.h>
 #endif
 
-#include <sys/time.h>
+namespace ESB {
 
-class AWSSimplePerformanceCounter : public AWSPerformanceCounter {
+class SimplePerformanceCounter : public PerformanceCounter {
  public:
   /**
    * Create a new counter with no stop or start time.
    *
    * @param name The counter's name
    */
-  AWSSimplePerformanceCounter(const char *name);
+  SimplePerformanceCounter(const char *name);
 
   /**
    * Create a new counter with a start and a stop time.
@@ -34,10 +29,10 @@ class AWSSimplePerformanceCounter : public AWSPerformanceCounter {
    * @param stopTime The stop time of the counter's window (number of seconds
    * since the epoch).
    */
-  AWSSimplePerformanceCounter(const char *name, time_t startTime,
+  SimplePerformanceCounter(const char *name, time_t startTime,
                               time_t stopTime);
 
-  virtual ~AWSSimplePerformanceCounter();
+  virtual ~SimplePerformanceCounter();
 
   virtual void addObservation(const struct timeval *start);
 
@@ -68,15 +63,15 @@ class AWSSimplePerformanceCounter : public AWSPerformanceCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESFAllocator *allocator) {
+  inline void *operator new(size_t size, Allocator *allocator) {
     return allocator->allocate(size);
   }
 
  private:
   // Disabled
-  AWSSimplePerformanceCounter(const AWSSimplePerformanceCounter &counter);
-  AWSSimplePerformanceCounter *operator=(
-      const AWSSimplePerformanceCounter &counter);
+  SimplePerformanceCounter(const SimplePerformanceCounter &counter);
+  SimplePerformanceCounter *operator=(
+      const SimplePerformanceCounter &counter);
 
   const time_t _startTime;
   const time_t _stopTime;
@@ -85,7 +80,9 @@ class AWSSimplePerformanceCounter : public AWSPerformanceCounter {
   double _minLatencyMsec;
   double _maxLatencyMsec;
   unsigned long _throughput;
-  mutable ESFMutex _lock;
+  mutable Mutex _lock;
 };
+
+}
 
 #endif

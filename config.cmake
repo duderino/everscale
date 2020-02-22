@@ -76,6 +76,7 @@ check_include_file("stdio.h" HAVE_STDIO_H)
 set(ALLOW_CONSOLE_LOGGING 1) # TODO expose this as an option
 check_symbol_exists(vfprintf "stdio.h" HAVE_VFPRINTF)
 check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
+set(HAVE_FILE_T 1) # TODO detect with a test program
 
 check_include_file("stdarg.h" HAVE_STDARG_H)
 check_symbol_exists(va_start "stdarg.h" HAVE_VA_START)

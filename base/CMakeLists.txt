@@ -48,6 +48,10 @@ set(SOURCE_FILES
     src/ESBEpollMultiplexerFactory.cpp
     src/ESBDnsClient.cpp
     src/ESBSystemDnsClient.cpp
+    src/ESBAveragingCounter.cpp
+    src/ESBPerformanceCounter.cpp
+    src/ESBHistoricalPerformanceCounter.cpp
+    src/ESBSimplePerformanceCounter.cpp
 )
 
 add_library(base STATIC ${SOURCE_FILES})

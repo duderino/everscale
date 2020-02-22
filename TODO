@@ -1,8 +1,14 @@
 cmakeify
+ - config.h.in has some hard coded defines
  - replace all makefiles
  - debug and release libs.  static and shared libs
  - ctest memory checks, etc
  - make test needs to rebuild everything
+perf counters
+ - move to esb.  update http and tcp to use the same set of counters
+ - revisit efficency of historical perf counter.  turn into a composite with an interval?  rename time series?
+ - averaging counter should track variance
+ - percentile counter
 async dns client
  - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
  - move to ESB.  add unit test

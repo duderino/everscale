@@ -1,20 +1,17 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
+#ifndef ESB_AVERAGING_COUNTER_H
+#define ESB_AVERAGING_COUNTER_H
 
-#ifndef AWS_AVERAGING_COUNTER_H
-#define AWS_AVERAGING_COUNTER_H
-
-#ifndef ESF_MUTEX_H
-#include <ESFMutex.h>
+#ifndef ESB_MUTEX_H
+#include <ESBMutex.h>
 #endif
 
-class AWSAveragingCounter {
- public:
-  AWSAveragingCounter();
+namespace ESB {
 
-  virtual ~AWSAveragingCounter();
+class AveragingCounter {
+ public:
+  AveragingCounter();
+
+  virtual ~AveragingCounter();
 
   inline void setValue(double value, double observations) {
     _observations = observations;
@@ -33,18 +30,20 @@ class AWSAveragingCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESFAllocator *allocator) {
+  inline void *operator new(size_t size, Allocator *allocator) {
     return allocator->allocate(size);
   }
 
  private:
   // Disabled
-  AWSAveragingCounter(const AWSAveragingCounter &counter);
-  void operator=(const AWSAveragingCounter &counter);
+  AveragingCounter(const AveragingCounter &counter);
+  void operator=(const AveragingCounter &counter);
 
   double _value;
   double _observations;
-  ESFMutex _lock;
+  Mutex _lock;
 };
+
+}
 
 #endif

@@ -1,16 +1,11 @@
-/* Copyright (c) 2011 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef AWS_SIMPLE_PERFORMANCE_COUNTER_H
-#include <AWSSimplePerformanceCounter.h>
+#ifndef ESB_SIMPLE_PERFORMANCE_COUNTER_H
+#include <ESBSimplePerformanceCounter.h>
 #endif
 
-#include <stdio.h>
+namespace ESB {
 
-AWSSimplePerformanceCounter::AWSSimplePerformanceCounter(const char *name)
-    : AWSPerformanceCounter(),
+SimplePerformanceCounter::SimplePerformanceCounter(const char *name)
+    : PerformanceCounter(),
       _startTime(0),
       _stopTime(0),
       _name(name),
@@ -20,10 +15,10 @@ AWSSimplePerformanceCounter::AWSSimplePerformanceCounter(const char *name)
       _throughput(0UL),
       _lock() {}
 
-AWSSimplePerformanceCounter::AWSSimplePerformanceCounter(const char *name,
+SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
                                                          time_t startTime,
                                                          time_t stopTime)
-    : AWSPerformanceCounter(),
+    : PerformanceCounter(),
       _startTime(startTime),
       _stopTime(stopTime),
       _name(name),
@@ -33,9 +28,9 @@ AWSSimplePerformanceCounter::AWSSimplePerformanceCounter(const char *name,
       _throughput(0UL),
       _lock() {}
 
-AWSSimplePerformanceCounter::~AWSSimplePerformanceCounter() {}
+SimplePerformanceCounter::~SimplePerformanceCounter() {}
 
-void AWSSimplePerformanceCounter::addObservation(const struct timeval *start) {
+void SimplePerformanceCounter::addObservation(const struct timeval *start) {
   struct timeval now;
 
   gettimeofday(&now, 0);
@@ -43,7 +38,7 @@ void AWSSimplePerformanceCounter::addObservation(const struct timeval *start) {
   addObservation(start, &now);
 }
 
-void AWSSimplePerformanceCounter::addObservation(const struct timeval *start,
+void SimplePerformanceCounter::addObservation(const struct timeval *start,
                                                  const struct timeval *stop) {
   double latencyMsec = (stop->tv_sec - start->tv_sec) * 1000.0;
 
@@ -72,7 +67,7 @@ void AWSSimplePerformanceCounter::addObservation(const struct timeval *start,
   _lock.writeRelease();
 }
 
-void AWSSimplePerformanceCounter::printSummary(FILE *file) const {
+void SimplePerformanceCounter::printSummary(FILE *file) const {
   _lock.writeAcquire();
 
   double avgLatencyMsec = _avgLatencyMsec;
@@ -88,4 +83,6 @@ void AWSSimplePerformanceCounter::printSummary(FILE *file) const {
       "%f, \"maxlatmillis\": %f, \"start\": %lu, \"stop\": %lu}",
       _name, throughput, avgLatencyMsec, minLatencyMsec, maxLatencyMsec,
       _startTime, _stopTime);
+}
+
 }
