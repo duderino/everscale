@@ -3,14 +3,26 @@ cmakeify
  - debug and release libs.  static and shared libs
  - ctest memory checks, etc
  - make test needs to rebuild everything
-tcp echo stuff
+async dns client
+ - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
+ - move to ESB.  add unit test
+ - common caching code.  intial async impl can use threadpool and gethostbyname
+tcp stuff
  - make sure full duplex
  - track bps
  - move tcp echo client/server into ESB and turn into a unit test over loopback/same proc
+http stuff
+ - turn top-level client and server into a unit test over loopback (client->server and client->proxy->server)
 logging
  - pretty print thread ids
  - filenames, not full paths
- - rotating file logger
+ - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
+bootstrap config
+ - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
+ - xds agent could just regenerate this, serializing updates and using atomic moves
+ - could potentially break into multiple files for scalability, but then need cross-file atomic update mechanism.
+ - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid
+   filling disk
 fix license - 3 levels of derivation
 fix multimap or replace with stl
 lockless datastructures - list.  hashmap.
@@ -25,7 +37,6 @@ addr space randomization
 fix bug in date math in esb and estf
 no eval logging macros
 tls support
-async dns client
 xds support
 readiness and liveness check support - e2e vs local options
 url canonicalization

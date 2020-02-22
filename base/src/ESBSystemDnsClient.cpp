@@ -1,41 +1,21 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef AWS_HTTP_DEFAULT_RESOLVER_H
-#include <AWSHttpDefaultResolver.h>
+#ifndef ESB_SYSTEM_DNS_CLIENT_H
+#include <ESBSystemDnsClient.h>
 #endif
 
 #include <netdb.h>
-#include <string.h>
 
-AWSHttpDefaultResolver::AWSHttpDefaultResolver(ESFLogger *logger)
-    : AWSHttpResolver(), _logger(logger) {}
+namespace ESB {
 
-AWSHttpDefaultResolver::~AWSHttpDefaultResolver() {}
+SystemDnsClient::SystemDnsClient(Logger *logger)
+    : DnsClient(), _logger(logger) {}
 
-ESFError AWSHttpDefaultResolver::resolve(const AWSHttpRequest *request,
-                                         ESFSocketAddress *address) {
-  if (0 == request || 0 == address) {
-    return ESF_NULL_POINTER;
-  }
+SystemDnsClient::~SystemDnsClient() {}
 
-  unsigned char hostname[1024];
-  hostname[0] = 0;
-  ESFUInt16 port = 0;
-  bool isSecure = false;
-
-  ESFError error =
-      request->parsePeerAddress(hostname, sizeof(hostname), &port, &isSecure);
-
-  if (ESF_SUCCESS != error) {
-    if (_logger->isLoggable(ESFLogger::Warning)) {
-      _logger->log(ESFLogger::Warning, __FILE__, __LINE__,
-                   "[resolver] Cannot extract hostname from request");
-    }
-
-    return error;
+Error SystemDnsClient::resolve(SocketAddress *address,
+                               const unsigned char *hostname, UInt16 port,
+                               bool isSecure) {
+  if (0 == hostname || 0 == address) {
+    return ESB_NULL_POINTER;
   }
 
   /* Linux:
@@ -70,45 +50,46 @@ ESFError AWSHttpDefaultResolver::resolve(const AWSHttpRequest *request,
       case HOST_NOT_FOUND:
       case NO_ADDRESS:
 
-        if (_logger->isLoggable(ESFLogger::Warning)) {
-          _logger->log(ESFLogger::Warning, __FILE__, __LINE__,
+        if (_logger->isLoggable(Logger::Warning)) {
+          _logger->log(Logger::Warning, __FILE__, __LINE__,
                        "[resolver] Cannot resolve hostname %s", hostname);
         }
 
-        return ESF_CANNOT_FIND;
+        return ESB_CANNOT_FIND;
 
       case TRY_AGAIN:
 
-        if (_logger->isLoggable(ESFLogger::Error)) {
-          _logger->log(ESFLogger::Error, __FILE__, __LINE__,
+        if (_logger->isLoggable(Logger::Err)) {
+          _logger->log(Logger::Err, __FILE__, __LINE__,
                        "[resolver] Temporary error resolving hostname %s",
                        hostname);
         }
 
-        return ESF_AGAIN;
+        return ESB_AGAIN;
 
       case NO_RECOVERY:
       default:
 
-        if (_logger->isLoggable(ESFLogger::Error)) {
-          _logger->log(ESFLogger::Error, __FILE__, __LINE__,
+        if (_logger->isLoggable(Logger::Err)) {
+          _logger->log(Logger::Err, __FILE__, __LINE__,
                        "[resolver] Permanent error resolving hostname %s",
                        hostname);
         }
 
-        return ESF_OTHER_ERROR;
+        return ESB_OTHER_ERROR;
     }
   }
 
-  memset(address->getAddress(), 0, sizeof(ESFSocketAddress::Address));
+  memset(address->getAddress(), 0, sizeof(SocketAddress::Address));
 
   memcpy(&address->getAddress()->sin_addr, hostEntry.h_addr_list[0],
          sizeof(address->getAddress()->sin_addr));
   address->getAddress()->sin_family = AF_INET;
   address->getAddress()->sin_port = htons(port);
 
-  address->setTransport(isSecure ? ESFSocketAddress::TLS
-                                 : ESFSocketAddress::TCP);
+  address->setTransport(isSecure ? SocketAddress::TLS : SocketAddress::TCP);
 
-  return ESF_SUCCESS;
+  return ESB_SUCCESS;
 }
+
+}  // namespace ESB

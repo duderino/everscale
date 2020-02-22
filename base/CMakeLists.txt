@@ -46,6 +46,8 @@ set(SOURCE_FILES
     src/ESBDiscardAllocator.cpp
     src/ESBEpollMultiplexer.cpp
     src/ESBEpollMultiplexerFactory.cpp
+    src/ESBDnsClient.cpp
+    src/ESBSystemDnsClient.cpp
 )
 
 add_library(base STATIC ${SOURCE_FILES})
