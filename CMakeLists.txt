@@ -38,7 +38,5 @@ endif()
 
 add_subdirectory(unit-tf)
 add_subdirectory(base)
-add_subdirectory(tcp_echo)
-
-
-
+add_subdirectory(tcp)
+add_subdirectory(http)
