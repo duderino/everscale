@@ -130,7 +130,7 @@ check_include_file("inttypes.h" HAVE_INTTYPES_H)
 check_include_file("sys/socket.h" HAVE_SYS_SOCKET_H)
 set(UNIX_NONBLOCKING_CONNECT_ERROR 1) # TODO detect this behavior with a test program
 check_struct_has_member("struct sockaddr" sa_family "sys/socket.h" HAVE_STRUCT_SOCKADDR)
-check_type_size(socklen_t HAVE_SOCKLEN_T)
+set(HAVE_SOCKLEN_T 1) # TODO detect presence with a test program
 check_symbol_exists(socket "sys/socket.h" HAVE_SOCKET)
 check_symbol_exists(bind "sys/socket.h" HAVE_BIND)
 check_symbol_exists(listen "sys/socket.h" HAVE_LISTEN)
