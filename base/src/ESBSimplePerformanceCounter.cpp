@@ -16,8 +16,8 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name)
       _lock() {}
 
 SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
-                                                         time_t startTime,
-                                                         time_t stopTime)
+                                                   time_t startTime,
+                                                   time_t stopTime)
     : PerformanceCounter(),
       _startTime(startTime),
       _stopTime(stopTime),
@@ -39,7 +39,7 @@ void SimplePerformanceCounter::addObservation(const struct timeval *start) {
 }
 
 void SimplePerformanceCounter::addObservation(const struct timeval *start,
-                                                 const struct timeval *stop) {
+                                              const struct timeval *stop) {
   double latencyMsec = (stop->tv_sec - start->tv_sec) * 1000.0;
 
   latencyMsec += stop->tv_usec / 1000.0;
@@ -85,4 +85,4 @@ void SimplePerformanceCounter::printSummary(FILE *file) const {
       _startTime, _stopTime);
 }
 
-}
+}  // namespace ESB

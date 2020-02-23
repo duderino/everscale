@@ -44,6 +44,6 @@ class AveragingCounter {
   Mutex _lock;
 };
 
-}
+}  // namespace ESB
 
 #endif

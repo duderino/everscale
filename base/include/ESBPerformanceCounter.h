@@ -50,6 +50,6 @@ class PerformanceCounter : public EmbeddedListElement {
   PerformanceCounter *operator=(const PerformanceCounter &counter);
 };
 
-}
+}  // namespace ESB
 
 #endif

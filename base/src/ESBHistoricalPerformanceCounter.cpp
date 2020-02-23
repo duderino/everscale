@@ -12,9 +12,10 @@
 
 namespace ESB {
 
-HistoricalPerformanceCounter::HistoricalPerformanceCounter(
-    const char *name, time_t windowSizeSec, Allocator *allocator,
-    Logger *logger)
+HistoricalPerformanceCounter::HistoricalPerformanceCounter(const char *name,
+                                                           time_t windowSizeSec,
+                                                           Allocator *allocator,
+                                                           Logger *logger)
     : PerformanceCounter(),
       _windowSizeSec(windowSizeSec),
       _name(name),
@@ -40,8 +41,7 @@ HistoricalPerformanceCounter::~HistoricalPerformanceCounter() {
   }
 }
 
-void HistoricalPerformanceCounter::addObservation(
-    const struct timeval *start) {
+void HistoricalPerformanceCounter::addObservation(const struct timeval *start) {
   struct timeval now;
 
   SimplePerformanceCounter::GetTime(&now);
@@ -49,8 +49,8 @@ void HistoricalPerformanceCounter::addObservation(
   addObservation(start, &now);
 }
 
-void HistoricalPerformanceCounter::addObservation(
-    const struct timeval *start, const struct timeval *stop) {
+void HistoricalPerformanceCounter::addObservation(const struct timeval *start,
+                                                  const struct timeval *stop) {
   SimplePerformanceCounter *counter = 0;
 
   {
@@ -107,4 +107,4 @@ void HistoricalPerformanceCounter::printSummary(FILE *file) const {
   fprintf(file, "]}");
 }
 
-}
+}  // namespace ESB

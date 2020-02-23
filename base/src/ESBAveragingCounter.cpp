@@ -20,4 +20,4 @@ void AveragingCounter::addValue(double value) {
   _lock.writeRelease();
 }
 
-}
+}  // namespace ESB

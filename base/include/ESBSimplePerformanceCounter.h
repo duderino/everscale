@@ -29,8 +29,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
    * @param stopTime The stop time of the counter's window (number of seconds
    * since the epoch).
    */
-  SimplePerformanceCounter(const char *name, time_t startTime,
-                              time_t stopTime);
+  SimplePerformanceCounter(const char *name, time_t startTime, time_t stopTime);
 
   virtual ~SimplePerformanceCounter();
 
@@ -70,8 +69,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
  private:
   // Disabled
   SimplePerformanceCounter(const SimplePerformanceCounter &counter);
-  SimplePerformanceCounter *operator=(
-      const SimplePerformanceCounter &counter);
+  SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
 
   const time_t _startTime;
   const time_t _stopTime;
@@ -83,6 +81,6 @@ class SimplePerformanceCounter : public PerformanceCounter {
   mutable Mutex _lock;
 };
 
-}
+}  // namespace ESB
 
 #endif

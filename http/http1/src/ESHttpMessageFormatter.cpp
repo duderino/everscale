@@ -1,0 +1,449 @@
+#ifndef ES_HTTP_MESSAGE_FORMATTER_H
+#include <ESHttpMessageFormatter.h>
+#endif
+
+#ifndef ES_HTTP_ERROR_H
+#include <ESHttpError.h>
+#endif
+
+#ifndef ES_HTTP_UTIL_H
+#include <ESHttpUtil.h>
+#endif
+
+namespace ES {
+
+#ifndef MIN
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
+
+#define ES_FORMATTING_START_LINE (1 << 0)
+#define ES_FORMATTING_FIELD_NAME (1 << 1)
+#define ES_FORMATTING_FIELD_VALUE (1 << 2)
+#define ES_HEADER_FORMAT_COMPLETE (1 << 3)
+#define ES_FORMATTING_UNENCODED_BODY (1 << 4)
+#define ES_FORMATTING_CHUNKED_BODY (1 << 5)
+#define ES_BODY_FORMAT_COMPLETE (1 << 6)
+#define ES_FORMATTING_HEADER \
+  (ES_FORMATTING_FIELD_NAME | ES_FORMATTING_FIELD_VALUE)
+#define ES_FOUND_CONTENT_LENGTH_HEADER (1 << 10)
+#define ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER (1 << 11)
+
+HttpMessageFormatter::HttpMessageFormatter()
+    : _state(0x00), _currentHeader(0) {}
+
+HttpMessageFormatter::~HttpMessageFormatter() {}
+
+void HttpMessageFormatter::reset() {
+  _state = 0x00;
+  _currentHeader = 0;
+}
+
+ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
+                                               const HttpMessage *message) {
+  // generic-message = start-line
+  //                   *(message-header CRLF)
+  //                   CRLF
+  //                   [ message-body ]
+
+  if (ES_HEADER_FORMAT_COMPLETE & _state) {
+    return ESB_INVALID_STATE;
+  }
+
+  if (0x00 == _state) {
+    if (false == outputBuffer->isWritable()) {
+      return ESB_AGAIN;
+    }
+
+    HttpUtil::Start(&_state, outputBuffer, ES_FORMATTING_START_LINE);
+  }
+
+  ESB::Error error = ESB_SUCCESS;
+
+  if (ES_FORMATTING_START_LINE & _state) {
+    error = formatStartLine(outputBuffer, message);
+
+    if (ESB_SUCCESS != error) {
+      return error;
+    }
+
+    _currentHeader = (HttpHeader *)message->getHeaders()->getFirst();
+
+    HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_START_LINE,
+                         ES_FORMATTING_FIELD_NAME);
+  }
+
+  while (ES_FORMATTING_HEADER & _state) {
+    if (0 == _currentHeader) {
+      assert(ES_FORMATTING_FIELD_NAME & _state);
+
+      if (2 > outputBuffer->getWritable()) {
+        outputBuffer->writeReset();
+        return ESB_AGAIN;
+      }
+
+      outputBuffer->putNext('\r');
+      outputBuffer->putNext('\n');
+
+      // Messages MUST NOT include both a Content-Length header field and a
+      // non-identity transfer-coding. If the message does include a non-
+      // identity transfer-coding, the Content-Length MUST be ignored.
+
+      if (ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER & _state) {
+        return HttpUtil::Transition(
+            &_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
+            ES_HEADER_FORMAT_COMPLETE | ES_FORMATTING_CHUNKED_BODY);
+      } else {
+        return HttpUtil::Transition(
+            &_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
+            ES_HEADER_FORMAT_COMPLETE | ES_FORMATTING_UNENCODED_BODY);
+      }
+    }
+
+    if (ES_FORMATTING_FIELD_NAME & _state) {
+      assert(_currentHeader->getFieldName());
+
+      if (0 == _currentHeader->getFieldName()) {
+        return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_NAME);
+      }
+
+      error = formatFieldName(outputBuffer, _currentHeader->getFieldName());
+
+      if (ESB_SUCCESS != error) {
+        return error;
+      }
+
+      if (0 == strcasecmp((const char *)_currentHeader->getFieldName(),
+                          "Content-Length")) {
+        _state |= ES_FOUND_CONTENT_LENGTH_HEADER;
+      }
+
+      if (0 == strcasecmp((const char *)_currentHeader->getFieldName(),
+                          "Transfer-Encoding")) {
+        // If a Transfer-Encoding header field (section 14.41) is present and
+        // has any value other than "identity", then the transfer-length is
+        // defined by use of the "chunked" transfer-coding (section 3.6),
+        // unless the message is terminated by closing the connection.
+
+        if (0 == _currentHeader->getFieldValue() ||
+            0 != strncmp((const char *)_currentHeader->getFieldValue(),
+                         "identity", sizeof("identity") - 1)) {
+          _state |= ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER;
+        }
+      }
+
+      HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
+                           ES_FORMATTING_FIELD_VALUE);
+    }
+
+    if (ES_FORMATTING_FIELD_VALUE & _state) {
+      error = formatFieldValue(outputBuffer, _currentHeader->getFieldValue());
+
+      if (ESB_SUCCESS != error) {
+        return error;
+      }
+
+      HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_VALUE,
+                           ES_FORMATTING_FIELD_NAME);
+
+      _currentHeader = (const HttpHeader *)_currentHeader->getNext();
+    }
+  }
+
+  return ESB_INVALID_STATE;
+}
+
+ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
+                                               const HttpMessage *message,
+                                               bool clientMode) {
+  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
+
+  if (clientMode) {
+    if (false == outputBuffer->isWritable()) {
+      return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+    }
+
+    outputBuffer->putNext(' ');
+  }
+
+  const unsigned char *version = 0;
+
+  if (110 == message->getHttpVersion()) {
+    version = (const unsigned char *)"HTTP/1.1";
+  } else if (100 == message->getHttpVersion()) {
+    version = (const unsigned char *)"HTTP/1.0";
+  } else {
+    return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_VERSION);
+  }
+
+  for (const unsigned char *p = version; *p; ++p) {
+    if (false == outputBuffer->isWritable()) {
+      return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+    }
+
+    outputBuffer->putNext(*p);
+  }
+
+  if (clientMode) {
+    if (2 > outputBuffer->getWritable()) {
+      return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+    }
+
+    outputBuffer->putNext('\r');
+    outputBuffer->putNext('\n');
+  } else {
+    if (false == outputBuffer->isWritable()) {
+      return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+    }
+
+    outputBuffer->putNext(' ');
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpMessageFormatter::formatFieldName(
+    ESB::Buffer *outputBuffer, const unsigned char *fieldName) {
+  // field-name     = token
+
+  assert(ES_FORMATTING_FIELD_NAME & _state);
+
+  for (const unsigned char *p = fieldName; *p; ++p) {
+    if (false == outputBuffer->isWritable()) {
+      return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+    }
+
+    if (HttpUtil::IsToken(*p)) {
+      outputBuffer->putNext(*p);
+      continue;
+    }
+
+    return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_NAME);
+  }
+
+  if (2 > outputBuffer->getWritable()) {
+    return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+  }
+
+  outputBuffer->putNext(':');
+  outputBuffer->putNext(' ');
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpMessageFormatter::formatFieldValue(
+    ESB::Buffer *outputBuffer, const unsigned char *fieldValue) {
+  // field-value    = *( field-content | LWS )
+  // field-content  = <the OCTETs making up the field-value
+  //                 and consisting of either *TEXT or combinations
+  //                 of token, separators, and quoted-string>
+
+  assert(ES_FORMATTING_FIELD_VALUE & _state);
+
+  bool lastIsSpace = true;
+
+  for (const unsigned char *p = fieldValue; *p; ++p) {
+    if (false == outputBuffer->isWritable()) {
+      return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+    }
+
+    if (HttpUtil::IsLWS(*p)) {
+      // Replace any line continuations, etc. with a single ' '
+
+      if (false == lastIsSpace) {
+        outputBuffer->putNext(' ');
+        lastIsSpace = true;
+      }
+
+      continue;
+    }
+
+    lastIsSpace = false;
+
+    if (HttpUtil::IsToken(*p)) {
+      outputBuffer->putNext(*p);
+      continue;
+    }
+
+    if (HttpUtil::IsSeparator(*p)) {
+      outputBuffer->putNext(*p);
+      continue;
+    }
+
+    if (HttpUtil::IsText(*p)) {
+      outputBuffer->putNext(*p);
+      continue;
+    }
+
+    return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_VALUE);
+  }
+
+  if (2 > outputBuffer->getWritable()) {
+    return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+  }
+
+  outputBuffer->putNext('\r');
+  outputBuffer->putNext('\n');
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer,
+                                            int requestedSize,
+                                            int *availableSize) {
+  if (!outputBuffer || !availableSize) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (0 == requestedSize) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  if (ES_BODY_FORMAT_COMPLETE & _state) {
+    return ESB_INVALID_STATE;
+  }
+
+  if (ES_FORMATTING_CHUNKED_BODY & _state) {
+    return beginChunk(outputBuffer, requestedSize, availableSize);
+  }
+
+  if (ES_FORMATTING_UNENCODED_BODY & _state) {
+    return beginUnencodedBlock(outputBuffer, requestedSize, availableSize);
+  }
+
+  return ESB_INVALID_STATE;
+}
+
+ESB::Error HttpMessageFormatter::endBlock(ESB::Buffer *outputBuffer) {
+  if (!outputBuffer) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (ES_BODY_FORMAT_COMPLETE & _state) {
+    return ESB_INVALID_STATE;
+  }
+
+  if (ES_FORMATTING_CHUNKED_BODY & _state) {
+    return endChunk(outputBuffer);
+  }
+
+  if (ES_FORMATTING_UNENCODED_BODY & _state) {
+    return ESB_SUCCESS;
+  }
+
+  return ESB_INVALID_STATE;
+}
+
+ESB::Error HttpMessageFormatter::endBody(ESB::Buffer *outputBuffer) {
+  if (!outputBuffer) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (ES_BODY_FORMAT_COMPLETE & _state) {
+    return ESB_INVALID_STATE;
+  }
+
+  if (ES_FORMATTING_CHUNKED_BODY & _state) {
+    // Chunked-Body   = ...
+    //                  last-chunk
+    //                  CRLF
+    // last-chunk     = 1*("0") [ chunk-extension ] CRLF
+
+    if (5 > outputBuffer->getWritable()) {
+      return ESB_AGAIN;
+    }
+
+    outputBuffer->putNext('0');
+    outputBuffer->putNext('\r');
+    outputBuffer->putNext('\n');
+    outputBuffer->putNext('\r');
+    outputBuffer->putNext('\n');
+
+    return HttpUtil::Transition(&_state, outputBuffer,
+                                ES_FORMATTING_CHUNKED_BODY,
+                                ES_BODY_FORMAT_COMPLETE);
+  }
+
+  if (ES_FORMATTING_UNENCODED_BODY & _state) {
+    return HttpUtil::Transition(&_state, outputBuffer,
+                                ES_FORMATTING_UNENCODED_BODY,
+                                ES_BODY_FORMAT_COMPLETE);
+  }
+
+  return ESB_INVALID_STATE;
+}
+
+ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer,
+                                            int requestedSize,
+                                            int *availableSize) {
+  // chunk          = chunk-size [ chunk-extension ] CRLF
+  //                  ...
+  // chunk-size     = 1*HEX
+
+  assert(ES_FORMATTING_CHUNKED_BODY & _state);
+  assert(0 < requestedSize);
+  assert(availableSize);
+
+  // reserve characters for chunk-size and the CRLF after the chunk data
+  // Max supported chunk-size is 0xFFFFFFFF.  So reserve 8 for chunk-size
+  // + 2 for the CRLF in the chunk-size production + 2 for the CRLF after
+  // the chunk data.
+
+  if (0 >= ((int)outputBuffer->getWritable()) - 12) {
+    return ESB_AGAIN;
+  }
+
+  *availableSize = MIN(requestedSize, ((int)outputBuffer->getWritable()) - 12);
+
+  assert(0 < *availableSize);
+
+  ESB::Error error = HttpUtil::FormatInteger(outputBuffer, *availableSize, 16);
+
+  if (ESB_SUCCESS != error) {
+    return HttpUtil::Rollback(outputBuffer, error);
+  }
+
+  if (2 > outputBuffer->getWritable()) {
+    return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
+  }
+
+  outputBuffer->putNext('\r');
+  outputBuffer->putNext('\n');
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpMessageFormatter::endChunk(ESB::Buffer *outputBuffer) {
+  // chunk          = ...
+  //                  chunk-data CRLF
+  // chunk-data     = chunk-size(OCTET)
+
+  assert(ES_FORMATTING_CHUNKED_BODY & _state);
+
+  if (2 > outputBuffer->getWritable()) {
+    return ESB_AGAIN;
+  }
+
+  outputBuffer->putNext('\r');
+  outputBuffer->putNext('\n');
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer,
+                                                     int requestedSize,
+                                                     int *availableSize) {
+  assert(ES_FORMATTING_UNENCODED_BODY & _state);
+  assert(0 < requestedSize);
+  assert(availableSize);
+
+  if (0 >= outputBuffer->getWritable()) {
+    return ESB_AGAIN;
+  }
+
+  *availableSize =
+      MIN((unsigned int)requestedSize, outputBuffer->getWritable());
+
+  return ESB_SUCCESS;
+}
+
+}  // namespace ES

@@ -1,0 +1,117 @@
+#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
+#define ES_HTTP_SERVER_SIMPLE_COUNTERS_H
+
+#ifndef ESB_SHARED_COUNTER_H
+#include <ESBSharedCounter.h>
+#endif
+
+#ifndef ESB_AVERAGING_COUNTER_H
+#include <ESBAveragingCounter.h>
+#endif
+
+#ifndef ES_HTTP_SERVER_COUNTERS_H
+#include <ESHttpServerCounters.h>
+#endif
+
+#ifndef ES_SIMPLE_PERFORMANCE_COUNTER_H
+#include <ESBSimplePerformanceCounter.h>
+#endif
+
+namespace ES {
+
+class HttpServerSimpleCounters : public HttpServerCounters {
+ public:
+  HttpServerSimpleCounters();
+
+  virtual ~HttpServerSimpleCounters();
+
+  virtual void printSummary(FILE *file) const;
+
+  virtual ESB::PerformanceCounter *getSuccessfulTransactions();
+
+  virtual const ESB::PerformanceCounter *getSuccessfulTransactions() const;
+
+  virtual ESB::PerformanceCounter *getRequestHeaderErrors();
+
+  virtual const ESB::PerformanceCounter *getRequestHeaderErrors() const;
+
+  virtual ESB::PerformanceCounter *getRequestHeaderFailures();
+
+  virtual const ESB::PerformanceCounter *getRequestHeaderFailures() const;
+
+  virtual ESB::PerformanceCounter *getRequestHeaderTimeouts();
+
+  virtual const ESB::PerformanceCounter *getRequestHeaderTimeouts() const;
+
+  virtual ESB::PerformanceCounter *getRequestBodyErrors();
+
+  virtual const ESB::PerformanceCounter *getRequestBodyErrors() const;
+
+  virtual ESB::PerformanceCounter *getRequestBodyFailures();
+
+  virtual const ESB::PerformanceCounter *getRequestBodyFailures() const;
+
+  virtual ESB::PerformanceCounter *getRequestBodyTimeouts();
+
+  virtual const ESB::PerformanceCounter *getRequestBodyTimeouts() const;
+
+  virtual ESB::PerformanceCounter *getResponseHeaderErrors();
+
+  virtual const ESB::PerformanceCounter *getResponseHeaderErrors() const;
+
+  virtual ESB::PerformanceCounter *getResponseHeaderFailures();
+
+  virtual const ESB::PerformanceCounter *getResponseHeaderFailures() const;
+
+  virtual ESB::PerformanceCounter *getResponseHeaderTimeouts();
+
+  virtual const ESB::PerformanceCounter *getResponseHeaderTimeouts() const;
+
+  virtual ESB::PerformanceCounter *getResponseBodyErrors();
+
+  virtual const ESB::PerformanceCounter *getResponseBodyErrors() const;
+
+  virtual ESB::PerformanceCounter *getResponseBodyFailures();
+
+  virtual const ESB::PerformanceCounter *getResponseBodyFailures() const;
+
+  virtual ESB::PerformanceCounter *getResponseBodyTimeouts();
+
+  virtual const ESB::PerformanceCounter *getResponseBodyTimeouts() const;
+
+  virtual ESB::SharedCounter *getTotalConnections();
+
+  virtual const ESB::SharedCounter *getTotalConnections() const;
+
+  virtual ESB::AveragingCounter *getAverageTransactionsPerConnection();
+
+  virtual const ESB::AveragingCounter *getAverageTransactionsPerConnection()
+      const;
+
+ private:
+  // Disabled
+  HttpServerSimpleCounters(const HttpServerSimpleCounters &counters);
+  void operator=(const HttpServerSimpleCounters &counters);
+
+  ESB::SimplePerformanceCounter _successfulTransactions;
+
+  ESB::SimplePerformanceCounter _requestHeaderErrors;
+  ESB::SimplePerformanceCounter _requestHeaderFailures;
+  ESB::SimplePerformanceCounter _requestHeaderTimeouts;
+  ESB::SimplePerformanceCounter _requestBodyErrors;
+  ESB::SimplePerformanceCounter _requestBodyFailures;
+  ESB::SimplePerformanceCounter _requestBodyTimeouts;
+  ESB::SimplePerformanceCounter _responseHeaderErrors;
+  ESB::SimplePerformanceCounter _responseHeaderFailures;
+  ESB::SimplePerformanceCounter _responseHeaderTimeouts;
+  ESB::SimplePerformanceCounter _responseBodyErrors;
+  ESB::SimplePerformanceCounter _responseBodyFailures;
+  ESB::SimplePerformanceCounter _responseBodyTimeouts;
+
+  ESB::SharedCounter _totalConnections;
+  ESB::AveragingCounter _averageTransactionsPerConnection;
+};
+
+}  // namespace ES
+
+#endif

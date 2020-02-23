@@ -4,6 +4,7 @@ cmakeify
  - ctest memory checks, etc
  - make test needs to rebuild everything
  - finish todos in config.cmake - a few adhoc test programs
+ - doxygen
 perf counters
  - move to esb.  update http and tcp to use the same set of counters
  - revisit efficency of historical perf counter.  turn into a composite with an interval?  rename time series?
@@ -19,6 +20,11 @@ tcp stuff
  - move tcp echo client/server into ESB and turn into a unit test over loopback/same proc
 http stuff
  - turn top-level client and server into a unit test over loopback (client->server and client->proxy->server)
+ - idle timeout
+ - max requests per connection option (1 disables keepalives)
+ - max header size option
+ - max body size option
+ - slow loris defense
 logging
  - pretty print thread ids
  - filenames, not full paths
@@ -45,7 +51,9 @@ no eval logging macros
 tls support
 xds support
 readiness and liveness check support - e2e vs local options
-url canonicalization
+URL 
+ - canonicalization / encode and decode per chromium RFC
+ - username and pass
 load shedding
 pin threads / fe-be connection alignment
 h2 support

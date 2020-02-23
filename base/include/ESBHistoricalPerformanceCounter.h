@@ -35,7 +35,7 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
    *   for each new window it creates.
    */
   HistoricalPerformanceCounter(const char *name, time_t windowSizeSec,
-                                  Allocator *allocator, Logger *logger);
+                               Allocator *allocator, Logger *logger);
 
   virtual ~HistoricalPerformanceCounter();
 
@@ -58,8 +58,7 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
 
  private:
   // Disabled
-  HistoricalPerformanceCounter(
-      const HistoricalPerformanceCounter &counter);
+  HistoricalPerformanceCounter(const HistoricalPerformanceCounter &counter);
   HistoricalPerformanceCounter *operator=(
       const HistoricalPerformanceCounter &counter);
 
@@ -71,6 +70,6 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
   DiscardAllocator _allocator;
 };
 
-}
+}  // namespace ESB
 
 #endif
