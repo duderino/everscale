@@ -1,34 +1,25 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef AWS_HTTP_REQUEST_PARSER_H
-#include <AWSHttpRequestParser.h>
+#ifndef ES_HTTP_REQUEST_PARSER_H
+#include <ESHttpRequestParser.h>
 #endif
 
-#ifndef AWS_HTTP_RESPONSE_PARSER_H
-#include <AWSHttpResponseParser.h>
+#ifndef ES_HTTP_RESPONSE_PARSER_H
+#include <ESHttpResponseParser.h>
 #endif
 
-#ifndef AWS_HTTP_REQUEST_FORMATTER_H
-#include <AWSHttpRequestFormatter.h>
+#ifndef ES_HTTP_REQUEST_FORMATTER_H
+#include <ESHttpRequestFormatter.h>
 #endif
 
-#ifndef AWS_HTTP_RESPONSE_FORMATTER_H
-#include <AWSHttpResponseFormatter.h>
+#ifndef ES_HTTP_RESPONSE_FORMATTER_H
+#include <ESHttpResponseFormatter.h>
 #endif
 
-#ifndef ESF_SYSTEM_ALLOCATOR_H
-#include <ESFSystemAllocator.h>
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESF_ASSERT_H
-#include <ESFAssert.h>
-#endif
-
-#ifndef ESF_RAND_H
-#include <ESFRand.h>
+#ifndef ESB_RAND_H
+#include <ESBRand.h>
 #endif
 
 #include <dirent.h>
@@ -39,72 +30,25 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+namespace ES {
+
+static const int Debug = 9;
+static ESB::Rand Random;
 static unsigned char InputBufferStorage[4096];
 static unsigned char OutputBufferStorage[4096];
 static unsigned char WorkingBufferStorage[4096];
-
-static ESFBuffer InputBuffer(InputBufferStorage, sizeof(InputBufferStorage));
-static ESFBuffer OutputBuffer(OutputBufferStorage, sizeof(OutputBufferStorage));
-static ESFBuffer WorkingBuffer(WorkingBufferStorage,
+static ESB::Buffer InputBuffer(InputBufferStorage, sizeof(InputBufferStorage));
+static ESB::Buffer OutputBuffer(OutputBufferStorage, sizeof(OutputBufferStorage));
+static ESB::Buffer WorkingBuffer(WorkingBufferStorage,
                                sizeof(WorkingBufferStorage));
-static ESFDiscardAllocator Allocator(4096, ESFSystemAllocator::GetInstance());
-static ESFRand Random;
-
-static AWSHttpRequestParser RequestParser(&WorkingBuffer, &Allocator);
-static AWSHttpResponseParser ResponseParser(&WorkingBuffer, &Allocator);
-static AWSHttpRequestFormatter RequestFormatter;
-static AWSHttpResponseFormatter ResponseFormatter;
-
+static ESB::DiscardAllocator Allocator(4096, ESB::SystemAllocator::GetInstance());
+static HttpRequestParser RequestParser(&WorkingBuffer, &Allocator);
+static HttpResponseParser ResponseParser(&WorkingBuffer, &Allocator);
+static HttpRequestFormatter RequestFormatter;
+static HttpResponseFormatter ResponseFormatter;
 static bool ParseRequest(const char *file);
 static bool ParseResponse(const char *file);
-
 static bool CompareFiles(int fd1, int fd2);
-
-static const int Debug = 9;
-
-int main(int argc, char **argv) {
-  char currentWorkingDirectory[NAME_MAX + 1];
-
-  if (0 == getcwd(currentWorkingDirectory, sizeof(currentWorkingDirectory))) {
-    perror("Cannot get cwd");
-    return 2;
-  }
-
-  DIR *directory = opendir(currentWorkingDirectory);
-
-  for (struct dirent *entry = readdir(directory); entry;
-       entry = readdir(directory)) {
-    InputBuffer.clear();
-    WorkingBuffer.clear();
-    OutputBuffer.clear();
-    Allocator.reset();
-    RequestParser.reset();
-    ResponseParser.reset();
-    RequestFormatter.reset();
-    ResponseFormatter.reset();
-
-    if (0 == strncmp(entry->d_name, "request", sizeof("request") - 1)) {
-      if (false == ParseRequest(entry->d_name)) {
-        return 3;
-      }
-
-      continue;
-    }
-
-    if (0 == strncmp(entry->d_name, "response", sizeof("response") - 1)) {
-      if (false == ParseResponse(entry->d_name)) {
-        return 4;
-      }
-
-      continue;
-    }
-  }
-
-  closedir(directory);
-  directory = 0;
-
-  return 0;
-}
 
 bool ParseRequest(const char *inputFileName) {
   int inputFd = open(inputFileName, O_RDONLY);
@@ -144,9 +88,9 @@ bool ParseRequest(const char *inputFileName) {
 
   ssize_t result;
   int bytesToRead;
-  ESFError error;
-  AWSHttpRequest request;
-  AWSHttpHeader *header = 0;
+  ESB::Error error;
+  HttpRequest request;
+  HttpHeader *header = 0;
 
   //
   //  Parse Request Headers
@@ -155,7 +99,7 @@ bool ParseRequest(const char *inputFileName) {
   while (true) {
     error = RequestParser.parseHeaders(&InputBuffer, &request);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
@@ -195,7 +139,7 @@ bool ParseRequest(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
       return false;
     }
@@ -207,16 +151,16 @@ bool ParseRequest(const char *inputFileName) {
       fprintf(stderr, "RequestUri\n");
 
       switch (request.getRequestUri()->getType()) {
-        case AWSHttpRequestUri::AWS_URI_ASTERISK:
+        case HttpRequestUri::ES_URI_ASTERISK:
 
           fprintf(stderr, "  Asterisk\n");
           break;
 
-        case AWSHttpRequestUri::AWS_URI_HTTP:
-        case AWSHttpRequestUri::AWS_URI_HTTPS:
+        case HttpRequestUri::ES_URI_HTTP:
+        case HttpRequestUri::ES_URI_HTTPS:
 
           fprintf(stderr, "  Scheme: %s\n",
-                  AWSHttpRequestUri::AWS_URI_HTTP ==
+                  HttpRequestUri::ES_URI_HTTP ==
                           request.getRequestUri()->getType()
                       ? "http"
                       : "https");
@@ -238,7 +182,7 @@ bool ParseRequest(const char *inputFileName) {
 
           break;
 
-        case AWSHttpRequestUri::AWS_URI_OTHER:
+        case HttpRequestUri::ES_URI_OTHER:
 
           fprintf(stderr, "  Other: %s\n", request.getRequestUri()->getOther());
 
@@ -250,8 +194,8 @@ bool ParseRequest(const char *inputFileName) {
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (AWSHttpHeader *)request.getHeaders()->getFirst(); header;
-           header = (AWSHttpHeader *)header->getNext()) {
+      for (header = (HttpHeader *)request.getHeaders()->getFirst(); header;
+           header = (HttpHeader *)header->getNext()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->getFieldName(),
                 0 == header->getFieldValue()
                     ? "null"
@@ -269,7 +213,7 @@ bool ParseRequest(const char *inputFileName) {
   while (true) {
     error = RequestFormatter.formatHeaders(&OutputBuffer, &request);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -295,7 +239,7 @@ bool ParseRequest(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
       return false;
     }
@@ -335,7 +279,7 @@ bool ParseRequest(const char *inputFileName) {
     error =
         RequestParser.parseBody(&InputBuffer, &startingPosition, &chunkSize);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
@@ -375,7 +319,7 @@ bool ParseRequest(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
       return false;
     }
@@ -402,7 +346,7 @@ bool ParseRequest(const char *inputFileName) {
       error = RequestFormatter.beginBlock(
           &OutputBuffer, chunkSize - bytesWritten, &availableSize);
 
-      if (ESF_AGAIN == error) {
+      if (ESB_AGAIN == error) {
         if (1 < Debug)
           fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -429,7 +373,7 @@ bool ParseRequest(const char *inputFileName) {
         continue;
       }
 
-      if (ESF_SUCCESS != error) {
+      if (ESB_SUCCESS != error) {
         fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
         return false;
       }
@@ -446,7 +390,7 @@ bool ParseRequest(const char *inputFileName) {
       while (true) {
         error = RequestFormatter.endBlock(&OutputBuffer);
 
-        if (ESF_AGAIN == error) {
+        if (ESB_AGAIN == error) {
           if (1 < Debug)
             fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -473,7 +417,7 @@ bool ParseRequest(const char *inputFileName) {
           continue;
         }
 
-        if (ESF_SUCCESS != error) {
+        if (ESB_SUCCESS != error) {
           fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
           return false;
         }
@@ -488,7 +432,7 @@ bool ParseRequest(const char *inputFileName) {
   while (true) {
     error = RequestFormatter.endBody(&OutputBuffer);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -514,7 +458,7 @@ bool ParseRequest(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
       return false;
     }
@@ -547,7 +491,7 @@ bool ParseRequest(const char *inputFileName) {
   while (true) {
     error = RequestParser.skipTrailer(&InputBuffer);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
@@ -587,7 +531,7 @@ bool ParseRequest(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
       return false;
     }
@@ -646,9 +590,9 @@ bool ParseResponse(const char *inputFileName) {
 
   ssize_t result;
   int bytesToRead;
-  ESFError error;
-  AWSHttpResponse response;
-  AWSHttpHeader *header = 0;
+  ESB::Error error;
+  HttpResponse response;
+  HttpHeader *header = 0;
 
   //
   //  Parse response headers
@@ -657,7 +601,7 @@ bool ParseResponse(const char *inputFileName) {
   while (true) {
     error = ResponseParser.parseHeaders(&InputBuffer, &response);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
@@ -697,7 +641,7 @@ bool ParseResponse(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
       return false;
     }
@@ -712,8 +656,8 @@ bool ParseResponse(const char *inputFileName) {
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (AWSHttpHeader *)response.getHeaders()->getFirst(); header;
-           header = (AWSHttpHeader *)header->getNext()) {
+      for (header = (HttpHeader *)response.getHeaders()->getFirst(); header;
+           header = (HttpHeader *)header->getNext()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->getFieldName(),
                 0 == header->getFieldValue()
                     ? "null"
@@ -731,7 +675,7 @@ bool ParseResponse(const char *inputFileName) {
   while (true) {
     error = ResponseFormatter.formatHeaders(&OutputBuffer, &response);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -757,7 +701,7 @@ bool ParseResponse(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
       return false;
     }
@@ -797,7 +741,7 @@ bool ParseResponse(const char *inputFileName) {
     error =
         ResponseParser.parseBody(&InputBuffer, &startingPosition, &chunkSize);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
@@ -837,7 +781,7 @@ bool ParseResponse(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
       return false;
     }
@@ -864,7 +808,7 @@ bool ParseResponse(const char *inputFileName) {
       error = ResponseFormatter.beginBlock(
           &OutputBuffer, chunkSize - bytesWritten, &availableSize);
 
-      if (ESF_AGAIN == error) {
+      if (ESB_AGAIN == error) {
         if (1 < Debug)
           fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -891,7 +835,7 @@ bool ParseResponse(const char *inputFileName) {
         continue;
       }
 
-      if (ESF_SUCCESS != error) {
+      if (ESB_SUCCESS != error) {
         fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
         return false;
       }
@@ -908,7 +852,7 @@ bool ParseResponse(const char *inputFileName) {
       while (true) {
         error = ResponseFormatter.endBlock(&OutputBuffer);
 
-        if (ESF_AGAIN == error) {
+        if (ESB_AGAIN == error) {
           if (1 < Debug)
             fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -935,7 +879,7 @@ bool ParseResponse(const char *inputFileName) {
           continue;
         }
 
-        if (ESF_SUCCESS != error) {
+        if (ESB_SUCCESS != error) {
           fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
           return false;
         }
@@ -950,7 +894,7 @@ bool ParseResponse(const char *inputFileName) {
   while (true) {
     error = ResponseFormatter.endBody(&OutputBuffer);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
@@ -976,7 +920,7 @@ bool ParseResponse(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
       return false;
     }
@@ -1009,7 +953,7 @@ bool ParseResponse(const char *inputFileName) {
   while (true) {
     error = ResponseParser.skipTrailer(&InputBuffer);
 
-    if (ESF_AGAIN == error) {
+    if (ESB_AGAIN == error) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
@@ -1049,7 +993,7 @@ bool ParseResponse(const char *inputFileName) {
       continue;
     }
 
-    if (ESF_SUCCESS != error) {
+    if (ESB_SUCCESS != error) {
       fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
       return false;
     }
@@ -1132,4 +1076,50 @@ bool CompareFiles(int fd1, int fd2) {
       }
     }
   }
+}
+
+}
+
+int main(int argc, char **argv) {
+  char currentWorkingDirectory[NAME_MAX + 1];
+
+  if (0 == getcwd(currentWorkingDirectory, sizeof(currentWorkingDirectory))) {
+    perror("Cannot get cwd");
+    return 2;
+  }
+
+  DIR *directory = opendir(currentWorkingDirectory);
+
+  for (struct dirent *entry = readdir(directory); entry;
+       entry = readdir(directory)) {
+    ES::InputBuffer.clear();
+    ES::WorkingBuffer.clear();
+    ES::OutputBuffer.clear();
+    ES::Allocator.reset();
+    ES::RequestParser.reset();
+    ES::ResponseParser.reset();
+    ES::RequestFormatter.reset();
+    ES::ResponseFormatter.reset();
+
+    if (0 == strncmp(entry->d_name, "request", sizeof("request") - 1)) {
+      if (false == ES::ParseRequest(entry->d_name)) {
+        return 3;
+      }
+
+      continue;
+    }
+
+    if (0 == strncmp(entry->d_name, "response", sizeof("response") - 1)) {
+      if (false == ES::ParseResponse(entry->d_name)) {
+        return 4;
+      }
+
+      continue;
+    }
+  }
+
+  closedir(directory);
+  directory = 0;
+
+  return 0;
 }
