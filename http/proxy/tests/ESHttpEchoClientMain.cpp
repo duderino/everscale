@@ -296,13 +296,13 @@ int main(int argc, char **argv) {
   //
 
   ESB::SystemDnsClient dnsClient(logger);
-  HttpClientHistoricalCounters counters(
-      30, ESB::SystemAllocator::GetInstance(), logger);
+  HttpClientHistoricalCounters counters(30, ESB::SystemAllocator::GetInstance(),
+                                        logger);
 
   HttpStack stack(&dnsClient, threads, &counters, logger);
 
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
-                                   connections * iterations, &stack, logger);
+                                connections * iterations, &stack, logger);
 
   // TODO - make configuration stack-specific and increase options richness
   HttpClientSocket::SetReuseConnections(reuseConnections);
@@ -344,8 +344,8 @@ int main(int argc, char **argv) {
   for (int i = 0; i < connections; ++i) {
     // Create the request context and transaction
 
-    context = new (&echoClientContextAllocator)
-        HttpEchoClientContext(iterations - 1);
+    context =
+        new (&echoClientContextAllocator) HttpEchoClientContext(iterations - 1);
 
     if (0 == context) {
       if (logger->isLoggable(ESB::Logger::Critical)) {
@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
     // Build the request
 
     error = HttpEchoClientRequestBuilder(host, port, absPath, method,
-                                            contentType, transaction);
+                                         contentType, transaction);
 
     if (ESB_SUCCESS != error) {
       context->~HttpEchoClientContext();
@@ -469,4 +469,3 @@ int main(int argc, char **argv) {
 }
 
 void RawEchoClientSignalHandler(int signal) { IsRunning = 0; }
-

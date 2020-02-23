@@ -27,10 +27,10 @@ set(CLIENT_FILES
   tests/ESHttpEchoClientRequestBuilder.cpp
 )
 
-add_executable(http_client ${CLIENT_FILES})
-target_compile_options(http_client PUBLIC ${CPP_FLAGS})
-target_link_libraries(http_client -pthread unit-tf http_stack http1 http-common base)
-target_include_directories(http_client PRIVATE 
+add_executable(http_client.exe ${CLIENT_FILES})
+target_compile_options(http_client.exe PUBLIC ${CPP_FLAGS})
+target_link_libraries(http_client.exe -pthread unit-tf http_stack http1 http-common base)
+target_include_directories(http_client.exe PRIVATE 
   "${PROJECT_SOURCE_DIR}/tests"
   "${PROJECT_SOURCE_DIR}/../../base/include"
   "${PROJECT_SOURCE_DIR}/../http-common/include"
@@ -44,10 +44,10 @@ set(SERVER_FILES
   tests/ESHttpEchoServerMain.cpp
 )
 
-add_executable(http_server ${SERVER_FILES})
-target_compile_options(http_server PUBLIC ${CPP_FLAGS})
-target_link_libraries(http_server -pthread unit-tf http_stack http1 http-common base)
-target_include_directories(http_server PRIVATE 
+add_executable(http_server.exe ${SERVER_FILES})
+target_compile_options(http_server.exe PUBLIC ${CPP_FLAGS})
+target_link_libraries(http_server.exe -pthread unit-tf http_stack http1 http-common base)
+target_include_directories(http_server.exe PRIVATE 
   "${PROJECT_SOURCE_DIR}/tests"
   "${PROJECT_SOURCE_DIR}/../../base/include"
   "${PROJECT_SOURCE_DIR}/../http-common/include"

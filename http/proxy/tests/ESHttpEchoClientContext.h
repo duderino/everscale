@@ -42,6 +42,6 @@ class HttpEchoClientContext {
   unsigned int _iterations;
 };
 
-}
+}  // namespace ES
 
 #endif

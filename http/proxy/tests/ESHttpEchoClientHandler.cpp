@@ -32,8 +32,7 @@ HttpEchoClientHandler::HttpEchoClientHandler(
 
 HttpEchoClientHandler::~HttpEchoClientHandler() {}
 
-int HttpEchoClientHandler::reserveRequestChunk(
-    HttpTransaction *transaction) {
+int HttpEchoClientHandler::reserveRequestChunk(HttpTransaction *transaction) {
   assert(transaction);
 
   HttpEchoClientContext *context =
@@ -45,8 +44,8 @@ int HttpEchoClientHandler::reserveRequestChunk(
 }
 
 void HttpEchoClientHandler::fillRequestChunk(HttpTransaction *transaction,
-                                                unsigned char *chunk,
-                                                unsigned int chunkSize) {
+                                             unsigned char *chunk,
+                                             unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
   assert(0 < chunkSize);
@@ -85,8 +84,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
                  response->getHttpVersion() / 100,
                  response->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header =
-             (HttpHeader *)response->getHeaders()->getFirst();
+    for (HttpHeader *header = (HttpHeader *)response->getHeaders()->getFirst();
          header; header = (HttpHeader *)header->getNext()) {
       _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] %s: %s\n",
                    (const char *)header->getFieldName(),
@@ -129,8 +127,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-void HttpEchoClientHandler::end(HttpTransaction *transaction,
-                                   State state) {
+void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
   if (_totalTransactions == _completedTransactions.inc()) {
     if (_logger->isLoggable(ESB::Logger::Notice)) {
       _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
@@ -241,8 +238,7 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction,
     return;
   }
 
-  HttpClientTransaction *newTransaction =
-      _pool->createClientTransaction(this);
+  HttpClientTransaction *newTransaction = _pool->createClientTransaction(this);
 
   if (0 == newTransaction) {
     if (_logger->isLoggable(ESB::Logger::Err)) {
@@ -306,4 +302,4 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction,
   }
 }
 
-}
+}  // namespace ES

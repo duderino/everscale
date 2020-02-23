@@ -35,6 +35,6 @@ class HttpEchoServerContext {
   unsigned int _bytesSent;
 };
 
-}
+}  // namespace ES
 
 #endif

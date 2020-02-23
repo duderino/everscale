@@ -5,4 +5,4 @@
 namespace ES {
 HttpEchoServerContext::HttpEchoServerContext() : _bytesSent(0) {}
 HttpEchoServerContext::~HttpEchoServerContext() {}
-}
+}  // namespace ES

@@ -112,6 +112,6 @@ class HttpEchoServerHandler : public HttpServerHandler {
   ESB::Logger *_logger;
 };
 
-}
+}  // namespace ES
 
 #endif

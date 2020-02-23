@@ -67,8 +67,7 @@ HttpServerHandler::Result HttpEchoServerHandler::begin(
                  transaction->getPeerAddress()->getPort());
   }
 
-  HttpEchoServerContext *context =
-      new (allocator) HttpEchoServerContext();
+  HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
 
   if (0 == context) {
     if (_logger->isLoggable(ESB::Logger::Critical)) {
@@ -116,13 +115,13 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
         _logger->log(
             ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Scheme: %s",
             HttpRequestUri::ES_URI_HTTP == requestUri->getType() ? "http"
-                                                                     : "https");
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Host: %s",
-                     0 == requestUri->getHost()
-                         ? "none"
-                         : (const char *)requestUri->getHost());
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Port: %d",
-                     requestUri->getPort());
+                                                                 : "https");
+        _logger->log(
+            ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Host: %s",
+            0 == requestUri->getHost() ? "none"
+                                       : (const char *)requestUri->getHost());
+        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
+                     "[handler] Port: %d", requestUri->getPort());
         _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
                      "[handler] AbsPath: %s", requestUri->getAbsPath());
         _logger->log(
@@ -145,12 +144,12 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
         break;
     }
 
-    _logger->log(
-        ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Version: HTTP/%d.%d\n",
-        request->getHttpVersion() / 100, request->getHttpVersion() % 100 / 10);
+    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
+                 "[handler] Version: HTTP/%d.%d\n",
+                 request->getHttpVersion() / 100,
+                 request->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header =
-             (HttpHeader *)request->getHeaders()->getFirst();
+    for (HttpHeader *header = (HttpHeader *)request->getHeaders()->getFirst();
          header; header = (HttpHeader *)header->getNext()) {
       _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] %s: %s\n",
                    (const char *)header->getFieldName(),
@@ -200,8 +199,7 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-int HttpEchoServerHandler::reserveResponseChunk(
-    HttpTransaction *transaction) {
+int HttpEchoServerHandler::reserveResponseChunk(HttpTransaction *transaction) {
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->getApplicationContext();
 
@@ -210,9 +208,9 @@ int HttpEchoServerHandler::reserveResponseChunk(
   return BodySize - context->getBytesSent();
 }
 
-void HttpEchoServerHandler::fillResponseChunk(
-    HttpTransaction *transaction, unsigned char *chunk,
-    unsigned int chunkSize) {
+void HttpEchoServerHandler::fillResponseChunk(HttpTransaction *transaction,
+                                              unsigned char *chunk,
+                                              unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
   assert(0 < chunkSize);
@@ -226,13 +224,13 @@ void HttpEchoServerHandler::fillResponseChunk(
   unsigned int bytesToSend =
       chunkSize > totalBytesRemaining ? totalBytesRemaining : chunkSize;
 
-  memcpy(chunk, ((unsigned char *) BODY) + context->getBytesSent(), bytesToSend);
+  memcpy(chunk, ((unsigned char *)BODY) + context->getBytesSent(), bytesToSend);
 
   context->addBytesSent(bytesToSend);
 }
 
 void HttpEchoServerHandler::end(HttpTransaction *transaction,
-                                   HttpServerHandler::State state) {
+                                HttpServerHandler::State state) {
   assert(transaction);
 
   HttpEchoServerContext *context =
@@ -316,4 +314,4 @@ void HttpEchoServerHandler::end(HttpTransaction *transaction,
   }
 }
 
-}
+}  // namespace ES

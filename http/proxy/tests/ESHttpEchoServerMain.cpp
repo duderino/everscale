@@ -23,8 +23,8 @@
 #endif
 
 #include <signal.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 using namespace ES;
 
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
   HttpServerSimpleCounters serverCounters;
 
   HttpStack stack(&handler, &dnsClient, port, threads, &clientCounters,
-                     &serverCounters, logger);
+                  &serverCounters, logger);
 
   ESB::Error error = stack.initialize();
 
@@ -146,4 +146,3 @@ int main(int argc, char **argv) {
 }
 
 void HttpEchoServerSignalHandler(int signal) { IsRunning = 0; }
-

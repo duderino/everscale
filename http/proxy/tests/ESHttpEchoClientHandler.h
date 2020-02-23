@@ -26,9 +26,9 @@ namespace ES {
 class HttpEchoClientHandler : public HttpClientHandler {
  public:
   HttpEchoClientHandler(const char *absPath, const char *method,
-                           const char *contentType, const unsigned char *body,
-                           int bodySize, int totalTransactions,
-                           HttpConnectionPool *pool, ESB::Logger *logger);
+                        const char *contentType, const unsigned char *body,
+                        int bodySize, int totalTransactions,
+                        HttpConnectionPool *pool, ESB::Logger *logger);
 
   virtual ~HttpEchoClientHandler();
 
@@ -119,6 +119,6 @@ class HttpEchoClientHandler : public HttpClientHandler {
   ESB::SharedCounter _completedTransactions;
 };
 
-}
+}  // namespace ES
 
 #endif

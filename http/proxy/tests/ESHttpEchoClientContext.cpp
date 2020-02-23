@@ -3,9 +3,8 @@
 #endif
 
 namespace ES {
-HttpEchoClientContext::HttpEchoClientContext(
-    unsigned int remainingIterations)
+HttpEchoClientContext::HttpEchoClientContext(unsigned int remainingIterations)
     : _bytesSent(0U), _iterations(remainingIterations) {}
 
 HttpEchoClientContext::~HttpEchoClientContext() {}
-}
+}  // namespace ES
