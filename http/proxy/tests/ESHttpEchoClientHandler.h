@@ -1,39 +1,36 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
+#ifndef ES_HTTP_ECHO_CLIENT_HANDLER_H
+#define ES_HTTP_ECHO_CLIENT_HANDLER_H
 
-#ifndef AWS_HTTP_ECHO_CLIENT_HANDLER_H
-#define AWS_HTTP_ECHO_CLIENT_HANDLER_H
-
-#ifndef ESF_LOGGER_H
-#include <ESFLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
-#ifndef ESF_SHARED_COUNTER_H
-#include <ESFSharedCounter.h>
+#ifndef ESB_SHARED_COUNTER_H
+#include <ESBSharedCounter.h>
 #endif
 
-#ifndef AWS_PERFORMANCE_COUNTER_H
-#include <AWSPerformanceCounter.h>
+#ifndef ESB_PERFORMANCE_COUNTER_H
+#include <ESBPerformanceCounter.h>
 #endif
 
-#ifndef AWS_HTTP_CLIENT_HANDLER_H
-#include <AWSHttpClientHandler.h>
+#ifndef ES_HTTP_CLIENT_HANDLER_H
+#include <ESHttpClientHandler.h>
 #endif
 
-#ifndef AWS_HTTP_CONNECTION_POOL_H
-#include <AWSHttpConnectionPool.h>
+#ifndef ES_HTTP_CONNECTION_POOL_H
+#include <ESHttpConnectionPool.h>
 #endif
 
-class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
+namespace ES {
+
+class HttpEchoClientHandler : public HttpClientHandler {
  public:
-  AWSHttpEchoClientHandler(const char *absPath, const char *method,
+  HttpEchoClientHandler(const char *absPath, const char *method,
                            const char *contentType, const unsigned char *body,
                            int bodySize, int totalTransactions,
-                           AWSHttpConnectionPool *pool, ESFLogger *logger);
+                           HttpConnectionPool *pool, ESB::Logger *logger);
 
-  virtual ~AWSHttpEchoClientHandler();
+  virtual ~HttpEchoClientHandler();
 
   /**
    * Request a buffer of up to n bytes to fill with request body data.  The
@@ -52,7 +49,7 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveRequestChunk(AWSHttpTransaction *transaction);
+  virtual int reserveRequestChunk(HttpTransaction *transaction);
 
   /**
    * Fill a request body chunk with data.
@@ -63,7 +60,7 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
    */
-  virtual void fillRequestChunk(AWSHttpTransaction *transaction,
+  virtual void fillRequestChunk(HttpTransaction *transaction,
                                 unsigned char *chunk, unsigned int chunkSize);
 
   /**
@@ -73,7 +70,7 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveResponseHeaders(AWSHttpTransaction *transaction);
+  virtual Result receiveResponseHeaders(HttpTransaction *transaction);
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -88,7 +85,7 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveResponseBody(AWSHttpTransaction *transaction,
+  virtual Result receiveResponseBody(HttpTransaction *transaction,
                                      unsigned const char *chunk,
                                      unsigned int chunkSize);
 
@@ -100,7 +97,7 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void end(AWSHttpTransaction *transaction, State state);
+  virtual void end(HttpTransaction *transaction, State state);
 
   inline bool isFinished() const {
     return _totalTransactions <= _completedTransactions.get();
@@ -108,8 +105,8 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
 
  private:
   // Disabled
-  AWSHttpEchoClientHandler(const AWSHttpEchoClientHandler &clientHandler);
-  void operator=(const AWSHttpEchoClientHandler &clientHandler);
+  HttpEchoClientHandler(const HttpEchoClientHandler &clientHandler);
+  void operator=(const HttpEchoClientHandler &clientHandler);
 
   const char *_absPath;
   const char *_method;
@@ -117,9 +114,11 @@ class AWSHttpEchoClientHandler : public AWSHttpClientHandler {
   const unsigned char *_body;
   const int _bodySize;
   int _totalTransactions;
-  AWSHttpConnectionPool *_pool;
-  ESFLogger *_logger;
-  ESFSharedCounter _completedTransactions;
+  HttpConnectionPool *_pool;
+  ESB::Logger *_logger;
+  ESB::SharedCounter _completedTransactions;
 };
+
+}
 
 #endif

@@ -1,20 +1,17 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
+#ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
+#define ES_HTTP_ECHO_CLIENT_CONTEXT_H
 
-#ifndef AWS_HTTP_ECHO_CLIENT_CONTEXT_H
-#define AWS_HTTP_ECHO_CLIENT_CONTEXT_H
-
-#ifndef ESF_ALLOCATOR_H
-#include <ESFAllocator.h>
+#ifndef ESB_ALLOCATOR_H
+#include <ESBAllocator.h>
 #endif
 
-class AWSHttpEchoClientContext {
- public:
-  AWSHttpEchoClientContext(unsigned int remainingIterations);
+namespace ES {
 
-  virtual ~AWSHttpEchoClientContext();
+class HttpEchoClientContext {
+ public:
+  HttpEchoClientContext(unsigned int remainingIterations);
+
+  virtual ~HttpEchoClientContext();
 
   inline unsigned int getBytesSent() { return _bytesSent; }
 
@@ -32,17 +29,19 @@ class AWSHttpEchoClientContext {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESFAllocator *allocator) {
+  inline void *operator new(size_t size, ESB::Allocator *allocator) {
     return allocator->allocate(size);
   }
 
  private:
   // Disabled
-  AWSHttpEchoClientContext(const AWSHttpEchoClientContext &context);
-  void operator=(const AWSHttpEchoClientContext &context);
+  HttpEchoClientContext(const HttpEchoClientContext &context);
+  void operator=(const HttpEchoClientContext &context);
 
   unsigned int _bytesSent;
   unsigned int _iterations;
 };
+
+}
 
 #endif

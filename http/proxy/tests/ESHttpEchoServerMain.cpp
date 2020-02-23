@@ -1,39 +1,35 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef ESF_CONSOLE_LOGGER_H
-#include <ESFConsoleLogger.h>
+#ifndef ESB_CONSOLE_LOGGER_H
+#include <ESBConsoleLogger.h>
 #endif
 
-#ifndef AWS_HTTP_STACK_H
-#include <AWSHttpStack.h>
+#ifndef ES_HTTP_STACK_H
+#include <ESHttpStack.h>
 #endif
 
-#ifndef AWS_HTTP_ECHO_SERVER_HANDLER_H
-#include <AWSHttpEchoServerHandler.h>
+#ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
+#include <ESHttpEchoServerHandler.h>
 #endif
 
-#ifndef AWS_HTTP_DEFAULT_RESOLVER_H
-#include <AWSHttpDefaultResolver.h>
+#ifndef ESB_SYSTEM_DNS_CLIENT_H
+#include <ESBSystemDnsClient.h>
 #endif
 
-#ifndef AWS_HTTP_CLIENT_SIMPLE_COUNTERS_H
-#include <AWSHttpClientSimpleCounters.h>
+#ifndef ES_HTTP_CLIENT_SIMPLE_COUNTERS_H
+#include <ESHttpClientSimpleCounters.h>
 #endif
 
-#ifndef AWS_HTTP_SERVER_SIMPLE_COUNTERS_H
-#include <AWSHttpServerSimpleCounters.h>
+#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
+#include <ESHttpServerSimpleCounters.h>
 #endif
 
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <stdlib.h>
 
-static void AWSHttpEchoServerSignalHandler(int signal);
-static volatile ESFWord IsRunning = 1;
+using namespace ES;
+
+static void HttpEchoServerSignalHandler(int signal);
+static volatile ESB::Word IsRunning = 1;
 
 static void printHelp() {
   fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
@@ -42,7 +38,7 @@ static void printHelp() {
 int main(int argc, char **argv) {
   int port = 8080;
   int threads = 4;
-  int logLevel = ESFLogger::Debug;
+  int logLevel = ESB::Logger::Debug;
 
   {
     int result = 0;
@@ -91,11 +87,11 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESFConsoleLogger::Initialize((ESFLogger::Severity)logLevel);
-  ESFLogger *logger = ESFConsoleLogger::Instance();
+  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
+  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
 
-  if (logger->isLoggable(ESFLogger::Notice)) {
-    logger->log(ESFLogger::Notice, __FILE__, __LINE__,
+  if (logger->isLoggable(ESB::Logger::Notice)) {
+    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
                 "[main] starting. logLevel: %d, threads: %d, port: %d",
                 logLevel, threads, port);
   }
@@ -106,27 +102,27 @@ int main(int argc, char **argv) {
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, AWSHttpEchoServerSignalHandler);
-  signal(SIGQUIT, AWSHttpEchoServerSignalHandler);
-  signal(SIGTERM, AWSHttpEchoServerSignalHandler);
+  signal(SIGINT, HttpEchoServerSignalHandler);
+  signal(SIGQUIT, HttpEchoServerSignalHandler);
+  signal(SIGTERM, HttpEchoServerSignalHandler);
 
-  AWSHttpEchoServerHandler handler(logger);
-  AWSHttpDefaultResolver resolver(logger);
-  AWSHttpClientSimpleCounters clientCounters;
-  AWSHttpServerSimpleCounters serverCounters;
+  HttpEchoServerHandler handler(logger);
+  ESB::SystemDnsClient dnsClient(logger);
+  HttpClientSimpleCounters clientCounters;
+  HttpServerSimpleCounters serverCounters;
 
-  AWSHttpStack stack(&handler, &resolver, port, threads, &clientCounters,
+  HttpStack stack(&handler, &dnsClient, port, threads, &clientCounters,
                      &serverCounters, logger);
 
-  ESFError error = stack.initialize();
+  ESB::Error error = stack.initialize();
 
-  if (ESF_SUCCESS != error) {
+  if (ESB_SUCCESS != error) {
     return -1;
   }
 
   error = stack.start();
 
-  if (ESF_SUCCESS != error) {
+  if (ESB_SUCCESS != error) {
     return -2;
   }
 
@@ -136,7 +132,7 @@ int main(int argc, char **argv) {
 
   error = stack.stop();
 
-  if (ESF_SUCCESS != error) {
+  if (ESB_SUCCESS != error) {
     return -3;
   }
 
@@ -144,9 +140,10 @@ int main(int argc, char **argv) {
 
   stack.destroy();
 
-  ESFConsoleLogger::Destroy();
+  ESB::ConsoleLogger::Destroy();
 
   return 0;
 }
 
-void AWSHttpEchoServerSignalHandler(int signal) { IsRunning = 0; }
+void HttpEchoServerSignalHandler(int signal) { IsRunning = 0; }
+

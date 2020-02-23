@@ -19,3 +19,38 @@ target_include_directories(http_stack PUBLIC
 )
 
 target_compile_options(http_stack PUBLIC ${CPP_FLAGS})
+
+set(CLIENT_FILES
+  tests/ESHttpEchoClientContext.cpp
+  tests/ESHttpEchoClientHandler.cpp
+  tests/ESHttpEchoClientMain.cpp
+  tests/ESHttpEchoClientRequestBuilder.cpp
+)
+
+add_executable(http_client ${CLIENT_FILES})
+target_compile_options(http_client PUBLIC ${CPP_FLAGS})
+target_link_libraries(http_client -pthread unit-tf http_stack http1 http-common base)
+target_include_directories(http_client PRIVATE 
+  "${PROJECT_SOURCE_DIR}/tests"
+  "${PROJECT_SOURCE_DIR}/../../base/include"
+  "${PROJECT_SOURCE_DIR}/../http-common/include"
+  "${PROJECT_SOURCE_DIR}/../http1/include"
+  "${PROJECT_SOURCE_DIR}/../stack/include"
+)
+
+set(SERVER_FILES
+  tests/ESHttpEchoServerContext.cpp
+  tests/ESHttpEchoServerHandler.cpp
+  tests/ESHttpEchoServerMain.cpp
+)
+
+add_executable(http_server ${SERVER_FILES})
+target_compile_options(http_server PUBLIC ${CPP_FLAGS})
+target_link_libraries(http_server -pthread unit-tf http_stack http1 http-common base)
+target_include_directories(http_server PRIVATE 
+  "${PROJECT_SOURCE_DIR}/tests"
+  "${PROJECT_SOURCE_DIR}/../../base/include"
+  "${PROJECT_SOURCE_DIR}/../http-common/include"
+  "${PROJECT_SOURCE_DIR}/../http1/include"
+  "${PROJECT_SOURCE_DIR}/../stack/include"
+)

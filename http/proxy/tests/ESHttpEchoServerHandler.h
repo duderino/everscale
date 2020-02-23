@@ -1,24 +1,21 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
+#ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
+#define ES_HTTP_ECHO_SERVER_HANDLER_H
 
-#ifndef AWS_HTTP_ECHO_SERVER_HANDLER_H
-#define AWS_HTTP_ECHO_SERVER_HANDLER_H
-
-#ifndef ESF_LOGGER_H
-#include <ESFLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
-#ifndef AWS_HTTP_SERVER_HANDLER_H
-#include <AWSHttpServerHandler.h>
+#ifndef ES_HTTP_SERVER_HANDLER_H
+#include <ESHttpServerHandler.h>
 #endif
 
-class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
+namespace ES {
+
+class HttpEchoServerHandler : public HttpServerHandler {
  public:
-  AWSHttpEchoServerHandler(ESFLogger *logger);
+  HttpEchoServerHandler(ESB::Logger *logger);
 
-  virtual ~AWSHttpEchoServerHandler();
+  virtual ~HttpEchoServerHandler();
 
   /**
    * Accept a new connection.
@@ -26,7 +23,7 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * @param address The IP address and port of the client.
    * @return a result code
    */
-  virtual Result acceptConnection(ESFSocketAddress *address);
+  virtual Result acceptConnection(ESB::SocketAddress *address);
 
   /**
    * Handle the beginning of a transaction.  This will be called 1+ times after
@@ -37,7 +34,7 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * objects, etc
    * @return a result code
    */
-  virtual Result begin(AWSHttpTransaction *transaction);
+  virtual Result begin(HttpTransaction *transaction);
 
   /**
    * Process a request's HTTP headers.
@@ -46,7 +43,7 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveRequestHeaders(AWSHttpTransaction *transaction);
+  virtual Result receiveRequestHeaders(HttpTransaction *transaction);
 
   /**
    * Incrementally process a request's body.  This will be called 1+ times as
@@ -62,7 +59,7 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveRequestBody(AWSHttpTransaction *transaction,
+  virtual Result receiveRequestBody(HttpTransaction *transaction,
                                     unsigned const char *chunk,
                                     unsigned int chunkSize);
 
@@ -83,7 +80,7 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveResponseChunk(AWSHttpTransaction *transaction);
+  virtual int reserveResponseChunk(HttpTransaction *transaction);
 
   /**
    * Fill a response body chunk with data.
@@ -94,7 +91,7 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestResponseChunk method.
    */
-  virtual void fillResponseChunk(AWSHttpTransaction *transaction,
+  virtual void fillResponseChunk(HttpTransaction *transaction,
                                  unsigned char *chunk, unsigned int chunkSize);
 
   /**
@@ -105,14 +102,16 @@ class AWSHttpEchoServerHandler : public AWSHttpServerHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void end(AWSHttpTransaction *transaction, State state);
+  virtual void end(HttpTransaction *transaction, State state);
 
  private:
   // Disabled
-  AWSHttpEchoServerHandler(const AWSHttpEchoServerHandler &serverHandler);
-  void operator=(const AWSHttpEchoServerHandler &serverHandler);
+  HttpEchoServerHandler(const HttpEchoServerHandler &serverHandler);
+  void operator=(const HttpEchoServerHandler &serverHandler);
 
-  ESFLogger *_logger;
+  ESB::Logger *_logger;
 };
+
+}
 
 #endif

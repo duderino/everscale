@@ -1,46 +1,41 @@
-/* Copyright (c) 2009 Yahoo! Inc.  All rights reserved.
- * The copyrights embodied in the content of this file are licensed by Yahoo!
- * Inc. under the BSD (revised) open source license.
- */
-
-#ifndef ESF_CONSOLE_LOGGER_H
-#include <ESFConsoleLogger.h>
+#ifndef ESB_CONSOLE_LOGGER_H
+#include <ESBConsoleLogger.h>
 #endif
 
-#ifndef ESF_DISCARD_ALLOCATOR_H
-#include <ESFDiscardAllocator.h>
+#ifndef ESB_DISCARD_ALLOCATOR_H
+#include <ESBDiscardAllocator.h>
 #endif
 
-#ifndef ESF_SYSTEM_ALLOCATOR_H
-#include <ESFSystemAllocator.h>
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESF_ERROR_H
-#include <ESFError.h>
+#ifndef ESB_ERROR_H
+#include <ESBError.h>
 #endif
 
-#ifndef AWS_HTTP_STACK_H
-#include <AWSHttpStack.h>
+#ifndef ES_HTTP_STACK_H
+#include <ESHttpStack.h>
 #endif
 
-#ifndef AWS_HTTP_ECHO_CLIENT_CONTEXT_H
-#include <AWSHttpEchoClientContext.h>
+#ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
+#include <ESHttpEchoClientContext.h>
 #endif
 
-#ifndef AWS_HTTP_ECHO_CLIENT_HANDLER_H
-#include <AWSHttpEchoClientHandler.h>
+#ifndef ES_HTTP_ECHO_CLIENT_HANDLER_H
+#include <ESHttpEchoClientHandler.h>
 #endif
 
-#ifndef AWS_HTTP_DEFAULT_RESOLVER_H
-#include <AWSHttpDefaultResolver.h>
+#ifndef ESB_SYSTEM_DNS_CLIENT_H
+#include <ESBSystemDnsClient.h>
 #endif
 
-#ifndef AWS_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
-#include <AWSHttpEchoClientRequestBuilder.h>
+#ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
+#include <ESHttpEchoClientRequestBuilder.h>
 #endif
 
-#ifndef AWS_HTTP_CLIENT_HISTORICAL_COUNTERS_H
-#include <AWSHttpClientHistoricalCounters.h>
+#ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
+#include <ESHttpClientHistoricalCounters.h>
 #endif
 
 #include <errno.h>
@@ -52,8 +47,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static void AWSRawEchoClientSignalHandler(int signal);
-static volatile ESFWord IsRunning = 1;
+using namespace ES;
+
+static void RawEchoClientSignalHandler(int signal);
+static volatile ESB::Word IsRunning = 1;
 
 static void printHelp(const char *progName) {
   fprintf(stderr, "Usage: %s <options>\n", progName);
@@ -66,7 +63,7 @@ static void printHelp(const char *progName) {
       stderr,
       "\t-t <epollThreads> Defaults to 1 thread handing all connections.\n");
   fprintf(stderr, "\t-H <serverHost>   Defaults to localhost\n");
-  fprintf(stderr, "\t-p <serverPort>   Defaults to 80\n");
+  fprintf(stderr, "\t-p <serverPort>   Defaults to 8080\n");
   fprintf(stderr, "\t-c <connections>  Defaults to 1 connection\n");
   fprintf(stderr, "\t-i <iterations>   Defaults to 1 request per connection\n");
   fprintf(stderr, "\t-m <method>       Defaults to GET\n");
@@ -102,11 +99,11 @@ static void printHelp(const char *progName) {
 int main(int argc, char **argv) {
   int threads = 1;
   const char *host = "localhost.localdomain";
-  int port = 80;
+  int port = 8080;
   int connections = 1;
   int iterations = 1;
   bool reuseConnections = false;
-  int logLevel = ESFLogger::Info;
+  int logLevel = ESB::Logger::Info;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *bodyFilePath = 0;
@@ -204,11 +201,11 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESFConsoleLogger::Initialize((ESFLogger::Severity)logLevel);
-  ESFLogger *logger = ESFConsoleLogger::Instance();
+  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
+  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
 
-  if (logger->isLoggable(ESFLogger::Notice)) {
-    logger->log(ESFLogger::Notice, __FILE__, __LINE__,
+  if (logger->isLoggable(ESB::Logger::Notice)) {
+    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
                 "Starting. logLevel: %d, threads: %d, host: %s, port: %d, "
                 "connections: %d, iterations: %d, method: %s, contentType: %s, "
                 "bodyFile %s, reuseConnections: %s",
@@ -222,9 +219,9 @@ int main(int argc, char **argv) {
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, AWSRawEchoClientSignalHandler);
-  signal(SIGQUIT, AWSRawEchoClientSignalHandler);
-  signal(SIGTERM, AWSRawEchoClientSignalHandler);
+  signal(SIGINT, RawEchoClientSignalHandler);
+  signal(SIGQUIT, RawEchoClientSignalHandler);
+  signal(SIGTERM, RawEchoClientSignalHandler);
 
   //
   // Slurp the request body into memory
@@ -298,21 +295,21 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  AWSHttpDefaultResolver resolver(logger);
-  AWSHttpClientHistoricalCounters counters(
-      30, ESFSystemAllocator::GetInstance(), logger);
+  ESB::SystemDnsClient dnsClient(logger);
+  HttpClientHistoricalCounters counters(
+      30, ESB::SystemAllocator::GetInstance(), logger);
 
-  AWSHttpStack stack(&resolver, threads, &counters, logger);
+  HttpStack stack(&dnsClient, threads, &counters, logger);
 
-  AWSHttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
+  HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
                                    connections * iterations, &stack, logger);
 
   // TODO - make configuration stack-specific and increase options richness
-  AWSHttpClientSocket::SetReuseConnections(reuseConnections);
+  HttpClientSocket::SetReuseConnections(reuseConnections);
 
-  ESFError error = stack.initialize();
+  ESB::Error error = stack.initialize();
 
-  if (ESF_SUCCESS != error) {
+  if (ESB_SUCCESS != error) {
     if (body) {
       free(body);
       body = 0;
@@ -323,7 +320,7 @@ int main(int argc, char **argv) {
 
   error = stack.start();
 
-  if (ESF_SUCCESS != error) {
+  if (ESB_SUCCESS != error) {
     if (body) {
       free(body);
       body = 0;
@@ -332,8 +329,8 @@ int main(int argc, char **argv) {
     return -2;
   }
 
-  ESFDiscardAllocator echoClientContextAllocator(
-      1024, ESFSystemAllocator::GetInstance());
+  ESB::DiscardAllocator echoClientContextAllocator(
+      1024, ESB::SystemAllocator::GetInstance());
 
   sleep(1);  // give the worker threads a chance to start - cleans up perf
              // testing numbers a bit
@@ -341,18 +338,18 @@ int main(int argc, char **argv) {
   // Create <connections> distinct client connections which each submit
   // <iterations> SOAP requests
 
-  AWSHttpEchoClientContext *context = 0;
-  AWSHttpClientTransaction *transaction = 0;
+  HttpEchoClientContext *context = 0;
+  HttpClientTransaction *transaction = 0;
 
   for (int i = 0; i < connections; ++i) {
     // Create the request context and transaction
 
     context = new (&echoClientContextAllocator)
-        AWSHttpEchoClientContext(iterations - 1);
+        HttpEchoClientContext(iterations - 1);
 
     if (0 == context) {
-      if (logger->isLoggable(ESFLogger::Critical)) {
-        logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+      if (logger->isLoggable(ESB::Logger::Critical)) {
+        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
                     "[main] cannot create new client context");
       }
 
@@ -367,11 +364,11 @@ int main(int argc, char **argv) {
     transaction = stack.createClientTransaction(&handler);
 
     if (0 == transaction) {
-      context->~AWSHttpEchoClientContext();
+      context->~HttpEchoClientContext();
       echoClientContextAllocator.deallocate(context);
 
-      if (logger->isLoggable(ESFLogger::Critical)) {
-        logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+      if (logger->isLoggable(ESB::Logger::Critical)) {
+        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
                     "[main] cannot create new client transaction");
       }
 
@@ -387,20 +384,20 @@ int main(int argc, char **argv) {
 
     // Build the request
 
-    error = AWSHttpEchoClientRequestBuilder(host, port, absPath, method,
+    error = HttpEchoClientRequestBuilder(host, port, absPath, method,
                                             contentType, transaction);
 
-    if (ESF_SUCCESS != error) {
-      context->~AWSHttpEchoClientContext();
+    if (ESB_SUCCESS != error) {
+      context->~HttpEchoClientContext();
       echoClientContextAllocator.deallocate(context);
       stack.destroyClientTransaction(transaction);
 
-      if (logger->isLoggable(ESFLogger::Critical)) {
+      if (logger->isLoggable(ESB::Logger::Critical)) {
         char buffer[100];
 
-        ESFDescribeError(error, buffer, sizeof(buffer));
+        ESB::DescribeError(error, buffer, sizeof(buffer));
 
-        logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
                     "[main] cannot build request: %s");
       }
 
@@ -417,17 +414,17 @@ int main(int argc, char **argv) {
 
     error = stack.executeClientTransaction(transaction);
 
-    if (ESF_SUCCESS != error) {
-      context->~AWSHttpEchoClientContext();
+    if (ESB_SUCCESS != error) {
+      context->~HttpEchoClientContext();
       echoClientContextAllocator.deallocate(context);
       stack.destroyClientTransaction(transaction);
 
-      if (logger->isLoggable(ESFLogger::Critical)) {
+      if (logger->isLoggable(ESB::Logger::Critical)) {
         char buffer[100];
 
-        ESFDescribeError(error, buffer, sizeof(buffer));
+        ESB::DescribeError(error, buffer, sizeof(buffer));
 
-        logger->log(ESFLogger::Critical, __FILE__, __LINE__,
+        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
                     "[main] Cannot execute client transaction: %s", buffer);
       }
 
@@ -451,7 +448,7 @@ int main(int argc, char **argv) {
     body = 0;
   }
 
-  if (ESF_SUCCESS != error) {
+  if (ESB_SUCCESS != error) {
     return -3;
   }
 
@@ -462,13 +459,14 @@ int main(int argc, char **argv) {
   echoClientContextAllocator
       .destroy();  // echo client context destructors will not be called.
 
-  ESFConsoleLogger::Destroy();
+  ESB::ConsoleLogger::Destroy();
 
   fflush(outputFile);
 
   fclose(outputFile);
 
-  return ESF_SUCCESS;
+  return ESB_SUCCESS;
 }
 
-void AWSRawEchoClientSignalHandler(int signal) { IsRunning = 0; }
+void RawEchoClientSignalHandler(int signal) { IsRunning = 0; }
+
