@@ -1,6 +1,16 @@
 *.a
 *.so
+*.cbp
+*.exe
+*.tcl
+CTestTestfile.cmake
 CMakeCache.txt
-*/CMakeFiles/*
+CMakeFiles
 Makefile
+Testing
 cmake_install.cmake
+http/http1/tests/output*
+base/include/ESBConfig.h
+unit-tf/include/ESTFConfig.h
+.idea
+*-test
