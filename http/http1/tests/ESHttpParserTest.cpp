@@ -38,10 +38,12 @@ static unsigned char InputBufferStorage[4096];
 static unsigned char OutputBufferStorage[4096];
 static unsigned char WorkingBufferStorage[4096];
 static ESB::Buffer InputBuffer(InputBufferStorage, sizeof(InputBufferStorage));
-static ESB::Buffer OutputBuffer(OutputBufferStorage, sizeof(OutputBufferStorage));
+static ESB::Buffer OutputBuffer(OutputBufferStorage,
+                                sizeof(OutputBufferStorage));
 static ESB::Buffer WorkingBuffer(WorkingBufferStorage,
-                               sizeof(WorkingBufferStorage));
-static ESB::DiscardAllocator Allocator(4096, ESB::SystemAllocator::GetInstance());
+                                 sizeof(WorkingBufferStorage));
+static ESB::DiscardAllocator Allocator(4096,
+                                       ESB::SystemAllocator::GetInstance());
 static HttpRequestParser RequestParser(&WorkingBuffer, &Allocator);
 static HttpResponseParser ResponseParser(&WorkingBuffer, &Allocator);
 static HttpRequestFormatter RequestFormatter;
@@ -159,11 +161,11 @@ bool ParseRequest(const char *inputFileName) {
         case HttpRequestUri::ES_URI_HTTP:
         case HttpRequestUri::ES_URI_HTTPS:
 
-          fprintf(stderr, "  Scheme: %s\n",
-                  HttpRequestUri::ES_URI_HTTP ==
-                          request.getRequestUri()->getType()
-                      ? "http"
-                      : "https");
+          fprintf(
+              stderr, "  Scheme: %s\n",
+              HttpRequestUri::ES_URI_HTTP == request.getRequestUri()->getType()
+                  ? "http"
+                  : "https");
           fprintf(stderr, "  Host: %s\n",
                   0 == request.getRequestUri()->getHost()
                       ? "none"
@@ -1078,7 +1080,7 @@ bool CompareFiles(int fd1, int fd2) {
   }
 }
 
-}
+}  // namespace ES
 
 int main(int argc, char **argv) {
   char currentWorkingDirectory[NAME_MAX + 1];
