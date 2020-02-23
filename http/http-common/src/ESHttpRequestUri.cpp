@@ -2,6 +2,10 @@
 #include <ESHttpRequestUri.h>
 #endif
 
+#ifndef ESB_CONFIG_H
+#include <ESBConfig.h>
+#endif
+
 namespace ES {
 
 HttpRequestUri::HttpRequestUri(UriType type)

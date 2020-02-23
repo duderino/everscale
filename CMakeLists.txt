@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
+set(VERSION 0.0.1)
 project(everscale VERSION ${VERSION} LANGUAGES CXX C)
-#enable_testing()
-include( CTest )
+enable_testing()
 include(config.cmake)
 
 set(CMAKE_CXX_STANDARD 98)
