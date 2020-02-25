@@ -1,11 +1,66 @@
-poll on state machines, not fds.  1 state machine == 1+ fds
-openssl/HTTPS support
-Better proxying - extend state machine to socket tuples
-kevent support (OSX)
-JNI wrappers - lazy UTF-8 to UTF-16 conversion string class
-Optional encoding of HTML entities - no XSS attacks
-Request-URI validation - no path traversal attacks
-Review HTTP header correctness
-Revisit autotools?
-Add cache
-Add router
+cmakeify
+ - replace all makefiles
+ - debug and release libs.  static and shared libs
+ - ctest memory checks, etc
+ - make test needs to rebuild everything
+ - finish todos in config.cmake - a few adhoc test programs
+ - doxygen
+perf counters
+ - move to esb.  update http and tcp to use the same set of counters
+ - revisit efficency of historical perf counter.  turn into a composite with an interval?  rename time series?
+ - averaging counter should track variance
+ - percentile counter
+async dns client
+ - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
+ - move to ESB.  add unit test
+ - common caching code.  intial async impl can use threadpool and gethostbyname
+tcp stuff
+ - make sure full duplex
+ - track bps
+ - move tcp echo client/server into ESB and turn into a unit test over loopback/same proc
+http stuff
+ - turn top-level client and server into a unit test over loopback (client->server and client->proxy->server)
+ - idle timeout
+ - max requests per connection option (1 disables keepalives)
+ - max header size option
+ - max body size option
+ - slow loris defense
+logging
+ - pretty print thread ids
+ - filenames, not full paths
+ - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
+bootstrap config
+ - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
+ - xds agent could just regenerate this, serializing updates and using atomic moves
+ - could potentially break into multiple files for scalability, but then need cross-file atomic update mechanism.
+ - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid
+   filling disk
+fix license - 3 levels of derivation
+fix multimap or replace with stl
+lockless datastructures - list.  hashmap.
+incorporate and prefer atomic.h.
+  - https://www.bogotobogo.com/cplusplus/files/CplusplusConcurrencyInAction_PracticalMultithreading.pdf
+  - http://www.open-std.org/JTC1/SC22/WG21/docs/papers/2007/n2145.html
+  - http://www.cplusplus.com/reference/atomic/atomic_flag_test_and_set/
+ipv6 support
+start as root, bind to ports, drop privs
+use setrlimit to raise fd limits, etc
+addr space randomization
+fix bug in date math in esb and estf
+no eval logging macros
+tls support
+xds support
+readiness and liveness check support - e2e vs local options
+URL 
+ - canonicalization / encode and decode per chromium RFC
+ - username and pass
+load shedding
+pin threads / fe-be connection alignment
+h2 support
+plugin api
+elementry waf impl of plugin api
+perfect forward secrecy
+sni
+boringssl
+tls staples
+ktls sockmap and splice
