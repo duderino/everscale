@@ -1,8 +1,14 @@
+http client server test
+ - bind to ephemeral port in stack unit tests
+ - why was std::bad_alloc thrown by http client/server test?  verify -fno-exceptions.  check leaks
+ - raise fd limit
+ - memory check
+ - calc throughput
+ - calc variance 
+ - calc percentiles in latency
+ - create proxy test
 cmakeify
- - replace all makefiles
- - debug and release libs.  static and shared libs
  - ctest memory checks, etc
- - make test needs to rebuild everything
  - finish todos in config.cmake - a few adhoc test programs
  - doxygen
 perf counters
