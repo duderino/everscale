@@ -13,7 +13,7 @@
 namespace ESB {
 
 HistoricalPerformanceCounter::HistoricalPerformanceCounter(const char *name,
-                                                           time_t windowSizeSec,
+                                                           UInt16 windowSizeSec,
                                                            Allocator *allocator,
                                                            Logger *logger)
     : PerformanceCounter(),
@@ -22,7 +22,7 @@ HistoricalPerformanceCounter::HistoricalPerformanceCounter(const char *name,
       _logger(logger),
       _list(),
       _lock(),
-      _allocator(sizeof(SimplePerformanceCounter) * 1000, allocator) {}
+      _allocator(sizeof(SimplePerformanceCounter) * 60 * 5, allocator) {}
 
 HistoricalPerformanceCounter::~HistoricalPerformanceCounter() {
   // Manually call the destructors of all the performance counters.   Their
@@ -41,16 +41,8 @@ HistoricalPerformanceCounter::~HistoricalPerformanceCounter() {
   }
 }
 
-void HistoricalPerformanceCounter::addObservation(const struct timeval *start) {
-  struct timeval now;
-
-  SimplePerformanceCounter::GetTime(&now);
-
-  addObservation(start, &now);
-}
-
-void HistoricalPerformanceCounter::addObservation(const struct timeval *start,
-                                                  const struct timeval *stop) {
+void HistoricalPerformanceCounter::addObservation(const Date &start,
+                                                  const Date &stop) {
   SimplePerformanceCounter *counter = 0;
 
   {
@@ -58,17 +50,18 @@ void HistoricalPerformanceCounter::addObservation(const struct timeval *start,
 
     counter = (SimplePerformanceCounter *)_list.getLast();
 
-    if (0 == counter || counter->getStopTime() < stop->tv_sec) {
+    if (!counter || counter->getWindowStop() < stop) {
       // We're in a new window.  Create a new perf counter and make it the new
       // head
 
-      time_t startTime = (stop->tv_sec / _windowSizeSec) * _windowSizeSec;
-      time_t stopTime = startTime + _windowSizeSec;
+      Date windowStart((stop.getSeconds() / _windowSizeSec) * _windowSizeSec,
+                       0);
+      Date windowStop(windowStart.getSeconds() + _windowSizeSec, 0);
 
       counter = new (&_allocator)
-          SimplePerformanceCounter(_name, startTime, stopTime);
+          SimplePerformanceCounter(_name, windowStart, windowStop);
 
-      if (0 == counter) {
+      if (!counter) {
         if (_logger->isLoggable(Logger::Warning)) {
           _logger->log(
               Logger::Warning, __FILE__, __LINE__,
@@ -88,23 +81,14 @@ void HistoricalPerformanceCounter::addObservation(const struct timeval *start,
 void HistoricalPerformanceCounter::printSummary(FILE *file) const {
   WriteScopeLock lock(_lock);
 
-  fprintf(file, "{ \"%s\": [", _name);
+  fprintf(file, "%s:", _name);
 
   for (SimplePerformanceCounter *counter =
            (SimplePerformanceCounter *)_list.getFirst();
        counter; counter = (SimplePerformanceCounter *)counter->getNext()) {
     fprintf(file, "\t");
-
     counter->printSummary(file);
-
-    if (counter->getNext()) {
-      fprintf(file, ",\n");
-    } else {
-      fprintf(file, "\n");
-    }
   }
-
-  fprintf(file, "]}");
 }
 
 }  // namespace ESB

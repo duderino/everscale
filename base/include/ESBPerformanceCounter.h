@@ -1,20 +1,12 @@
 #ifndef ESB_PERFORMANCE_COUNTER_H
 #define ESB_PERFORMANCE_COUNTER_H
 
-#ifndef ESB_MUTEX_H
-#include <ESBMutex.h>
-#endif
-
 #ifndef ESB_EMBEDDED_LIST_ELEMENT_H
 #include <ESBEmbeddedListElement.h>
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#ifndef HAVE_STRUCT_TIMEVAL
-#error "struct timeval or equivalent is required"
+#ifndef ESB_DATE_H
+#include <ESBDate.h>
 #endif
 
 #ifdef HAVE_STDIO_H
@@ -33,12 +25,7 @@ class PerformanceCounter : public EmbeddedListElement {
 
   virtual ~PerformanceCounter();
 
-  static void GetTime(struct timeval *now);
-
-  virtual void addObservation(const struct timeval *start) = 0;
-
-  virtual void addObservation(const struct timeval *start,
-                              const struct timeval *stop) = 0;
+  virtual void addObservation(const Date &start, const Date &stop) = 0;
 
   virtual void printSummary(FILE *file) const = 0;
 

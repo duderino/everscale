@@ -5,10 +5,11 @@ http client server test
  - memory check
  - calc throughput
  - calc variance 
- - calc percentiles in latency
+ - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
  - create proxy test
 cmakeify
  - ctest memory checks, etc
+ - add gtests https://cmake.org/cmake/help/v3.10/module/GoogleTest.html#command:gtest_discover_tests
  - finish todos in config.cmake - a few adhoc test programs
  - doxygen
 perf counters
