@@ -34,15 +34,12 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
    * @param allocator The counter will grab memory from this allocator
    *   for each new window it creates.
    */
-  HistoricalPerformanceCounter(const char *name, time_t windowSizeSec,
+  HistoricalPerformanceCounter(const char *name, UInt16 windowSizeSec,
                                Allocator *allocator, Logger *logger);
 
   virtual ~HistoricalPerformanceCounter();
 
-  virtual void addObservation(const struct timeval *start);
-
-  virtual void addObservation(const struct timeval *start,
-                              const struct timeval *stop);
+  virtual void addObservation(const Date &start, const Date &stop);
 
   inline const char *getName() const { return _name; }
 
@@ -62,7 +59,7 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
   HistoricalPerformanceCounter *operator=(
       const HistoricalPerformanceCounter &counter);
 
-  time_t _windowSizeSec;
+  UInt16 _windowSizeSec;
   const char *_name;
   Logger *_logger;
   EmbeddedList _list;

@@ -14,47 +14,43 @@ namespace ESB {
 class SimplePerformanceCounter : public PerformanceCounter {
  public:
   /**
-   * Create a new counter with no stop or start time.
+   * Create a new counter with a dynamically determined window.
    *
    * @param name The counter's name
    */
-  SimplePerformanceCounter(const char *name);
+  explicit SimplePerformanceCounter(const char *name);
 
   /**
-   * Create a new counter with a start and a stop time.
+   * Create a new counter with a pre-defined window.
    *
    * @param name The counter's name
-   * @param startTime the start time of the counter's window (number of seconds
-   * since the epoch)
-   * @param stopTime The stop time of the counter's window (number of seconds
-   * since the epoch).
+   * @param windowStart the start time of the counter's window
+   * @param windowStop The stop time of the counter's window
    */
-  SimplePerformanceCounter(const char *name, time_t startTime, time_t stopTime);
+  SimplePerformanceCounter(const char *name, const Date &windowStart,
+                           const Date &windowStop);
 
   virtual ~SimplePerformanceCounter();
 
-  virtual void addObservation(const struct timeval *start);
-
-  virtual void addObservation(const struct timeval *start,
-                              const struct timeval *stop);
-
-  virtual void printSummary(FILE *file) const;
-
   inline const char *getName() const { return _name; }
 
-  inline time_t getStartTime() const { return _startTime; }
+  inline const Date &getWindowStart() const { return _windowStart; }
 
-  inline time_t getStopTime() const { return _stopTime; }
+  inline const Date &getWindowStop() const { return _windowStop; }
 
-  inline unsigned long getThroughput() const { return _throughput; }
+  double getQueriesPerSec() const;
 
-  inline double getAverageLatencyMsec() const { return _avgLatencyMsec; }
+  inline UInt32 getQueries() const { return _queries; }
 
-  inline double getMinLatencyMsec() const {
-    return 0 > _minLatencyMsec ? 0 : _minLatencyMsec;
-  }
+  inline double getAvgMsec() const { return _avgMSec; }
 
-  inline double getMaxLatencyMsec() const { return _maxLatencyMsec; }
+  inline double getMinMsec() const { return 0 > _minMSec ? 0 : _minMSec; }
+
+  inline double getMaxMsec() const { return _maxMSec; }
+
+  virtual void addObservation(const Date &start, const Date &stop);
+
+  virtual void printSummary(FILE *file) const;
 
   /** Placement new.
    *
@@ -71,13 +67,15 @@ class SimplePerformanceCounter : public PerformanceCounter {
   SimplePerformanceCounter(const SimplePerformanceCounter &counter);
   SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
 
-  const time_t _startTime;
-  const time_t _stopTime;
+  double getQueriesPerSecNoLock() const;
+
   const char *_name;
-  double _avgLatencyMsec;
-  double _minLatencyMsec;
-  double _maxLatencyMsec;
-  unsigned long _throughput;
+  Date _windowStart;
+  Date _windowStop;
+  double _avgMSec;
+  double _minMSec;
+  double _maxMSec;
+  UInt32 _queries;
   mutable Mutex _lock;
 };
 

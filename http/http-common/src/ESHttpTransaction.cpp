@@ -21,13 +21,12 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
                  ESB::SystemAllocator::GetInstance()),
       _appContext(0),
       _cleanupHandler(cleanupHandler),
+      _start(),
       _peerAddress(),
       _request(),
       _response(),
       _ioBuffer(_ioBufferStorage, sizeof(_ioBufferStorage)),
-      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {
-  memset(&_start, 0, sizeof(_start));
-}
+      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
 
 HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
                                  ESB::CleanupHandler *cleanupHandler)
@@ -35,13 +34,12 @@ HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
                  ESB::SystemAllocator::GetInstance()),
       _appContext(0),
       _cleanupHandler(cleanupHandler),
+      _start(),
       _peerAddress(*peerAddress),
       _request(),
       _response(),
       _ioBuffer(_ioBufferStorage, sizeof(_ioBufferStorage)),
-      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {
-  memset(&_start, 0, sizeof(_start));
-}
+      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
 
 HttpTransaction::~HttpTransaction() {}
 
@@ -57,8 +55,7 @@ void HttpTransaction::reset() {
   _response.reset();
   //_ioBuffer.compact();
   _workingBuffer.clear();
-
-  memset(&_start, 0, sizeof(_start));
+  _start = 0;
 }
 
 HttpHeader *HttpTransaction::createHeader(unsigned const char *name,

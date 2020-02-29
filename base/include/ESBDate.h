@@ -278,7 +278,7 @@ class Date {
    *
    *    @return date object set to the current time.
    */
-  static Date GetSystemTime();
+  static Date Now();
 
  private:
   UInt32 _seconds;

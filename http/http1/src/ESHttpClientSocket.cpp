@@ -508,41 +508,48 @@ bool HttpClientSocket::handleRemoveEvent(ESB::Flag *isRunning,
   bool reuseConnection = false;
 
   if (_state & TRANSACTION_BEGIN) {
-    _counters->getFailures()->addObservation(_transaction->getStartTime());
+    _counters->getFailures()->addObservation(_transaction->getStartTime(),
+                                             ESB::Date::Now());
 
     _transaction->getHandler()->end(
         _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
-    _counters->getFailures()->addObservation(_transaction->getStartTime());
+    _counters->getFailures()->addObservation(_transaction->getStartTime(),
+                                             ESB::Date::Now());
 
     _transaction->getHandler()->end(
         _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
-    _counters->getFailures()->addObservation(_transaction->getStartTime());
+    _counters->getFailures()->addObservation(_transaction->getStartTime(),
+                                             ESB::Date::Now());
 
     _transaction->getHandler()->end(
         _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
-    _counters->getFailures()->addObservation(_transaction->getStartTime());
+    _counters->getFailures()->addObservation(_transaction->getStartTime(),
+                                             ESB::Date::Now());
 
     _transaction->getHandler()->end(
         _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
-    _counters->getFailures()->addObservation(_transaction->getStartTime());
+    _counters->getFailures()->addObservation(_transaction->getStartTime(),
+                                             ESB::Date::Now());
 
     _transaction->getHandler()->end(
         _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
-    _counters->getFailures()->addObservation(_transaction->getStartTime());
+    _counters->getFailures()->addObservation(_transaction->getStartTime(),
+                                             ESB::Date::Now());
 
     _transaction->getHandler()->end(
         _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
-    _counters->getSuccesses()->addObservation(_transaction->getStartTime());
+    _counters->getSuccesses()->addObservation(_transaction->getStartTime(),
+                                              ESB::Date::Now());
 
     if (GetReuseConnections()) {
       const HttpHeader *header = _transaction->getResponse()->getHeader(

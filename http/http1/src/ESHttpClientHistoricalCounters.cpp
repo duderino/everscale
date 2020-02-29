@@ -12,15 +12,8 @@ HttpClientHistoricalCounters::HttpClientHistoricalCounters(
 HttpClientHistoricalCounters::~HttpClientHistoricalCounters() {}
 
 void HttpClientHistoricalCounters::printSummary(FILE *file) const {
-  fprintf(file, "{");
-
   _successes.printSummary(file);
-
-  fprintf(file, ",\n");
-
   _failures.printSummary(file);
-
-  fprintf(file, "}");
 }
 
 ESB::PerformanceCounter *HttpClientHistoricalCounters::getSuccesses() {

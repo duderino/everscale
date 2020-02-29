@@ -112,9 +112,9 @@ class HttpTransaction : public ESB::EmbeddedListElement {
    */
   virtual ESB::CleanupHandler *getCleanupHandler();
 
-  inline void setStartTime() { ESB::PerformanceCounter::GetTime(&_start); }
+  inline void setStartTime() { _start = ESB::Date::Now(); }
 
-  inline const struct timeval *getStartTime() const { return &_start; }
+  inline const ESB::Date &getStartTime() const { return _start; }
 
   /** Placement new.
    *
@@ -136,7 +136,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   void *_appContext;
   ESB::CleanupHandler *_cleanupHandler;
-  struct timeval _start;
+  ESB::Date _start;
   ESB::SocketAddress _peerAddress;
   HttpRequest _request;
   HttpResponse _response;

@@ -22,10 +22,8 @@ Date::~Date() {}
  */
 Date &Date::operator+=(const Date &date) {
   _seconds += date._seconds;
-
   _seconds += (_microSeconds + date._microSeconds) / ESB_UINT32_C(1000000);
   _microSeconds = (_microSeconds + date._microSeconds) % ESB_UINT32_C(1000000);
-
   return *this;
 }
 
@@ -35,14 +33,12 @@ Date &Date::operator+=(const Date &date) {
  *    @return this object.
  */
 Date &Date::operator-=(const Date &date) {
+  if (date._microSeconds > _microSeconds) {
+    --_seconds;
+    _microSeconds += 1000 * 1000;
+  }
   _seconds -= date._seconds;
   _microSeconds -= date._microSeconds;
-
-  if (0 > _microSeconds) {
-    --_seconds;
-    _microSeconds += ESB_UINT32_C(1000000);
-  }
-
   return *this;
 }
 
@@ -50,7 +46,7 @@ Date &Date::operator-=(const Date &date) {
  *
  *    @return date object set to the current time.
  */
-Date Date::GetSystemTime() {
+Date Date::Now() {
   Date currentTime;
 
 #if defined HAVE_GETTIMEOFDAY && defined HAVE_STRUCT_TIMEVAL
