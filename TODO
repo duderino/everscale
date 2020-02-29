@@ -1,4 +1,7 @@
 http client server test
+ - flakey http1 parser test
+ - why does perf counter unit test require +1 to window size?
+ - averaging counters look pretty busted
  - bind to ephemeral port in stack unit tests
  - why was std::bad_alloc thrown by http client/server test?  verify -fno-exceptions.  check leaks
  - raise fd limit

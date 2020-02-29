@@ -11,7 +11,7 @@ TEST(SimplePerformanceCounter, QPS) {
   Date start(Date::Now());
   Date stop(start);
   stop += 1;
-  int queries = 6;
+  const int queries = 6;
 
   for (int i = 0; i < queries; ++i) {
     counter.addObservation(start, stop);
@@ -31,7 +31,7 @@ TEST(SimplePerformanceCounter, LatencySec) {
   Date start(Date::Now());
   Date stop(start);
   double totalMsec = 0UL;
-  int queries = 6;
+  const int queries = 6;
 
   for (int i = 0; i < queries; ++i) {
     stop += 1;
@@ -48,14 +48,11 @@ TEST(SimplePerformanceCounter, LatencyMsec) {
   SimplePerformanceCounter counter("latency-msec-test");
   Date start(Date::Now());
   Date stop(start);
-  Date msec10(0, 10);
   double totalMsec = 0UL;
-  int queries = 6;
+  const int queries = 6;
 
   for (int i = 0; i < queries; ++i) {
-    Date tmp(stop.getSeconds(), stop.getMicroSeconds() + 10);
-    stop = tmp;
-    // stop += msec10;
+    stop.setMicroSeconds(stop.getMicroSeconds() + 10);
     totalMsec += 10 * (i + 1);
     counter.addObservation(start, stop);
   }

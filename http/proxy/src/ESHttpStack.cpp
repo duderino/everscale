@@ -336,7 +336,8 @@ ESB::Error HttpStack::executeClientTransaction(
                               isSecure);
 
   if (ESB_SUCCESS != error) {
-    _clientCounters->getFailures()->addObservation(transaction->getStartTime());
+    _clientCounters->getFailures()->addObservation(transaction->getStartTime(),
+                                                   ESB::Date::Now());
 
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RESOLVE);
@@ -347,7 +348,8 @@ ESB::Error HttpStack::executeClientTransaction(
   HttpClientSocket *socket = _clientSocketFactory.create(this, transaction);
 
   if (!socket) {
-    _clientCounters->getFailures()->addObservation(transaction->getStartTime());
+    _clientCounters->getFailures()->addObservation(transaction->getStartTime(),
+                                                   ESB::Date::Now());
 
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -380,7 +382,7 @@ ESB::Error HttpStack::executeClientTransaction(
 
     if (ESB_SUCCESS != error) {
       _clientCounters->getFailures()->addObservation(
-          transaction->getStartTime());
+          transaction->getStartTime(), ESB::Date::Now());
 
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -405,7 +407,8 @@ ESB::Error HttpStack::executeClientTransaction(
   error = _dispatcher.addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    _clientCounters->getFailures()->addObservation(transaction->getStartTime());
+    _clientCounters->getFailures()->addObservation(transaction->getStartTime(),
+                                                   ESB::Date::Now());
 
     socket->close();
 

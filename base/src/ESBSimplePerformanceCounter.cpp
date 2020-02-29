@@ -38,9 +38,12 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
 
 SimplePerformanceCounter::~SimplePerformanceCounter() {}
 
-UInt32 SimplePerformanceCounter::getQueriesPerSec() const {
+double SimplePerformanceCounter::getQueriesPerSec() const {
   ReadScopeLock lock(_lock);
+  return getQueriesPerSecNoLock();
+}
 
+double SimplePerformanceCounter::getQueriesPerSecNoLock() const {
   if (0 == _queries) {
     return 0;
   }
@@ -50,7 +53,8 @@ UInt32 SimplePerformanceCounter::getQueriesPerSec() const {
                       ? Date::Now()
                       : _windowStop);
 
-  UInt32 windowSec = (windowStop - _windowStart).getSeconds() + 1;
+  double windowSec = (windowStop - _windowStart).getSeconds();
+  windowSec = ESB_MAX(windowSec, 1);
 
   return _queries / windowSec;
 }
@@ -84,19 +88,23 @@ void SimplePerformanceCounter::addObservation(const Date &start,
 }
 
 void SimplePerformanceCounter::printSummary(FILE *file) const {
-  _lock.readAcquire();
+  double avgMSec, minMSec, maxMSec, qps = 0.0;
+  UInt32 queries = 0U;
 
-  double avgMSec = _avgMSec;
-  double minMSec = _minMSec;
-  double maxMSec = _maxMSec;
-  UInt32 qps = getQueriesPerSec();
+  {
+    ReadScopeLock lock(_lock);
 
-  _lock.readRelease();
+    avgMSec = _avgMSec;
+    minMSec = _minMSec;
+    maxMSec = _maxMSec;
+    qps = getQueriesPerSecNoLock();
+    queries = _queries;
+  }
 
   fprintf(file,
-          "%s: RPS=%" PRIu32
-          ", AVG LAT MSEC=%lf, MIN LAT MSEC=%lf, MAX LAT MSEC=%lf\n",
-          _name, qps, avgMSec, minMSec, maxMSec);
+          "%s: QPS=%.2lf, N=%u, AVG LAT MSEC=%.2lf, MIN LAT MSEC=%.2lf, MAX "
+          "LAT MSEC=%.2lf\n",
+          _name, qps, queries, avgMSec, minMSec, maxMSec);
 }
 
 }  // namespace ESB

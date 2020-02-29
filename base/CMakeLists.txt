@@ -68,18 +68,18 @@ target_compile_options(base PUBLIC ${CPP_FLAGS})
 
 # Unit tests
 
-set(TEST_INCS 
-            "${PROJECT_SOURCE_DIR}/include"
-            "${PROJECT_SOURCE_DIR}/src"
-            "${PROJECT_SOURCE_DIR}/tests"
-            "${PROJECT_SOURCE_DIR}/../unit-tf/include"
-)
+set(TEST_INCS
+        "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/tests"
+        "${PROJECT_SOURCE_DIR}/../unit-tf/include"
+        )
 
 set(TEST_LIBS
-  -pthread
-  unit-tf
-  base
-)
+        -pthread
+        unit-tf
+        base
+        )
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBBufferTest.cpp)

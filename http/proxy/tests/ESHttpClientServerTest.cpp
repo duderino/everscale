@@ -66,15 +66,15 @@ int main(int argc, char **argv) {
   int serverThreads = 3;
   const char *host = "localhost.localdomain";
   int port = 8888;
-  unsigned int connections = 500;  // this concurrent connections
-  unsigned int iterations = 5000;  // http requests per concurrent connection
+  unsigned int connections = 100;  // concurrent connections
+  unsigned int iterations = 100;   // http requests per concurrent connection
   bool reuseConnections = true;
   int logLevel = ESB::Logger::Notice;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
   FILE *outputFile = stdout;
-  const time_t windowSizeSec = 30;
+  const time_t windowSizeSec = 1;
   unsigned char body[1024];
 
   memset(body, 42, sizeof(body));

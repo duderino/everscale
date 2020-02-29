@@ -38,7 +38,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
 
   inline const Date &getWindowStop() const { return _windowStop; }
 
-  UInt32 getQueriesPerSec() const;
+  double getQueriesPerSec() const;
 
   inline UInt32 getQueries() const { return _queries; }
 
@@ -66,6 +66,8 @@ class SimplePerformanceCounter : public PerformanceCounter {
   // Disabled
   SimplePerformanceCounter(const SimplePerformanceCounter &counter);
   SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
+
+  double getQueriesPerSecNoLock() const;
 
   const char *_name;
   Date _windowStart;

@@ -6,6 +6,10 @@
 #include <ESBWriteScopeLock.h>
 #endif
 
+#ifndef ESB_READ_SCOPE_LOCK_H
+#include <ESBReadScopeLock.h>
+#endif
+
 #ifndef ESB_SIMPLE_PERFORMANCE_COUNTER_H
 #include <ESBSimplePerformanceCounter.h>
 #endif
@@ -79,14 +83,11 @@ void HistoricalPerformanceCounter::addObservation(const Date &start,
 }
 
 void HistoricalPerformanceCounter::printSummary(FILE *file) const {
-  WriteScopeLock lock(_lock);
-
-  fprintf(file, "%s:", _name);
+  ReadScopeLock lock(_lock);
 
   for (SimplePerformanceCounter *counter =
            (SimplePerformanceCounter *)_list.getFirst();
        counter; counter = (SimplePerformanceCounter *)counter->getNext()) {
-    fprintf(file, "\t");
     counter->printSummary(file);
   }
 }

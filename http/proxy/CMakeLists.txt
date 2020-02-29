@@ -56,20 +56,20 @@ target_include_directories(http_server.exe PRIVATE
 # Unit tests
 
 set(TEST_INCS
-            "${PROJECT_SOURCE_DIR}/tests"
-            "${PROJECT_SOURCE_DIR}/../../base/include"
-            "${PROJECT_SOURCE_DIR}/../http-common/include"
-            "${PROJECT_SOURCE_DIR}/../http1/include"
-            "${PROJECT_SOURCE_DIR}/../stack/include"
-)
+        "${PROJECT_SOURCE_DIR}/tests"
+        "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http1/include"
+        "${PROJECT_SOURCE_DIR}/../stack/include"
+        )
 
 set(TEST_LIBS
-  -pthread
-  unit-tf
-  http_stack
-  http1
-  http-common
-  base
-)
+        -pthread
+        unit-tf
+        http_stack
+        http1
+        http-common
+        base
+        )
 
-add_unit_test(http-client-server-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 500 tests/ESHttpClientServerTest.cpp ${CLIENT_FILES} ${SERVER_FILES})
+add_unit_test(http-client-server-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 60 tests/ESHttpClientServerTest.cpp ${CLIENT_FILES} ${SERVER_FILES})

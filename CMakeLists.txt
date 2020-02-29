@@ -47,32 +47,32 @@ endif ()
 #
 
 FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.10.x
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.10.x
 )
 
 FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-endif()
+if (NOT googletest_POPULATED)
+    FetchContent_Populate(googletest)
+    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+endif ()
 
 include(GoogleTest)
 
 mark_as_advanced(
-    BUILD_GMOCK BUILD_GTEST BUILD_SHARED_LIBS
-    gmock_build_tests gtest_build_samples gtest_build_tests
-    gtest_enable_pthreads
+        BUILD_GMOCK BUILD_GTEST BUILD_SHARED_LIBS
+        gmock_build_tests gtest_build_samples gtest_build_tests
+        gtest_enable_pthreads
 )
 
 macro(add_gtest NAME INCS LIBS CWD)
     add_executable(${NAME} ${ARGN})
     target_link_libraries(${NAME} gtest gmock gtest_main ${LIBS})
     gtest_discover_tests(${NAME}
-        WORKING_DIRECTORY ${CWD}
-        PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CWD}"
-    )
+            WORKING_DIRECTORY ${CWD}
+            PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CWD}"
+            )
     set_target_properties(${NAME} PROPERTIES FOLDER tests)
 endmacro()
 

@@ -45,21 +45,21 @@ target_compile_options(http1 PUBLIC ${CPP_FLAGS})
 # Unit tests
 
 set(TEST_INCS
-            "${PROJECT_SOURCE_DIR}/src"
-            "${PROJECT_SOURCE_DIR}/tests"
-            "${PROJECT_SOURCE_DIR}/../http-common/include"
-            "${PROJECT_SOURCE_DIR}/../../base/include"
-            "${PROJECT_SOURCE_DIR}/../../unit-tf/include"
-            "${PROJECT_SOURCE_DIR}/include"
-)
+        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/tests"
+        "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../../unit-tf/include"
+        "${PROJECT_SOURCE_DIR}/include"
+        )
 
 SET(TEST_LIBS
-  -pthread
-  unit-tf
-  http
-  http-common
-  base
-)
+        -pthread
+        unit-tf
+        http1
+        http-common
+        base
+        )
 
 add_unit_test(http1-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESHttpParserTest.cpp)
 
