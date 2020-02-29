@@ -824,9 +824,11 @@ ESB::Error HttpClientSocket::formatRequestHeaders(ESB::Flag *isRunning,
 
   if (ESB_SUCCESS != error) {
     if (_logger->isLoggable(ESB::Logger::Warning)) {
+      char buffer[50];
+      ESB::DescribeError(error, buffer, sizeof(buffer));
       _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                   "[socket:%d] error formatting response header: %d",
-                   _socket.getSocketDescriptor(), error);
+                   "[socket:%d] error formatting response header: %s",
+                   _socket.getSocketDescriptor(), buffer);
     }
 
     return error;

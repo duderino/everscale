@@ -14,6 +14,10 @@
 #include <ESBError.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #ifndef ES_HTTP_STACK_H
 #include <ESHttpStack.h>
 #endif
@@ -224,6 +228,21 @@ int main(int argc, char **argv) {
   signal(SIGTERM, RawEchoClientSignalHandler);
 
   //
+  // Max out open files
+  //
+
+  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
+
+  if (ESB_SUCCESS != error) {
+    if (logger->isLoggable(ESB::Logger::Critical)) {
+      char buffer[256];
+      ESB::DescribeError(error, buffer, sizeof(buffer));
+      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,"Cannot raise max fd limit: %s", buffer);
+    }
+    return -5;
+  }
+
+  //
   // Slurp the request body into memory
   //
 
@@ -307,7 +326,7 @@ int main(int argc, char **argv) {
   // TODO - make configuration stack-specific and increase options richness
   HttpClientSocket::SetReuseConnections(reuseConnections);
 
-  ESB::Error error = stack.initialize();
+  error = stack.initialize();
 
   if (ESB_SUCCESS != error) {
     if (body) {

@@ -46,6 +46,10 @@
 #include <ESBSystemAllocator.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #ifndef ESTF_ASSERT_H
 #include <ESTFAssert.h>
 #endif
@@ -66,8 +70,8 @@ int main(int argc, char **argv) {
   int serverThreads = 3;
   const char *host = "localhost.localdomain";
   int port = 8888;
-  unsigned int connections = 100;  // concurrent connections
-  unsigned int iterations = 100;   // http requests per concurrent connection
+  unsigned int connections = 500;  // concurrent connections
+  unsigned int iterations = 500;   // http requests per concurrent connection
   bool reuseConnections = true;
   int logLevel = ESB::Logger::Notice;
   const char *method = "GET";
@@ -125,6 +129,21 @@ int main(int argc, char **argv) {
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
 
+  //
+  // Max out open files
+  //
+
+  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
+
+  if (ESB_SUCCESS != error) {
+    if (logger->isLoggable(ESB::Logger::Critical)) {
+      char buffer[256];
+      ESB::DescribeError(error, buffer, sizeof(buffer));
+      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,"Cannot raise max fd limit: %s", buffer);
+    }
+    return -5;
+  }
+
   // Init
 
   HttpEchoServerHandler serverHandler(logger);
@@ -135,7 +154,7 @@ int main(int argc, char **argv) {
   HttpStack serverStack(&serverHandler, &dnsClient, port, serverThreads,
                         &clientCounters, &serverCounters, logger);
 
-  ESB::Error error = serverStack.initialize();
+  error = serverStack.initialize();
 
   if (ESB_SUCCESS != error) {
     return -1;

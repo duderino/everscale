@@ -12,18 +12,31 @@ HttpServerSimpleCounters::HttpServerSimpleCounters()
       _requestBodyErrors("SERVER TRANS REQUEST BODY ERROR"),
       _requestBodyFailures("SERVER TRANS REQUEST BODY FAILURE"),
       _requestBodyTimeouts("SERVER TRANS REQUEST BODY TIMEOUT"),
-      _responseHeaderErrors("SERVER TRANS RESB::PONSE HEADER ERROR"),
-      _responseHeaderFailures("SERVER TRANS RESB::PONSE HEADER FAILURE"),
-      _responseHeaderTimeouts("SERVER TRANS RESB::PONSE HEADER TIMEOUT"),
-      _responseBodyErrors("SERVER TRANS RESB::PONSE BODY ERROR"),
-      _responseBodyFailures("SERVER TRANS RESB::PONSE BODY FAILURE"),
-      _responseBodyTimeouts("SERVER TRANS RESB::PONSE BODY TIMEOUT"),
+      _responseHeaderErrors("SERVER TRANS RESPONSE HEADER ERROR"),
+      _responseHeaderFailures("SERVER TRANS RESPONSE HEADER FAILURE"),
+      _responseHeaderTimeouts("SERVER TRANS RESPONSE HEADER TIMEOUT"),
+      _responseBodyErrors("SERVER TRANS RESPONSE BODY ERROR"),
+      _responseBodyFailures("SERVER TRANS RESPONSE BODY FAILURE"),
+      _responseBodyTimeouts("SERVER TRANS RESPONSE BODY TIMEOUT"),
       _totalConnections(),
       _averageTransactionsPerConnection() {}
 
 HttpServerSimpleCounters::~HttpServerSimpleCounters() {}
 
 void HttpServerSimpleCounters::printSummary(FILE *file) const {
+  _successfulTransactions.printSummary(file);
+  _requestHeaderErrors.printSummary(file);
+  _requestHeaderFailures.printSummary(file);
+  _requestHeaderTimeouts.printSummary(file);
+  _requestBodyErrors.printSummary(file);
+  _requestBodyFailures.printSummary(file);
+  _requestBodyTimeouts.printSummary(file);
+  _responseHeaderErrors.printSummary(file);
+  _responseHeaderFailures.printSummary(file);
+  _responseHeaderTimeouts.printSummary(file);
+  _responseBodyErrors.printSummary(file);
+  _responseBodyFailures.printSummary(file);
+  _responseHeaderTimeouts.printSummary(file);
   fprintf(file, "SERVER CONNECTION ACCEPTS: %d\n", _totalConnections.get());
   fprintf(file, "SERVER AVG TRANS PER CONNECTION: %.2f\n",
           _averageTransactionsPerConnection.getValue());

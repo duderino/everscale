@@ -4,6 +4,9 @@ http client server test
  - why was std::bad_alloc thrown by http client/server test?  verify -fno-exceptions.  check leaks
  - raise fd limit
  - create proxy test
+multiplexer dispatcher
+ - helpful or harmful?  better to allow unbalance and just let each multipler add whatever it accepts?
+ - dispatch to multiplexer with silo affinity/be-fe connection alignment?
 cmakeify
  - ctest memory checks, etc
  - finish todos in config.cmake - a few adhoc test programs

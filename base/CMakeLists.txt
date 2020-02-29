@@ -52,6 +52,7 @@ set(SOURCE_FILES
         src/ESBPerformanceCounter.cpp
         src/ESBHistoricalPerformanceCounter.cpp
         src/ESBSimplePerformanceCounter.cpp
+        src/ESBProcessLimits.cpp
         )
 
 add_library(base STATIC ${SOURCE_FILES})
@@ -82,15 +83,16 @@ set(TEST_LIBS
         )
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBBuddyAllocatorTest.cpp)
-add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBBufferTest.cpp)
-add_unit_test(discard-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBDiscardAllocatorTest.cpp)
+add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESBBufferTest.cpp)
+add_unit_test(discard-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESBDiscardAllocatorTest.cpp)
 add_unit_test(fixed-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBFixedAllocatorTest.cpp)
 add_unit_test(list-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESBListTest.cpp)
 add_unit_test(lockable-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBLockableTest.cpp)
-add_unit_test(map-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESBMapTest.cpp)
+add_unit_test(map-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 10 tests/ESBMapTest.cpp)
 add_unit_test(shared-counter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESBSharedCounterTest.cpp)
 add_unit_test(smart-pointer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 1 tests/ESBSmartPointerTest.cpp)
 add_unit_test(shared-queue-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESBSharedQueueTest.cpp tests/ESBSharedQueueConsumer.cpp tests/ESBSharedQueueProducer.cpp)
 
 add_gtest(date-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBDateTest.cpp)
 add_gtest(simple-performance-counter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSimplePerformanceCounterTest.cpp)
+add_gtest(process-limits-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBProcessLimitsTest.cpp)
