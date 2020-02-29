@@ -6,7 +6,7 @@ include(config.cmake)
 include(FetchContent)
 
 SET(CMAKE_BUILD_TYPE RelWithDebInfo)
-set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # TODO add -Wextra and make this portable
@@ -66,14 +66,14 @@ mark_as_advanced(
     gtest_enable_pthreads
 )
 
-macro(add_gtest TESTNAME INCLUDES LIBRARIES WORKING_DIRECTORY FILES)
-    add_executable(${TESTNAME} ${FILES})
-    target_link_libraries(${TESTNAME} gtest gmock gtest_main ${LIBRARIES})
-    gtest_discover_tests(${TESTNAME}
-        WORKING_DIRECTORY ${WORKING_DIRECTORY}
-        PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}"
+macro(add_gtest NAME INCS LIBS CWD)
+    add_executable(${NAME} ${ARGN})
+    target_link_libraries(${NAME} gtest gmock gtest_main ${LIBS})
+    gtest_discover_tests(${NAME}
+        WORKING_DIRECTORY ${CWD}
+        PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CWD}"
     )
-    set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
+    set_target_properties(${NAME} PROPERTIES FOLDER tests)
 endmacro()
 
 #
@@ -99,7 +99,6 @@ endmacro()
 # subdirs
 #
 
-#add_subdirectory(extern/googletest)
 add_subdirectory(unit-tf)
 add_subdirectory(base)
 add_subdirectory(tcp)
