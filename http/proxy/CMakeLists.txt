@@ -55,26 +55,21 @@ target_include_directories(http_server.exe PRIVATE
 
 # Unit tests
 
-macro(add_unit_test TEST_NAME)
-    add_executable(${TEST_NAME} ${ARGN})
-    target_compile_options(${TEST_NAME} PUBLIC ${CPP_FLAGS} -DESTF_USE_RESULT_COLLECTOR -DUSE_SMART_POINTER_DEBUGGER)
-    target_link_libraries(${TEST_NAME} -pthread unit-tf http_stack http1 http-common base)
-    target_include_directories(${TEST_NAME} PRIVATE
+set(TEST_INCS
             "${PROJECT_SOURCE_DIR}/tests"
             "${PROJECT_SOURCE_DIR}/../../base/include"
             "${PROJECT_SOURCE_DIR}/../http-common/include"
             "${PROJECT_SOURCE_DIR}/../http1/include"
             "${PROJECT_SOURCE_DIR}/../stack/include"
-            )
-    # By default ctest eats stderr/out which makes debugging test failures inconvenient.
-    # To see stderr/stdout on test failure, do a:
-    #   CTEST_OUTPUT_ON_FAILURE=1 make test
-    # Or add "export CTEST_OUTPUT_ON_FAILURE=1" to your .bashrc
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-    set_tests_properties(${TEST_NAME} PROPERTIES
-            TIMEOUT 500
-            )
-    set_property(TEST ${TEST_NAME} APPEND PROPERTY CTEST_OUTPUT_ON_FAILURE=1)
-endmacro()
+)
 
-add_unit_test(http-client-server-test tests/ESHttpClientServerTest.cpp ${CLIENT_FILES} ${SERVER_FILES})
+set(TEST_LIBS
+  -pthread
+  unit-tf
+  http_stack
+  http1
+  http-common
+  base
+)
+
+add_unit_test(http-client-server-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 500 tests/ESHttpClientServerTest.cpp ${CLIENT_FILES} ${SERVER_FILES})

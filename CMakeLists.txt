@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.11)
 set(VERSION 0.0.1)
 project(everscale VERSION ${VERSION} LANGUAGES CXX C)
 enable_testing()
 include(config.cmake)
+include(FetchContent)
 
 SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_CXX_STANDARD 98)
@@ -22,6 +23,10 @@ set(CPP_FLAGS
 # TODO make this portable
 set(LDFLAGS -pthread)
 
+#
+# clang-format
+#
+
 find_program(CLANG_FORMAT "clang-format")
 
 if (NOT CLANG_FORMAT)
@@ -37,6 +42,64 @@ if (CLANG_FORMAT)
             )
 endif ()
 
+#
+# googletest
+#
+
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.10.x
+)
+
+FetchContent_GetProperties(googletest)
+if(NOT googletest_POPULATED)
+  FetchContent_Populate(googletest)
+  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+endif()
+
+include(GoogleTest)
+
+mark_as_advanced(
+    BUILD_GMOCK BUILD_GTEST BUILD_SHARED_LIBS
+    gmock_build_tests gtest_build_samples gtest_build_tests
+    gtest_enable_pthreads
+)
+
+macro(add_gtest TESTNAME INCLUDES LIBRARIES WORKING_DIRECTORY FILES)
+    add_executable(${TESTNAME} ${FILES})
+    target_link_libraries(${TESTNAME} gtest gmock gtest_main ${LIBRARIES})
+    gtest_discover_tests(${TESTNAME}
+        WORKING_DIRECTORY ${WORKING_DIRECTORY}
+        PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}"
+    )
+    set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
+endmacro()
+
+#
+# unit-tf unit tests
+#
+
+macro(add_unit_test NAME INCS LIBS CWD TIMEOUT)
+    add_executable(${NAME} ${ARGN})
+    target_compile_options(${NAME} PUBLIC ${CPP_FLAGS} -DESTF_USE_RESULT_COLLECTOR -DUSE_SMART_POINTER_DEBUGGER)
+    target_link_libraries(${NAME} ${LIBS})
+    target_include_directories(${NAME} PRIVATE ${INCS})
+    # By default ctest eats stderr/out which makes debugging test failures inconvenient.
+    # To see stderr/stdout on test failure, do a:
+    #   CTEST_OUTPUT_ON_FAILURE=1 make test
+    # Or add "export CTEST_OUTPUT_ON_FAILURE=1" to your .bashrc
+    add_test(NAME ${NAME} COMMAND ${NAME} WORKING_DIRECTORY ${CWD})
+    set_tests_properties(${NAME} PROPERTIES
+            TIMEOUT ${TIMEOUT}
+            )
+endmacro()
+
+#
+# subdirs
+#
+
+#add_subdirectory(extern/googletest)
 add_subdirectory(unit-tf)
 add_subdirectory(base)
 add_subdirectory(tcp)
