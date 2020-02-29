@@ -7,23 +7,22 @@
 using namespace ESB;
 
 TEST(SimplePerformanceCounter, QPS) {
-  SimplePerformanceCounter counter("qps-test");
   Date start(Date::Now());
-  Date stop(start);
-  stop += 1;
+  Date stop(start.getSeconds(), start.getMicroSeconds() + 1000);
+  SimplePerformanceCounter counter("qps-test", start, stop);
   const int queries = 6;
 
   for (int i = 0; i < queries; ++i) {
     counter.addObservation(start, stop);
   }
 
-  EXPECT_EQ(queries, counter.getQueriesPerSec());
+  EXPECT_EQ(queries * 1000, counter.getQueriesPerSec());
 
   for (int i = 0; i < queries; ++i) {
     counter.addObservation(start, stop);
   }
 
-  EXPECT_EQ(queries * 2, counter.getQueriesPerSec());
+  EXPECT_EQ(queries * 2000, counter.getQueriesPerSec());
 }
 
 TEST(SimplePerformanceCounter, LatencySec) {
@@ -47,17 +46,17 @@ TEST(SimplePerformanceCounter, LatencySec) {
 TEST(SimplePerformanceCounter, LatencyMsec) {
   SimplePerformanceCounter counter("latency-msec-test");
   Date start(Date::Now());
-  Date stop(start);
   double totalMsec = 0UL;
   const int queries = 6;
 
-  for (int i = 0; i < queries; ++i) {
-    stop.setMicroSeconds(stop.getMicroSeconds() + 10);
-    totalMsec += 10 * (i + 1);
+  for (uint i = 0; i < queries; ++i) {
+    Date micros(0, 1000 * (i + 1));
+    Date stop = start + micros;
+    totalMsec += micros.getMicroSeconds() / 1000;
     counter.addObservation(start, stop);
   }
 
   EXPECT_EQ(totalMsec / queries, counter.getAvgMsec());
-  EXPECT_EQ(10, counter.getMinMsec());
-  EXPECT_EQ(10 * queries, counter.getMaxMsec());
+  EXPECT_EQ(1, counter.getMinMsec());
+  EXPECT_EQ(queries, counter.getMaxMsec());
 }

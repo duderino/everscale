@@ -18,7 +18,7 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name)
       _windowStart(),
       _windowStop(),
       _avgMSec(0.0),
-      _minMSec(-1.0),
+      _minMSec(0.0),
       _maxMSec(0.0),
       _queries(0UL),
       _lock() {}
@@ -31,7 +31,7 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
       _windowStart(windowStart),
       _windowStop(windowStop),
       _avgMSec(0.0),
-      _minMSec(-1.0),
+      _minMSec(0.0),
       _maxMSec(0.0),
       _queries(0UL),
       _lock() {}
@@ -48,21 +48,25 @@ double SimplePerformanceCounter::getQueriesPerSecNoLock() const {
     return 0;
   }
 
-  Date windowStop(0 == _windowStop.getSeconds() &&
-                          0 == _windowStop.getMicroSeconds()
-                      ? Date::Now()
-                      : _windowStop);
+  Date window;
 
-  double windowSec = (windowStop - _windowStart).getSeconds();
-  windowSec = ESB_MAX(windowSec, 1);
+  if (0 == _windowStop.getSeconds() && 0 == _windowStop.getMicroSeconds()) {
+    window = Date::Now() - _windowStart;
+  } else {
+    window = _windowStop - _windowStart;
+  }
 
-  return _queries / windowSec;
+  double diffMsec =
+      window.getSeconds() * 1000.0 + window.getMicroSeconds() / 1000.0;
+
+  return _queries / diffMsec * 1000.0;
 }
 
 void SimplePerformanceCounter::addObservation(const Date &start,
                                               const Date &stop) {
   Date diff(stop - start);
-  UInt32 diffMSec = diff.getSeconds() * 1000 + diff.getMicroSeconds();
+  double diffMSec =
+      diff.getSeconds() * 1000.0 + diff.getMicroSeconds() / 1000.0;
 
   {
     WriteScopeLock lock(_lock);
@@ -75,7 +79,7 @@ void SimplePerformanceCounter::addObservation(const Date &start,
       _windowStart = Date::Now();
     }
 
-    if (0 > _minMSec) {
+    if (0 >= _minMSec) {
       _minMSec = diffMSec;
     } else if (_minMSec > diffMSec) {
       _minMSec = diffMSec;
