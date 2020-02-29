@@ -79,6 +79,46 @@ int main(int argc, char **argv) {
 
   memset(body, 42, sizeof(body));
 
+  {
+    int result = 0;
+
+    while (true) {
+      result = getopt(argc, argv, "l:t:c:i:r:");
+
+      if (0 > result) {
+        break;
+      }
+
+      switch (result) {
+        case 'l':
+
+          logLevel = atoi(optarg);
+          break;
+
+        case 't':
+
+          clientThreads = atoi(optarg);
+          serverThreads = clientThreads;
+          break;
+
+        case 'c':
+
+          connections = (unsigned int) atoi(optarg);
+          break;
+
+        case 'i':
+
+          iterations = (unsigned int) atoi(optarg);
+          break;
+
+        case 'r':
+
+          reuseConnections = 0 != atoi(optarg);
+          break;
+      }
+    }
+  }
+
   ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
   ESB::Logger *logger = ESB::ConsoleLogger::Instance();
 

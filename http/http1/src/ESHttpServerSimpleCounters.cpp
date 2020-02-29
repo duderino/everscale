@@ -24,11 +24,9 @@ HttpServerSimpleCounters::HttpServerSimpleCounters()
 HttpServerSimpleCounters::~HttpServerSimpleCounters() {}
 
 void HttpServerSimpleCounters::printSummary(FILE *file) const {
-  fprintf(file, "Accepted Connections: %d\n", _totalConnections.get());
-  fprintf(file, "Requests Per Connection:\n");
-  fprintf(file, "\tavg: %f\n", _averageTransactionsPerConnection.getValue());
-  fprintf(file, "\tn: %f\n",
-          _averageTransactionsPerConnection.getObservations());
+  fprintf(file, "SERVER CONNECTION ACCEPTS: %d\n", _totalConnections.get());
+  fprintf(file, "SERVER AVG TRANS PER CONNECTION: %.2f\n",
+          _averageTransactionsPerConnection.getValue());
 }
 
 ESB::PerformanceCounter *HttpServerSimpleCounters::getSuccessfulTransactions() {
