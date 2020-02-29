@@ -106,8 +106,7 @@ static const int AllocationsPerIteration = 10000;
 static int GlobalUnsynchronizedCounter = 0;
 
 DiscardAllocatorTest::DiscardAllocatorTest()
-    : _rand(Date::GetSystemTime().getMicroSeconds() +
-            GlobalUnsynchronizedCounter++),
+    : _rand(Date::Now().getMicroSeconds() + GlobalUnsynchronizedCounter++),
       _allocator(ChunkSize, SystemAllocator::GetInstance()) {}
 
 DiscardAllocatorTest::~DiscardAllocatorTest() {}

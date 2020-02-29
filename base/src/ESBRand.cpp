@@ -18,7 +18,7 @@ namespace ESB {
 
 Rand::Rand() {
 #ifdef HAVE_RAND_R
-  _seed = Date::GetSystemTime().getSeconds();
+  _seed = Date::Now().getSeconds();
 #endif
 }
 

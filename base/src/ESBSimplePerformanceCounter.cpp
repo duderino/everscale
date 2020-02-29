@@ -47,14 +47,10 @@ UInt32 SimplePerformanceCounter::getQueriesPerSec() const {
 
   Date windowStop(0 == _windowStop.getSeconds() &&
                           0 == _windowStop.getMicroSeconds()
-                      ? Date::GetSystemTime()
+                      ? Date::Now()
                       : _windowStop);
 
-  UInt32 windowSec = (windowStop - _windowStart).getSeconds();
-
-  if (0 == windowSec) {
-    return 0;
-  }
+  UInt32 windowSec = (windowStop - _windowStart).getSeconds() + 1;
 
   return _queries / windowSec;
 }
@@ -62,7 +58,7 @@ UInt32 SimplePerformanceCounter::getQueriesPerSec() const {
 void SimplePerformanceCounter::addObservation(const Date &start,
                                               const Date &stop) {
   Date diff(stop - start);
-  UInt32 diffMSec = diff.getSeconds() * 1000 + diff.getMicroSeconds() / 1000;
+  UInt32 diffMSec = diff.getSeconds() * 1000 + diff.getMicroSeconds();
 
   {
     WriteScopeLock lock(_lock);
@@ -72,7 +68,7 @@ void SimplePerformanceCounter::addObservation(const Date &start,
     _avgMSec = (diffMSec * (1.0 / n)) + (_avgMSec * ((n - 1.0) / n));
 
     if (0 == _windowStart.getSeconds() && 0 == _windowStart.getMicroSeconds()) {
-      _windowStart = Date::GetSystemTime();
+      _windowStart = Date::Now();
     }
 
     if (0 > _minMSec) {

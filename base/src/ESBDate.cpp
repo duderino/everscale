@@ -50,7 +50,7 @@ Date &Date::operator-=(const Date &date) {
  *
  *    @return date object set to the current time.
  */
-Date Date::GetSystemTime() {
+Date Date::Now() {
   Date currentTime;
 
 #if defined HAVE_GETTIMEOFDAY && defined HAVE_STRUCT_TIMEVAL
