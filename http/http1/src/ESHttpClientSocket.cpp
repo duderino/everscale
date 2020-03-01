@@ -303,9 +303,7 @@ bool HttpClientSocket::handleWritableEvent(ESB::Flag *isRunning,
       if (ESB_SUCCESS != error) {
         if (_logger->isLoggable(ESB::Logger::Err)) {
           char buffer[100];
-
           ESB::DescribeError(error, buffer, sizeof(buffer));
-
           _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
                        "[socket:%d] cannot add Connection: close header: %s",
                        _socket.getSocketDescriptor(), buffer);
@@ -439,14 +437,12 @@ bool HttpClientSocket::handleErrorEvent(ESB::Error errorCode,
                                         ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
+  if (_logger->isLoggable(ESB::Logger::Info)) {
     char buffer[100];
     char dottedAddress[16];
-
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
     ESB::DescribeError(errorCode, buffer, sizeof(buffer));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
+    _logger->log(ESB::Logger::Info, __FILE__, __LINE__,
                  "[socket:%d] Error from client %s: %s",
                  _socket.getSocketDescriptor(), dottedAddress, buffer);
   }
@@ -463,10 +459,8 @@ bool HttpClientSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
 
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char dottedAddress[16];
-
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
+    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
                  "[socket:%d] Client %s closed socket",
                  _socket.getSocketDescriptor(), dottedAddress);
   }
@@ -478,12 +472,10 @@ bool HttpClientSocket::handleIdleEvent(ESB::Flag *isRunning,
                                        ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
+  if (_logger->isLoggable(ESB::Logger::Info)) {
     char dottedAddress[16];
-
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
+    _logger->log(ESB::Logger::Info, __FILE__, __LINE__,
                  "[socket:%d] Client %s is idle", _socket.getSocketDescriptor(),
                  dottedAddress);
   }
@@ -497,10 +489,8 @@ bool HttpClientSocket::handleRemoveEvent(ESB::Flag *isRunning,
 
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char dottedAddress[16];
-
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
+    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
                  "[socket:%d] Closing socket for client %s",
                  _socket.getSocketDescriptor(), dottedAddress);
   }
@@ -579,9 +569,7 @@ bool HttpClientSocket::handleRemoveEvent(ESB::Flag *isRunning,
     if (ESB_SUCCESS != error) {
       if (_logger->isLoggable(ESB::Logger::Warning)) {
         char buffer[100];
-
         ESB::DescribeError(error, buffer, sizeof(buffer));
-
         _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
                      "[socket:%d] Cannot retry transaction: %s",
                      _socket.getSocketDescriptor(), buffer);
