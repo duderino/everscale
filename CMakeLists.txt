@@ -1,29 +1,14 @@
 cmake_minimum_required(VERSION 3.11)
 set(VERSION 0.0.1)
 project(everscale VERSION ${VERSION} LANGUAGES CXX C)
-enable_testing()
+include(profiles.cmake) # To select profile: cmake -DCMAKE_BUILD_TYPE=DEBUG .
 include(config.cmake)
 include(FetchContent)
+enable_testing()
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
-# add release profile with        -DNDEBUG
-#set(CMAKE_BUILD_TYPE Debug)
+# TODO scope 11 to deps
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-# TODO add -Wextra and make this portable
-set(CPP_FLAGS
-        -ansi
-        -Wall
-        -Woverloaded-virtual
-        -Werror
-        -fno-exceptions
-        -fno-rtti
-        -D_REENTRANT
-        )
-
-# TODO make this portable
-set(LDFLAGS -pthread)
 
 #
 # clang-format

@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   unsigned int connections = 500;  // concurrent connections
   unsigned int iterations = 500;   // http requests per concurrent connection
   bool reuseConnections = true;
-  int logLevel = ESB::Logger::Notice;
+  int logLevel = ESB::Logger::Info;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
