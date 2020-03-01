@@ -113,7 +113,6 @@ Error EpollMultiplexer::addMultiplexedSocket(
     if (multiplexedSocket->wantWrite()) {
       event.events |= EPOLLOUT | EPOLLHUP;
     }
-
     if (multiplexedSocket->wantRead()) {
       event.events |= EPOLLIN | EPOLLHUP;
     }

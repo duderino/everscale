@@ -53,9 +53,7 @@ HttpServerSocket *HttpServerSocketFactory::create(
   HttpServerSocket *socket = 0;
 
   _mutex.writeAcquire();
-
   socket = (HttpServerSocket *)_embeddedList.removeLast();
-
   _mutex.writeRelease();
 
   if (0 == socket) {
@@ -78,9 +76,7 @@ void HttpServerSocketFactory::release(HttpServerSocket *socket) {
   }
 
   _mutex.writeAcquire();
-
   _embeddedList.addLast(socket);
-
   _mutex.writeRelease();
 }
 
