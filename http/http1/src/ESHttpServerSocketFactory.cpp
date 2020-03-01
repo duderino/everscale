@@ -24,7 +24,7 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters,
                                                  ESB::Logger *logger)
     : _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _counters(counters),
-      _allocator(),
+      _allocator(1024*32, ESB::SystemAllocator::GetInstance()),
       _embeddedList(),
       _mutex(),
       _cleanupHandler(this) {}
@@ -39,7 +39,6 @@ void HttpServerSocketFactory::destroy() {
 
   while (socket) {
     socket->~HttpServerSocket();
-
     socket = (HttpServerSocket *)_embeddedList.removeFirst();
   }
 
@@ -53,20 +52,18 @@ HttpServerSocket *HttpServerSocketFactory::create(
   HttpServerSocket *socket = 0;
 
   _mutex.writeAcquire();
-  socket = (HttpServerSocket *)_embeddedList.removeLast();
+  socket = (HttpServerSocket *)_embeddedList.removeFirst();
   _mutex.writeRelease();
 
-  if (0 == socket) {
+  if (!socket) {
     socket = new (&_allocator)
         HttpServerSocket(handler, &_cleanupHandler, _logger, _counters);
-
-    if (0 == socket) {
+    if (!socket) {
       return 0;
     }
   }
 
   socket->reset(handler, acceptData);
-
   return socket;
 }
 
@@ -76,7 +73,7 @@ void HttpServerSocketFactory::release(HttpServerSocket *socket) {
   }
 
   _mutex.writeAcquire();
-  _embeddedList.addLast(socket);
+  _embeddedList.addFirst(socket);
   _mutex.writeRelease();
 }
 

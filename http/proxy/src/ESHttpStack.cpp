@@ -269,11 +269,6 @@ void HttpStack::destroy() {
 
   _clientSocketFactory.destroy();
   _clientTransactionFactory.destroy();
-
-  if (0 > _port || 0 == _serverHandler) {
-    return;
-  }
-
   _serverSocketFactory.destroy();
 }
 
