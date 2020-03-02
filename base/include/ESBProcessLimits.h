@@ -31,6 +31,6 @@ class ProcessLimits {
   ProcessLimits &operator=(const ProcessLimits &);
 };
 
-}
+}  // namespace ESB
 
 #endif

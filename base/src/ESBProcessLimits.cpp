@@ -84,13 +84,9 @@ static Error SetSoftLimit(int resource, UInt32 limit) {
 ProcessLimits::ProcessLimits() {}
 ProcessLimits::~ProcessLimits() {}
 
-UInt32 ProcessLimits::GetSocketSoftMax() {
-  return GetSoftLimit(RLIMIT_NOFILE);
-}
+UInt32 ProcessLimits::GetSocketSoftMax() { return GetSoftLimit(RLIMIT_NOFILE); }
 
-UInt32 ProcessLimits::GetSocketHardMax() {
-  return GetHardLimit(RLIMIT_NOFILE);
-}
+UInt32 ProcessLimits::GetSocketHardMax() { return GetHardLimit(RLIMIT_NOFILE); }
 
 Error ProcessLimits::SetSocketSoftMax(UInt32 limit) {
   return SetSoftLimit(RLIMIT_NOFILE, limit);

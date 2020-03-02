@@ -70,7 +70,9 @@ HttpClientSocketFactory::HttpClientSocketFactory(
     HttpClientCounters *clientCounters, ESB::Logger *logger)
     : _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _clientCounters(clientCounters),
-      _allocator(),
+      _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpClientSocket)) * 100,
+                            ESB::SystemAllocator::GetInstance()),
+      _allocator(&_unprotectedAllocator),
       _map(true, &AddressComparator,
            &_allocator,  // Will result in a leak if erase(), clear(), or
                          // insert() with a uniqueness violation
@@ -79,17 +81,13 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _mutex(),
       _cleanupHandler(this) {}
 
-ESB::Error HttpClientSocketFactory::initialize() {
-  return _allocator.initialize(ESB_WORD_ALIGN(sizeof(HttpClientSocket)) * 1000,
-                               ESB::SystemAllocator::GetInstance());
-}
+ESB::Error HttpClientSocketFactory::initialize() { return ESB_SUCCESS; }
 
 void HttpClientSocketFactory::destroy() {
   HttpClientSocket *socket = (HttpClientSocket *)_embeddedList.removeFirst();
 
   while (socket) {
     socket->~HttpClientSocket();
-
     socket = (HttpClientSocket *)_embeddedList.removeFirst();
   }
 

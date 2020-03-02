@@ -19,4 +19,3 @@ TEST(ProcessLimits, Sockets) {
   EXPECT_EQ(error, ESB_SUCCESS);
   EXPECT_EQ(hardLimit, ProcessLimits::GetSocketSoftMax());
 }
-

@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 
         case 's':
 
-          sockets = (ESB::UInt32) atoi(optarg);
+          sockets = (ESB::UInt32)atoi(optarg);
           break;
 
         case 'r':

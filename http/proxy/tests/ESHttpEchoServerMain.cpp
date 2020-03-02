@@ -114,13 +114,15 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
+  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
+      ESB::ProcessLimits::GetSocketHardMax());
 
   if (ESB_SUCCESS != error) {
     if (logger->isLoggable(ESB::Logger::Critical)) {
       char buffer[256];
       ESB::DescribeError(error, buffer, sizeof(buffer));
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,"Cannot raise max fd limit: %s", buffer);
+      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
+                  "Cannot raise max fd limit: %s", buffer);
     }
     return -5;
   }

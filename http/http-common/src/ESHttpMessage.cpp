@@ -2,6 +2,14 @@
 #include <ESHttpMessage.h>
 #endif
 
+#ifndef ESB_CONFIG_H
+#include <ESBConfig.h>
+#endif
+
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
 namespace ES {
 
 HttpMessage::HttpMessage() : _flags(0x00), _version(110), _headers() {}

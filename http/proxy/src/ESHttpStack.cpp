@@ -38,7 +38,8 @@ HttpStack::HttpStack(HttpServerHandler *serverHandler,
       _serverSocketFactory(_serverCounters, _logger),
       _clientSocketFactory(_clientCounters, _logger),
       _clientTransactionFactory(),
-      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads, &_epollFactory, &_rootAllocator,"HttpDispatcher", _logger) {}
+      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads,
+                  &_epollFactory, &_rootAllocator, "HttpDispatcher", _logger) {}
 
 HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
                      HttpClientCounters *clientCounters, ESB::Logger *logger)
@@ -58,8 +59,8 @@ HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
       _serverSocketFactory(_serverCounters, _logger),
       _clientSocketFactory(_clientCounters, _logger),
       _clientTransactionFactory(),
-      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads, &_epollFactory, &_rootAllocator,
-                  "HttpDispatcher", _logger) {}
+      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads,
+                  &_epollFactory, &_rootAllocator, "HttpDispatcher", _logger) {}
 
 HttpStack::~HttpStack() {}
 
@@ -67,7 +68,9 @@ ESB::Error HttpStack::initialize() {
   assert(ES_HTTP_STACK_IS_DESTROYED == _state);
 
   if (_logger->isLoggable(ESB::Logger::Notice)) {
-    _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,"[stack] Maximum sockets %d", ESB::ProcessLimits::GetSocketSoftMax());
+    _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
+                 "[stack] Maximum sockets %d",
+                 ESB::ProcessLimits::GetSocketSoftMax());
   }
 
   ESB::Error error = _rootAllocator.initialize();

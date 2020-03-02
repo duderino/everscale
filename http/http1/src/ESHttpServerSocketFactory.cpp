@@ -24,15 +24,14 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters,
                                                  ESB::Logger *logger)
     : _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _counters(counters),
-      _allocator(1024*32, ESB::SystemAllocator::GetInstance()),
+      _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpServerSocket)) * 100,
+                            ESB::SystemAllocator::GetInstance()),
+      _allocator(&_unprotectedAllocator),
       _embeddedList(),
       _mutex(),
       _cleanupHandler(this) {}
 
-ESB::Error HttpServerSocketFactory::initialize() {
-  return _allocator.initialize(ESB_WORD_ALIGN(sizeof(HttpServerSocket)) * 1000,
-                               ESB::SystemAllocator::GetInstance());
-}
+ESB::Error HttpServerSocketFactory::initialize() { return ESB_SUCCESS; }
 
 void HttpServerSocketFactory::destroy() {
   HttpServerSocket *socket = (HttpServerSocket *)_embeddedList.removeFirst();
@@ -45,7 +44,7 @@ void HttpServerSocketFactory::destroy() {
   _allocator.destroy();
 }
 
-HttpServerSocketFactory::~HttpServerSocketFactory() {}
+HttpServerSocketFactory::~HttpServerSocketFactory() { destroy(); }
 
 HttpServerSocket *HttpServerSocketFactory::create(
     HttpServerHandler *handler, ESB::TCPSocket::AcceptData *acceptData) {

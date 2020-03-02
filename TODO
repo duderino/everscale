@@ -1,7 +1,9 @@
 http client server test
+ - ESHttpClientTransactionFactory and server equivalent may be leaky without a shared allocator
+ - replace all allocators with system allocator and compare with and without libtcmalloc
+ - existence check in embedded list may be excessive even in NDEBUG.  instead just put flag in embedded list base indicating whether it is in a list or not?
  - fix asan profile
  - fix tsan profile
- - add memory leak checker to default and debug profiles
  - fix
 ERROR,/home/jblatt/src/duderino/everscale/base/src/ESBEpollMultiplexer.cpp,156,140137561823040 [HttpMultiplexer:8] cannot add socket 543 to epoll descriptor 8: 17:File exists
 CRITICAL,/home/jblatt/src/duderino/everscale/http/proxy/src/ESHttpStack.cpp,422,140137505912576 [stack] Cannot add client socket to multiplexer: File exists
