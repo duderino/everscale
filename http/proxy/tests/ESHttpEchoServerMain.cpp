@@ -14,6 +14,10 @@
 #include <ESBSystemDnsClient.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #ifndef ES_HTTP_CLIENT_SIMPLE_COUNTERS_H
 #include <ESHttpClientSimpleCounters.h>
 #endif
@@ -106,6 +110,23 @@ int main(int argc, char **argv) {
   signal(SIGQUIT, HttpEchoServerSignalHandler);
   signal(SIGTERM, HttpEchoServerSignalHandler);
 
+  //
+  // Max out open files
+  //
+
+  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
+      ESB::ProcessLimits::GetSocketHardMax());
+
+  if (ESB_SUCCESS != error) {
+    if (logger->isLoggable(ESB::Logger::Critical)) {
+      char buffer[256];
+      ESB::DescribeError(error, buffer, sizeof(buffer));
+      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
+                  "Cannot raise max fd limit: %s", buffer);
+    }
+    return -5;
+  }
+
   HttpEchoServerHandler handler(logger);
   ESB::SystemDnsClient dnsClient(logger);
   HttpClientSimpleCounters clientCounters;
@@ -114,7 +135,7 @@ int main(int argc, char **argv) {
   HttpStack stack(&handler, &dnsClient, port, threads, &clientCounters,
                   &serverCounters, logger);
 
-  ESB::Error error = stack.initialize();
+  error = stack.initialize();
 
   if (ESB_SUCCESS != error) {
     return -1;
@@ -127,7 +148,7 @@ int main(int argc, char **argv) {
   }
 
   while (IsRunning) {
-    sleep(60);
+    sleep(1);
   }
 
   error = stack.stop();

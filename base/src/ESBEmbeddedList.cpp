@@ -48,6 +48,18 @@ void EmbeddedList::remove(EmbeddedListElement *element) {
     return;
   }
 
+#ifndef NDEBUG
+  {
+    bool foundElement = false;
+    for (EmbeddedListElement *elem = _head; elem; elem = elem->getNext()) {
+      if (elem == element) {
+        foundElement = true;
+      }
+    }
+    assert(foundElement);
+  }
+#endif
+
   if (element->getPrevious()) {
     element->getPrevious()->setNext(element->getNext());
   } else {
@@ -72,11 +84,13 @@ void EmbeddedList::remove(EmbeddedListElement *element) {
     }
   }
 
-  // element->setNext(0);
-  // element->setPrevious(0);
+  element->setNext(0);
+  element->setPrevious(0);
 }
 
 void EmbeddedList::addFirst(EmbeddedListElement *element) {
+  assert(!element->getNext());
+  assert(!element->getPrevious());
   if (0 == _head) {
     _head = element;
     _tail = element;
@@ -93,6 +107,8 @@ void EmbeddedList::addFirst(EmbeddedListElement *element) {
 }
 
 void EmbeddedList::addLast(EmbeddedListElement *element) {
+  assert(!element->getNext());
+  assert(!element->getPrevious());
   if (0 == _tail) {
     _head = element;
     _tail = element;

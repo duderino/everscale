@@ -29,7 +29,7 @@
 namespace ESB {
 
 SocketMultiplexerDispatcher::SocketMultiplexerDispatcher(
-    UInt16 maximumSockets, UInt16 multiplexerCount,
+    UInt32 maximumSockets, UInt16 multiplexerCount,
     SocketMultiplexerFactory *factory, Allocator *allocator, const char *name,
     Logger *logger)
     : _maximumSockets(maximumSockets > 1 ? maximumSockets : 1),
@@ -236,28 +236,6 @@ int SocketMultiplexerDispatcher::getMaximumSockets() {
   }
 
   return count;
-}
-
-UInt16 SocketMultiplexerDispatcher::GetMaximumSockets() {
-#if defined HAVE_STRUCT_RLIMIT && defined HAVE_GETRLIMIT
-  struct rlimit rLimit;
-
-  if (0 != getrlimit(RLIMIT_NOFILE, &rLimit)) {
-    return ESB_UINT16_MAX;
-  }
-
-  if (0 >= rLimit.rlim_cur) {
-    return ESB_UINT16_MAX;
-  }
-
-  if (ESB_UINT16_MAX < rLimit.rlim_cur) {
-    return ESB_UINT16_MAX;
-  }
-
-  return RLIM_INFINITY == rLimit.rlim_cur ? ESB_UINT16_MAX : rLimit.rlim_cur;
-#else
-#error "getrlimit() or equivalent is required"
-#endif
 }
 
 Error SocketMultiplexerDispatcher::createMultiplexers() {

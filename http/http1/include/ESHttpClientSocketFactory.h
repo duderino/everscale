@@ -49,6 +49,10 @@
 #include <ESHttpClientCounters.h>
 #endif
 
+#ifndef ESB_SHARED_ALLOCATOR_H
+#include <ESBSharedAllocator.h>
+#endif
+
 namespace ES {
 
 /** A factory that creates and reuses HttpClientSockets
@@ -106,7 +110,8 @@ class HttpClientSocketFactory {
 
   ESB::Logger *_logger;
   HttpClientCounters *_clientCounters;
-  ESB::DiscardAllocator _allocator;
+  ESB::DiscardAllocator _unprotectedAllocator;
+  ESB::SharedAllocator _allocator;
   ESB::Map _map;
   ESB::EmbeddedList _embeddedList;
   ESB::Mutex _mutex;

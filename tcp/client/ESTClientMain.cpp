@@ -10,6 +10,10 @@
 #include <ESBDiscardAllocator.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #ifndef ESB_EPOLL_MULTIPLEXER_FACTORY_H
 #include <ESBEpollMultiplexerFactory.h>
 #endif
@@ -54,7 +58,7 @@ int main(int argc, char **argv) {
   ESB::UInt16 multiplexerCount = 4;
   const char *dottedIp = "127.0.0.1";
   ESB::UInt16 port = 8080;
-  ESB::Int16 sockets = 1;
+  ESB::UInt32 sockets = 1;
   bool reuseConnections = false;
   int logLevel = ESB::Logger::Notice;
 
@@ -103,7 +107,7 @@ int main(int argc, char **argv) {
 
         case 's':
 
-          sockets = atoi(optarg);
+          sockets = (ESB::UInt32)atoi(optarg);
           break;
 
         case 'r':
@@ -126,7 +130,7 @@ int main(int argc, char **argv) {
   if (logger->isLoggable(ESB::Logger::Notice)) {
     logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
                 "[main] starting. logLevel: %d, threads: %d, server: %s, port: "
-                "%d, sockets: %d, reuseConnections: %s",
+                "%d, sockets: %u, reuseConnections: %s",
                 logLevel, multiplexerCount, dottedIp, port, sockets,
                 reuseConnections ? "true" : "false");
   }
@@ -167,8 +171,8 @@ int main(int argc, char **argv) {
   ESB::EpollMultiplexerFactory epollFactory("EpollMultiplexer", logger,
                                             &rootAllocator);
 
-  ESB::UInt16 maxSockets =
-      ESB::SocketMultiplexerDispatcher::GetMaximumSockets();
+  ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
+  ESB::UInt32 maxSockets = ESB::ProcessLimits::GetSocketSoftMax();
 
   if (sockets > maxSockets) {
     if (logger->isLoggable(ESB::Logger::Critical)) {
@@ -213,7 +217,7 @@ int main(int argc, char **argv) {
   struct timeval startTime;
   EST::PerformanceCounter::GetTime(&startTime);
 
-  for (int i = 0; i < sockets; ++i) {
+  for (ESB::UInt32 i = 0; i < sockets; ++i) {
     error = factory.addNewConnection(serverAddress);
 
     if (ESB_SUCCESS != error) {

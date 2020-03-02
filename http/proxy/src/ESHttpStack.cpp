@@ -10,12 +10,13 @@
 #include <ESBSystemAllocator.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #include <errno.h>
 
 namespace ES {
-
-static const int MaxSockets =
-    ESB::SocketMultiplexerDispatcher::GetMaximumSockets();
 
 HttpStack::HttpStack(HttpServerHandler *serverHandler,
                      ESB::DnsClient *dnsClient, int port, int threads,
@@ -32,13 +33,13 @@ HttpStack::HttpStack(HttpServerHandler *serverHandler,
       _discardAllocator(4000, ESB::SystemAllocator::GetInstance()),
       _rootAllocator(&_discardAllocator),
       _rootAllocatorCleanupHandler(&_rootAllocator),
-      _epollFactory("EpollMultiplexer", _logger, &_rootAllocator),
+      _epollFactory("HttpMultiplexer", _logger, &_rootAllocator),
       _listeningSocket(_port, ESB_UINT16_MAX, false),
       _serverSocketFactory(_serverCounters, _logger),
       _clientSocketFactory(_clientCounters, _logger),
       _clientTransactionFactory(),
-      _dispatcher(MaxSockets, _threads, &_epollFactory, &_rootAllocator,
-                  "EpollDispatcher", _logger) {}
+      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads,
+                  &_epollFactory, &_rootAllocator, "HttpDispatcher", _logger) {}
 
 HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
                      HttpClientCounters *clientCounters, ESB::Logger *logger)
@@ -53,13 +54,13 @@ HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
       _discardAllocator(4000, ESB::SystemAllocator::GetInstance()),
       _rootAllocator(&_discardAllocator),
       _rootAllocatorCleanupHandler(&_rootAllocator),
-      _epollFactory("EpollMultiplexer", _logger, &_rootAllocator),
+      _epollFactory("HttpMultiplexer", _logger, &_rootAllocator),
       _listeningSocket(_port, ESB_UINT16_MAX, false),
       _serverSocketFactory(_serverCounters, _logger),
       _clientSocketFactory(_clientCounters, _logger),
       _clientTransactionFactory(),
-      _dispatcher(MaxSockets, _threads, &_epollFactory, &_rootAllocator,
-                  "EpollDispatcher", _logger) {}
+      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads,
+                  &_epollFactory, &_rootAllocator, "HttpDispatcher", _logger) {}
 
 HttpStack::~HttpStack() {}
 
@@ -68,7 +69,8 @@ ESB::Error HttpStack::initialize() {
 
   if (_logger->isLoggable(ESB::Logger::Notice)) {
     _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                 "[stack] Maximum sockets %d", MaxSockets);
+                 "[stack] Maximum sockets %d",
+                 ESB::ProcessLimits::GetSocketSoftMax());
   }
 
   ESB::Error error = _rootAllocator.initialize();
@@ -270,11 +272,6 @@ void HttpStack::destroy() {
 
   _clientSocketFactory.destroy();
   _clientTransactionFactory.destroy();
-
-  if (0 > _port || 0 == _serverHandler) {
-    return;
-  }
-
   _serverSocketFactory.destroy();
 }
 

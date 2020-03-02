@@ -40,7 +40,7 @@ class SocketMultiplexerDispatcher {
    *  use a string literal if possible.
    * @param logger An optional logger.  Pass NULL to not log anything.
    */
-  SocketMultiplexerDispatcher(UInt16 maximumSockets, UInt16 multiplexerCount,
+  SocketMultiplexerDispatcher(UInt32 maximumSockets, UInt16 multiplexerCount,
                               SocketMultiplexerFactory *factory,
                               Allocator *allocator, const char *name,
                               Logger *logger);
@@ -102,12 +102,6 @@ class SocketMultiplexerDispatcher {
     return allocator->allocate(size);
   }
 
-  /** Get the maximum number of sockets this process can handle.
-   *
-   * @return The maxmium number of sockets this process can handle.
-   */
-  static UInt16 GetMaximumSockets();
-
  private:
   //  Disabled
   SocketMultiplexerDispatcher(const SocketMultiplexerDispatcher &);
@@ -117,7 +111,7 @@ class SocketMultiplexerDispatcher {
 
   void destroyMultiplexers();
 
-  UInt16 _maximumSockets;
+  UInt32 _maximumSockets;
   UInt16 _multiplexerCount;
   const char *_name;
   Logger *_logger;

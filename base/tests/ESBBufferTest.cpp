@@ -115,7 +115,9 @@ BufferTest::BufferTest()
           (unsigned char *)SystemAllocator::GetInstance()->allocate(BufferSize),
           BufferSize) {}
 
-BufferTest::~BufferTest() {}
+BufferTest::~BufferTest() {
+  SystemAllocator::GetInstance()->deallocate(_buffer.getBuffer());
+}
 
 void BufferTest::fillTest(ESTF::ResultCollector *collector,
                           unsigned int startPosition,

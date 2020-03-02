@@ -24,51 +24,45 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters,
                                                  ESB::Logger *logger)
     : _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _counters(counters),
-      _allocator(),
+      _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpServerSocket)) * 100,
+                            ESB::SystemAllocator::GetInstance()),
+      _allocator(&_unprotectedAllocator),
       _embeddedList(),
       _mutex(),
       _cleanupHandler(this) {}
 
-ESB::Error HttpServerSocketFactory::initialize() {
-  return _allocator.initialize(ESB_WORD_ALIGN(sizeof(HttpServerSocket)) * 1000,
-                               ESB::SystemAllocator::GetInstance());
-}
+ESB::Error HttpServerSocketFactory::initialize() { return ESB_SUCCESS; }
 
 void HttpServerSocketFactory::destroy() {
   HttpServerSocket *socket = (HttpServerSocket *)_embeddedList.removeFirst();
 
   while (socket) {
     socket->~HttpServerSocket();
-
     socket = (HttpServerSocket *)_embeddedList.removeFirst();
   }
 
   _allocator.destroy();
 }
 
-HttpServerSocketFactory::~HttpServerSocketFactory() {}
+HttpServerSocketFactory::~HttpServerSocketFactory() { destroy(); }
 
 HttpServerSocket *HttpServerSocketFactory::create(
     HttpServerHandler *handler, ESB::TCPSocket::AcceptData *acceptData) {
   HttpServerSocket *socket = 0;
 
   _mutex.writeAcquire();
-
-  socket = (HttpServerSocket *)_embeddedList.removeLast();
-
+  socket = (HttpServerSocket *)_embeddedList.removeFirst();
   _mutex.writeRelease();
 
-  if (0 == socket) {
+  if (!socket) {
     socket = new (&_allocator)
         HttpServerSocket(handler, &_cleanupHandler, _logger, _counters);
-
-    if (0 == socket) {
+    if (!socket) {
       return 0;
     }
   }
 
   socket->reset(handler, acceptData);
-
   return socket;
 }
 
@@ -78,9 +72,7 @@ void HttpServerSocketFactory::release(HttpServerSocket *socket) {
   }
 
   _mutex.writeAcquire();
-
-  _embeddedList.addLast(socket);
-
+  _embeddedList.addFirst(socket);
   _mutex.writeRelease();
 }
 

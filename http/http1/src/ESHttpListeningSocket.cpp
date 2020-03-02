@@ -65,7 +65,6 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
 
   while (true) {
     error = _socket->accept(&acceptData);
-
     if (ESB_INTR != error) {
       break;
     }
@@ -77,21 +76,17 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
                    "[listener:%d] not ready to accept - thundering herd",
                    _socket->getSocketDescriptor());
     }
-
     return true;
   }
 
   if (ESB_SUCCESS != error) {
     if (_logger->isLoggable(ESB::Logger::Err)) {
       char buffer[100];
-
       ESB::DescribeError(error, buffer, sizeof(buffer));
-
       _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
                    "[listener:%d] error accepting new connection: %s",
                    _socket->getSocketDescriptor(), buffer);
     }
-
     return true;
   }
 
@@ -106,9 +101,7 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
                    "[listener:%d] Handler rejected connection",
                    _socket->getSocketDescriptor());
     }
-
     ESB::TCPSocket::Close(acceptData._sockFd);
-
     return true;
   }
 
@@ -120,9 +113,7 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
                    "[listener:%d] Cannot allocate new server socket",
                    _socket->getSocketDescriptor());
     }
-
     ESB::TCPSocket::Close(acceptData._sockFd);
-
     return true;
   }
 
@@ -135,34 +126,26 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
                    "accepted connection",
                    _socket->getSocketDescriptor());
     }
-
     _factory->release(serverSocket);
-
     return true;
   }
 
   if (ESB_SUCCESS != error) {
     if (_logger->isLoggable(ESB::Logger::Err)) {
       char buffer[100];
-
       ESB::DescribeError(error, buffer, sizeof(buffer));
-
       _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
                    "[listener:%d] Error adding newly accepted connection to "
                    "the dispatcher: %s",
                    _socket->getSocketDescriptor(), buffer);
     }
-
     _factory->release(serverSocket);
-
     return true;
   }
 
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char buffer[16];
-
     acceptData._peerAddress.getIPAddress(buffer, sizeof(buffer));
-
     _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
                  "[listener:%d] Accepted new connection from %s",
                  _socket->getSocketDescriptor(), buffer);

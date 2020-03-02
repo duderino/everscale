@@ -46,6 +46,10 @@
 #include <ESBSystemAllocator.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #ifndef ESTF_ASSERT_H
 #include <ESTFAssert.h>
 #endif
@@ -66,10 +70,10 @@ int main(int argc, char **argv) {
   int serverThreads = 3;
   const char *host = "localhost.localdomain";
   int port = 8888;
-  unsigned int connections = 100;  // concurrent connections
-  unsigned int iterations = 100;   // http requests per concurrent connection
+  unsigned int connections = 500;  // concurrent connections
+  unsigned int iterations = 500;   // http requests per concurrent connection
   bool reuseConnections = true;
-  int logLevel = ESB::Logger::Notice;
+  int logLevel = ESB::Logger::Info;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
@@ -79,11 +83,68 @@ int main(int argc, char **argv) {
 
   memset(body, 42, sizeof(body));
 
+  {
+    int result = 0;
+
+    while (true) {
+      result = getopt(argc, argv, "l:t:c:i:r:");
+
+      if (0 > result) {
+        break;
+      }
+
+      switch (result) {
+        case 'l':
+
+          logLevel = atoi(optarg);
+          break;
+
+        case 't':
+
+          clientThreads = atoi(optarg);
+          serverThreads = clientThreads;
+          break;
+
+        case 'c':
+
+          connections = (unsigned int)atoi(optarg);
+          break;
+
+        case 'i':
+
+          iterations = (unsigned int)atoi(optarg);
+          break;
+
+        case 'r':
+
+          reuseConnections = 0 != atoi(optarg);
+          break;
+      }
+    }
+  }
+
   ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
   ESB::Logger *logger = ESB::ConsoleLogger::Instance();
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
+
+  //
+  // Max out open files
+  //
+
+  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
+      ESB::ProcessLimits::GetSocketHardMax());
+
+  if (ESB_SUCCESS != error) {
+    if (logger->isLoggable(ESB::Logger::Critical)) {
+      char buffer[256];
+      ESB::DescribeError(error, buffer, sizeof(buffer));
+      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
+                  "Cannot raise max fd limit: %s", buffer);
+    }
+    return -5;
+  }
 
   // Init
 
@@ -95,7 +156,7 @@ int main(int argc, char **argv) {
   HttpStack serverStack(&serverHandler, &dnsClient, port, serverThreads,
                         &clientCounters, &serverCounters, logger);
 
-  ESB::Error error = serverStack.initialize();
+  error = serverStack.initialize();
 
   if (ESB_SUCCESS != error) {
     return -1;
@@ -137,7 +198,7 @@ int main(int argc, char **argv) {
   HttpEchoClientContext *context = 0;
   HttpClientTransaction *transaction = 0;
 
-  for (int i = 0; i < connections; ++i) {
+  for (unsigned int i = 0; i < connections; ++i) {
     // Create the request context and transaction
     context = new (&allocator) HttpEchoClientContext(iterations - 1);
     assert(context);
@@ -174,14 +235,15 @@ int main(int argc, char **argv) {
   // TODO assert on counters here
   clientStack.getClientCounters()->printSummary(outputFile);
   serverCounters.printSummary(outputFile);
-  fflush(outputFile);
-  fclose(outputFile);
 
   // Destroy
 
   clientStack.destroy();
   serverStack.destroy();
   allocator.destroy();  // context destructors will not be called.
+
+  fflush(outputFile);
+  fclose(outputFile);
 
   ESB::ConsoleLogger::Destroy();
 

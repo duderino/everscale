@@ -10,6 +10,10 @@
 #include <ESBDiscardAllocator.h>
 #endif
 
+#ifndef ESB_PROCESS_LIMITS_H
+#include <ESBProcessLimits.h>
+#endif
+
 #ifndef ESB_EPOLL_MULTIPLEXER_FACTORY_H
 #include <ESBEpollMultiplexerFactory.h>
 #endif
@@ -144,8 +148,8 @@ int main(int argc, char **argv) {
   ESB::EpollMultiplexerFactory epollFactory("EpollMultiplexer", logger,
                                             &rootAllocator);
 
-  ESB::UInt16 maxSockets =
-      ESB::SocketMultiplexerDispatcher::GetMaximumSockets();
+  ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
+  ESB::UInt32 maxSockets = ESB::ProcessLimits::GetSocketSoftMax();
 
   if (logger->isLoggable(ESB::Logger::Notice)) {
     logger->log(ESB::Logger::Notice, __FILE__, __LINE__,

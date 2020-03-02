@@ -56,7 +56,7 @@
 
 namespace ESB {
 
-#define EPOLL_TIMEOUT_MILLIS 5000
+#define EPOLL_TIMEOUT_MILLIS 1000
 #define MIN_MAX_SOCKETS 1
 #define IDLE_CHECK_SEC 30
 
@@ -113,7 +113,6 @@ Error EpollMultiplexer::addMultiplexedSocket(
     if (multiplexedSocket->wantWrite()) {
       event.events |= EPOLLOUT | EPOLLHUP;
     }
-
     if (multiplexedSocket->wantRead()) {
       event.events |= EPOLLIN | EPOLLHUP;
     }
@@ -138,43 +137,32 @@ Error EpollMultiplexer::addMultiplexedSocket(
     }
 
     _currentSocketCount.dec();
-
     return ESB_OVERFLOW;
   }
 
   _lock.writeAcquire();
-
   _currentSocketList.addLast(multiplexedSocket);
   assert(true == _currentSocketList.validate());
-
   _lock.writeRelease();
 
   event.data.ptr = multiplexedSocket;
 
-  Error error = ConvertError(
-      epoll_ctl(_epollDescriptor, EPOLL_CTL_ADD, socketDescriptor, &event));
-
-  if (ESB_SUCCESS != error) {
+  if (0 !=
+      epoll_ctl(_epollDescriptor, EPOLL_CTL_ADD, socketDescriptor, &event)) {
+    Error error = GetLastError();
     if (_logger->isLoggable(Logger::Err)) {
       char buffer[100];
-
       DescribeError(error, buffer, sizeof(buffer));
-
       _logger->log(Logger::Err, __FILE__, __LINE__,
-                   "[%s:%d] cannot add socket %d to epoll descriptor %d: %s",
+                   "[%s:%d] cannot add socket %d to epoll descriptor %d: %d:%s",
                    _name, _epollDescriptor, socketDescriptor, _epollDescriptor,
-                   buffer);
+                   error, buffer);
     }
-
     _lock.writeAcquire();
-
     _currentSocketList.remove(multiplexedSocket);
     assert(true == _currentSocketList.validate());
-
     _lock.writeRelease();
-
     _currentSocketCount.dec();
-
     return error;
   }
 
@@ -234,21 +222,18 @@ Error EpollMultiplexer::updateMultiplexedSocket(
 
   event.data.ptr = multiplexedSocket;
 
-  Error error = ConvertError(
-      epoll_ctl(_epollDescriptor, EPOLL_CTL_MOD, socketDescriptor, &event));
-
-  if (ESB_SUCCESS != error) {
+  if (0 !=
+      epoll_ctl(_epollDescriptor, EPOLL_CTL_MOD, socketDescriptor, &event)) {
+    Error error = GetLastError();
     if (_logger->isLoggable(Logger::Err)) {
       char buffer[100];
-
       DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(Logger::Err, __FILE__, __LINE__,
-                   "[%s:%d] cannot update socket %d in epoll descriptor %d: %s",
-                   _name, _epollDescriptor, socketDescriptor, _epollDescriptor,
-                   buffer);
+      _logger->log(
+          Logger::Err, __FILE__, __LINE__,
+          "[%s:%d] cannot update socket %d in epoll descriptor %d: %d:%s",
+          _name, _epollDescriptor, socketDescriptor, _epollDescriptor, error,
+          buffer);
     }
-
     return error;
   }
 
@@ -278,21 +263,17 @@ Error EpollMultiplexer::removeMultiplexedSocket(
     return ESB_INVALID_ARGUMENT;
   }
 
-  Error error = ConvertError(
-      epoll_ctl(_epollDescriptor, EPOLL_CTL_DEL, socketDescriptor, 0));
-
-  if (ESB_SUCCESS != error) {
+  if (0 != epoll_ctl(_epollDescriptor, EPOLL_CTL_DEL, socketDescriptor, 0)) {
+    Error error = GetLastError();
     if (_logger->isLoggable(Logger::Err)) {
       char buffer[100];
-
       DescribeError(error, buffer, sizeof(buffer));
-
       _logger->log(
           Logger::Err, __FILE__, __LINE__,
-          "[%s:%d] cannot remove socket %d from epoll descriptor %d: %s", _name,
-          _epollDescriptor, socketDescriptor, _epollDescriptor, buffer);
+          "[%s:%d] cannot remove socket %d from epoll descriptor %d: %d:%s",
+          _name, _epollDescriptor, socketDescriptor, _epollDescriptor, error,
+          buffer);
     }
-
     return error;
   }
 
@@ -300,10 +281,8 @@ Error EpollMultiplexer::removeMultiplexedSocket(
 
   if (removeFromList) {
     _lock.writeAcquire();
-
     _currentSocketList.remove(multiplexedSocket);
     assert(true == _currentSocketList.validate());
-
     _lock.writeRelease();
 
     currentSocketCount = _currentSocketCount.dec();
@@ -321,7 +300,7 @@ Error EpollMultiplexer::removeMultiplexedSocket(
 
   if (multiplexedSocket->handleRemoveEvent(isRunning, _logger)) {
     CleanupHandler *cleanupHandler = multiplexedSocket->getCleanupHandler();
-
+    assert(cleanupHandler);
     if (cleanupHandler) {
       cleanupHandler->destroy(multiplexedSocket);
     }
@@ -353,19 +332,15 @@ Error EpollMultiplexer::initialize() {
 
   if (0 > _epollDescriptor) {
     Error error = GetLastError();
-
     if (_logger->isLoggable(Logger::Critical)) {
       char buffer[100];
-
       DescribeError(error, buffer, sizeof(buffer));
-
       _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s] cannot create epoll descriptor: %s", _name, buffer);
+                   "[%s] cannot create epoll descriptor: %d:%s", _name, error,
+                   buffer);
     }
-
     _allocator->deallocate(_events);
     _events = 0;
-
     return error;
   }
 
@@ -388,10 +363,8 @@ void EpollMultiplexer::destroy() {
 
   while (true) {
     _lock.writeAcquire();
-
     head = (MultiplexedSocket *)_currentSocketList.removeFirst();
     assert(true == _currentSocketList.validate());
-
     _lock.writeRelease();
 
     if (0 == head) {
@@ -403,7 +376,11 @@ void EpollMultiplexer::destroy() {
     removeMultiplexedSocket(&isRunning, head, false);
   }
 
+#ifndef NDEBUG
+  _lock.readAcquire();
   assert(_currentSocketCount.get() == _currentSocketList.length());
+  _lock.readRelease();
+#endif
 
   if (INVALID_SOCKET != _epollDescriptor) {
     close(_epollDescriptor);
@@ -646,12 +623,10 @@ bool EpollMultiplexer::run(Flag *isRunning) {
         if (_events[i].events & EPOLLERR) {
           error = TCPSocket::GetLastSocketError(socketDescriptor);
 
-          if (_logger->isLoggable(Logger::Notice)) {
+          if (_logger->isLoggable(Logger::Debug)) {
             char buffer[100];
-
             DescribeError(error, buffer, sizeof(buffer));
-
-            _logger->log(Logger::Notice, __FILE__, __LINE__,
+            _logger->log(Logger::Debug, __FILE__, __LINE__,
                          "[%s:%d] error on conected socket %d: %d:%s", _name,
                          _epollDescriptor, socketDescriptor, error, buffer);
           }
@@ -743,24 +718,10 @@ Error EpollMultiplexer::checkIdleSockets(Flag *isRunning) {
       if (current->handleIdleEvent(isRunning, _logger)) {
         updateMultiplexedSocket(isRunning, current);
       } else {
-        //
-        // martin fowler says code comments are 'code smells'....
-        //
-        // in theory, if the idle timeout was insanely low, we could have a race
-        // condition here.  the addMultiplexedSocket code first adds the socket
-        // to the _connectedSocketsList, then it adds to the _epollDescriptor.
-        // This code could potentially try to remove a socket in the
-        // _connectedSocketList before it has been added to the
-        // _epollDescriptor. But that would mean that the socket goes idle
-        // before the adding thread runs again.  Unlikely to impossible.
-        //
-
+        removeMultiplexedSocket(isRunning, current, false);
         _currentSocketList.remove(current);
         assert(true == _currentSocketList.validate());
-
         _currentSocketCount.dec();
-
-        removeMultiplexedSocket(isRunning, current, false);
       }
     }
 

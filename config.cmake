@@ -173,6 +173,7 @@ check_symbol_exists(epoll_wait "sys/epoll.h" HAVE_EPOLL_WAIT)
 check_include_file("sys/resource.h" HAVE_SYS_RESOURCE_H)
 check_struct_has_member("struct rlimit" rlim_max "sys/resource.h" HAVE_STRUCT_RLIMIT)
 check_symbol_exists(getrlimit "sys/resource.h" HAVE_GETRLIMIT)
+check_symbol_exists(setrlimit "sys/resource.h" HAVE_SETRLIMIT)
 
 configure_file(config.h.in base/include/ESBConfig.h @ONLY)
 configure_file(config.h.in unit-tf/include/ESTFConfig.h @ONLY)

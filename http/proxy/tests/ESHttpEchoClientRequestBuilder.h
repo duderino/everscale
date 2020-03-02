@@ -14,7 +14,6 @@ namespace ES {
 extern ESB::Error HttpEchoClientRequestBuilder(
     const char *host, int port, const char *absPath, const char *method,
     const char *contentType, HttpClientTransaction *transaction);
-
 }
 
 #endif
