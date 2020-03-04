@@ -2,7 +2,7 @@ http client server test
  - ESHttpClientTransactionFactory and server equivalent may be leaky without a shared allocator
  - replace all allocators with system allocator and compare with and without libtcmalloc
  - existence check in embedded list may be excessive even in NDEBUG.  instead just put flag in embedded list base indicating whether it is in a list or not?
- - fix asan profile
+ - make sure failover allocators are sufficiently tested or remove them
  - fix tsan profile
  - fix
 ERROR,/home/jblatt/src/duderino/everscale/base/src/ESBEpollMultiplexer.cpp,156,140137561823040 [HttpMultiplexer:8] cannot add socket 543 to epoll descriptor 8: 17:File exists

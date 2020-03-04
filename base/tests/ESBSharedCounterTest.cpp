@@ -141,7 +141,6 @@ bool SharedCounterTest::run(ESTF::ResultCollector *collector) {
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
           value, _Counter.get(), _UnprotectedCounter);
 
-
   return true;
 }
 

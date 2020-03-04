@@ -36,7 +36,7 @@ class FixedAllocator : public Allocator {
    *  @param blockSize The size in bytes of each block.
    *  @param source The allocator to use to allocate the memory pool.
    */
-  FixedAllocator(int blocks, int blockSize, Allocator *source);
+  FixedAllocator(int blocks, int blockSize, Allocator *source = 0);
 
   /** Destructor.  If initialized, the allocator will call the its destroy
    *  method.  The destroy method may or may not return the allocator's

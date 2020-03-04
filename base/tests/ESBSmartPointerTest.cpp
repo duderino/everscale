@@ -34,10 +34,6 @@
 #include <ESTFAssert.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
 #ifndef ESB_FIXED_ALLOCATOR_H
 #include <ESBFixedAllocator.h>
 #endif
@@ -108,14 +104,14 @@ ESTF_OBJECT_PTR(SmartPointerTest, ESTF::Component)
 
 class ReferenceCountSubclass : public ReferenceCount {
  public:
-  ReferenceCountSubclass() : _theNumber(12) {}
+  ReferenceCountSubclass(int number) : _number(number) {}
 
   ~ReferenceCountSubclass() {}
 
-  int getNumber() { return _theNumber; }
+  int getNumber() { return _number; }
 
  private:
-  int _theNumber;
+  int _number;
 };
 
 ESB_SMART_POINTER(ReferenceCountSubclass, ReferenceCountSubclassPointer,
@@ -125,27 +121,20 @@ SmartPointerTest::SmartPointerTest() {}
 
 SmartPointerTest::~SmartPointerTest() {}
 
+static const int ARRAY_SIZE = 1000;
+
 bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
   SmartPointerDebugger *debugger = SmartPointerDebugger::Instance();
-
   ESTF::Rand generator;
-
-  Allocator *source = SystemAllocator::GetInstance();
-
-  ReferenceCountSubclassPointer *array =
-      (ReferenceCountSubclassPointer *)source->allocate(
-          sizeof(ReferenceCountSubclassPointer) * 1000);
-
-  FixedAllocator allocator(1000, sizeof(ReferenceCountSubclass), source);
+  ReferenceCountSubclassPointer array[ARRAY_SIZE];
+  FixedAllocator allocator(ARRAY_SIZE * 10, sizeof(ReferenceCountSubclass));
 
   int initialRefs = debugger->getSize();
-
   int activeRefs = initialRefs;
-
   int randIdx = 0;
 
-  for (int i = 0; i < 10000; ++i) {
-    randIdx = generator.generateRandom(0, 999);
+  for (int i = 0; i < ARRAY_SIZE * 10; ++i) {
+    randIdx = generator.generateRandom(0, ARRAY_SIZE - 1);
 
     // Each iteration, 1/4 chance to delete, else, create.
 
@@ -153,13 +142,9 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
       if (array[randIdx].isNull()) {
         continue;
       }
-
       --activeRefs;
-
       array[randIdx].setNull();
-
       ESTF_ASSERT(collector, activeRefs == debugger->getSize());
-
       continue;
     }
 
@@ -169,25 +154,25 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
 
     // Alternate between the fixed length allocator and the system allocator
     // The smart pointer will keep track.
-
     if (1 == generator.generateRandom(1, 2)) {
-      array[randIdx] = new (&allocator) ReferenceCountSubclass();
+      array[randIdx] = new (&allocator) ReferenceCountSubclass(i);
     } else {
-      array[randIdx] = new ReferenceCountSubclass();
+      array[randIdx] = new ReferenceCountSubclass(i);
     }
 
-    ESTF_ASSERT(collector, activeRefs == debugger->getSize());
-
-    ESTF_ASSERT(collector, 12 == array[randIdx]->getNumber());
+    assert(activeRefs == debugger->getSize());
+    ESTF_ASSERT(collector, i == array[randIdx]->getNumber());
   }
 
   ESTF_ASSERT(collector, activeRefs == debugger->getSize());
 
-  for (int i = 0; i < 1000; ++i) {
-    array[i].setNull();
+  for (int i = 0; i < ARRAY_SIZE; ++i) {
+    if (!array[i].isNull()) {
+      array[i].setNull();
+      --activeRefs;
+    }
+    ESTF_ASSERT(collector, activeRefs == debugger->getSize());
   }
-
-  ESTF_ASSERT(collector, initialRefs == debugger->getSize());
 
   return true;
 }
@@ -198,7 +183,6 @@ bool SmartPointerTest::tearDown() { return true; }
 
 ESTF::ComponentPtr SmartPointerTest::clone() {
   ESTF::ComponentPtr component(new SmartPointerTest());
-
   return component;
 }
 
@@ -206,14 +190,11 @@ ESTF::ComponentPtr SmartPointerTest::clone() {
 
 int main() {
   ESB::SmartPointerDebugger::Initialize();
-
   ESB::SmartPointerTestPtr objectPtrTest = new ESB::SmartPointerTest();
-
   ESTF::CompositePtr root = new ESTF::Composite();
+  ESTF::ResultCollector collector;
 
   root->add(objectPtrTest);
-
-  ESTF::ResultCollector collector;
 
   if (false == root->setup()) {
     std::cerr << "Testing framework setup failed" << std::endl;
