@@ -141,6 +141,7 @@ bool SharedCounterTest::run(ESTF::ResultCollector *collector) {
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
           value, _Counter.get(), _UnprotectedCounter);
 
+
   return true;
 }
 
@@ -180,6 +181,8 @@ int main() {
     std::cerr << "Testing framework run failed" << std::endl;
     return 1;
   }
+
+  ESTF_ASSERT((&collector), 0 == sharedCounterTest->getCounter());
 
   if (false == root->tearDown()) {
     std::cerr << "Testing framework tear down failed" << std::endl;

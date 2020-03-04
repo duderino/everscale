@@ -9,10 +9,10 @@
 #include <ESBAllocator.h>
 #endif
 
-#ifndef HAVE_X86_ASM
-#ifndef ESB_MUTEX_H
+#ifdef HAVE_ATOMIC_H
+#include <atomic>
+#elif !defined HAVE_X86_ASM
 #include <ESBMutex.h>
-#endif
 #endif
 
 namespace ESB {
@@ -39,34 +39,48 @@ class SharedCounter {
 
   inline int get() const { return _counter; }
 
+  /**
+   * Atomically increment the counter and return the value pre-increment.
+   *
+   * @return the value before the increment.
+   */
   inline int inc() {
     unsigned int counter = 0;
 
-#ifdef HAVE_X86_ASM
+#ifdef HAVE_ATOMIC_T
+    counter = ++_counter;
+#elif defined HAVE_X86_ASM
     __asm__ __volatile__("lock; incl %0; movl %0, %1"
                          : "=m"(_counter), "=r"(counter)
                          : "m"(_counter)
                          : "memory");
 #else
     _lock.writeAcquire();
-    counter = _counter++;
+    counter = ++_counter;
     _lock.writeRelease();
 #endif
 
     return counter;
   }
 
+  /**
+   * Atomically decrement the counter and return the value pre-decrement.
+   *
+   * @return the value before the decrement.
+   */
   inline int dec() {
     unsigned int counter = 0;
 
-#ifdef HAVE_X86_ASM
+#ifdef HAVE_ATOMIC_T
+    counter = --_counter;
+#elif defined HAVE_X86_ASM
     __asm__ __volatile__("lock; decl %0; movl %0, %1"
                          : "=m"(_counter), "=r"(counter)
                          : "m"(_counter)
                          : "memory");
 #else
     _lock.writeAcquire();
-    counter = _counter--;
+    counter = --_counter;
     _lock.writeRelease();
 #endif
 
@@ -74,7 +88,9 @@ class SharedCounter {
   }
 
   inline void add(int value) {
-#ifdef HAVE_X86_ASM
+#ifdef HAVE_ATOMIC_T
+    _counter += value;
+#elif defined HAVE_X86_ASM
     __asm__ __volatile__("lock ; addl %1,%0"
                          : "=m"(_counter)
                          : "ir"(value), "m"(_counter));
@@ -86,7 +102,9 @@ class SharedCounter {
   }
 
   inline void sub(int value) {
-#ifdef HAVE_X86_ASM
+#ifdef HAVE_ATOMIC_T
+    _counter -= value;
+#elif defined HAVE_X86_ASM
     __asm__ __volatile__("lock ; subl %1,%0"
                          : "=m"(_counter)
                          : "ir"(value), "m"(_counter));
@@ -99,7 +117,9 @@ class SharedCounter {
 
   inline bool decAndTest() {
     unsigned char c;
-#ifdef HAVE_X86_ASM
+#ifdef HAVE_ATOMIC_T
+    c = --_counter;
+#elif defined HAVE_X86_ASM
     __asm__ __volatile__("lock ; decl %0; sete %1"
                          : "=m"(_counter), "=qm"(c)
                          : "m"(_counter)
@@ -123,11 +143,16 @@ class SharedCounter {
   }
 
  private:
-#ifndef HAVE_X86_ASM
+
+#ifdef HAVE_ATOMIC_T
+ std::atomic<int> _counter;
+#else
+  #ifndef HAVE_X86_ASM
   Mutex _lock;
-#endif
+  #endif
 
   volatile int _counter;
+#endif
 };
 
 }  // namespace ESB

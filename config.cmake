@@ -8,6 +8,7 @@ include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(TestBigEndian)
 include(CheckStructHasMember)
+include(CheckCXXSymbolExists)
 
 test_big_endian(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
@@ -174,6 +175,18 @@ check_include_file("sys/resource.h" HAVE_SYS_RESOURCE_H)
 check_struct_has_member("struct rlimit" rlim_max "sys/resource.h" HAVE_STRUCT_RLIMIT)
 check_symbol_exists(getrlimit "sys/resource.h" HAVE_GETRLIMIT)
 check_symbol_exists(setrlimit "sys/resource.h" HAVE_SETRLIMIT)
+
+check_include_file_cxx("atomic" HAVE_ATOMIC_H)
+check_cxx_source_compiles(
+   "#include <atomic>
+    int main () {
+       std::atomic<int> atomic1{0};
+       std::atomic<int> atomic2{0};
+       atomic1++; ++atomic2;
+       return atomic1 == atomic2;
+    }"
+    HAVE_ATOMIC_T
+)
 
 configure_file(config.h.in base/include/ESBConfig.h @ONLY)
 configure_file(config.h.in unit-tf/include/ESTFConfig.h @ONLY)
