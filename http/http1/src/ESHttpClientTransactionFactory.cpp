@@ -14,25 +14,33 @@
 #include <ESBNullLogger.h>
 #endif
 
+#ifndef ESB_WRITE_SCOPE_LOCK_H
+#include <ESBWriteScopeLock.h>
+#endif
+
 namespace ES {
 
 HttpClientTransactionFactory::HttpClientTransactionFactory()
-    : _allocator(), _embeddedList(), _mutex(), _cleanupHandler(this) {}
+    : _unprotectedAllocator(
+          ESB_WORD_ALIGN(sizeof(HttpClientTransaction)) * 1000,
+          ESB::SystemAllocator::GetInstance()),
+      _allocator(&_unprotectedAllocator),
+      _embeddedList(),
+      _mutex(),
+      _cleanupHandler(this) {}
 
-ESB::Error HttpClientTransactionFactory::initialize() {
-  return _allocator.initialize(
-      ESB_WORD_ALIGN(sizeof(HttpClientTransaction)) * 1000,
-      ESB::SystemAllocator::GetInstance());
-}
+ESB::Error HttpClientTransactionFactory::initialize() { return ESB_SUCCESS; }
 
 void HttpClientTransactionFactory::destroy() {
-  HttpClientTransaction *transaction =
-      (HttpClientTransaction *)_embeddedList.removeFirst();
+  {
+    ESB::WriteScopeLock lock(_mutex);
+    HttpClientTransaction *transaction =
+        (HttpClientTransaction *)_embeddedList.removeFirst();
 
-  while (transaction) {
-    transaction->~HttpClientTransaction();
-
-    transaction = (HttpClientTransaction *)_embeddedList.removeFirst();
+    while (transaction) {
+      transaction->~HttpClientTransaction();
+      transaction = (HttpClientTransaction *)_embeddedList.removeFirst();
+    }
   }
 
   _allocator.destroy();
@@ -45,9 +53,7 @@ HttpClientTransaction *HttpClientTransactionFactory::create(
   HttpClientTransaction *transaction = 0;
 
   _mutex.writeAcquire();
-
   transaction = (HttpClientTransaction *)_embeddedList.removeLast();
-
   _mutex.writeRelease();
 
   if (0 == transaction) {
@@ -72,9 +78,7 @@ void HttpClientTransactionFactory::release(HttpClientTransaction *transaction) {
   transaction->reset();
 
   _mutex.writeAcquire();
-
   _embeddedList.addLast(transaction);
-
   _mutex.writeRelease();
 }
 

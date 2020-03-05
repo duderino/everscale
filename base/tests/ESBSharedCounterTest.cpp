@@ -95,6 +95,16 @@ class SharedCounterTest : public ESTF::Component {
 
   inline int getUnprotectedCounter() { return _UnprotectedCounter; }
 
+  __attribute__((no_sanitize("thread"))) inline static void
+  AddUnprotectedCounter(int value) {
+    _UnprotectedCounter += value;
+  }
+
+  __attribute__((no_sanitize("thread"))) inline static void
+  SubtractUnprotectedCounter(int value) {
+    _UnprotectedCounter -= value;
+  }
+
  private:
   static SharedCounter _Counter;
   static int _UnprotectedCounter;
@@ -114,15 +124,10 @@ bool SharedCounterTest::run(ESTF::ResultCollector *collector) {
 
   for (int i = 0; i < 100000; ++i) {
     _Counter.add(1);
-
-    ++_UnprotectedCounter;
+    AddUnprotectedCounter(1);
 
     value = _Counter.inc();
-
-    ++_UnprotectedCounter;
-
-    // fprintf(stderr, "Value: %d, shared counter: %d, unprotected counter
-    // %d\n", value, _Counter.get(), _UnprotectedCounter);
+    AddUnprotectedCounter(1);
   }
 
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
@@ -130,12 +135,10 @@ bool SharedCounterTest::run(ESTF::ResultCollector *collector) {
 
   for (int i = 0; i < 100000; ++i) {
     _Counter.sub(1);
-
-    --_UnprotectedCounter;
+    SubtractUnprotectedCounter(1);
 
     value = _Counter.dec();
-
-    --_UnprotectedCounter;
+    SubtractUnprotectedCounter(1);
   }
 
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
@@ -150,7 +153,6 @@ bool SharedCounterTest::tearDown() { return true; }
 
 ESTF::ComponentPtr SharedCounterTest::clone() {
   ESTF::ComponentPtr component(this);
-
   return component;
 }
 
@@ -158,18 +160,14 @@ ESTF::ComponentPtr SharedCounterTest::clone() {
 
 int main() {
   ESB::SharedCounterTestPtr sharedCounterTest = new ESB::SharedCounterTest();
-
   ESTF::ConcurrencyDecoratorPtr sharedCounterDecorator =
       new ESTF::ConcurrencyDecorator(sharedCounterTest, 100);
-
   ESTF::CompositePtr testSuite = new ESTF::Composite();
-
-  testSuite->add(sharedCounterDecorator);
-
   ESTF::RepetitionDecoratorPtr root =
       new ESTF::RepetitionDecorator(testSuite, 1);
-
   ESTF::ResultCollector collector;
+
+  testSuite->add(sharedCounterDecorator);
 
   if (false == root->setup()) {
     std::cerr << "Testing framework setup failed" << std::endl;

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-set(CMAKE_BUILD_TYPE ASAN)
+set(CMAKE_BUILD_TYPE TSAN)
 
 set(CMAKE_C_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer" CACHE STRING "default C flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti" CACHE STRING "default C++ flags" FORCE)

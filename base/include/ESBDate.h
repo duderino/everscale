@@ -147,7 +147,7 @@ class Date {
    *    @param date The date to add to this one.
    *    @return The sum of the date param and this object.
    */
-  inline Date &operator+(const Date &date) const {
+  inline Date operator+(const Date &date) const {
     Date newDate(*this);
 
     return newDate += date;
@@ -158,7 +158,7 @@ class Date {
    *  @param seconds The seconds value to add to this date.
    *  @return The sum of the seconds param and this object.
    */
-  inline Date &operator+(UInt32 seconds) const {
+  inline Date operator+(UInt32 seconds) const {
     Date newDate(*this);
 
     return newDate += seconds;
@@ -169,7 +169,7 @@ class Date {
    *    @param date The date to subtract from this one.
    *    @return The difference of the date param and this object.
    */
-  inline Date &operator-(const Date &date) const {
+  inline Date operator-(const Date &date) const {
     Date newDate(*this);
 
     return newDate -= date;
@@ -180,7 +180,7 @@ class Date {
    *  @param seconds The seconds value to add to this date.
    *  @return The difference of the seconds param and this object.
    */
-  inline Date &operator-(UInt32 seconds) const {
+  inline Date operator-(UInt32 seconds) const {
     Date newDate(*this);
 
     return newDate -= seconds;
