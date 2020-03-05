@@ -8,6 +8,7 @@ include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(TestBigEndian)
 include(CheckStructHasMember)
+include(CheckCXXSymbolExists)
 
 test_big_endian(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
@@ -30,7 +31,16 @@ math(EXPR SIZEOF_LONG "${SIZEOF_LONG_BYTES} * 8")
 check_type_size("long long" SIZEOF_LONG_LONG_BYTES)
 math(EXPR SIZEOF_LONG_LONG "${SIZEOF_LONG_LONG_BYTES} * 8")
 
-set(HAVE_X86_ASM 1) # TODO enable this only if a test program works
+check_cxx_source_compiles("
+int main () {
+  int counter = 1;
+  unsigned char c = 0;
+  __asm__ __volatile__(\" lock; decl %0; sete %1\"
+                       : \"=m\"(counter), \"=qm\"(c)
+                       : \"m\"(counter)
+                       : \"memory\");
+  return 0 == counter && 1 == c;
+}" HAVE_X86_ASM)
 
 check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_type_size("off_t" HAVE_OFF_T)
@@ -174,6 +184,15 @@ check_include_file("sys/resource.h" HAVE_SYS_RESOURCE_H)
 check_struct_has_member("struct rlimit" rlim_max "sys/resource.h" HAVE_STRUCT_RLIMIT)
 check_symbol_exists(getrlimit "sys/resource.h" HAVE_GETRLIMIT)
 check_symbol_exists(setrlimit "sys/resource.h" HAVE_SETRLIMIT)
+
+check_include_file_cxx("atomic" HAVE_ATOMIC_H)
+check_cxx_source_compiles("#include <atomic>
+int main () {
+  std::atomic<int> atomic1{0};
+  std::atomic<int> atomic2{0};
+  atomic1++; ++atomic2;
+  return atomic1 == atomic2;
+}" HAVE_ATOMIC_T)
 
 configure_file(config.h.in base/include/ESBConfig.h @ONLY)
 configure_file(config.h.in unit-tf/include/ESTFConfig.h @ONLY)

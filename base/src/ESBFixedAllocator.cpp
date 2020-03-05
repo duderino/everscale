@@ -2,12 +2,16 @@
 #include <ESBFixedAllocator.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 namespace ESB {
 
 FixedAllocator::FixedAllocator(int blocks, int blockSize, Allocator *source)
     : _availList(0),
       _pool(0),
-      _sourceAllocator(source),
+      _sourceAllocator(source ? source : SystemAllocator::GetInstance()),
       _failoverAllocator(0),
       _blockSize(blockSize),
       _blocks(blocks) {}

@@ -10,7 +10,9 @@
 #endif
 
 #ifndef HAVE_X86_ASM
-#ifndef ESB_MUTEX_H
+#ifdef HAVE_ATOMIC_H
+#include <atomic>
+#else
 #include <ESBMutex.h>
 #endif
 #endif
@@ -39,6 +41,11 @@ class SharedCounter {
 
   inline int get() const { return _counter; }
 
+  /**
+   * Atomically increment the counter and return the value pre-increment.
+   *
+   * @return the value before the increment.
+   */
   inline int inc() {
     unsigned int counter = 0;
 
@@ -47,15 +54,22 @@ class SharedCounter {
                          : "=m"(_counter), "=r"(counter)
                          : "m"(_counter)
                          : "memory");
+#elif defined HAVE_ATOMIC_T
+    counter = ++_counter;
 #else
     _lock.writeAcquire();
-    counter = _counter++;
+    counter = ++_counter;
     _lock.writeRelease();
 #endif
 
     return counter;
   }
 
+  /**
+   * Atomically decrement the counter and return the value pre-decrement.
+   *
+   * @return the value before the decrement.
+   */
   inline int dec() {
     unsigned int counter = 0;
 
@@ -64,9 +78,11 @@ class SharedCounter {
                          : "=m"(_counter), "=r"(counter)
                          : "m"(_counter)
                          : "memory");
+#elif defined HAVE_ATOMIC_T
+    counter = --_counter;
 #else
     _lock.writeAcquire();
-    counter = _counter--;
+    counter = --_counter;
     _lock.writeRelease();
 #endif
 
@@ -78,6 +94,8 @@ class SharedCounter {
     __asm__ __volatile__("lock ; addl %1,%0"
                          : "=m"(_counter)
                          : "ir"(value), "m"(_counter));
+#elif defined HAVE_ATOMIC_T
+    _counter += value;
 #else
     _lock.writeAcquire();
     _counter += value;
@@ -90,6 +108,8 @@ class SharedCounter {
     __asm__ __volatile__("lock ; subl %1,%0"
                          : "=m"(_counter)
                          : "ir"(value), "m"(_counter));
+#elif defined HAVE_ATOMIC_T
+    _counter -= value;
 #else
     _lock.writeAcquire();
     _counter -= value;
@@ -104,9 +124,11 @@ class SharedCounter {
                          : "=m"(_counter), "=qm"(c)
                          : "m"(_counter)
                          : "memory");
+#elif defined HAVE_ATOMIC_T
+    c = _counter--;
 #else
     _lock.writeAcquire();
-    c = --_counter;
+    c = _counter--;
     _lock.writeRelease();
 #endif
     return c != 0;
@@ -123,11 +145,14 @@ class SharedCounter {
   }
 
  private:
-#ifndef HAVE_X86_ASM
-  Mutex _lock;
-#endif
-
+#ifdef HAVE_X86_ASM
   volatile int _counter;
+#elif defined HAVE_ATOMIC_T
+  std::atomic<int> _counter;
+#else
+  Mutex _lock;
+  volatile int _counter;
+#endif
 };
 
 }  // namespace ESB

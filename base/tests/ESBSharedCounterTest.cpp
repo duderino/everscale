@@ -179,6 +179,8 @@ int main() {
     return 1;
   }
 
+  ESTF_ASSERT((&collector), 0 == sharedCounterTest->getCounter());
+
   if (false == root->tearDown()) {
     std::cerr << "Testing framework tear down failed" << std::endl;
     return 1;
