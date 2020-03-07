@@ -95,12 +95,22 @@ class SharedIntTest : public ESTF::Component {
 
   inline int getUnprotectedInt() { return _UnprotectedInt; }
 
-  __attribute__((no_sanitize("thread"))) inline static void AddUnprotectedInt(
-      int value) {
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+  __attribute__((no_sanitize("thread")))
+#endif
+#endif
+  inline static void
+  AddUnprotectedInt(int value) {
     _UnprotectedInt += value;
   }
 
-  __attribute__((no_sanitize("thread"))) inline static void
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+  __attribute__((no_sanitize("thread")))
+#endif
+#endif
+  inline static void
   SubtractUnprotectedInt(int value) {
     _UnprotectedInt -= value;
   }

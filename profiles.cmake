@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.11)
 
-set(CMAKE_BUILD_TYPE ASAN)
+set(CMAKE_BUILD_TYPE RELEASE)
+
+set(VALID_BUILD_TYPES DEFAULT ASAN TSAN DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
 
 set(CMAKE_C_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer" CACHE STRING "default C flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti" CACHE STRING "default C++ flags" FORCE)
@@ -26,7 +28,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-om
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG" CACHE STRING "minrelease C flags" FORCE)
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -fno-exceptions -fno-rtti -DNDEBUG" CACHE STRING "minrelease C++ flags" FORCE)
 
-if(NOT CMAKE_BUILD_TYPE)
+if(NOT CMAKE_BUILD_TYPE IN_LIST VALID_BUILD_TYPES)
     message(FATAL_ERROR "Pick a build type: cmake -DCMAKE_BUILD_TYPE=(DEFAULT|ASAN|TSAN|DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL)")
 else()
     message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")

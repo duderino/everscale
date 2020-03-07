@@ -1,98 +1,76 @@
-http client server test
- - ESHttpClientTransactionFactory and server equivalent may be leaky without a shared allocator
- - replace all allocators with system allocator and compare with and without libtcmalloc
- - existence check in embedded list may be excessive even in NDEBUG.  instead just put flag in embedded list base indicating whether it is in a list or not?
- - make sure failover allocators are sufficiently tested or remove them
- - fix tsan profile
-    - ESB::Flag
-    - ES::HttpStack.cpp:253 _state = STOPPED
-    - create atomic ESB::Flag with support for bitwise operations
- - fix
-ERROR,/home/jblatt/src/duderino/everscale/base/src/ESBEpollMultiplexer.cpp,156,140137561823040 [HttpMultiplexer:8] cannot add socket 543 to epoll descriptor 8: 17:File exists
-CRITICAL,/home/jblatt/src/duderino/everscale/http/proxy/src/ESHttpStack.cpp,422,140137505912576 [stack] Cannot add client socket to multiplexer: File exists
-ERROR,/home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoClientHandler.cpp,291,140137505912576 [handler] Cannot execute transaction: File exists
- - fix
-WARNING,/home/jblatt/src/duderino/everscale/http/http1/src/ESHttpClientSocket.cpp,821,140201625683712 [socket:69] error formatting response header: Invalid state
-WARNING,/home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoClientHandler.cpp,181,140201625683712 [handler] Transaction failed at send request headers state
-WARNING,/home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoServerHandler.cpp,263,140201671849728 [handler] Transaction failed at request header parse state
-   more info:
-WARNING,/home/jblatt/src/duderino/everscale/http/http1/src/ESHttpClientSocket.cpp,817,140203728516864 [socket:296] error formatting response header: Invalid state
-WARNING,/home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoClientHandler.cpp,181,140203728516864 [handler] Transaction failed at send request headers state
-WARNING,/home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoServerHandler.cpp,263,140203766314752 [handler] Transaction failed at request header parse state
-WARNING,/home/jblatt/src/duderino/everscale/http/http1/src/ESHttpClientSocket.cpp,644,140203728516864 [socket:359] cannot parse headers: -108
-WARNING,/home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoClientHandler.cpp,200,140203728516864 [handler] Transaction failed at receive response headers state
-http-client-server-test: /home/jblatt/src/duderino/everscale/http/proxy/tests/ESHttpEchoClientHandler.cpp:41: virtual int ES::HttpEchoClientHandler::reserveRequestChunk(ES::HttpTransaction *): Assertion `context' failed.
-Aborted (core dumped)
- - fix EpollMultiplexer::checkIdleSockets race condition
- - flakey http1 parser test
- - bind to ephemeral port in stack unit tests
- - why was std::bad_alloc thrown by http client/server test?  verify -fno-exceptions.  check leaks
- - create proxy test
-multiplexer dispatcher
- - helpful or harmful?  better to allow unbalance and just let each multipler add whatever it accepts?
- - dispatch to multiplexer with silo affinity/be-fe connection alignment?
-allocators
- - add ctrs for discard allocator to track extra large chunk allocations
-cmakeify
- - finish todos in config.cmake - a few adhoc test programs
- - doxygen
- - code coverage
 perf counters
  - log to logger not FILE *
  - revisit efficency of historical perf counter.  turn into a composite with an interval?  rename time series?
  - simple perf counter and averaging counter should track variance - online/incremental variance algo
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
+http stack test
+ - create proxy test:  proxy callbacks + route API
+ - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
+ - make sure failover allocators are sufficiently tested or remove them
+ - flakey http1 parser test
+ - bind to ephemeral port in stack unit tests
+ - why was std::bad_alloc thrown by http client/server test?  verify -fno-exceptions.  check leaks
+ - pin threads / fe-be connection alignment
+proxy main
+ - start as root, bind to ports, drop privs
+ - load shedding
+ - readiness and liveness check support - e2e vs local options
+ - plugin api
+build types
+ - existence check in embedded list may be excessive even in NDEBUG.  instead just put flag in embedded list base indicating whether it is in a list or not?
+multiplexer dispatcher
+ - helpful or harmful?  better to allow unbalance and just let each multipler add whatever it accepts?
+ - dispatch to multiplexer with silo affinity/be-fe connection alignment?
+allocators
+ - add ctrs for discard allocator to track extra large chunk allocations
+ - add counters to track stranded memory in discard allocators
+ - replace all allocators with system allocator and compare with and without libtcmalloc
+containers
+ - fix multimap or replace with stl
+ - lockless datastructures - list.  hashmap.
+sockets
+ - ipv6 support
+ - tls support via boringssl
+ - ktls sockmap and splice
+cmake
+ - finish todos in config.cmake - a few adhoc test programs
+ - doxygen
+ - code coverage
+ - addr space randomization
+docs
+ - fix license - 3 levels of derivation
 async dns client
  - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
- - move to ESB.  add unit test
  - common caching code.  intial async impl can use threadpool and gethostbyname
 tcp stuff
  - make sure full duplex
  - track bps
- - move tcp echo client/server into ESB and turn into a unit test over loopback/same proc
+ - turn into a unit test over loopback/same proc
 http stuff
- - turn top-level client and server into a unit test over loopback (client->server and client->proxy->server)
  - idle timeout
  - max requests per connection option (1 disables keepalives)
  - max header size option
  - max body size option
  - slow loris defense
+ - https support
+ - h2 support
+ - perfect forward secrecy
+ - sni-based cert serving
+ - tls staples
+URL 
+ - canonicalization / encode and decode per chromium RFC
+ - username and pass
 logging
- - atomic newlines in log statements
- - pretty print thread ids
- - filenames, not full paths
+ - No eval logging macros.  
+   - macros for logging error descriptions with 50 byte stack buffers
+   - Take care of non-atomic newline issue
+   - pretty print thread ids
+   - filenames, not full paths
  - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
 bootstrap config
  - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
  - xds agent could just regenerate this, serializing updates and using atomic moves
  - could potentially break into multiple files for scalability, but then need cross-file atomic update mechanism.
- - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid
-   filling disk
-fix license - 3 levels of derivation
-fix multimap or replace with stl
-lockless datastructures - list.  hashmap.
-incorporate and prefer atomic.h.
-  - https://www.bogotobogo.com/cplusplus/files/CplusplusConcurrencyInAction_PracticalMultithreading.pdf
-  - http://www.open-std.org/JTC1/SC22/WG21/docs/papers/2007/n2145.html
-  - http://www.cplusplus.com/reference/atomic/atomic_flag_test_and_set/
-ipv6 support
-start as root, bind to ports, drop privs
-use setrlimit to raise fd limits, etc
-addr space randomization
-no eval logging macros
-tls support
+ - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid filling disk
 xds support
-readiness and liveness check support - e2e vs local options
-URL 
- - canonicalization / encode and decode per chromium RFC
- - username and pass
-load shedding
-pin threads / fe-be connection alignment
-h2 support
-plugin api
-elementry waf impl of plugin api
-perfect forward secrecy
-sni
-boringssl
-tls staples
-ktls sockmap and splice
+ - protobuf stubs

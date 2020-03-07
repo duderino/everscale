@@ -140,7 +140,6 @@ ListTest::ListTest()
 ListTest::~ListTest() {}
 
 bool ListTest::run(ESTF::ResultCollector *collector) {
-  bool stlResult = false;
   ListIterator iterator;
   STLListIterator stlIterator;
 
@@ -228,9 +227,11 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
                       << std::endl;
           }
 
-          stlResult = findSTLIterator(_records[j]._value, &stlIterator);
-
+          bool stlResult = findSTLIterator(_records[j]._value, &stlIterator);
           assert(stlResult);
+          if (!stlResult) {
+            continue;
+          }
 
           _stlList.erase(stlIterator);
 
@@ -260,9 +261,11 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
          value = (char *)_list.getFront()) {
       ESTF_ASSERT(collector, ESB_SUCCESS == _list.popFront());
 
-      stlResult = findSTLIterator(value, &stlIterator);
-
+      bool stlResult = findSTLIterator(value, &stlIterator);
       assert(stlResult);
+      if (!stlResult) {
+        continue;
+      }
 
       _stlList.erase(stlIterator);
 
