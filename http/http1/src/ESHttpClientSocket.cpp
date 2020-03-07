@@ -107,7 +107,7 @@ bool HttpClientSocket::isIdle() {
   return false;
 }
 
-bool HttpClientSocket::handleAcceptEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -120,7 +120,7 @@ bool HttpClientSocket::handleAcceptEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer
 }
 
-bool HttpClientSocket::handleConnectEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleConnectEvent(ESB::SharedInt *isRunning,
                                           ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(_socket.isConnected());
@@ -137,7 +137,7 @@ bool HttpClientSocket::handleConnectEvent(ESB::Flag *isRunning,
   return handleWritableEvent(isRunning, logger);
 }
 
-bool HttpClientSocket::handleReadableEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
                                            ESB::Logger *logger) {
   // returning true will keep the socket in the multiplexer
   // returning false will remove the socket from the multiplexer and ultimately
@@ -283,7 +283,7 @@ bool HttpClientSocket::handleReadableEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleWritableEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
                                            ESB::Logger *logger) {
   assert(wantWrite());
   assert(_socket.isConnected());
@@ -433,7 +433,7 @@ bool HttpClientSocket::handleWritableEvent(ESB::Flag *isRunning,
 }
 
 bool HttpClientSocket::handleErrorEvent(ESB::Error errorCode,
-                                        ESB::Flag *isRunning,
+                                        ESB::SharedInt *isRunning,
                                         ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -450,7 +450,7 @@ bool HttpClientSocket::handleErrorEvent(ESB::Error errorCode,
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
                                             ESB::Logger *logger) {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
@@ -468,7 +468,7 @@ bool HttpClientSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleIdleEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleIdleEvent(ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -483,7 +483,7 @@ bool HttpClientSocket::handleIdleEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleRemoveEvent(ESB::Flag *isRunning,
+bool HttpClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -608,11 +608,11 @@ ESB::CleanupHandler *HttpClientSocket::getCleanupHandler() {
 
 const char *HttpClientSocket::getName() const { return "HttpClientSocket"; }
 
-bool HttpClientSocket::run(ESB::Flag *isRunning) {
+bool HttpClientSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log warning
 }
 
-ESB::Error HttpClientSocket::parseResponseHeaders(ESB::Flag *isRunning,
+ESB::Error HttpClientSocket::parseResponseHeaders(ESB::SharedInt *isRunning,
                                                   ESB::Logger *logger) {
   ESB::Error error = _transaction->getParser()->parseHeaders(
       _transaction->getIOBuffer(), _transaction->getResponse());
@@ -684,7 +684,7 @@ ESB::Error HttpClientSocket::parseResponseHeaders(ESB::Flag *isRunning,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpClientSocket::parseResponseBody(ESB::Flag *isRunning,
+ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning,
                                                ESB::Logger *logger) {
   int startingPosition = 0;
   int chunkSize = 0;
@@ -795,7 +795,7 @@ ESB::Error HttpClientSocket::parseResponseBody(ESB::Flag *isRunning,
   return ESB_SHUTDOWN;
 }
 
-ESB::Error HttpClientSocket::formatRequestHeaders(ESB::Flag *isRunning,
+ESB::Error HttpClientSocket::formatRequestHeaders(ESB::SharedInt *isRunning,
                                                   ESB::Logger *logger) {
   ESB::Error error = _transaction->getFormatter()->formatHeaders(
       _transaction->getIOBuffer(), _transaction->getRequest());
@@ -839,7 +839,7 @@ ESB::Error HttpClientSocket::formatRequestHeaders(ESB::Flag *isRunning,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpClientSocket::formatRequestBody(ESB::Flag *isRunning,
+ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
                                                ESB::Logger *logger) {
   ESB::Error error;
   int availableSize = 0;
@@ -973,7 +973,7 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::Flag *isRunning,
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-ESB::Error HttpClientSocket::flushBuffer(ESB::Flag *isRunning,
+ESB::Error HttpClientSocket::flushBuffer(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,

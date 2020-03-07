@@ -17,8 +17,8 @@
 #include <ESBSocket.h>
 #endif
 
-#ifndef ESB_FLAG_H
-#include <ESBFlag.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedCounter.h>
 #endif
 
 #ifndef ESB_LOGGER_H
@@ -89,7 +89,7 @@ class MultiplexedSocket : public Command {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleAcceptEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** Client connected socket has connected to the peer endpoint.
    *
@@ -101,7 +101,7 @@ class MultiplexedSocket : public Command {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleConnectEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** Data is ready to be read.
    *
@@ -113,7 +113,7 @@ class MultiplexedSocket : public Command {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleReadableEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** There is free space in the outgoing socket buffer.
    *
@@ -125,7 +125,7 @@ class MultiplexedSocket : public Command {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleWritableEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -140,7 +140,7 @@ class MultiplexedSocket : public Command {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(Error errorCode, Flag *isRunning,
+  virtual bool handleErrorEvent(Error errorCode, SharedInt *isRunning,
                                 Logger *logger) = 0;
 
   /** The socket's connection was closed.
@@ -153,7 +153,7 @@ class MultiplexedSocket : public Command {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleEndOfFileEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** The socket's connection has been idle for too long
    *
@@ -165,7 +165,7 @@ class MultiplexedSocket : public Command {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleIdleEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** The socket has been removed from the multiplexer
    *
@@ -174,7 +174,7 @@ class MultiplexedSocket : public Command {
    * @param logger Log messages should be sent to this object.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(Flag *isRunning, Logger *logger) = 0;
+  virtual bool handleRemoveEvent(SharedInt *isRunning, Logger *logger) = 0;
 
   /** Get the socket's socket descriptor.
    *

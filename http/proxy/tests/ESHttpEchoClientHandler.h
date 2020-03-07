@@ -5,8 +5,8 @@
 #include <ESBLogger.h>
 #endif
 
-#ifndef ESB_SHARED_COUNTER_H
-#include <ESBSharedCounter.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
 #endif
 
 #ifndef ESB_PERFORMANCE_COUNTER_H
@@ -116,7 +116,7 @@ class HttpEchoClientHandler : public HttpClientHandler {
   int _totalTransactions;
   HttpConnectionPool *_pool;
   ESB::Logger *_logger;
-  ESB::SharedCounter _completedTransactions;
+  ESB::SharedInt _completedTransactions;
 };
 
 }  // namespace ES

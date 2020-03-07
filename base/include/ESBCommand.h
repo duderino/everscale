@@ -13,8 +13,8 @@
 #include <ESBEmbeddedListElement.h>
 #endif
 
-#ifndef ESB_FLAG_H
-#include <ESBFlag.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
 #endif
 
 namespace ESB {
@@ -50,7 +50,7 @@ class Command : public EmbeddedListElement {
    * thread isRunning, false when the controlling thread wants to shutdown.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool run(Flag *isRunning) = 0;
+  virtual bool run(SharedInt *isRunning) = 0;
 
   /** Placement new.
    *

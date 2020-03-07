@@ -5,8 +5,8 @@
 #include <ESBConfig.h>
 #endif
 
-#ifndef ESB_SHARED_COUNTER_H
-#include <ESBSharedCounter.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
@@ -98,7 +98,7 @@ class ReferenceCount {
   ReferenceCount(const ReferenceCount &);
   ReferenceCount &operator=(const ReferenceCount &);
 
-  SharedCounter _refCount;
+  SharedInt _refCount;
   Allocator *_allocator;
 };
 

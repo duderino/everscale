@@ -178,7 +178,7 @@ Error EpollMultiplexer::addMultiplexedSocket(
 }
 
 Error EpollMultiplexer::updateMultiplexedSocket(
-    Flag *isRunning, MultiplexedSocket *multiplexedSocket) {
+    SharedInt *isRunning, MultiplexedSocket *multiplexedSocket) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
   }
@@ -247,7 +247,7 @@ Error EpollMultiplexer::updateMultiplexedSocket(
 }
 
 Error EpollMultiplexer::removeMultiplexedSocket(
-    Flag *isRunning, MultiplexedSocket *multiplexedSocket,
+    SharedInt *isRunning, MultiplexedSocket *multiplexedSocket,
     bool removeFromList) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
@@ -359,7 +359,7 @@ void EpollMultiplexer::destroy() {
   }
 
   MultiplexedSocket *head = 0;
-  Flag isRunning(false);
+  SharedInt isRunning(false);
 
   while (true) {
     _lock.writeAcquire();
@@ -397,7 +397,7 @@ void EpollMultiplexer::destroy() {
   }
 }
 
-bool EpollMultiplexer::run(Flag *isRunning) {
+bool EpollMultiplexer::run(SharedInt *isRunning) {
   if (INVALID_SOCKET == _epollDescriptor) {
     return false;
   }
@@ -689,7 +689,7 @@ int EpollMultiplexer::getCurrentSockets() { return _currentSocketCount.get(); }
 
 int EpollMultiplexer::getMaximumSockets() { return _maxSockets; }
 
-Error EpollMultiplexer::checkIdleSockets(Flag *isRunning) {
+Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
   if (_lastIdleCheckSec + IDLE_CHECK_SEC < time(0)) {
     return ESB_SUCCESS;
   }

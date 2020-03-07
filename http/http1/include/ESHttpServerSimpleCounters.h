@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
 #define ES_HTTP_SERVER_SIMPLE_COUNTERS_H
 
-#ifndef ESB_SHARED_COUNTER_H
-#include <ESBSharedCounter.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
 #endif
 
 #ifndef ESB_AVERAGING_COUNTER_H
@@ -79,9 +79,9 @@ class HttpServerSimpleCounters : public HttpServerCounters {
 
   virtual const ESB::PerformanceCounter *getResponseBodyTimeouts() const;
 
-  virtual ESB::SharedCounter *getTotalConnections();
+  virtual ESB::SharedInt *getTotalConnections();
 
-  virtual const ESB::SharedCounter *getTotalConnections() const;
+  virtual const ESB::SharedInt *getTotalConnections() const;
 
   virtual ESB::AveragingCounter *getAverageTransactionsPerConnection();
 
@@ -108,7 +108,7 @@ class HttpServerSimpleCounters : public HttpServerCounters {
   ESB::SimplePerformanceCounter _responseBodyFailures;
   ESB::SimplePerformanceCounter _responseBodyTimeouts;
 
-  ESB::SharedCounter _totalConnections;
+  ESB::SharedInt _totalConnections;
   ESB::AveragingCounter _averageTransactionsPerConnection;
 };
 

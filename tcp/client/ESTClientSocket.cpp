@@ -72,7 +72,7 @@ bool ClientSocket::isIdle()  // todo pass in current time to reduce number of
   return false;  // todo - implement
 }
 
-bool ClientSocket::handleAcceptEvent(ESB::Flag *isRunning,
+bool ClientSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
                                      ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Warning)) {
     _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
@@ -83,7 +83,7 @@ bool ClientSocket::handleAcceptEvent(ESB::Flag *isRunning,
   return true;  // todo - keep in multiplexer
 }
 
-bool ClientSocket::handleConnectEvent(ESB::Flag *isRunning,
+bool ClientSocket::handleConnectEvent(ESB::SharedInt *isRunning,
                                       ESB::Logger *logger) {
   if (0 == _buffer && false == setupBuffer()) {
     return false;
@@ -101,7 +101,7 @@ bool ClientSocket::handleConnectEvent(ESB::Flag *isRunning,
   return handleWritableEvent(isRunning, logger);
 }
 
-bool ClientSocket::handleReadableEvent(ESB::Flag *isRunning,
+bool ClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   if (0 == _buffer && false == setupBuffer()) {
     return false;
@@ -182,7 +182,7 @@ bool ClientSocket::handleReadableEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer - also yields to other sockets
 }
 
-bool ClientSocket::handleWritableEvent(ESB::Flag *isRunning,
+bool ClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   if (0 == _buffer && false == setupBuffer()) {
     return false;
@@ -248,7 +248,8 @@ bool ClientSocket::handleWritableEvent(ESB::Flag *isRunning,
   return handleReadableEvent(isRunning, logger);
 }
 
-bool ClientSocket::handleErrorEvent(ESB::Error errorCode, ESB::Flag *isRunning,
+bool ClientSocket::handleErrorEvent(ESB::Error errorCode,
+                                    ESB::SharedInt *isRunning,
                                     ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Warning)) {
     char buffer[100];
@@ -265,7 +266,7 @@ bool ClientSocket::handleErrorEvent(ESB::Error errorCode, ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool ClientSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
+bool ClientSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
                                         ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char dottedAddress[16];
@@ -280,7 +281,8 @@ bool ClientSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool ClientSocket::handleIdleEvent(ESB::Flag *isRunning, ESB::Logger *logger) {
+bool ClientSocket::handleIdleEvent(ESB::SharedInt *isRunning,
+                                   ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char dottedAddress[16];
 
@@ -294,7 +296,7 @@ bool ClientSocket::handleIdleEvent(ESB::Flag *isRunning, ESB::Logger *logger) {
   return false;  // remove from multiplexer
 }
 
-bool ClientSocket::handleRemoveEvent(ESB::Flag *isRunning,
+bool ClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
                                      ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char dottedAddress[16];
@@ -340,7 +342,7 @@ ESB::CleanupHandler *ClientSocket::getCleanupHandler() {
 
 const char *ClientSocket::getName() const { return "ClientSocket"; }
 
-bool ClientSocket::run(ESB::Flag *isRunning) {
+bool ClientSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log warning
 }
 

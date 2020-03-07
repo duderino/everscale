@@ -46,7 +46,7 @@ bool ListeningSocket::wantWrite() { return false; }
 
 bool ListeningSocket::isIdle() { return false; }
 
-bool ListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
+bool ListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
                                         ESB::Logger *logger) {
   assert(_socket);
   assert(_dispatcher);
@@ -149,7 +149,7 @@ bool ListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool ListeningSocket::handleConnectEvent(ESB::Flag *isRunning,
+bool ListeningSocket::handleConnectEvent(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -160,7 +160,7 @@ bool ListeningSocket::handleConnectEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool ListeningSocket::handleReadableEvent(ESB::Flag *isRunning,
+bool ListeningSocket::handleReadableEvent(ESB::SharedInt *isRunning,
                                           ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -171,7 +171,7 @@ bool ListeningSocket::handleReadableEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool ListeningSocket::handleWritableEvent(ESB::Flag *isRunning,
+bool ListeningSocket::handleWritableEvent(ESB::SharedInt *isRunning,
                                           ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -183,7 +183,7 @@ bool ListeningSocket::handleWritableEvent(ESB::Flag *isRunning,
 }
 
 bool ListeningSocket::handleErrorEvent(ESB::Error errorCode,
-                                       ESB::Flag *isRunning,
+                                       ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     char buffer[100];
@@ -198,7 +198,7 @@ bool ListeningSocket::handleErrorEvent(ESB::Error errorCode,
   return true;
 }
 
-bool ListeningSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
+bool ListeningSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
                                            ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -209,7 +209,7 @@ bool ListeningSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool ListeningSocket::handleIdleEvent(ESB::Flag *isRunning,
+bool ListeningSocket::handleIdleEvent(ESB::SharedInt *isRunning,
                                       ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -220,7 +220,8 @@ bool ListeningSocket::handleIdleEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool ListeningSocket::handleRemoveEvent(ESB::Flag *flag, ESB::Logger *logger) {
+bool ListeningSocket::handleRemoveEvent(ESB::SharedInt *flag,
+                                        ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Notice)) {
     _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
                  "[listener:%d] Removed from multiplexer",
@@ -240,7 +241,7 @@ ESB::CleanupHandler *ListeningSocket::getCleanupHandler() {
 
 const char *ListeningSocket::getName() const { return "ListeningSocket"; }
 
-bool ListeningSocket::run(ESB::Flag *isRunning) {
+bool ListeningSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log
 }
 

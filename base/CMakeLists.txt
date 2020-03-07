@@ -17,7 +17,6 @@ set(SOURCE_FILES
         src/ESBEmbeddedList.cpp
         src/ESBError.cpp
         src/ESBFixedAllocator.cpp
-        src/ESBFlag.cpp
         src/ESBList.cpp
         src/ESBListeningTCPSocket.cpp
         src/ESBLockable.cpp
@@ -30,7 +29,7 @@ set(SOURCE_FILES
         src/ESBReadWriteLock.cpp
         src/ESBReferenceCount.cpp
         src/ESBSharedAllocator.cpp
-        src/ESBSharedCounter.cpp
+        src/ESBSharedInt.cpp
         src/ESBSharedEmbeddedQueue.cpp
         src/ESBSharedQueue.cpp
         src/ESBSmartPointer.cpp
@@ -85,7 +84,7 @@ add_unit_test(fixed-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURC
 add_unit_test(list-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBListTest.cpp)
 add_unit_test(lockable-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBLockableTest.cpp)
 add_unit_test(map-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBMapTest.cpp)
-add_unit_test(shared-counter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSharedCounterTest.cpp)
+add_unit_test(shared-counter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSharedIntTest.cpp)
 add_unit_test(smart-pointer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest.cpp)
 add_unit_test(shared-queue-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSharedQueueTest.cpp tests/ESBSharedQueueConsumer.cpp tests/ESBSharedQueueProducer.cpp)
 

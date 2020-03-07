@@ -65,7 +65,7 @@ HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
 HttpStack::~HttpStack() {}
 
 ESB::Error HttpStack::initialize() {
-  assert(ES_HTTP_STACK_IS_DESTROYED == _state);
+  assert(ES_HTTP_STACK_IS_DESTROYED == _state.get());
 
   if (_logger->isLoggable(ESB::Logger::Notice)) {
     _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
@@ -121,7 +121,7 @@ ESB::Error HttpStack::initialize() {
   }
 
   if (0 > _port || 0 == _serverHandler) {
-    _state = ES_HTTP_STACK_IS_INITIALIZED;
+    _state.set(ES_HTTP_STACK_IS_INITIALIZED);
 
     return ESB_SUCCESS;
   }
@@ -172,13 +172,13 @@ ESB::Error HttpStack::initialize() {
     return error;
   }
 
-  _state = ES_HTTP_STACK_IS_INITIALIZED;
+  _state.set(ES_HTTP_STACK_IS_INITIALIZED);
 
   return ESB_SUCCESS;
 }
 
 ESB::Error HttpStack::start() {
-  assert(ES_HTTP_STACK_IS_INITIALIZED == _state);
+  assert(ES_HTTP_STACK_IS_INITIALIZED == _state.get());
 
   ESB::Error error = _dispatcher.start();
 
@@ -196,7 +196,7 @@ ESB::Error HttpStack::start() {
   }
 
   if (0 > _port || 0 == _serverHandler) {
-    _state = ES_HTTP_STACK_IS_STARTED;
+    _state.set(ES_HTTP_STACK_IS_STARTED);
 
     if (_logger->isLoggable(ESB::Logger::Notice)) {
       _logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[stack] started");
@@ -238,7 +238,7 @@ ESB::Error HttpStack::start() {
     }
   }
 
-  _state = ES_HTTP_STACK_IS_STARTED;
+  _state.set(ES_HTTP_STACK_IS_STARTED);
 
   if (_logger->isLoggable(ESB::Logger::Notice)) {
     _logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[stack] started");
@@ -248,9 +248,9 @@ ESB::Error HttpStack::start() {
 }
 
 ESB::Error HttpStack::stop() {
-  assert(ES_HTTP_STACK_IS_STARTED == _state);
+  assert(ES_HTTP_STACK_IS_STARTED == _state.get());
 
-  _state = ES_HTTP_STACK_IS_STOPPED;
+  _state.set(ES_HTTP_STACK_IS_STOPPED);
 
   if (_logger->isLoggable(ESB::Logger::Notice)) {
     _logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[stack] stopping");
@@ -266,9 +266,9 @@ ESB::Error HttpStack::stop() {
 }
 
 void HttpStack::destroy() {
-  assert(ES_HTTP_STACK_IS_STOPPED == _state);
+  assert(ES_HTTP_STACK_IS_STOPPED == _state.get());
 
-  _state = ES_HTTP_STACK_IS_DESTROYED;
+  _state.set(ES_HTTP_STACK_IS_DESTROYED);
 
   _clientSocketFactory.destroy();
   _clientTransactionFactory.destroy();
@@ -277,7 +277,7 @@ void HttpStack::destroy() {
 
 HttpClientTransaction *HttpStack::createClientTransaction(
     HttpClientHandler *clientHandler) {
-  if (ES_HTTP_STACK_IS_DESTROYED == _state) {
+  if (ES_HTTP_STACK_IS_DESTROYED == _state.get()) {
     return 0;
   }
 
@@ -302,7 +302,7 @@ ESB::Error HttpStack::executeClientTransaction(
     return ESB_NULL_POINTER;
   }
 
-  if (ES_HTTP_STACK_IS_STARTED != _state) {
+  if (ES_HTTP_STACK_IS_STARTED != _state.get()) {
     return ESB_SHUTDOWN;
   }
 
@@ -431,7 +431,7 @@ ESB::Error HttpStack::executeClientTransaction(
 }
 
 void HttpStack::destroyClientTransaction(HttpClientTransaction *transaction) {
-  if (ES_HTTP_STACK_IS_DESTROYED == _state) {
+  if (ES_HTTP_STACK_IS_DESTROYED == _state.get()) {
     return;
   }
 

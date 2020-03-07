@@ -52,7 +52,7 @@ bool HttpListeningSocket::wantWrite() { return false; }
 
 bool HttpListeningSocket::isIdle() { return false; }
 
-bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
+bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
                                             ESB::Logger *logger) {
   assert(_socket);
   assert(_dispatcher);
@@ -154,7 +154,7 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool HttpListeningSocket::handleConnectEvent(ESB::Flag *isRunning,
+bool HttpListeningSocket::handleConnectEvent(ESB::SharedInt *isRunning,
                                              ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -165,7 +165,7 @@ bool HttpListeningSocket::handleConnectEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool HttpListeningSocket::handleReadableEvent(ESB::Flag *isRunning,
+bool HttpListeningSocket::handleReadableEvent(ESB::SharedInt *isRunning,
                                               ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -176,7 +176,7 @@ bool HttpListeningSocket::handleReadableEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool HttpListeningSocket::handleWritableEvent(ESB::Flag *isRunning,
+bool HttpListeningSocket::handleWritableEvent(ESB::SharedInt *isRunning,
                                               ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -188,7 +188,7 @@ bool HttpListeningSocket::handleWritableEvent(ESB::Flag *isRunning,
 }
 
 bool HttpListeningSocket::handleErrorEvent(ESB::Error errorCode,
-                                           ESB::Flag *isRunning,
+                                           ESB::SharedInt *isRunning,
                                            ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     char buffer[100];
@@ -203,7 +203,7 @@ bool HttpListeningSocket::handleErrorEvent(ESB::Error errorCode,
   return true;
 }
 
-bool HttpListeningSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
+bool HttpListeningSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
                                                ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -214,7 +214,7 @@ bool HttpListeningSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool HttpListeningSocket::handleIdleEvent(ESB::Flag *isRunning,
+bool HttpListeningSocket::handleIdleEvent(ESB::SharedInt *isRunning,
                                           ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Err)) {
     _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -225,7 +225,7 @@ bool HttpListeningSocket::handleIdleEvent(ESB::Flag *isRunning,
   return true;
 }
 
-bool HttpListeningSocket::handleRemoveEvent(ESB::Flag *flag,
+bool HttpListeningSocket::handleRemoveEvent(ESB::SharedInt *flag,
                                             ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Notice)) {
     _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
@@ -248,7 +248,7 @@ const char *HttpListeningSocket::getName() const {
   return "HttpListeningSocket";
 }
 
-bool HttpListeningSocket::run(ESB::Flag *isRunning) {
+bool HttpListeningSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log
 }
 

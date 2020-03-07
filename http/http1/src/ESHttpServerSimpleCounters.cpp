@@ -159,12 +159,11 @@ HttpServerSimpleCounters::getResponseBodyTimeouts() const {
   return &_responseBodyTimeouts;
 }
 
-ESB::SharedCounter *HttpServerSimpleCounters::getTotalConnections() {
+ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() {
   return &_totalConnections;
 }
 
-const ESB::SharedCounter *HttpServerSimpleCounters::getTotalConnections()
-    const {
+const ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() const {
   return &_totalConnections;
 }
 

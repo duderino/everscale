@@ -90,7 +90,8 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleAcceptEvent(ESB::SharedInt *isRunning,
+                                 ESB::Logger *logger);
 
   /** Client connected socket has connected to the peer endpoint.
    *
@@ -102,7 +103,8 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleConnectEvent(ESB::SharedInt *isRunning,
+                                  ESB::Logger *logger);
 
   /** Data is ready to be read.
    *
@@ -114,7 +116,8 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleReadableEvent(ESB::SharedInt *isRunning,
+                                   ESB::Logger *logger);
 
   /** There is free space in the outgoing socket buffer.
    *
@@ -126,7 +129,8 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleWritableEvent(ESB::SharedInt *isRunning,
+                                   ESB::Logger *logger);
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -141,7 +145,7 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see ESB::TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::Flag *isRunning,
+  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::SharedInt *isRunning,
                                 ESB::Logger *logger);
 
   /** The socket's connection was closed.
@@ -154,7 +158,8 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleEndOfFileEvent(ESB::SharedInt *isRunning,
+                                    ESB::Logger *logger);
 
   /** The socket's connection has been idle for too long
    *
@@ -166,7 +171,7 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleIdleEvent(ESB::SharedInt *isRunning, ESB::Logger *logger);
 
   /** The socket has been removed from the multiplexer
    *
@@ -175,7 +180,8 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * @param logger Log messages should be sent to this object.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(ESB::Flag *isRunning, ESB::Logger *logger);
+  virtual bool handleRemoveEvent(ESB::SharedInt *isRunning,
+                                 ESB::Logger *logger);
 
   /** Get the socket's socket descriptor.
    *
@@ -203,7 +209,7 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * thread isRunning, false when the controlling thread wants to shutdown.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool run(ESB::Flag *isRunning);
+  virtual bool run(ESB::SharedInt *isRunning);
 
   /** Placement new.
    *

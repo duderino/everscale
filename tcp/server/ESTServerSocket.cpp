@@ -68,7 +68,7 @@ bool ServerSocket::isIdle()  // todo pass in current time to reduce number of
   return false;  // todo - implement
 }
 
-bool ServerSocket::handleAcceptEvent(ESB::Flag *isRunning,
+bool ServerSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
                                      ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
@@ -81,7 +81,7 @@ bool ServerSocket::handleAcceptEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleConnectEvent(ESB::Flag *isRunning,
+bool ServerSocket::handleConnectEvent(ESB::SharedInt *isRunning,
                                       ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
@@ -94,7 +94,7 @@ bool ServerSocket::handleConnectEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleReadableEvent(ESB::Flag *isRunning,
+bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
@@ -175,7 +175,7 @@ bool ServerSocket::handleReadableEvent(ESB::Flag *isRunning,
   return handleWritableEvent(isRunning, logger);
 }
 
-bool ServerSocket::handleWritableEvent(ESB::Flag *isRunning,
+bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
@@ -241,7 +241,8 @@ bool ServerSocket::handleWritableEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleErrorEvent(ESB::Error errorCode, ESB::Flag *isRunning,
+bool ServerSocket::handleErrorEvent(ESB::Error errorCode,
+                                    ESB::SharedInt *isRunning,
                                     ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
@@ -260,7 +261,7 @@ bool ServerSocket::handleErrorEvent(ESB::Error errorCode, ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
+bool ServerSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
                                         ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
@@ -277,7 +278,8 @@ bool ServerSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleIdleEvent(ESB::Flag *isRunning, ESB::Logger *logger) {
+bool ServerSocket::handleIdleEvent(ESB::SharedInt *isRunning,
+                                   ESB::Logger *logger) {
   assert(false == _hasBeenRemoved);
 
   if (_logger->isLoggable(ESB::Logger::Debug)) {
@@ -293,7 +295,7 @@ bool ServerSocket::handleIdleEvent(ESB::Flag *isRunning, ESB::Logger *logger) {
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleRemoveEvent(ESB::Flag *isRunning,
+bool ServerSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
                                      ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     char dottedAddress[16];
@@ -321,7 +323,7 @@ ESB::CleanupHandler *ServerSocket::getCleanupHandler() {
 
 const char *ServerSocket::getName() const { return "ServerSocket"; }
 
-bool ServerSocket::run(ESB::Flag *isRunning) {
+bool ServerSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log warning
 }
 

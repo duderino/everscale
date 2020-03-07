@@ -13,8 +13,8 @@
 #include <ESBDate.h>
 #endif
 
-#ifndef ESB_FLAG_H
-#include <ESBFlag.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
 #endif
 
 #ifdef HAVE_PTHREAD_H
@@ -118,7 +118,7 @@ class Thread {
    */
   inline bool isRunning() const { return _isRunning.get(); }
 
-  Flag _isRunning;
+  SharedInt _isRunning;
 
  private:
   //  Disabled

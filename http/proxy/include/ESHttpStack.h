@@ -9,6 +9,10 @@
 #include <ESBSystemAllocator.h>
 #endif
 
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
+#endif
+
 #ifndef ESB_DISCARD_ALLOCATOR_H
 #include <ESBDiscardAllocator.h>
 #endif
@@ -166,7 +170,7 @@ class HttpStack : public HttpConnectionPool {
 
   int _port;
   int _threads;
-  volatile HttpStackState _state;
+  ESB::SharedInt _state;
   ESB::DnsClient *_dnsClient;
   ESB::Logger *_logger;
   HttpServerHandler *_serverHandler;

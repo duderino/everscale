@@ -99,7 +99,7 @@ bool HttpServerSocket::isIdle() {
   return false;
 }
 
-bool HttpServerSocket::handleAcceptEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -112,7 +112,7 @@ bool HttpServerSocket::handleAcceptEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer
 }
 
-bool HttpServerSocket::handleConnectEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleConnectEvent(ESB::SharedInt *isRunning,
                                           ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -125,7 +125,7 @@ bool HttpServerSocket::handleConnectEvent(ESB::Flag *isRunning,
   return true;  // keep in multiplexer
 }
 
-bool HttpServerSocket::handleReadableEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleReadableEvent(ESB::SharedInt *isRunning,
                                            ESB::Logger *logger) {
   // returning true will keep the socket in the multiplexer
   // returning false will remove the socket from the multiplexer and ultimately
@@ -397,7 +397,7 @@ bool HttpServerSocket::handleReadableEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleWritableEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleWritableEvent(ESB::SharedInt *isRunning,
                                            ESB::Logger *logger) {
   assert(_state & (FORMATTING_HEADERS | FORMATTING_BODY));
   assert(!(HAS_BEEN_REMOVED & _state));
@@ -546,7 +546,7 @@ bool HttpServerSocket::handleWritableEvent(ESB::Flag *isRunning,
 }
 
 bool HttpServerSocket::handleErrorEvent(ESB::Error errorCode,
-                                        ESB::Flag *isRunning,
+                                        ESB::SharedInt *isRunning,
                                         ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -565,7 +565,7 @@ bool HttpServerSocket::handleErrorEvent(ESB::Error errorCode,
   return false;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
                                             ESB::Logger *logger) {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
@@ -585,7 +585,7 @@ bool HttpServerSocket::handleEndOfFileEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleIdleEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleIdleEvent(ESB::SharedInt *isRunning,
                                        ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -602,7 +602,7 @@ bool HttpServerSocket::handleIdleEvent(ESB::Flag *isRunning,
   return false;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleRemoveEvent(ESB::Flag *isRunning,
+bool HttpServerSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
@@ -653,11 +653,11 @@ ESB::CleanupHandler *HttpServerSocket::getCleanupHandler() {
 
 const char *HttpServerSocket::getName() const { return "HttpServerSocket"; }
 
-bool HttpServerSocket::run(ESB::Flag *isRunning) {
+bool HttpServerSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log warning
 }
 
-ESB::Error HttpServerSocket::parseRequestHeaders(ESB::Flag *isRunning,
+ESB::Error HttpServerSocket::parseRequestHeaders(ESB::SharedInt *isRunning,
                                                  ESB::Logger *logger) {
   ESB::Error error = _transaction.getParser()->parseHeaders(
       _transaction.getIOBuffer(), _transaction.getRequest());
@@ -782,7 +782,7 @@ ESB::Error HttpServerSocket::parseRequestHeaders(ESB::Flag *isRunning,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpServerSocket::parseRequestBody(ESB::Flag *isRunning,
+ESB::Error HttpServerSocket::parseRequestBody(ESB::SharedInt *isRunning,
                                               ESB::Logger *logger) {
   int startingPosition = 0;
   int chunkSize = 0;
@@ -913,7 +913,7 @@ ESB::Error HttpServerSocket::parseRequestBody(ESB::Flag *isRunning,
   return ESB_SHUTDOWN;
 }
 
-ESB::Error HttpServerSocket::skipTrailer(ESB::Flag *isRunning,
+ESB::Error HttpServerSocket::skipTrailer(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   assert(_state & SKIPPING_TRAILER);
 
@@ -948,7 +948,7 @@ ESB::Error HttpServerSocket::skipTrailer(ESB::Flag *isRunning,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpServerSocket::formatResponseHeaders(ESB::Flag *isRunning,
+ESB::Error HttpServerSocket::formatResponseHeaders(ESB::SharedInt *isRunning,
                                                    ESB::Logger *logger) {
   ESB::Error error = _transaction.getFormatter()->formatHeaders(
       _transaction.getIOBuffer(), _transaction.getResponse());
@@ -990,7 +990,7 @@ ESB::Error HttpServerSocket::formatResponseHeaders(ESB::Flag *isRunning,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpServerSocket::formatResponseBody(ESB::Flag *isRunning,
+ESB::Error HttpServerSocket::formatResponseBody(ESB::SharedInt *isRunning,
                                                 ESB::Logger *logger) {
   ESB::Error error;
   int availableSize = 0;
@@ -1123,7 +1123,7 @@ ESB::Error HttpServerSocket::formatResponseBody(ESB::Flag *isRunning,
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-ESB::Error HttpServerSocket::flushBuffer(ESB::Flag *isRunning,
+ESB::Error HttpServerSocket::flushBuffer(ESB::SharedInt *isRunning,
                                          ESB::Logger *logger) {
   if (_logger->isLoggable(ESB::Logger::Debug)) {
     _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
@@ -1180,7 +1180,8 @@ ESB::Error HttpServerSocket::flushBuffer(ESB::Flag *isRunning,
   return _transaction.getIOBuffer()->isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;
 }
 
-bool HttpServerSocket::sendResponse(ESB::Flag *isRunning, ESB::Logger *logger) {
+bool HttpServerSocket::sendResponse(ESB::SharedInt *isRunning,
+                                    ESB::Logger *logger) {
   if (0 == _transaction.getResponse()->getStatusCode()) {
     if (_logger->isLoggable(ESB::Logger::Err)) {
       _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
@@ -1250,7 +1251,7 @@ bool HttpServerSocket::sendResponse(ESB::Flag *isRunning, ESB::Logger *logger) {
                                   : handleWritableEvent(isRunning, logger);
 }
 
-bool HttpServerSocket::sendBadRequestResponse(ESB::Flag *isRunning,
+bool HttpServerSocket::sendBadRequestResponse(ESB::SharedInt *isRunning,
                                               ESB::Logger *logger) {
   _transaction.getResponse()->setStatusCode(400);
   _transaction.getResponse()->setReasonPhrase(
@@ -1260,8 +1261,8 @@ bool HttpServerSocket::sendBadRequestResponse(ESB::Flag *isRunning,
   return sendResponse(isRunning, logger);
 }
 
-bool HttpServerSocket::sendInternalServerErrorResponse(ESB::Flag *isRunning,
-                                                       ESB::Logger *logger) {
+bool HttpServerSocket::sendInternalServerErrorResponse(
+    ESB::SharedInt *isRunning, ESB::Logger *logger) {
   // TODO reserve a static read-only internal server error response for out of
   // memory conditions.
 

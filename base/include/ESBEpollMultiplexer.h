@@ -5,7 +5,7 @@
 #include <ESBSocketMultiplexer.h>
 #endif
 
-#ifndef ESB_SHARED_COUNTER_H
+#ifndef ESB_SHARED_INT_H
 #include <ESBSharedCounter.h>
 #endif
 
@@ -21,7 +21,7 @@
 #include <ESBMutex.h>
 #endif
 
-#ifndef ESB_SHARED_COUNTER_H
+#ifndef ESB_SHARED_INT_H
 #include <ESBSharedCounter.h>
 #endif
 
@@ -98,7 +98,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    * thread isRunning, false when the controlling thread wants to shutdown.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool run(Flag *isRunning);
+  virtual bool run(SharedInt *isRunning);
 
   /** Get the number of sockets this multiplexer is currently handling.
    *
@@ -132,14 +132,14 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @param multiplexedSocket The multiplexedSocket
    */
-  Error updateMultiplexedSocket(Flag *isRunning,
+  Error updateMultiplexedSocket(SharedInt *isRunning,
                                 MultiplexedSocket *multiplexedSocket);
 
   /** Remove a multiplexed socket form the socket multiplexer
    *
    * @param multiplexedSocket The multiplexed socket to remove
    */
-  Error removeMultiplexedSocket(Flag *isRunning,
+  Error removeMultiplexedSocket(SharedInt *isRunning,
                                 MultiplexedSocket *multiplexedSocket,
                                 bool removeFromList = true);
 
@@ -148,7 +148,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    * @param isRunning This object will return true as long as the controlling
    * thread isRunning, false when the controlling thread wants to shutdown.
    */
-  Error checkIdleSockets(Flag *isRunning);
+  Error checkIdleSockets(SharedInt *isRunning);
 
   int _epollDescriptor;
   int _maxSockets;
@@ -163,7 +163,7 @@ class EpollMultiplexer : public SocketMultiplexer {
 #error "struct epoll_event is required"
 #endif
   Allocator *_allocator;
-  SharedCounter _currentSocketCount;
+  SharedInt _currentSocketCount;
   EmbeddedList _currentSocketList;
   Mutex _lock;
 };

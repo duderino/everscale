@@ -1,5 +1,5 @@
-#ifndef ESB_SHARED_COUNTER_H
-#include <ESBSharedCounter.h>
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
 #endif
 
 #ifndef ESTF_RESULT_COLECTOR_H
@@ -40,18 +40,18 @@
 
 namespace ESB {
 
-/** SharedCounterTest is the unit test for the SharedCounter class.
+/** SharedIntTest is the unit test for the SharedInt class.
  *
  *  @ingroup foundation_test
  */
-class SharedCounterTest : public ESTF::Component {
+class SharedIntTest : public ESTF::Component {
  public:
   /**	Constructor.
    */
-  SharedCounterTest();
+  SharedIntTest();
 
   /** Destructor. */
-  virtual ~SharedCounterTest();
+  virtual ~SharedIntTest();
 
   /** Run the component.
    *
@@ -91,67 +91,67 @@ class SharedCounterTest : public ESTF::Component {
    *
    *	@return the counter's current count.
    */
-  inline int getCounter() { return _Counter.get(); }
+  inline int getInt() { return _Int.get(); }
 
-  inline int getUnprotectedCounter() { return _UnprotectedCounter; }
+  inline int getUnprotectedInt() { return _UnprotectedInt; }
 
-  __attribute__((no_sanitize("thread"))) inline static void
-  AddUnprotectedCounter(int value) {
-    _UnprotectedCounter += value;
+  __attribute__((no_sanitize("thread"))) inline static void AddUnprotectedInt(
+      int value) {
+    _UnprotectedInt += value;
   }
 
   __attribute__((no_sanitize("thread"))) inline static void
-  SubtractUnprotectedCounter(int value) {
-    _UnprotectedCounter -= value;
+  SubtractUnprotectedInt(int value) {
+    _UnprotectedInt -= value;
   }
 
  private:
-  static SharedCounter _Counter;
-  static int _UnprotectedCounter;
+  static SharedInt _Int;
+  static int _UnprotectedInt;
 };
 
-ESTF_OBJECT_PTR(SharedCounterTest, ESTF::Component)
+ESTF_OBJECT_PTR(SharedIntTest, ESTF::Component)
 
-SharedCounter SharedCounterTest::_Counter;
-int SharedCounterTest::_UnprotectedCounter;
+SharedInt SharedIntTest::_Int;
+int SharedIntTest::_UnprotectedInt;
 
-SharedCounterTest::SharedCounterTest() {}
+SharedIntTest::SharedIntTest() {}
 
-SharedCounterTest::~SharedCounterTest() {}
+SharedIntTest::~SharedIntTest() {}
 
-bool SharedCounterTest::run(ESTF::ResultCollector *collector) {
+bool SharedIntTest::run(ESTF::ResultCollector *collector) {
   int value = 0;
 
   for (int i = 0; i < 100000; ++i) {
-    _Counter.add(1);
-    AddUnprotectedCounter(1);
+    _Int.add(1);
+    AddUnprotectedInt(1);
 
-    value = _Counter.inc();
-    AddUnprotectedCounter(1);
+    value = _Int.inc();
+    AddUnprotectedInt(1);
   }
 
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
-          value, _Counter.get(), _UnprotectedCounter);
+          value, _Int.get(), _UnprotectedInt);
 
   for (int i = 0; i < 100000; ++i) {
-    _Counter.sub(1);
-    SubtractUnprotectedCounter(1);
+    _Int.sub(1);
+    SubtractUnprotectedInt(1);
 
-    value = _Counter.dec();
-    SubtractUnprotectedCounter(1);
+    value = _Int.dec();
+    SubtractUnprotectedInt(1);
   }
 
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
-          value, _Counter.get(), _UnprotectedCounter);
+          value, _Int.get(), _UnprotectedInt);
 
   return true;
 }
 
-bool SharedCounterTest::setup() { return true; }
+bool SharedIntTest::setup() { return true; }
 
-bool SharedCounterTest::tearDown() { return true; }
+bool SharedIntTest::tearDown() { return true; }
 
-ESTF::ComponentPtr SharedCounterTest::clone() {
+ESTF::ComponentPtr SharedIntTest::clone() {
   ESTF::ComponentPtr component(this);
   return component;
 }
@@ -159,15 +159,15 @@ ESTF::ComponentPtr SharedCounterTest::clone() {
 }  // namespace ESB
 
 int main() {
-  ESB::SharedCounterTestPtr sharedCounterTest = new ESB::SharedCounterTest();
-  ESTF::ConcurrencyDecoratorPtr sharedCounterDecorator =
-      new ESTF::ConcurrencyDecorator(sharedCounterTest, 100);
+  ESB::SharedIntTestPtr sharedIntTest = new ESB::SharedIntTest();
+  ESTF::ConcurrencyDecoratorPtr sharedIntDecorator =
+      new ESTF::ConcurrencyDecorator(sharedIntTest, 100);
   ESTF::CompositePtr testSuite = new ESTF::Composite();
   ESTF::RepetitionDecoratorPtr root =
       new ESTF::RepetitionDecorator(testSuite, 1);
   ESTF::ResultCollector collector;
 
-  testSuite->add(sharedCounterDecorator);
+  testSuite->add(sharedIntDecorator);
 
   if (false == root->setup()) {
     std::cerr << "Testing framework setup failed" << std::endl;
@@ -179,7 +179,7 @@ int main() {
     return 1;
   }
 
-  ESTF_ASSERT((&collector), 0 == sharedCounterTest->getCounter());
+  ESTF_ASSERT((&collector), 0 == sharedIntTest->getInt());
 
   if (false == root->tearDown()) {
     std::cerr << "Testing framework tear down failed" << std::endl;
