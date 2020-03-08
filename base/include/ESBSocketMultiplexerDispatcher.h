@@ -38,12 +38,10 @@ class SocketMultiplexerDispatcher {
    * @param name The name of the dispatcher.  Will be used in logging messages.
    *  Caller must ensure the memory is valid for the lifetime of this object -
    *  use a string literal if possible.
-   * @param logger An optional logger.  Pass NULL to not log anything.
    */
   SocketMultiplexerDispatcher(UInt32 maximumSockets, UInt16 multiplexerCount,
                               SocketMultiplexerFactory *factory,
-                              Allocator *allocator, const char *name,
-                              Logger *logger);
+                              Allocator *allocator, const char *name);
 
   /** Destructor.
    */
@@ -114,7 +112,6 @@ class SocketMultiplexerDispatcher {
   UInt32 _maximumSockets;
   UInt16 _multiplexerCount;
   const char *_name;
-  Logger *_logger;
   SocketMultiplexerFactory *_factory;
   Allocator *_allocator;
   SocketMultiplexer **_multiplexers;

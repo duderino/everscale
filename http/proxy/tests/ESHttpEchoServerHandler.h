@@ -1,10 +1,6 @@
 #ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
 #define ES_HTTP_ECHO_SERVER_HANDLER_H
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ES_HTTP_SERVER_HANDLER_H
 #include <ESHttpServerHandler.h>
 #endif
@@ -13,7 +9,7 @@ namespace ES {
 
 class HttpEchoServerHandler : public HttpServerHandler {
  public:
-  HttpEchoServerHandler(ESB::Logger *logger);
+  HttpEchoServerHandler();
 
   virtual ~HttpEchoServerHandler();
 
@@ -108,8 +104,6 @@ class HttpEchoServerHandler : public HttpServerHandler {
   // Disabled
   HttpEchoServerHandler(const HttpEchoServerHandler &serverHandler);
   void operator=(const HttpEchoServerHandler &serverHandler);
-
-  ESB::Logger *_logger;
 };
 
 }  // namespace ES

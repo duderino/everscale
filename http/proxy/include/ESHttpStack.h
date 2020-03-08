@@ -1,10 +1,6 @@
 #ifndef ES_HTTP_STACK_H
 #define ES_HTTP_STACK_H
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
 #endif
@@ -94,13 +90,13 @@ class HttpStack : public HttpConnectionPool {
    */
   HttpStack(HttpServerHandler *serverHandler, ESB::DnsClient *dnsClient,
             int port, int threads, HttpClientCounters *clientCounters,
-            HttpServerCounters *serverCounters, ESB::Logger *logger);
+            HttpServerCounters *serverCounters);
 
   /**
    * Create only a client stack.
    */
   HttpStack(ESB::DnsClient *dnsClient, int threads,
-            HttpClientCounters *clientCounters, ESB::Logger *logger);
+            HttpClientCounters *clientCounters);
 
   virtual ~HttpStack();
 
@@ -172,7 +168,6 @@ class HttpStack : public HttpConnectionPool {
   int _threads;
   ESB::SharedInt _state;
   ESB::DnsClient *_dnsClient;
-  ESB::Logger *_logger;
   HttpServerHandler *_serverHandler;
   HttpServerCounters *_serverCounters;
   HttpClientCounters *_clientCounters;

@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
   }
 
   ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
-  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
+  ESB::Logger::SetInstance(ESB::ConsoleLogger::Instance());
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
@@ -137,24 +137,19 @@ int main(int argc, char **argv) {
       ESB::ProcessLimits::GetSocketHardMax());
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[256];
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "Cannot raise max fd limit: %s", buffer);
-    }
+    ESB_LOG_ERRNO_CRITICAL(error, "Cannot raise max fd limit");
     return -5;
   }
 
   // Init
 
-  HttpEchoServerHandler serverHandler(logger);
-  ESB::SystemDnsClient dnsClient(logger);
+  HttpEchoServerHandler serverHandler();
+  ESB::SystemDnsClient dnsClient();
   HttpClientSimpleCounters clientCounters;
   HttpServerSimpleCounters serverCounters;
 
   HttpStack serverStack(&serverHandler, &dnsClient, port, serverThreads,
-                        &clientCounters, &serverCounters, logger);
+                        &clientCounters, &serverCounters);
 
   error = serverStack.initialize();
 
@@ -163,11 +158,11 @@ int main(int argc, char **argv) {
   }
 
   HttpClientHistoricalCounters counters(
-      windowSizeSec, ESB::SystemAllocator::GetInstance(), logger);
-  HttpStack clientStack(&dnsClient, clientThreads, &counters, logger);
+      windowSizeSec, ESB::SystemAllocator::GetInstance());
+  HttpStack clientStack(&dnsClient, clientThreads, &counters);
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
                                       sizeof(body), connections * iterations,
-                                      &clientStack, logger);
+                                      &clientStack);
   HttpClientSocket::SetReuseConnections(reuseConnections);
 
   error = clientStack.initialize();

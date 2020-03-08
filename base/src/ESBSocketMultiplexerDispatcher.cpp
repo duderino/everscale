@@ -6,8 +6,8 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifdef HAVE_SYS_TIME_H
@@ -30,16 +30,14 @@ namespace ESB {
 
 SocketMultiplexerDispatcher::SocketMultiplexerDispatcher(
     UInt32 maximumSockets, UInt16 multiplexerCount,
-    SocketMultiplexerFactory *factory, Allocator *allocator, const char *name,
-    Logger *logger)
+    SocketMultiplexerFactory *factory, Allocator *allocator, const char *name)
     : _maximumSockets(maximumSockets > 1 ? maximumSockets : 1),
       _multiplexerCount(multiplexerCount > 1 ? multiplexerCount : 1),
       _name(name ? name : "SocketMultiplexerDispatcher"),
-      _logger(logger ? logger : NullLogger::GetInstance()),
       _factory(factory),
       _allocator(allocator ? allocator : SystemAllocator::GetInstance()),
       _multiplexers(0),
-      _threadPool(_name, _multiplexerCount, _logger, _allocator) {}
+      _threadPool(_name, _multiplexerCount, _allocator) {}
 
 SocketMultiplexerDispatcher::~SocketMultiplexerDispatcher() {}
 
@@ -48,42 +46,20 @@ Error SocketMultiplexerDispatcher::start() {
     return ESB_INVALID_STATE;
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:dispatcher] starting",
-                 _name);
-  }
+  ESB_LOG_NOTICE("Starting dispatcher '%s'", _name);
 
   Error error = createMultiplexers();
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(Logger::Critical)) {
-      char buffer[100];
-
-      DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s:dispatcher] cannot create multiplexers: %s", _name,
-                   buffer);
-    }
-
+    ESB_LOG_ERRNO_CRITICAL(error, "Cannot create multiplexer for '%s'", _name);
     return error;
   }
 
   error = _threadPool.start();
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(Logger::Critical)) {
-      char buffer[100];
-
-      DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s:dispatcher] cannot start threadpool: %s", _name,
-                   buffer);
-    }
-
+    ESB_LOG_ERRNO_CRITICAL(error, "Cannot start threadpool for '%s'", _name);
     destroyMultiplexers();
-
     return error;
   }
 
@@ -93,32 +69,14 @@ Error SocketMultiplexerDispatcher::start() {
     error = _multiplexers[i]->initialize();
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(Logger::Warning)) {
-        char buffer[100];
-
-        DescribeError(error, buffer, sizeof(buffer));
-
-        _logger->log(Logger::Warning, __FILE__, __LINE__,
-                     "[%s:dispatcher] cannot initialize multiplexer: %s", _name,
-                     buffer);
-      }
-
+      ESB_LOG_ERRNO_ERROR(error, "Cannot init multiplexer for '%s'", _name);
       continue;
     }
 
     error = _threadPool.execute(_multiplexers[i]);
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(Logger::Warning)) {
-        char buffer[100];
-
-        DescribeError(error, buffer, sizeof(buffer));
-
-        _logger->log(Logger::Warning, __FILE__, __LINE__,
-                     "[%s:dispatcher] cannot execute multiplexer: %s", _name,
-                     buffer);
-      }
-
+      ESB_LOG_ERRNO_ERROR(error, "Cannot execute multiplexer for '%s'", _name);
       continue;
     }
 
@@ -126,32 +84,18 @@ Error SocketMultiplexerDispatcher::start() {
   }
 
   if (0 == runningMultiplexers) {
-    if (_logger->isLoggable(Logger::Critical)) {
-      _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s:dispatcher] could not start any multiplexers", _name);
-    }
-
+    ESB_LOG_CRITICAL("Could not start any multiplexers for '%s'", _name);
     _threadPool.stop();
-
     destroyMultiplexers();
-
     return ESB_OTHER_ERROR;
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:dispatcher] started",
-                 _name);
-  }
-
+  ESB_LOG_NOTICE("Dispatcher '%s' started", _name);
   return ESB_SUCCESS;
 }
 
 void SocketMultiplexerDispatcher::stop() {
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:dispatcher] stopping",
-                 _name);
-  }
-
+  ESB_LOG_NOTICE("Stopping dispatcher '%s'", _name);
   _threadPool.stop();
 
   for (int i = 0; i < _multiplexerCount; ++i) {
@@ -159,11 +103,7 @@ void SocketMultiplexerDispatcher::stop() {
   }
 
   destroyMultiplexers();
-
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:dispatcher] stopped",
-                 _name);
-  }
+  ESB_LOG_NOTICE("Dispatcher '%s' stopped", _name);
 }
 
 Error SocketMultiplexerDispatcher::addMultiplexedSocket(
@@ -192,13 +132,8 @@ Error SocketMultiplexerDispatcher::addMultiplexedSocket(
     }
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(
-        Logger::Debug, __FILE__, __LINE__,
-        "[%s:dispatcher] adding socket to multiplexer %d with count %d", _name,
-        minIndex + 1, minCount);
-  }
-
+  ESB_LOG_DEBUG("Adding socket to multiplexer '%s:%d' with %d active sockets",
+      _name, minIndex + 1, minCount);
   return _multiplexers[minIndex]->addMultiplexedSocket(multiplexedSocket);
 }
 
@@ -208,11 +143,8 @@ Error SocketMultiplexerDispatcher::addMultiplexedSocket(
     return ESB_OUT_OF_BOUNDS;
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__,
-                 "[%s:dispatcher] adding socket to multiplexer %d", _name,
-                 multiplexerIndex);
-  }
+  ESB_LOG_DEBUG("Adding socket to multiplexer '%s:%d'", _name,
+      multiplexerIndex);
 
   return _multiplexers[multiplexerIndex]->addMultiplexedSocket(
       multiplexedSocket);
@@ -246,11 +178,7 @@ Error SocketMultiplexerDispatcher::createMultiplexers() {
     return ESB_OUT_OF_MEMORY;
   }
 
-#ifdef HAVE_MEMSET
   memset(_multiplexers, 0, _multiplexerCount * sizeof(SocketMultiplexer *));
-#else
-#error "memset or equivalent is required"
-#endif
 
   for (int i = 0; i < _multiplexerCount; ++i) {
     _multiplexers[i] = _factory->create(_maximumSockets / _multiplexerCount);

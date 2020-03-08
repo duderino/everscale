@@ -43,8 +43,7 @@ class NullLogger : public Logger {
    *  @param format A printf-style format string.
    *  @return ESB_SUCCESS if successful, another value otherwise.
    */
-  virtual Error log(Severity severity, const char *file, int line,
-                    const char *format, ...);
+  virtual Error log(Severity severity, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 
  private:
   /** Constructor

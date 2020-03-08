@@ -1,10 +1,6 @@
 #ifndef ES_HTTP_ECHO_CLIENT_HANDLER_H
 #define ES_HTTP_ECHO_CLIENT_HANDLER_H
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ESB_SHARED_INT_H
 #include <ESBSharedInt.h>
 #endif
@@ -28,7 +24,7 @@ class HttpEchoClientHandler : public HttpClientHandler {
   HttpEchoClientHandler(const char *absPath, const char *method,
                         const char *contentType, const unsigned char *body,
                         int bodySize, int totalTransactions,
-                        HttpConnectionPool *pool, ESB::Logger *logger);
+                        HttpConnectionPool *pool);
 
   virtual ~HttpEchoClientHandler();
 
@@ -115,7 +111,6 @@ class HttpEchoClientHandler : public HttpClientHandler {
   const int _bodySize;
   int _totalTransactions;
   HttpConnectionPool *_pool;
-  ESB::Logger *_logger;
   ESB::SharedInt _completedTransactions;
 };
 

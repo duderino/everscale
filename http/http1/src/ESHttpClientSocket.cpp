@@ -2,8 +2,8 @@
 #include <ESHttpClientSocket.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -50,14 +50,12 @@ bool HttpClientSocket::_ReuseConnections = true;
 HttpClientSocket::HttpClientSocket(HttpConnectionPool *pool,
                                    HttpClientTransaction *transaction,
                                    HttpClientCounters *counters,
-                                   ESB::CleanupHandler *cleanupHandler,
-                                   ESB::Logger *logger)
+                                   ESB::CleanupHandler *cleanupHandler)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
       _pool(pool),
       _transaction(transaction),
       _counters(counters),
-      _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _cleanupHandler(cleanupHandler),
       _socket(*transaction->getPeerAddress(), false) {}
 
@@ -107,38 +105,27 @@ bool HttpClientSocket::isIdle() {
   return false;
 }
 
-bool HttpClientSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
-                                         ESB::Logger *logger) {
+bool HttpClientSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
   assert(!(HAS_BEEN_REMOVED & _state));
-
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Cannot handle accept events",
+  ESB_LOG_WARNING("socket:%d Cannot handle accept events",
                  _socket.getSocketDescriptor());
-  }
-
   return true;  // keep in multiplexer
 }
 
-bool HttpClientSocket::handleConnectEvent(ESB::SharedInt *isRunning,
-                                          ESB::Logger *logger) {
+bool HttpClientSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(_socket.isConnected());
   assert(_state & CONNECTING);
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Connected", _socket.getSocketDescriptor());
-  }
+  ESB_LOG_INFO("socket:%d Connected", _socket.getSocketDescriptor());
 
   _state &= ~CONNECTING;
   _state |= TRANSACTION_BEGIN;
 
-  return handleWritableEvent(isRunning, logger);
+  return handleWritableEvent(isRunning);
 }
 
-bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
-                                           ESB::Logger *logger) {
+bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
   // returning true will keep the socket in the multiplexer
   // returning false will remove the socket from the multiplexer and ultimately
   // close it.
@@ -151,29 +138,20 @@ bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
   ESB::Error error = ESB_SUCCESS;
 
   while (isRunning->get()) {
-    if (false == _transaction->getIOBuffer()->isWritable()) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] compacting input buffer for",
+    if (!_transaction->getIOBuffer()->isWritable()) {
+      ESB_LOG_DEBUG("socket:%d compacting input buffer for",
                      _socket.getSocketDescriptor());
-      }
 
-      if (false == _transaction->getIOBuffer()->compact()) {
-        if (_logger->isLoggable(ESB::Logger::Warning)) {
-          _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                       "[socket:%d] parser jammed",
-                       _socket.getSocketDescriptor());
-        }
-
+      if (!_transaction->getIOBuffer()->compact()) {
+        ESB_LOG_INFO("socket:%d parser jammed", _socket.getSocketDescriptor());
         return false;  // remove from multiplexer
       }
     }
 
     assert(_transaction->getIOBuffer()->isWritable());
-
     result = _socket.receive(_transaction->getIOBuffer());
 
-    if (false == isRunning->get()) {
+    if (!isRunning->get()) {
       break;
     }
 
@@ -181,40 +159,25 @@ bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
       error = ESB::GetLastError();
 
       if (ESB_AGAIN == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] not ready for read",
-                       _socket.getSocketDescriptor());
-        }
-
         return true;  // keep in multiplexer
       }
 
       if (ESB_INTR == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] interrupted",
-                       _socket.getSocketDescriptor());
-        }
-
         continue;  // try _socket.receive again
       }
 
-      return handleErrorEvent(error, isRunning, logger);
+      return handleErrorEvent(error, isRunning);
     }
 
     if (0 == result) {
-      return handleEndOfFileEvent(isRunning, logger);
+      return handleEndOfFileEvent(isRunning);
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] Read %d bytes", _socket.getSocketDescriptor(),
+    ESB_LOG_DEBUG("socket:%d Read %ld bytes", _socket.getSocketDescriptor(),
                    result);
-    }
 
     if (PARSING_HEADERS & _state) {
-      error = parseResponseHeaders(isRunning, logger);
+      error = parseResponseHeaders(isRunning);
 
       if (ESB_AGAIN == error) {
         continue;  // read more data and repeat parse
@@ -226,13 +189,8 @@ bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
           _transaction->getHandler()->receiveResponseHeaders(_transaction)) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(
-              ESB::Logger::Debug, __FILE__, __LINE__,
-              "[socket:%d] Client request header handler aborting connection",
+        ESB_LOG_DEBUG("socket:%d Client request header handler aborting connection",
               _socket.getSocketDescriptor());
-        }
-
         return false;  // remove from multiplexer
       }
 
@@ -242,12 +200,8 @@ bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
         if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
             _transaction->getHandler()->receiveResponseBody(_transaction, &byte,
                                                             0)) {
-          if (_logger->isLoggable(ESB::Logger::Debug)) {
-            _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                         "[socket:%d] Client body handler aborting connection",
+          ESB_LOG_DEBUG("socket:%d Client body handler aborting connection",
                          _socket.getSocketDescriptor());
-          }
-
           return false;  // remove from multiplexer
         }
 
@@ -264,7 +218,7 @@ bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
     assert(PARSING_BODY & _state);
     assert(_transaction->getResponse()->hasBody());
 
-    error = parseResponseBody(isRunning, logger);
+    error = parseResponseBody(isRunning);
 
     if (ESB_AGAIN == error) {
       continue;  // read more data and repeat parse
@@ -273,18 +227,12 @@ bool HttpClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
     return false;  // remove from multiplexer
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(
-        ESB::Logger::Debug, __FILE__, __LINE__,
-        "[socket:%d] multiplexer shutdown, killing socket in parse state",
+  ESB_LOG_DEBUG("socket:%d multiplexer shutdown with socket in parse state",
         _socket.getSocketDescriptor());
-  }
-
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
-                                           ESB::Logger *logger) {
+bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
   assert(wantWrite());
   assert(_socket.isConnected());
   assert(!(HAS_BEEN_REMOVED & _state));
@@ -293,22 +241,15 @@ bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
 
   if (_state & TRANSACTION_BEGIN) {
     // TODO make connection reuse more configurable
-    if (false == HttpClientSocket::GetReuseConnections() &&
-        0 == _transaction->getRequest()->getHeader(
-                 (const unsigned char *)"Connection")) {
+    if (!HttpClientSocket::GetReuseConnections() &&
+        !_transaction->getRequest()->getHeader((const unsigned char *)"Connection")) {
       error = _transaction->getRequest()->addHeader(
           (const unsigned char *)"Connection", (const unsigned char *)"close",
           _transaction->getAllocator());
 
       if (ESB_SUCCESS != error) {
-        if (_logger->isLoggable(ESB::Logger::Err)) {
-          char buffer[100];
-          ESB::DescribeError(error, buffer, sizeof(buffer));
-          _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
-                       "[socket:%d] cannot add Connection: close header: %s",
-                       _socket.getSocketDescriptor(), buffer);
-        }
-
+        ESB_LOG_ERRNO_ERROR(error, "socket:%d cannot add connection: close "
+                                   "header", _socket.getSocketDescriptor());
         return false;  // remove from multiplexer
       }
     }
@@ -321,10 +262,10 @@ bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
 
   while (isRunning->get()) {
     if (FORMATTING_HEADERS & _state) {
-      error = formatRequestHeaders(isRunning, logger);
+      error = formatRequestHeaders(isRunning);
 
       if (ESB_AGAIN == error) {
-        error = flushBuffer(isRunning, logger);
+        error = flushBuffer(isRunning);
 
         if (ESB_AGAIN == error) {
           return true;  // keep in multiplexer, wait for socket to become
@@ -348,7 +289,7 @@ bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
     }
 
     if (FLUSHING_HEADERS & _state) {
-      error = flushBuffer(isRunning, logger);
+      error = flushBuffer(isRunning);
 
       if (ESB_AGAIN == error) {
         return true;  // keep in multiplexer, wait for socket to become writable
@@ -373,10 +314,10 @@ bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
     }
 
     if (FORMATTING_BODY & _state) {
-      error = formatRequestBody(isRunning, logger);
+      error = formatRequestBody(isRunning);
 
       if (ESB_AGAIN == error) {
-        error = flushBuffer(isRunning, logger);
+        error = flushBuffer(isRunning);
 
         if (ESB_AGAIN == error) {
           return true;  // keep in multiplexer, wait for socket to become
@@ -405,7 +346,7 @@ bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
 
     assert(FLUSHING_BODY & _state);
 
-    error = flushBuffer(isRunning, logger);
+    error = flushBuffer(isRunning);
 
     if (ESB_AGAIN == error) {
       return true;  // keep in multiplexer
@@ -418,81 +359,69 @@ bool HttpClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
     _state &= ~FLUSHING_BODY;
     _state |= PARSING_HEADERS;
 
-    return YieldAfterSendingRequest ? true
-                                    : handleReadableEvent(isRunning, logger);
+    return YieldAfterSendingRequest ? true : handleReadableEvent(isRunning);
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(
-        ESB::Logger::Debug, __FILE__, __LINE__,
-        "[socket:%d] multiplexer shutdown, killing socket in format state",
+  ESB_LOG_DEBUG("socket:%d multiplexer shutdown with socket in format state",
         _socket.getSocketDescriptor());
-  }
-
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleErrorEvent(ESB::Error errorCode,
-                                        ESB::SharedInt *isRunning,
-                                        ESB::Logger *logger) {
+bool HttpClientSocket::handleErrorEvent(ESB::Error error,
+                                        ESB::SharedInt *isRunning) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (_logger->isLoggable(ESB::Logger::Info)) {
-    char buffer[100];
-    char dottedAddress[16];
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB::DescribeError(errorCode, buffer, sizeof(buffer));
-    _logger->log(ESB::Logger::Info, __FILE__, __LINE__,
-                 "[socket:%d] Error from client %s: %s",
-                 _socket.getSocketDescriptor(), dottedAddress, buffer);
+    ESB_LOG_INFO("socket:%d to %s:%u has error",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
-                                            ESB::Logger *logger) {
+bool HttpClientSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
 
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Client %s closed socket",
-                 _socket.getSocketDescriptor(), dottedAddress);
+    ESB_LOG_INFO("socket:%d to %s:%u was closed by peer",
+                       _socket.getSocketDescriptor(), dottedAddress,
+                       _socket.getPeerAddress().getPort());
   }
 
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleIdleEvent(ESB::SharedInt *isRunning,
-                                       ESB::Logger *logger) {
+bool HttpClientSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (_logger->isLoggable(ESB::Logger::Info)) {
-    char dottedAddress[16];
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    _logger->log(ESB::Logger::Info, __FILE__, __LINE__,
-                 "[socket:%d] Client %s is idle", _socket.getSocketDescriptor(),
-                 dottedAddress);
+    ESB_LOG_INFO("socket:%d to %s:%u is idle",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
-                                         ESB::Logger *logger) {
+bool HttpClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Closing socket for client %s",
-                 _socket.getSocketDescriptor(), dottedAddress);
+    ESB_LOG_INFO("socket:%d to %s:%u has been closed",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   bool reuseConnection = false;
@@ -546,7 +475,7 @@ bool HttpClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
           (unsigned const char *)"Connection");
 
       if (header && header->getFieldValue() &&
-          0 == strcasecmp("close", (const char *)header->getFieldValue())) {
+          !strcasecmp("close", (const char *)header->getFieldValue())) {
         reuseConnection = false;
       } else {
         reuseConnection = true;
@@ -558,22 +487,14 @@ bool HttpClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
     _transaction->getHandler()->end(
         _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
   } else if (_state & RETRY_STALE_CONNECTION) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] connection stale, retrying transaction",
+    ESB_LOG_DEBUG("socket:%d connection stale, retrying transaction",
                    _socket.getSocketDescriptor());
-    }
 
     ESB::Error error = _pool->executeClientTransaction(_transaction);
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        char buffer[100];
-        ESB::DescribeError(error, buffer, sizeof(buffer));
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[socket:%d] Cannot retry transaction: %s",
+      ESB_LOG_ERRNO_INFO(error, "socket:%d Cannot retry transaction: %s",
                      _socket.getSocketDescriptor(), buffer);
-      }
 
       _state &= ~RETRY_STALE_CONNECTION;
       _state |= TRANSACTION_BEGIN;
@@ -612,25 +533,17 @@ bool HttpClientSocket::run(ESB::SharedInt *isRunning) {
   return false;  // todo - log warning
 }
 
-ESB::Error HttpClientSocket::parseResponseHeaders(ESB::SharedInt *isRunning,
-                                                  ESB::Logger *logger) {
+ESB::Error HttpClientSocket::parseResponseHeaders(ESB::SharedInt *isRunning) {
   ESB::Error error = _transaction->getParser()->parseHeaders(
       _transaction->getIOBuffer(), _transaction->getResponse());
 
   if (ESB_AGAIN == error) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] need more header data from stream",
+    ESB_LOG_DEBUG("socket:%d need more header data from stream",
                    _socket.getSocketDescriptor());
-    }
 
-    if (false == _transaction->getIOBuffer()->compact()) {
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[socket:%d] cannot parse headers: parser jammed",
+    if (!_transaction->getIOBuffer()->compact()) {
+      ESB_LOG_INFO("socket:%d cannot parse headers: parser jammed",
                      _socket.getSocketDescriptor());
-      }
-
       return ESB_OVERFLOW;  // remove from multiplexer
     }
 
@@ -638,54 +551,36 @@ ESB::Error HttpClientSocket::parseResponseHeaders(ESB::SharedInt *isRunning,
   }
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      // TODO describe error, not just error code
-
-      _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                   "[socket:%d] cannot parse headers: %d",
-                   _socket.getSocketDescriptor(), error);
-    }
-
+    ESB_LOG_ERRNO_INFO(error, "socket:%d cannot parse headers",
+                   _socket.getSocketDescriptor());
     return error;  // remove from multiplexer
   }
 
   // parse complete
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] headers parsed", _socket.getSocketDescriptor());
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] StatusCode: %d", _socket.getSocketDescriptor(),
+  if (ESB_DEBUG_LOGGABLE) {
+    ESB_LOG_DEBUG("socket:%d headers parsed", _socket.getSocketDescriptor());
+    ESB_LOG_DEBUG("socket:%d StatusCode: %d", _socket.getSocketDescriptor(),
                  _transaction->getResponse()->getStatusCode());
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] ReasonPhrase: %s", _socket.getSocketDescriptor(),
+    ESB_LOG_DEBUG("socket:%d ReasonPhrase: %s", _socket.getSocketDescriptor(),
                  _transaction->getResponse()->getReasonPhrase());
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Version: HTTP/%d.%d\n",
+    ESB_LOG_DEBUG("socket:%d Version: HTTP/%d.%d\n",
                  _socket.getSocketDescriptor(),
                  _transaction->getResponse()->getHttpVersion() / 100,
                  _transaction->getResponse()->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)_transaction->getResponse()
-                                  ->getHeaders()
-                                  ->getFirst();
-         header; header = (HttpHeader *)header->getNext()) {
-      _logger->log(
-          ESB::Logger::Debug, __FILE__, __LINE__, "[socket:%d] %s: %s\n",
-          _socket.getSocketDescriptor(), (const char *)header->getFieldName(),
-          0 == header->getFieldValue() ? "null"
-                                       : (const char *)header->getFieldValue());
+    HttpHeader *header = (HttpHeader *)_transaction->getResponse()->getHeaders()->getFirst();
+    for (; header; header = (HttpHeader *)header->getNext()) {
+      ESB_LOG_DEBUG("socket:%d %s: %s\n", _socket.getSocketDescriptor(),
+          (const char *)header->getFieldName(),
+          !header->getFieldValue() ? "null" : (const char *)header->getFieldValue());
     }
   }
 
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning,
-                                               ESB::Logger *logger) {
+ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning) {
   int startingPosition = 0;
   int chunkSize = 0;
   ESB::Error error = ESB_SUCCESS;
@@ -695,63 +590,37 @@ ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning,
                                                  &startingPosition, &chunkSize);
 
     if (ESB_AGAIN == error) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] need more body data from stream",
+      ESB_LOG_DEBUG("socket:%d need more body data from stream",
                      _socket.getSocketDescriptor());
-      }
-
-      if (false == _transaction->getIOBuffer()->isWritable()) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] compacting input buffer",
+      if (!_transaction->getIOBuffer()->isWritable()) {
+        ESB_LOG_DEBUG("socket:%d compacting input buffer",
                        _socket.getSocketDescriptor());
-        }
-
-        if (false == _transaction->getIOBuffer()->compact()) {
-          if (_logger->isLoggable(ESB::Logger::Warning)) {
-            _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                         "[socket:%d] cannot parse body: parser jammed",
+        if (!_transaction->getIOBuffer()->compact()) {
+          ESB_LOG_INFO("socket:%d cannot parse body: parser jammed",
                          _socket.getSocketDescriptor());
-          }
-
           return ESB_OVERFLOW;  // remove from multiplexer
         }
       }
-
       return ESB_AGAIN;  // keep in multiplexer
     }
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] error parsing body: %d",
-                     _socket.getSocketDescriptor(), error);
-      }
-
+      ESB_LOG_ERRNO_INFO(error, "socket:%d error parsing body",
+                     _socket.getSocketDescriptor());
       return error;  // remove from multiplexer
     }
 
     if (0 == chunkSize) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] parsed body", _socket.getSocketDescriptor());
-      }
-
+      ESB_LOG_DEBUG("socket:%d parsed body", _socket.getSocketDescriptor());
       unsigned char byte = 0;
-
       HttpClientHandler::Result result =
           _transaction->getHandler()->receiveResponseBody(_transaction, &byte,
                                                           0);
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] client handler aborting connection after "
+        ESB_LOG_DEBUG("socket:%d client handler aborting connection after "
                        "last body chunk",
                        _socket.getSocketDescriptor());
-        }
-
         return ESB_INTR;
       }
 
@@ -761,16 +630,14 @@ ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning,
       return ESB_SUCCESS;
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
+    if (ESB_DEBUG_LOGGABLE) {
       char buffer[4096];
-
       memcpy(buffer,
              _transaction->getIOBuffer()->getBuffer() + startingPosition,
              chunkSize > (int)sizeof(buffer) ? sizeof(buffer) : chunkSize);
       buffer[chunkSize > (int)sizeof(buffer) ? sizeof(buffer) : chunkSize] = 0;
 
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] read chunk: %s", _socket.getSocketDescriptor(),
+      ESB_LOG_DEBUG("socket:%d read chunk: %s", _socket.getSocketDescriptor(),
                    buffer);
     }
 
@@ -781,13 +648,9 @@ ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning,
         _transaction->getIOBuffer()->getBuffer() + startingPosition, chunkSize);
 
     if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] client handler aborting connection before "
+      ESB_LOG_DEBUG("socket:%d client handler aborting connection before "
                      "last body chunk",
                      _socket.getSocketDescriptor());
-      }
-
       return ESB_INTR;
     }
   }
@@ -795,39 +658,24 @@ ESB::Error HttpClientSocket::parseResponseBody(ESB::SharedInt *isRunning,
   return ESB_SHUTDOWN;
 }
 
-ESB::Error HttpClientSocket::formatRequestHeaders(ESB::SharedInt *isRunning,
-                                                  ESB::Logger *logger) {
+ESB::Error HttpClientSocket::formatRequestHeaders(ESB::SharedInt *isRunning) {
   ESB::Error error = _transaction->getFormatter()->formatHeaders(
       _transaction->getIOBuffer(), _transaction->getRequest());
 
   if (ESB_AGAIN == error) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] partially formatted response headers",
+    ESB_LOG_DEBUG("socket:%d partially formatted response headers",
                    _socket.getSocketDescriptor());
-    }
-
     return ESB_AGAIN;  // keep in multiplexer
   }
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      char buffer[50];
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-      _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                   "[socket:%d] error formatting response header: %s",
-                   _socket.getSocketDescriptor(), buffer);
-    }
-
+    ESB_LOG_ERRNO_INFO(error, "socket:%d error formatting response header",
+                   _socket.getSocketDescriptor());
     return error;
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] formatted response headers",
-                 _socket.getSocketDescriptor(), error);
-  }
-
+  ESB_LOG_DEBUG("socket:%d formatted response headers",
+                 _socket.getSocketDescriptor());
   _state &= ~FORMATTING_HEADERS;
 
   if (FlushRequestHeaders) {
@@ -839,8 +687,7 @@ ESB::Error HttpClientSocket::formatRequestHeaders(ESB::SharedInt *isRunning,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
-                                               ESB::Logger *logger) {
+ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning) {
   ESB::Error error;
   int availableSize = 0;
   int requestedSize = 0;
@@ -852,13 +699,9 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
         _transaction->getHandler()->reserveRequestChunk(_transaction);
 
     if (0 > requestedSize) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] client handler aborted connection will "
+      ESB_LOG_DEBUG("socket:%d client handler aborted connection will "
                      "sending response body",
                      _socket.getSocketDescriptor());
-      }
-
       return ESB_INTR;  // remove from multiplexer
     }
 
@@ -870,22 +713,14 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
         _transaction->getIOBuffer(), requestedSize, &availableSize);
 
     if (ESB_AGAIN == error) {
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[socket:%d] partially formatted response body",
+      ESB_LOG_DEBUG("socket:%d partially formatted response body",
                      _socket.getSocketDescriptor());
-      }
-
       return ESB_AGAIN;  // keep in multiplexer
     }
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[socket:%d] error formatting response body: %d",
-                     _socket.getSocketDescriptor(), error);
-      }
-
+      ESB_LOG_ERRNO_INFO(error, "socket:%d error formatting response body",
+                     _socket.getSocketDescriptor());
       return error;  // remove from multiplexer
     }
 
@@ -900,29 +735,20 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
         _transaction->getIOBuffer()->getBuffer() +
             _transaction->getIOBuffer()->getWritePosition(),
         availableSize);
-
     _transaction->getIOBuffer()->setWritePosition(
         _transaction->getIOBuffer()->getWritePosition() + availableSize);
-
     _bodyBytesWritten += availableSize;
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] formatted chunk of size %d",
+    ESB_LOG_DEBUG("socket:%d formatted chunk of size %d",
                    _socket.getSocketDescriptor(), availableSize);
-    }
 
     // beginBlock reserves space for this operation
 
     error = _transaction->getFormatter()->endBlock(_transaction->getIOBuffer());
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(ESB::Logger::Err)) {
-        _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
-                     "[socket:%d] cannot format end block: %d",
-                     _socket.getSocketDescriptor(), error);
-      }
-
+      ESB_LOG_ERRNO_INFO(error, "socket:%d cannot format end block",
+                     _socket.getSocketDescriptor());
       return error;  // remove from multiplexer
     }
 
@@ -932,7 +758,7 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
     }
   }
 
-  if (false == isRunning->get()) {
+  if (!isRunning->get()) {
     return ESB_SHUTDOWN;
   }
 
@@ -941,31 +767,19 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
   error = _transaction->getFormatter()->endBody(_transaction->getIOBuffer());
 
   if (ESB_AGAIN == error) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(
-          ESB::Logger::Debug, __FILE__, __LINE__,
-          "[socket:%d] insufficient space in output buffer to format end body",
+    ESB_LOG_DEBUG("socket:%d insufficient space in output buffer to format end body",
           _socket.getSocketDescriptor());
-    }
-
     return ESB_AGAIN;  // keep in multiplexer
   }
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                   "[socket:%d] error formatting last chunk: %d",
-                   _socket.getSocketDescriptor(), error);
-    }
-
+    ESB_LOG_ERRNO_INFO(error, "socket:%d error formatting last chunk",
+                   _socket.getSocketDescriptor());
     return error;  // remove from multiplexer
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] finshed formatting body",
-                 _socket.getSocketDescriptor());
-  }
+  ESB_LOG_DEBUG("socket:%d finshed formatting body",
+      _socket.getSocketDescriptor());
 
   _state &= ~FORMATTING_BODY;
   _state |= FLUSHING_BODY;
@@ -973,21 +787,13 @@ ESB::Error HttpClientSocket::formatRequestBody(ESB::SharedInt *isRunning,
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-ESB::Error HttpClientSocket::flushBuffer(ESB::SharedInt *isRunning,
-                                         ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] flushing output buffer",
+ESB::Error HttpClientSocket::flushBuffer(ESB::SharedInt *isRunning) {
+  ESB_LOG_DEBUG("socket:%d flushing output buffer",
                  _socket.getSocketDescriptor());
-  }
 
-  if (false == _transaction->getIOBuffer()->isReadable()) {
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                   "[socket:%d] formatter jammed",
+  if (!_transaction->getIOBuffer()->isReadable()) {
+    ESB_LOG_INFO("socket:%d formatter jammed",
                    _socket.getSocketDescriptor());
-    }
-
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
@@ -998,12 +804,8 @@ ESB::Error HttpClientSocket::flushBuffer(ESB::SharedInt *isRunning,
 
     if (0 > bytesSent) {
       if (ESB_AGAIN == bytesSent) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] would block flushing output buffer",
+        ESB_LOG_DEBUG("socket:%d would block flushing output buffer",
                        _socket.getSocketDescriptor());
-        }
-
         return ESB_AGAIN;  // keep in multiplexer
       }
 
@@ -1012,26 +814,14 @@ ESB::Error HttpClientSocket::flushBuffer(ESB::SharedInt *isRunning,
         _state |= RETRY_STALE_CONNECTION;
       }
 
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        char buffer[100];
-
-        ESB::DescribeError(bytesSent, buffer, sizeof(buffer));
-
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[socket:%d] error flushing output buffer: %s",
-                     _socket.getSocketDescriptor(), buffer);
-      }
-
+      ESB_LOG_ERRNO_INFO(bytesSent, "socket:%d error flushing output buffer",
+                     _socket.getSocketDescriptor());
       return bytesSent;  // remove from multiplexer
     }
 
     _state &= ~FIRST_USE_AFTER_REUSE;
-
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] flushed %d bytes from output buffer",
+    ESB_LOG_DEBUG("socket:%d flushed %ld bytes from output buffer",
                    _socket.getSocketDescriptor(), bytesSent);
-    }
   }
 
   return _transaction->getIOBuffer()->isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;

@@ -29,8 +29,7 @@ namespace ES {
 
 static unsigned int BodySize = (sizeof(BODY) - 1);
 
-HttpEchoServerHandler::HttpEchoServerHandler(ESB::Logger *logger)
-    : _logger(logger) {}
+HttpEchoServerHandler::HttpEchoServerHandler() {}
 
 HttpEchoServerHandler::~HttpEchoServerHandler() {}
 

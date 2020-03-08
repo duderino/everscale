@@ -10,8 +10,8 @@
 #include <ESBFixedAllocator.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -54,8 +54,8 @@ AddressComparator::AddressComparator() {}
 AddressComparator::~AddressComparator() {}
 
 int AddressComparator::compare(const void *first, const void *second) const {
-  ESB::SocketAddress *address1 = (ESB::SocketAddress *)first;
-  ESB::SocketAddress *address2 = (ESB::SocketAddress *)second;
+  ESB::SocketAddress *address1 = (ESB::SocketAddress *) first;
+  ESB::SocketAddress *address2 = (ESB::SocketAddress *) second;
 
   assert(address1);
   assert(address2);
@@ -66,16 +66,14 @@ int AddressComparator::compare(const void *first, const void *second) const {
 
 static AddressComparator AddressComparator;
 
-HttpClientSocketFactory::HttpClientSocketFactory(
-    HttpClientCounters *clientCounters, ESB::Logger *logger)
-    : _logger(logger ? logger : ESB::NullLogger::GetInstance()),
-      _clientCounters(clientCounters),
+HttpClientSocketFactory::HttpClientSocketFactory(HttpClientCounters *clientCounters)
+    : _clientCounters(clientCounters),
       _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpClientSocket)) * 100,
                             ESB::SystemAllocator::GetInstance()),
       _allocator(&_unprotectedAllocator),
       _map(true, &AddressComparator,
            &_allocator,  // Will result in a leak if erase(), clear(), or
-                         // insert() with a uniqueness violation
+          // insert() with a uniqueness violation
            ESB::NullLock::Instance()),
       _embeddedList(),
       _mutex(),
@@ -84,24 +82,24 @@ HttpClientSocketFactory::HttpClientSocketFactory(
 ESB::Error HttpClientSocketFactory::initialize() { return ESB_SUCCESS; }
 
 void HttpClientSocketFactory::destroy() {
-  HttpClientSocket *socket = (HttpClientSocket *)_embeddedList.removeFirst();
+  HttpClientSocket *socket = (HttpClientSocket *) _embeddedList.removeFirst();
 
   while (socket) {
     socket->~HttpClientSocket();
-    socket = (HttpClientSocket *)_embeddedList.removeFirst();
+    socket = (HttpClientSocket *) _embeddedList.removeFirst();
   }
 
   ESB::SocketAddress *address = 0;
 
   for (ESB::MapIterator iterator = _map.getMinimumIterator();
        false == iterator.isNull(); iterator = iterator.getNext()) {
-    address = (ESB::SocketAddress *)iterator.getKey();
+    address = (ESB::SocketAddress *) iterator.getKey();
 
     assert(address);
 
     address->~SocketAddress();
 
-    socket = (HttpClientSocket *)iterator.getValue();
+    socket = (HttpClientSocket *) iterator.getValue();
 
     assert(socket);
 
@@ -119,73 +117,54 @@ HttpClientSocket *HttpClientSocketFactory::create(
 
   {
     ESB::WriteScopeLock scopeLock(_mutex);
-
     ESB::EmbeddedList *list =
-        (ESB::EmbeddedList *)_map.find(transaction->getPeerAddress());
+        (ESB::EmbeddedList *) _map.find(transaction->getPeerAddress());
 
     if (list) {
-      socket = (HttpClientSocket *)list->removeLast();
+      socket = (HttpClientSocket *) list->removeLast();
 
       if (socket) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          char buffer[16];
-
+        if (ESB_DEBUG_LOGGABLE) {
+          char buffer[ESB_IPV6_PRESENTATION_SIZE];
           transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[pool] Reusing connection for %s:%d", buffer,
-                       transaction->getPeerAddress()->getPort());
+          ESB_LOG_DEBUG("Reusing connection for '%s:%d'", buffer,
+                        transaction->getPeerAddress()->getPort());
         }
 
         assert(socket->isConnected());
-
         socket->reset(true, pool, transaction);
-
         return socket;
       }
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      char buffer[16];
-
+    if (ESB_DEBUG_LOGGABLE) {
+      char buffer[ESB_IPV6_PRESENTATION_SIZE];
       transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[pool] Creating new connection for %s:%d", buffer,
-                   transaction->getPeerAddress()->getPort());
+      ESB_LOG_DEBUG("Creating new connection for '%s:%d'", buffer,
+                    transaction->getPeerAddress()->getPort());
     }
 
-    // Try to reuse a dead socket
+    // Try to reuse the memory of a dead socket
+    socket = (HttpClientSocket *) _embeddedList.removeLast();
 
-    socket = (HttpClientSocket *)_embeddedList.removeLast();
+    if (socket) {
+      assert(false == socket->isConnected());
+      socket->reset(false, pool, transaction);
+
+      return socket;
+    }
   }
 
-  if (0 == socket) {
-    // Failing all else, allocate a new socket
+  // Failing all else, allocate a new socket
+  socket = new(&_allocator) HttpClientSocket(
+      pool, transaction, _clientCounters, &_cleanupHandler);
 
-    socket = new (&_allocator) HttpClientSocket(
-        pool, transaction, _clientCounters, &_cleanupHandler, _logger);
-
-    if (0 == socket) {
-      if (_logger->isLoggable(ESB::Logger::Critical)) {
-        char buffer[16];
-
-        transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-        _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                     "[pool] Cannot allocate new connection for %s:%d", buffer,
+  if (!socket && ESB_CRITICAL_LOGGABLE) {
+    char buffer[ESB_IPV6_PRESENTATION_SIZE];
+    transaction->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
+    ESB_LOG_CRITICAL("Cannot allocate new connection for '%s:%d'", buffer,
                      transaction->getPeerAddress()->getPort());
-      }
-
-      return 0;
-    }
-
-    return socket;
   }
-
-  assert(false == socket->isConnected());
-
-  socket->reset(false, pool, transaction);
 
   return socket;
 }
@@ -198,82 +177,61 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   ESB::WriteScopeLock scopeLock(_mutex);
 
   if (false == socket->isConnected()) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      char buffer[16];
-
+    if (ESB_DEBUG_LOGGABLE) {
+      char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[pool] Not returning connection for %s:%d to pool", buffer,
+      ESB_LOG_DEBUG("Not returning connection to '%s:%d' to pool", buffer,
                    socket->getPeerAddress()->getPort());
     }
 
     socket->close();  // idempotent, just to be safe
-
     _embeddedList.addLast(socket);
-
     return;
   }
 
   ESB::EmbeddedList *list =
-      (ESB::EmbeddedList *)_map.find(socket->getPeerAddress());
+      (ESB::EmbeddedList *) _map.find(socket->getPeerAddress());
 
   if (list) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      char buffer[16];
-
+    if (ESB_DEBUG_LOGGABLE) {
+      char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[pool] Returning connection for %s:%d to pool", buffer,
+      ESB_LOG_DEBUG("Returning connection to '%s:%d' to pool", buffer,
                    socket->getPeerAddress()->getPort());
     }
 
     list->addLast(socket);
-
     return;
   }
 
   ESB::SocketAddress *address =
-      new (&_allocator) ESB::SocketAddress(*socket->getPeerAddress());
+      new(&_allocator) ESB::SocketAddress(*socket->getPeerAddress());
 
-  if (0 == address) {
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      char buffer[16];
-
+  if (!address) {
+    if (ESB_CRITICAL_LOGGABLE) {
+      char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-      _logger->log(
-          ESB::Logger::Critical, __FILE__, __LINE__,
-          "[pool] Cannot return connection for %s:%d to pool: bad alloc",
-          buffer, socket->getPeerAddress()->getPort());
+      ESB_LOG_CRITICAL("Cannot return connection to '%s:%d' to pool: bad alloc",
+                       buffer, socket->getPeerAddress()->getPort());
     }
 
     socket->close();
-
     _embeddedList.addLast(socket);
-
     return;
   }
 
-  list = new (&_allocator) ESB::EmbeddedList();
+  list = new(&_allocator) ESB::EmbeddedList();
 
   if (0 == list) {
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      char buffer[16];
-
+    if (ESB_WARNING_LOGGABLE) {
+      char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
-
-      _logger->log(
-          ESB::Logger::Critical, __FILE__, __LINE__,
-          "[pool] Cannot return connection for %s:%d to pool: bad alloc",
-          buffer, socket->getPeerAddress()->getPort());
+      ESB_LOG_WARNING("Cannot return connection to '%s:%d' to pool: bad alloc",
+                      buffer, socket->getPeerAddress()->getPort());
     }
 
     socket->close();
-
     _embeddedList.addLast(socket);
-
     return;
   }
 
@@ -282,22 +240,14 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   ESB::Error error = _map.insert(address, list);
 
   if (ESB_SUCCESS != error) {
-    char buffer[1024];
-
-    ESB::DescribeError(error, buffer, sizeof(buffer));
-
-    if (_logger->isLoggable(ESB::Logger::Warning)) {
-      char dottedIP[16];
-
+    if (ESB_WARNING_LOGGABLE) {
+      char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
-
-      _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                   "[pool] Cannot return connection for %s:%d to pool: %s",
-                   dottedIP, socket->getPeerAddress()->getPort(), buffer);
+      ESB_LOG_ERRNO_WARNING(error, "Cannot return connection to '%s:%d' to pool",
+                   dottedIP, socket->getPeerAddress()->getPort());
     }
 
     socket->close();
-
     _embeddedList.addLast(socket);
   }
 }
@@ -309,7 +259,7 @@ HttpClientSocketFactory::CleanupHandler::CleanupHandler(
 HttpClientSocketFactory::CleanupHandler::~CleanupHandler() {}
 
 void HttpClientSocketFactory::CleanupHandler::destroy(ESB::Object *object) {
-  _factory->release((HttpClientSocket *)object);
+  _factory->release((HttpClientSocket *) object);
 }
 
 }  // namespace ES

@@ -21,10 +21,6 @@
 #include <ESBMultiplexedSocket.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 namespace ESB {
 
 /** A command that delegates i/o readiness events to multiple
@@ -39,9 +35,8 @@ class SocketMultiplexer : public Command {
    *
    * @param name The name of the multiplexer to be used in log messages.  Caller
    * is responsible for the strings memory - use a string literal if possible.
-   * @param logger An optional logger.  Pass NULL to not log anything.
    */
-  SocketMultiplexer(const char *name, Logger *logger);
+  SocketMultiplexer(const char *name);
 
   /** Destructor.
    */
@@ -90,7 +85,6 @@ class SocketMultiplexer : public Command {
 
  protected:
   const char *_name;
-  Logger *_logger;
 
  private:
   //  Disabled

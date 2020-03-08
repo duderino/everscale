@@ -2,8 +2,8 @@
 #include <ESHttpEchoClientHandler.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
@@ -16,10 +16,7 @@
 
 namespace ES {
 
-HttpEchoClientHandler::HttpEchoClientHandler(
-    const char *absPath, const char *method, const char *contentType,
-    const unsigned char *body, int bodySize, int totalTransactions,
-    HttpConnectionPool *pool, ESB::Logger *logger)
+HttpEchoClientHandler::HttpEchoClientHandler(const char *absPath, const char *method, const char *contentType,const unsigned char *body, int bodySize, int totalTransactions,HttpConnectionPool *pool)
     : _absPath(absPath),
       _method(method),
       _contentType(contentType),
@@ -27,7 +24,6 @@ HttpEchoClientHandler::HttpEchoClientHandler(
       _bodySize(bodySize),
       _totalTransactions(totalTransactions),
       _pool(pool),
-      _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _completedTransactions() {}
 
 HttpEchoClientHandler::~HttpEchoClientHandler() {}
@@ -67,30 +63,21 @@ void HttpEchoClientHandler::fillRequestChunk(HttpTransaction *transaction,
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
     HttpTransaction *transaction) {
   assert(transaction);
-
   HttpResponse *response = transaction->getResponse();
-
   assert(response);
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] headers parsed");
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] StatusCode: %d", response->getStatusCode());
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] ReasonPhrase: %s", response->getReasonPhrase());
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Version: HTTP/%d.%d\n",
+  if (ESB_DEBUG_LOGGABLE) {
+    ESB_LOG_DEBUG("[handler] headers parsed");
+    ESB_LOG_DEBUG("[handler] StatusCode: %d", response->getStatusCode());
+    ESB_LOG_DEBUG("[handler] ReasonPhrase: %s", response->getReasonPhrase());
+    ESB_LOG_DEBUG("[handler] Version: HTTP/%d.%d\n",
                  response->getHttpVersion() / 100,
                  response->getHttpVersion() % 100 / 10);
 
     for (HttpHeader *header = (HttpHeader *)response->getHeaders()->getFirst();
          header; header = (HttpHeader *)header->getNext()) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] %s: %s\n",
-                   (const char *)header->getFieldName(),
-                   0 == header->getFieldValue()
-                       ? "null"
-                       : (const char *)header->getFieldValue());
+      ESB_LOG_DEBUG("[handler] %s: %s\n",(const char *)header->getFieldName(),
+                   !header->getFieldValue() ? "null" : (const char *)header->getFieldValue());
     }
   }
 
@@ -104,24 +91,17 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   assert(chunk);
 
   if (0U == chunkSize) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[handler] Response body finished");
-    }
-
+    ESB_LOG_DEBUG("[handler] Response body finished");
     return ES_HTTP_CLIENT_HANDLER_CONTINUE;
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
+  if (ESB_DEBUG_LOGGABLE) {
     char buffer[4096];
     unsigned int size =
         (sizeof(buffer) - 1) > chunkSize ? chunkSize : (sizeof(buffer) - 1);
-
     memcpy(buffer, chunk, size);
     buffer[size] = 0;
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Received body chunk: %s", buffer);
+    ESB_LOG_DEBUG("[handler] Received body chunk: %s", buffer);
   }
 
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
@@ -129,123 +109,55 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
 
 void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
   if (_totalTransactions == _completedTransactions.inc()) {
-    if (_logger->isLoggable(ESB::Logger::Notice)) {
-      _logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                   "[handler] All transactions completed");
-    }
+    ESB_LOG_NOTICE("[handler] All transactions completed");
   }
 
   assert(transaction);
-
   HttpEchoClientContext *context =
       (HttpEchoClientContext *)transaction->getApplicationContext();
-
   assert(context);
-
   ESB::Allocator *allocator = transaction->getAllocator();
-
   assert(allocator);
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[handler] Transaction failed at begin state");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction failed at begin state");
       break;
-
     case ES_HTTP_CLIENT_HANDLER_RESOLVE:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[handler] Transaction failed at resolve state");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction failed at resolve state");
       break;
-
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[handler] Transaction failed at connect state");
-      }
-
-      break;
-
+      ESB_LOG_INFO("[handler] Transaction failed at connect state");
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at send request headers state");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction failed at send request headers state");
       break;
-
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[handler] Transaction failed at send request body state");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction failed at send request body state");
       break;
-
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at receive response headers state");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction failed at receive response headers state");
       break;
-
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at receive response body state");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction failed at receive response body state");
       break;
-
     case ES_HTTP_CLIENT_HANDLER_END:
-
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] Transaction finished");
-      }
-
+      ESB_LOG_INFO("[handler] Transaction finished");
       break;
-
     default:
-
-      if (_logger->isLoggable(ESB::Logger::Critical)) {
-        _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                     "[handler] Transaction failed at unknown state");
-      }
+      ESB_LOG_INFO("[handler] Transaction failed at unknown state");
   }
 
   if (0U == context->getRemainingIterations()) {
     context->~HttpEchoClientContext();
     allocator->deallocate(context);
     transaction->setApplicationContext(0);
-
     return;
   }
 
   HttpClientTransaction *newTransaction = _pool->createClientTransaction(this);
 
-  if (0 == newTransaction) {
-    if (_logger->isLoggable(ESB::Logger::Err)) {
-      _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
-                   "[handler] Cannot create new transaction: bad alloc");
-    }
-
+  if (!newTransaction) {
+    ESB_LOG_WARNING("[handler] Cannot create new transaction: bad alloc");
     return;
   }
 
@@ -255,8 +167,7 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
   newTransaction->setApplicationContext(context);
   transaction->setApplicationContext(0);
 
-  char dottedIP[16];
-
+  char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
   transaction->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
 
   ESB::Error error = HttpEchoClientRequestBuilder(
@@ -265,16 +176,7 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
 
   if (ESB_SUCCESS != error) {
     _pool->destroyClientTransaction(newTransaction);
-
-    if (_logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                   "[handler] cannot build request: %s");
-    }
-
+    ESB_LOG_ERRNO_WARNING(error, "[handler] cannot build request");
     return;
   }
 
@@ -282,24 +184,12 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
 
   if (ESB_SUCCESS != error) {
     _pool->destroyClientTransaction(newTransaction);
-
-    if (_logger->isLoggable(ESB::Logger::Err)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
-                   "[handler] Cannot execute transaction: %s", buffer);
-    }
-
+    ESB_LOG_ERRNO_WARNING(error, "[handler] cannot execute transaction");
     return;
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Resubmitted transaction.  %u iterations remaining",
+  ESB_LOG_DEBUG("[handler] Resubmitted transaction.  %u iterations remaining",
                  context->getRemainingIterations());
-  }
 }
 
 }  // namespace ES

@@ -117,6 +117,7 @@ check_symbol_exists(gethostbyname_r "netdb.h" HAVE_GETHOSTBYNAME_R_LINUX) # TODO
 check_include_file("arpa/inet.h" HAVE_ARPA_INET_H)
 check_symbol_exists(inet_pton "arpa/inet.h" HAVE_INET_PTON)
 check_symbol_exists(inet_ntop "arpa/inet.h" HAVE_INET_NTOP)
+check_symbol_exists(INET6_ADDRSTRLEN "arpa/inet.h" HAVE_INET6_ADDRSTRLEN)
 
 check_include_file("string.h" HAVE_STRING_H)
 check_symbol_exists(memset "string.h" HAVE_MEMSET)

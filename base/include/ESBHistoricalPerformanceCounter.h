@@ -17,10 +17,6 @@
 #include <ESBDiscardAllocator.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 namespace ESB {
 
 class HistoricalPerformanceCounter : public PerformanceCounter {
@@ -35,7 +31,7 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
    *   for each new window it creates.
    */
   HistoricalPerformanceCounter(const char *name, UInt16 windowSizeSec,
-                               Allocator *allocator, Logger *logger);
+                               Allocator *allocator);
 
   virtual ~HistoricalPerformanceCounter();
 
@@ -61,7 +57,6 @@ class HistoricalPerformanceCounter : public PerformanceCounter {
 
   UInt16 _windowSizeSec;
   const char *_name;
-  Logger *_logger;
   EmbeddedList _list;
   mutable Mutex _lock;
   DiscardAllocator _allocator;

@@ -10,8 +10,8 @@
 #include <ESBFixedAllocator.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -20,10 +20,8 @@
 
 namespace ES {
 
-HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters,
-                                                 ESB::Logger *logger)
-    : _logger(logger ? logger : ESB::NullLogger::GetInstance()),
-      _counters(counters),
+HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters)
+    : _counters(counters),
       _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpServerSocket)) * 100,
                             ESB::SystemAllocator::GetInstance()),
       _allocator(&_unprotectedAllocator),
@@ -56,7 +54,7 @@ HttpServerSocket *HttpServerSocketFactory::create(
 
   if (!socket) {
     socket = new (&_allocator)
-        HttpServerSocket(handler, &_cleanupHandler, _logger, _counters);
+        HttpServerSocket(handler, &_cleanupHandler, _counters);
     if (!socket) {
       return 0;
     }

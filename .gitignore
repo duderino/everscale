@@ -14,3 +14,4 @@ base/include/ESBConfig.h
 unit-tf/include/ESTFConfig.h
 .idea
 *-test
+_deps

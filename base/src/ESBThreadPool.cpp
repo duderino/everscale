@@ -6,8 +6,8 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 namespace ESB {
@@ -16,8 +16,7 @@ namespace ESB {
 
 class ThreadPoolWorker : public Thread {
  public:
-  ThreadPoolWorker(int workerId, const char *name, SharedEmbeddedQueue *queue,
-                   Logger *logger);
+  ThreadPoolWorker(int workerId, const char *name, SharedEmbeddedQueue *queue);
 
   virtual ~ThreadPoolWorker();
 
@@ -31,73 +30,46 @@ class ThreadPoolWorker : public Thread {
   int _workerId;
   const char *_name;
   SharedEmbeddedQueue *_queue;
-  Logger *_logger;
 };
 
-ThreadPool::ThreadPool(const char *name, int threads, Logger *logger,
-                       Allocator *allocator)
+ThreadPool::ThreadPool(const char *name, int threads, Allocator *allocator)
     : _numThreads(threads < MIN_THREADS ? MIN_THREADS : threads),
       _name(name ? name : "ThreadPool"),
       _threads(0),
       _allocator(allocator ? allocator : SystemAllocator::GetInstance()),
-      _logger(logger ? logger : NullLogger::GetInstance()),
       _queue() {}
 
 ThreadPool::~ThreadPool() {}
 
 Error ThreadPool::start() {
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s] starting", _name);
-  }
+  ESB_LOG_NOTICE("ThreadPool '%s' starting", _name);
 
   if (false == createWorkerThreads()) {
-    if (_logger->isLoggable(Logger::Critical)) {
-      _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s] cannot start: Out Of Memory");
-    }
-
+    ESB_LOG_CRITICAL("Cannot start ThreadPool '%s': out of threads", _name);
     return ESB_OUT_OF_MEMORY;
   }
 
   Error error;
 
   for (int i = 0; i < _numThreads; ++i) {
-    if (_logger->isLoggable(Logger::Notice)) {
-      _logger->log(Logger::Notice, __FILE__, __LINE__,
-                   "[%s] starting worker %d", _name, i + 1);
-    }
+    ESB_LOG_DEBUG("Starting worker '%s:%d' starting", _name, i + 1);
 
     error = _threads[i]->start();
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(Logger::Critical)) {
-        char buffer[100];
-
-        DescribeError(error, buffer, sizeof(buffer));
-
-        _logger->log(Logger::Critical, __FILE__, __LINE__,
-                     "[%s] cannot start worker %d: %s", _name, i + 1, buffer);
-      }
-
+      ESB_LOG_ERRNO_CRITICAL(error, "Cannot start worker '%s:%d'", _name, i+1);
       _numThreads = i;
-
       stop();
-
       return error;
     }
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s] started", _name);
-  }
-
+  ESB_LOG_NOTICE("ThreadPool '%s' started", _name);
   return ESB_SUCCESS;
 }
 
 void ThreadPool::stop() {
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s] stopping", _name);
-  }
+  ESB_LOG_NOTICE("ThreadPool '%s' stopping", _name);
 
   // worker threads will get ESB_SHUTDOWN next time they try to pull an item
   // from the queue
@@ -111,30 +83,17 @@ void ThreadPool::stop() {
   Error error;
 
   for (int i = 0; i < _numThreads; ++i) {
-    if (_logger->isLoggable(Logger::Debug)) {
-      _logger->log(Logger::Debug, __FILE__, __LINE__,
-                   "[%s] waiting for worker %d", _name, i + 1);
-    }
+    ESB_LOG_DEBUG("Waiting for worker '%s:%d'", _name, i + 1);
 
     error = _threads[i]->join();
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(Logger::Warning)) {
-        char buffer[100];
-
-        DescribeError(error, buffer, sizeof(buffer));
-
-        _logger->log(Logger::Warning, __FILE__, __LINE__,
-                     "[%s] error joining worker %d: %s", _name, i + 1, buffer);
-      }
+      ESB_LOG_ERRNO_ERROR(error, "Error joining worker '%s:%d'", _name, i + 1);
     }
   }
 
   destroyWorkerThreads();
-
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__, "[%s] stopped", _name);
-  }
+  ESB_LOG_NOTICE("ThreadPool '%s' stopped", _name);
 }
 
 bool ThreadPool::createWorkerThreads() {
@@ -150,7 +109,7 @@ bool ThreadPool::createWorkerThreads() {
 
   for (int i = 0; i < _numThreads; ++i) {
     _threads[i] =
-        new (_allocator) ThreadPoolWorker(i + 1, _name, &_queue, _logger);
+        new (_allocator) ThreadPoolWorker(i + 1, _name, &_queue);
 
     if (0 == _threads[i]) {
       destroyWorkerThreads();
@@ -181,16 +140,13 @@ void ThreadPool::destroyWorkerThreads() {
 }
 
 ThreadPoolWorker::ThreadPoolWorker(int workerId, const char *name,
-                                   SharedEmbeddedQueue *queue, Logger *logger)
-    : _workerId(workerId), _name(name), _queue(queue), _logger(logger) {}
+                                   SharedEmbeddedQueue *queue)
+    : _workerId(workerId), _name(name), _queue(queue) {}
 
 ThreadPoolWorker::~ThreadPoolWorker() {}
 
 void ThreadPoolWorker::run() {
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:%d] starting", _name,
-                 _workerId);
-  }
+  ESB_LOG_DEBUG("Thread '%s:%d' starting", _name, _workerId);
 
   Error error;
   Command *command = 0;
@@ -202,49 +158,23 @@ void ThreadPoolWorker::run() {
     command = (Command *)_queue->pop(&error);
 
     if (ESB_SHUTDOWN == error) {
-      if (_logger->isLoggable(Logger::Debug)) {
-        _logger->log(Logger::Debug, __FILE__, __LINE__,
-                     "[%s:%d] received shutdown command", _name, _workerId);
-      }
-
+      ESB_LOG_DEBUG("Thread '%s:%d' shutting down", _name, _workerId);
       break;
     }
 
     if (ESB_SUCCESS != error) {
-      if (_logger->isLoggable(Logger::Err)) {
-        char buffer[100];
-
-        DescribeError(error, buffer, sizeof(buffer));
-
-        _logger->log(Logger::Err, __FILE__, __LINE__,
-                     "[%s:%d] cannot pop command from queue: %s", _name,
-                     _workerId, buffer);
-      }
-
+      ESB_LOG_ERRNO_ERROR(error, "Thread '%s:%d' cannot pop command from queue",
+          _name, _workerId);
       ++errorCount;
-
       continue;
     }
 
-    // todo add performance counters
-
-    if (_logger->isLoggable(Logger::Debug)) {
-      _logger->log(Logger::Debug, __FILE__, __LINE__,
-                   "[%s:%d] starting command %s", _name, _workerId,
-                   command->getName());
-    }
-
+    ESB_LOG_DEBUG("Thread '%s:%d' starting command '%s'", _name, _workerId, command->getName());
     cleanup = command->run(&_isRunning);
-
-    if (_logger->isLoggable(Logger::Debug)) {
-      _logger->log(Logger::Debug, __FILE__, __LINE__,
-                   "[%s:%d] finished command %s", _name, _workerId,
-                   command->getName());
-    }
+    ESB_LOG_DEBUG("Thread '%s:%d' finished command '%s'", _name, _workerId, command->getName());
 
     if (cleanup) {
       cleanupHandler = command->getCleanupHandler();
-
       if (cleanupHandler) {
         cleanupHandler->destroy(command);
       }
@@ -254,10 +184,7 @@ void ThreadPoolWorker::run() {
     errorCount = 0;
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:%d] exiting", _name,
-                 _workerId);
-  }
+  ESB_LOG_DEBUG("Thread '%s:%d' exiting", _name, _workerId);
 }
 
 }  // namespace ESB

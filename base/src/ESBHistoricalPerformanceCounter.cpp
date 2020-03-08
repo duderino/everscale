@@ -14,16 +14,18 @@
 #include <ESBSimplePerformanceCounter.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 namespace ESB {
 
 HistoricalPerformanceCounter::HistoricalPerformanceCounter(const char *name,
                                                            UInt16 windowSizeSec,
-                                                           Allocator *allocator,
-                                                           Logger *logger)
+                                                           Allocator *allocator)
     : PerformanceCounter(),
       _windowSizeSec(windowSizeSec),
       _name(name),
-      _logger(logger),
       _list(),
       _lock(),
       _allocator(sizeof(SimplePerformanceCounter) * 60 * 5, allocator) {}
@@ -66,12 +68,7 @@ void HistoricalPerformanceCounter::addObservation(const Date &start,
           SimplePerformanceCounter(_name, windowStart, windowStop);
 
       if (!counter) {
-        if (_logger->isLoggable(Logger::Warning)) {
-          _logger->log(
-              Logger::Warning, __FILE__, __LINE__,
-              "Cannot allocate memory for new window, dropping observation");
-        }
-
+        ESB_LOG_WARNING("Cannot allocate memory for new window, dropping observation");
         return;
       }
 

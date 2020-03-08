@@ -20,6 +20,7 @@ set(SOURCE_FILES
         src/ESBList.cpp
         src/ESBListeningTCPSocket.cpp
         src/ESBLockable.cpp
+        src/ESBLogger.cpp
         src/ESBMap.cpp
         src/ESBMutex.cpp
         src/ESBMultiplexedSocket.cpp
@@ -88,7 +89,7 @@ add_unit_test(shared-counter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE
 add_unit_test(smart-pointer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest.cpp)
 add_unit_test(shared-queue-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSharedQueueTest.cpp tests/ESBSharedQueueConsumer.cpp tests/ESBSharedQueueProducer.cpp)
 
-add_gtest(date-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBDateTest.cpp)
-add_gtest(simple-performance-counter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSimplePerformanceCounterTest.cpp)
-add_gtest(process-limits-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBProcessLimitsTest.cpp)
-add_gtest(discard-allocator-test-2 "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBDiscardAllocatorTest2.cpp)
+add_gtest(date-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBDateTest.cpp)
+add_gtest(simple-performance-counter-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSimplePerformanceCounterTest.cpp)
+add_gtest(process-limits-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBProcessLimitsTest.cpp)
+add_gtest(discard-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBDiscardAllocatorTest2.cpp)

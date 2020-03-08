@@ -26,12 +26,10 @@ class EpollMultiplexerFactory : public SocketMultiplexerFactory {
    * @param name The name of the created multiplexer to be used in log messages.
    * Caller is responsible for the strings memory - use a string literal if
    * possible.
-   * @param logger An optional logger.  Pass NULL to not log anything.
    * @param allocator epoll socket multiplexers will be allocated using this
    * allocator.
    */
-  EpollMultiplexerFactory(const char *name, Logger *logger,
-                          Allocator *allocator);
+  EpollMultiplexerFactory(const char *name, Allocator *allocator);
 
   /** Destructor.
    */
@@ -67,7 +65,6 @@ class EpollMultiplexerFactory : public SocketMultiplexerFactory {
   EpollMultiplexerFactory &operator=(const EpollMultiplexerFactory &);
 
   const char *_name;
-  Logger *_logger;
   Allocator *_allocator;
 };
 

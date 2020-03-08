@@ -1,10 +1,6 @@
 #ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
 #define ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_COUNTERS_H
 #include <ESHttpClientCounters.h>
 #endif
@@ -25,8 +21,7 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
    * @param allocator The counter will grab memory from this allocator
    *   for each new window it creates.
    */
-  HttpClientHistoricalCounters(time_t windowSizeSec, ESB::Allocator *allocator,
-                               ESB::Logger *logger);
+  HttpClientHistoricalCounters(time_t windowSizeSec, ESB::Allocator *allocator);
 
   virtual ~HttpClientHistoricalCounters();
 

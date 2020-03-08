@@ -2,12 +2,15 @@
 #include <ESBSystemDnsClient.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #include <netdb.h>
 
 namespace ESB {
 
-SystemDnsClient::SystemDnsClient(Logger *logger)
-    : DnsClient(), _logger(logger) {}
+SystemDnsClient::SystemDnsClient() : DnsClient() {}
 
 SystemDnsClient::~SystemDnsClient() {}
 
@@ -49,33 +52,14 @@ Error SystemDnsClient::resolve(SocketAddress *address,
     switch (hostErrno) {
       case HOST_NOT_FOUND:
       case NO_ADDRESS:
-
-        if (_logger->isLoggable(Logger::Warning)) {
-          _logger->log(Logger::Warning, __FILE__, __LINE__,
-                       "[resolver] Cannot resolve hostname %s", hostname);
-        }
-
+        ESB_LOG_ERRNO_DEBUG(hostErrno, "Cannot resolve hostname %s", hostname);
         return ESB_CANNOT_FIND;
-
       case TRY_AGAIN:
-
-        if (_logger->isLoggable(Logger::Err)) {
-          _logger->log(Logger::Err, __FILE__, __LINE__,
-                       "[resolver] Temporary error resolving hostname %s",
-                       hostname);
-        }
-
+        ESB_LOG_ERRNO_DEBUG(hostErrno, "Temporary error resolving hostname %s", hostname);
         return ESB_AGAIN;
-
       case NO_RECOVERY:
       default:
-
-        if (_logger->isLoggable(Logger::Err)) {
-          _logger->log(Logger::Err, __FILE__, __LINE__,
-                       "[resolver] Permanent error resolving hostname %s",
-                       hostname);
-        }
-
+        ESB_LOG_ERRNO_DEBUG(hostErrno, "Permanent error resolving hostname %s", hostname);
         return ESB_OTHER_ERROR;
     }
   }

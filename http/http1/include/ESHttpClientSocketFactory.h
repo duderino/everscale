@@ -17,10 +17,6 @@
 #include <ESBCleanupHandler.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
 #endif
@@ -63,8 +59,7 @@ class HttpClientSocketFactory {
    *
    * @param logger A logger
    */
-  HttpClientSocketFactory(HttpClientCounters *clientCounters,
-                          ESB::Logger *logger);
+  HttpClientSocketFactory(HttpClientCounters *clientCounters);
 
   /** Destructor.
    */
@@ -108,7 +103,6 @@ class HttpClientSocketFactory {
     HttpClientSocketFactory *_factory;
   };
 
-  ESB::Logger *_logger;
   HttpClientCounters *_clientCounters;
   ESB::DiscardAllocator _unprotectedAllocator;
   ESB::SharedAllocator _allocator;

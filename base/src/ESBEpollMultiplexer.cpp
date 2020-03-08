@@ -14,6 +14,10 @@
 #include <ESBReadScopeLock.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #ifndef ESB_ERROR_H
 #include <ESBError.h>
 #endif
@@ -60,9 +64,8 @@ namespace ESB {
 #define MIN_MAX_SOCKETS 1
 #define IDLE_CHECK_SEC 30
 
-EpollMultiplexer::EpollMultiplexer(const char *name, int maxSockets,
-                                   Logger *logger, Allocator *allocator)
-    : SocketMultiplexer(name, logger),
+EpollMultiplexer::EpollMultiplexer(const char *name, int maxSockets, Allocator *allocator)
+    : SocketMultiplexer(name),
       _epollDescriptor(INVALID_SOCKET),
       _maxSockets(maxSockets < MIN_MAX_SOCKETS ? MIN_MAX_SOCKETS : maxSockets),
       _lastIdleCheckSec(0),
@@ -83,37 +86,35 @@ CleanupHandler *EpollMultiplexer::getCleanupHandler() { return 0; }
 
 const char *EpollMultiplexer::getName() const { return _name; }
 
-Error EpollMultiplexer::addMultiplexedSocket(
-    MultiplexedSocket *multiplexedSocket) {
+Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
   }
 
-  if (0 == multiplexedSocket) {
+  if (0 == socket) {
     return ESB_NULL_POINTER;
   }
 
-  SOCKET socketDescriptor = multiplexedSocket->getSocketDescriptor();
+  SOCKET fd = socket->getSocketDescriptor();
 
-  if (INVALID_SOCKET == socketDescriptor) {
+  assert(INVALID_SOCKET != fd);
+  if (INVALID_SOCKET == fd) {
     return ESB_INVALID_ARGUMENT;
   }
 
   struct epoll_event event;
-
   memset(&event, 0, sizeof(event));
-
   event.events = EPOLLERR | EPOLLONESHOT;
 
-  if (multiplexedSocket->wantAccept()) {
+  if (socket->wantAccept()) {
     event.events |= EPOLLIN;
-  } else if (multiplexedSocket->wantConnect()) {
+  } else if (socket->wantConnect()) {
     event.events |= EPOLLIN | EPOLLOUT | EPOLLHUP;
   } else {
-    if (multiplexedSocket->wantWrite()) {
+    if (socket->wantWrite()) {
       event.events |= EPOLLOUT | EPOLLHUP;
     }
-    if (multiplexedSocket->wantRead()) {
+    if (socket->wantRead()) {
       event.events |= EPOLLIN | EPOLLHUP;
     }
   }
@@ -121,94 +122,73 @@ Error EpollMultiplexer::addMultiplexedSocket(
   if ((EPOLLERR | EPOLLONESHOT) == event.events) {
     // means wantAccept(), wantConnect(), wantRead() and wantWrite() all
     // returned false
-
+    ESB_LOG_ERROR("Cannot add socket %d to %s:%d, socket wants nothing",
+        fd, _name, _epollDescriptor);
     return ESB_INVALID_ARGUMENT;
   }
 
   int currentSocketCount = _currentSocketCount.inc();
 
   if (currentSocketCount > _maxSockets) {
-    if (_logger->isLoggable(Logger::Err)) {
-      _logger->log(Logger::Err, __FILE__, __LINE__,
-                   "[%s:%d] cannot add socket %d to epoll descriptor %d: at "
-                   "limit of %d sockets",
-                   _name, _epollDescriptor, socketDescriptor, _epollDescriptor,
-                   _maxSockets);
-    }
-
+    ESB_LOG_ERROR("Cannot add socket %d to %s:%d: at limit of %d sockets",
+                  fd,_name, _epollDescriptor, _maxSockets);
     _currentSocketCount.dec();
     return ESB_OVERFLOW;
   }
 
   _lock.writeAcquire();
-  _currentSocketList.addLast(multiplexedSocket);
+  _currentSocketList.addLast(socket);
   assert(true == _currentSocketList.validate());
   _lock.writeRelease();
 
-  event.data.ptr = multiplexedSocket;
+  event.data.ptr = socket;
 
-  if (0 !=
-      epoll_ctl(_epollDescriptor, EPOLL_CTL_ADD, socketDescriptor, &event)) {
+  if (0 != epoll_ctl(_epollDescriptor, EPOLL_CTL_ADD, fd, &event)) {
     Error error = GetLastError();
-    if (_logger->isLoggable(Logger::Err)) {
-      char buffer[100];
-      DescribeError(error, buffer, sizeof(buffer));
-      _logger->log(Logger::Err, __FILE__, __LINE__,
-                   "[%s:%d] cannot add socket %d to epoll descriptor %d: %d:%s",
-                   _name, _epollDescriptor, socketDescriptor, _epollDescriptor,
-                   error, buffer);
-    }
+    ESB_LOG_ERRNO_ERROR(error, "Cannot add socket %d to %s:%d",fd, _name, _epollDescriptor);
+
     _lock.writeAcquire();
-    _currentSocketList.remove(multiplexedSocket);
+    _currentSocketList.remove(socket);
     assert(true == _currentSocketList.validate());
     _lock.writeRelease();
     _currentSocketCount.dec();
     return error;
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__,
-                 "[%s:%d] added socket %d to epoll descriptor %d.  Current "
-                 "socket count: %d",
-                 _name, _epollDescriptor, socketDescriptor, _epollDescriptor,
-                 currentSocketCount);
-  }
-
+  ESB_LOG_DEBUG("Added socket %d to %s:%d",fd, _name, _epollDescriptor);
   return ESB_SUCCESS;
 }
 
-Error EpollMultiplexer::updateMultiplexedSocket(
-    SharedInt *isRunning, MultiplexedSocket *multiplexedSocket) {
+Error EpollMultiplexer::updateMultiplexedSocket(SharedInt *isRunning, MultiplexedSocket *socket) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
   }
 
-  if (0 == multiplexedSocket) {
+  if (0 == socket) {
     return ESB_NULL_POINTER;
   }
 
-  SOCKET socketDescriptor = multiplexedSocket->getSocketDescriptor();
+  SOCKET fd = socket->getSocketDescriptor();
 
-  if (INVALID_SOCKET == socketDescriptor) {
+  assert(INVALID_SOCKET != fd);
+  if (INVALID_SOCKET == fd) {
     return ESB_INVALID_ARGUMENT;
   }
 
   struct epoll_event event;
-
   memset(&event, 0, sizeof(event));
-
   event.events = EPOLLERR | EPOLLONESHOT;
 
-  if (multiplexedSocket->wantAccept()) {
+  if (socket->wantAccept()) {
     event.events |= EPOLLIN;
-  } else if (multiplexedSocket->wantConnect()) {
+  } else if (socket->wantConnect()) {
     event.events |= EPOLLIN | EPOLLOUT | EPOLLHUP;
   } else {
-    if (multiplexedSocket->wantWrite()) {
+    if (socket->wantWrite()) {
       event.events |= EPOLLOUT | EPOLLHUP;
     }
 
-    if (multiplexedSocket->wantRead()) {
+    if (socket->wantRead()) {
       event.events |= EPOLLIN | EPOLLHUP;
     }
   }
@@ -216,64 +196,44 @@ Error EpollMultiplexer::updateMultiplexedSocket(
   if ((EPOLLERR | EPOLLONESHOT) == event.events) {
     // means wantAccept(), wantConnect(), wantRead() and wantWrite() all
     // returned false
-
+    ESB_LOG_ERROR("Cannot update socket %d in %s:%d, socket wants nothing",
+                  fd, _name, _epollDescriptor);
     return ESB_INVALID_ARGUMENT;
   }
 
-  event.data.ptr = multiplexedSocket;
+  event.data.ptr = socket;
 
-  if (0 !=
-      epoll_ctl(_epollDescriptor, EPOLL_CTL_MOD, socketDescriptor, &event)) {
+  if (0 != epoll_ctl(_epollDescriptor, EPOLL_CTL_MOD, fd, &event)) {
     Error error = GetLastError();
-    if (_logger->isLoggable(Logger::Err)) {
-      char buffer[100];
-      DescribeError(error, buffer, sizeof(buffer));
-      _logger->log(
-          Logger::Err, __FILE__, __LINE__,
-          "[%s:%d] cannot update socket %d in epoll descriptor %d: %d:%s",
-          _name, _epollDescriptor, socketDescriptor, _epollDescriptor, error,
-          buffer);
-    }
+    ESB_LOG_ERRNO_ERROR(error, "Cannot update socket %d in %s:%d",
+                  fd, _name, _epollDescriptor);
     return error;
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__,
-                 "[%s:%d] updated socket %d in epoll descriptor %d", _name,
-                 _epollDescriptor, socketDescriptor, _epollDescriptor);
-  }
-
+  ESB_LOG_DEBUG("Updated socket %d in %s:%d", fd, _name, _epollDescriptor);
   return ESB_SUCCESS;
 }
 
-Error EpollMultiplexer::removeMultiplexedSocket(
-    SharedInt *isRunning, MultiplexedSocket *multiplexedSocket,
-    bool removeFromList) {
+Error EpollMultiplexer::removeMultiplexedSocket(SharedInt *isRunning, MultiplexedSocket *socket, bool removeFromList) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
   }
 
-  if (0 == multiplexedSocket) {
+  if (!socket) {
     return ESB_NULL_POINTER;
   }
 
-  SOCKET socketDescriptor = multiplexedSocket->getSocketDescriptor();
+  SOCKET fd = socket->getSocketDescriptor();
 
-  if (INVALID_SOCKET == socketDescriptor) {
+  assert(INVALID_SOCKET != fd);
+  if (INVALID_SOCKET == fd) {
     return ESB_INVALID_ARGUMENT;
   }
 
-  if (0 != epoll_ctl(_epollDescriptor, EPOLL_CTL_DEL, socketDescriptor, 0)) {
+  if (0 != epoll_ctl(_epollDescriptor, EPOLL_CTL_DEL, fd, 0)) {
     Error error = GetLastError();
-    if (_logger->isLoggable(Logger::Err)) {
-      char buffer[100];
-      DescribeError(error, buffer, sizeof(buffer));
-      _logger->log(
-          Logger::Err, __FILE__, __LINE__,
-          "[%s:%d] cannot remove socket %d from epoll descriptor %d: %d:%s",
-          _name, _epollDescriptor, socketDescriptor, _epollDescriptor, error,
-          buffer);
-    }
+    ESB_LOG_ERRNO_ERROR(error, "Cannot remove socket %d from %s:%d",
+          fd, _name, _epollDescriptor);
     return error;
   }
 
@@ -281,7 +241,7 @@ Error EpollMultiplexer::removeMultiplexedSocket(
 
   if (removeFromList) {
     _lock.writeAcquire();
-    _currentSocketList.remove(multiplexedSocket);
+    _currentSocketList.remove(socket);
     assert(true == _currentSocketList.validate());
     _lock.writeRelease();
 
@@ -290,19 +250,13 @@ Error EpollMultiplexer::removeMultiplexedSocket(
     currentSocketCount = _currentSocketCount.get();
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__,
-                 "[%s:%d] removed socket %d from epoll descriptor %d. Current "
-                 "socket count: %d",
-                 _name, _epollDescriptor, socketDescriptor, _epollDescriptor,
-                 currentSocketCount);
-  }
+  ESB_LOG_DEBUG("Removed socket %d from %s:%d", fd, _name, _epollDescriptor);
 
-  if (multiplexedSocket->handleRemoveEvent(isRunning, _logger)) {
-    CleanupHandler *cleanupHandler = multiplexedSocket->getCleanupHandler();
+  if (socket->handleRemoveEvent(isRunning)) {
+    CleanupHandler *cleanupHandler = socket->getCleanupHandler();
     assert(cleanupHandler);
     if (cleanupHandler) {
-      cleanupHandler->destroy(multiplexedSocket);
+      cleanupHandler->destroy(socket);
     }
   }
 
@@ -310,21 +264,13 @@ Error EpollMultiplexer::removeMultiplexedSocket(
 }
 
 Error EpollMultiplexer::initialize() {
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s] initializing",
-                 _name);
-  }
+  ESB_LOG_NOTICE("Initializing multiplexer '%s'", _name);
 
   _events = (struct epoll_event *)_allocator->allocate(
       sizeof(struct epoll_event) * _maxSockets);
 
-  if (0 == _events) {
-    if (_logger->isLoggable(Logger::Critical)) {
-      _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s] cannot alloc epoll_event array of size %d", _name,
-                   _maxSockets);
-    }
-
+  if (!_events) {
+    ESB_LOG_CRITICAL("Cannot allocate %d epoll events for '%s'", _maxSockets, _name);
     return ESB_OUT_OF_MEMORY;
   }
 
@@ -332,31 +278,18 @@ Error EpollMultiplexer::initialize() {
 
   if (0 > _epollDescriptor) {
     Error error = GetLastError();
-    if (_logger->isLoggable(Logger::Critical)) {
-      char buffer[100];
-      DescribeError(error, buffer, sizeof(buffer));
-      _logger->log(Logger::Critical, __FILE__, __LINE__,
-                   "[%s] cannot create epoll descriptor: %d:%s", _name, error,
-                   buffer);
-    }
+    ESB_LOG_ERRNO_CRITICAL(error, "Cannot create epoll descriptor for '%s'", _name);
     _allocator->deallocate(_events);
     _events = 0;
     return error;
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:%d] initialized",
-                 _name, _epollDescriptor);
-  }
-
+  ESB_LOG_NOTICE("Multiplexer '%s' initialized", _name);
   return ESB_SUCCESS;
 }
 
 void EpollMultiplexer::destroy() {
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:%d] destroying",
-                 _name, _epollDescriptor);
-  }
+  ESB_LOG_NOTICE("Destroying multiplexer '%s'", _name);
 
   MultiplexedSocket *head = 0;
   SharedInt isRunning(false);
@@ -392,9 +325,7 @@ void EpollMultiplexer::destroy() {
     _events = 0;
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s] destroyed", _name);
-  }
+  ESB_LOG_NOTICE("Multiplexer '%s' destroyed", _name);
 }
 
 bool EpollMultiplexer::run(SharedInt *isRunning) {
@@ -410,60 +341,43 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
     return false;
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:%d] started", _name,
-                 _epollDescriptor);
-  }
+  ESB_LOG_NOTICE("Multiplexer '%s' started", _name);
 
   int numEvents = 0;
   int i = 0;
   Error error = ESB_SUCCESS;
-  MultiplexedSocket *multiplexedSocket = 0;
+  MultiplexedSocket *socket = 0;
   int errorCount = 0;
-  SOCKET socketDescriptor = INVALID_SOCKET;
+  SOCKET fd = INVALID_SOCKET;
   bool keepInMultiplexer = true;
 
   while (isRunning->get()) {
     checkIdleSockets(isRunning);
-
     numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets,
                            EPOLL_TIMEOUT_MILLIS);
 
     if (0 == numEvents) {
+      // Timeout
       continue;
     }
 
     if (0 > numEvents) {
       error = GetLastError();
-
       if (ESB_INTR == error) {
         continue;
       }
 
-      if (_logger->isLoggable(Logger::Critical)) {
-        char buffer[100];
-
-        DescribeError(error, buffer, sizeof(buffer));
-
-        _logger->log(Logger::Critical, __FILE__, __LINE__,
-                     "[%s:%d] error in epoll_wait: %s", _name, _epollDescriptor,
-                     buffer);
-      }
+      ESB_LOG_ERRNO_ERROR(error, "%s:%d error in epoll_wait", _name, _epollDescriptor);
 
       if (errorCount >= 10) {
-        if (_logger->isLoggable(Logger::Emergency)) {
-          _logger->log(
-              Logger::Emergency, __FILE__, __LINE__,
-              "[%s:%d] too many errors in epoll_wait, multiplexer exiting",
+        ESB_LOG_CRITICAL("%s:%d too many errors in epoll_wait, exiting",
               _name, _epollDescriptor);
-        }
 
         _allocator->deallocate(_events);
         close(_epollDescriptor);
         _epollDescriptor = INVALID_SOCKET;
 
-        return 0;  // caller should not cleanup this object after this method
-                   // returns
+        return false;
       }
 
       ++errorCount;
@@ -474,16 +388,14 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
     for (i = 0; i < numEvents; ++i) {
       keepInMultiplexer = true;
-
-      multiplexedSocket = (MultiplexedSocket *)_events[i].data.ptr;
-
-      socketDescriptor = multiplexedSocket->getSocketDescriptor();
+      socket = (MultiplexedSocket *)_events[i].data.ptr;
+      fd = socket->getSocketDescriptor();
 
       //
       // Handle Listening Socket
       //
 
-      if (multiplexedSocket->wantAccept()) {
+      if (socket->wantAccept()) {
         //
         // UNIX non-blocking accept rules:
         //
@@ -493,34 +405,17 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          error = TCPSocket::GetLastSocketError(socketDescriptor);
-
-          if (_logger->isLoggable(Logger::Err)) {
-            char buffer[100];
-
-            DescribeError(error, buffer, sizeof(buffer));
-
-            _logger->log(Logger::Err, __FILE__, __LINE__,
-                         "[%s:%d] error on listening socket %d: %s", _name,
-                         _epollDescriptor, socketDescriptor, buffer);
-          }
-
-          keepInMultiplexer =
-              multiplexedSocket->handleErrorEvent(error, isRunning, _logger);
+          error = TCPSocket::GetLastSocketError(fd);
+          ESB_LOG_ERRNO_ERROR(error, "%s:%d error on listening socket %d",
+              _name, _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
         } else if (_events[i].events & EPOLLIN) {
-          if (_logger->isLoggable(Logger::Debug)) {
-            _logger->log(Logger::Debug, __FILE__, __LINE__,
-                         "[%s:%d] accept event on listening socket %d", _name,
-                         _epollDescriptor, socketDescriptor);
-          }
-
-          keepInMultiplexer =
-              multiplexedSocket->handleAcceptEvent(isRunning, _logger);
-        } else if (_logger->isLoggable(Logger::Err)) {
-          _logger->log(
-              Logger::Err, __FILE__, __LINE__,
-              "[%s:%d] unexpected epoll event on listening socket %d: %d",
-              _name, _epollDescriptor, socketDescriptor, _events[i].events);
+          ESB_LOG_INFO("%s:%d accept event on listening socket %d", _name,
+                         _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleAcceptEvent(isRunning);
+        } else {
+          ESB_LOG_WARNING("%s:%d unknown event on listening socket %d: %d",
+              _name, _epollDescriptor, fd, _events[i].events);
         }
       }
 
@@ -528,7 +423,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
       //  Handle Connecting Socket
       //
 
-      else if (multiplexedSocket->wantConnect()) {
+      else if (socket->wantConnect()) {
         //
         // UNIX non-blocking connect rules:
         //
@@ -541,63 +436,38 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          error = TCPSocket::GetLastSocketError(socketDescriptor);
-
-          if (_logger->isLoggable(Logger::Warning)) {
-            char buffer[100];
-
-            DescribeError(error, buffer, sizeof(buffer));
-
-            _logger->log(Logger::Warning, __FILE__, __LINE__,
-                         "[%s:%d] error on conecting socket %d: %s", _name,
-                         _epollDescriptor, socketDescriptor, buffer);
-          }
-
-          keepInMultiplexer =
-              multiplexedSocket->handleErrorEvent(error, isRunning, _logger);
+          error = TCPSocket::GetLastSocketError(fd);
+          ESB_LOG_ERRNO_INFO(error, "%s:%d error on connecting socket %d",
+              _name, _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
         } else if (_events[i].events & EPOLLHUP) {
-          if (_logger->isLoggable(Logger::Warning)) {
-            _logger->log(Logger::Warning, __FILE__, __LINE__,
-                         "[%s:%d] end of file on connecting socket %d", _name,
-                         _epollDescriptor, socketDescriptor);
-          }
-
-          keepInMultiplexer =
-              multiplexedSocket->handleEndOfFileEvent(isRunning, _logger);
+          ESB_LOG_INFO("%s:%d end of file on connecting socket %d", _name,
+                         _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleEndOfFileEvent(isRunning);
         } else if (_events[i].events & EPOLLIN) {
-          int bytesReadable =
-              ConnectedTCPSocket::GetBytesReadable(socketDescriptor);
+          int bytesReadable = ConnectedTCPSocket::GetBytesReadable(fd);
 
           if (0 > bytesReadable) {
-            error = TCPSocket::GetLastSocketError(socketDescriptor);
-
-            if (_logger->isLoggable(Logger::Warning)) {
-              char buffer[100];
-
-              DescribeError(error, buffer, sizeof(buffer));
-
-              _logger->log(Logger::Warning, __FILE__, __LINE__,
-                           "[%s:%d] error on conecting socket %d: %s", _name,
-                           _epollDescriptor, socketDescriptor, buffer);
-            }
-
-            keepInMultiplexer =
-                multiplexedSocket->handleErrorEvent(error, isRunning, _logger);
+            error = TCPSocket::GetLastSocketError(fd);
+            ESB_LOG_ERRNO_INFO(error, "%s:%d error on connecting socket %d",
+                _name, _epollDescriptor, fd);
+            keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
           } else if (0 == bytesReadable) {
-            keepInMultiplexer =
-                multiplexedSocket->handleEndOfFileEvent(isRunning, _logger);
+            ESB_LOG_INFO("%s:%d immediate close on connecting socket %d",
+                          _name, _epollDescriptor, fd);
+            keepInMultiplexer = socket->handleEndOfFileEvent(isRunning);
           } else {
-            keepInMultiplexer =
-                multiplexedSocket->handleConnectEvent(isRunning, _logger);
+            ESB_LOG_INFO("%s:%d connecting socket %d connected",
+                         _name, _epollDescriptor, fd);
+            keepInMultiplexer = socket->handleConnectEvent(isRunning);
           }
         } else if (_events[i].events & EPOLLOUT) {
-          keepInMultiplexer =
-              multiplexedSocket->handleConnectEvent(isRunning, _logger);
-        } else if (_logger->isLoggable(Logger::Err)) {
-          _logger->log(
-              Logger::Err, __FILE__, __LINE__,
-              "[%s:%d] unexpected epoll event on connecting socket %d: %d",
-              _name, _epollDescriptor, socketDescriptor, _events[i].events);
+          ESB_LOG_INFO("%s:%d connecting socket %d connected",
+                       _name, _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleConnectEvent(isRunning);
+        } else {
+          ESB_LOG_WARNING("%s:%d unknown event on connecting socket %d: %d",
+                          _name, _epollDescriptor, fd, _events[i].events);
         }
       }
 
@@ -621,68 +491,40 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          error = TCPSocket::GetLastSocketError(socketDescriptor);
-
-          if (_logger->isLoggable(Logger::Debug)) {
-            char buffer[100];
-            DescribeError(error, buffer, sizeof(buffer));
-            _logger->log(Logger::Debug, __FILE__, __LINE__,
-                         "[%s:%d] error on conected socket %d: %d:%s", _name,
-                         _epollDescriptor, socketDescriptor, error, buffer);
-          }
-
-          keepInMultiplexer =
-              multiplexedSocket->handleErrorEvent(error, isRunning, _logger);
+          error = TCPSocket::GetLastSocketError(fd);
+          ESB_LOG_ERRNO_INFO(error, "%s:%d error on connected socket %d", 
+              _name, _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
         } else if (_events[i].events & EPOLLHUP) {
-          if (_logger->isLoggable(Logger::Debug)) {
-            _logger->log(Logger::Debug, __FILE__, __LINE__,
-                         "[%s:%d] end of file on connected socket %d", _name,
-                         _epollDescriptor, socketDescriptor);
-          }
-
-          keepInMultiplexer =
-              multiplexedSocket->handleEndOfFileEvent(isRunning, _logger);
+          ESB_LOG_INFO("%s:%d end of file on connected socket %d", _name,
+                         _epollDescriptor, fd);
+          keepInMultiplexer = socket->handleEndOfFileEvent(isRunning);
         } else {
-          if (multiplexedSocket->wantRead() && (_events[i].events & EPOLLIN)) {
-            if (_logger->isLoggable(Logger::Debug)) {
-              _logger->log(Logger::Debug, __FILE__, __LINE__,
-                           "[%s:%d] readable event for connected socket %d",
-                           _name, _epollDescriptor, socketDescriptor);
-            }
-
-            keepInMultiplexer =
-                multiplexedSocket->handleReadableEvent(isRunning, _logger);
+          if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
+            ESB_LOG_DEBUG("%s:%d readable event for connected socket %d",
+                           _name, _epollDescriptor, fd);
+            keepInMultiplexer = socket->handleReadableEvent(isRunning);
           }
 
-          if (keepInMultiplexer && multiplexedSocket->wantWrite() &&
+          if (keepInMultiplexer && socket->wantWrite() &&
               (_events[i].events & EPOLLOUT)) {
-            if (_logger->isLoggable(Logger::Debug)) {
-              _logger->log(Logger::Debug, __FILE__, __LINE__,
-                           "[%s:%d] writable event for connected socket %d",
-                           _name, _epollDescriptor, socketDescriptor);
-            }
-
-            keepInMultiplexer =
-                multiplexedSocket->handleWritableEvent(isRunning, _logger);
+            ESB_LOG_DEBUG("%s:%d writable event for connected socket %d",
+                           _name, _epollDescriptor, fd);
+            keepInMultiplexer = socket->handleWritableEvent(isRunning);
           }
         }
       }
 
       if (keepInMultiplexer) {
-        updateMultiplexedSocket(isRunning, multiplexedSocket);
+        updateMultiplexedSocket(isRunning, socket);
       } else {
-        removeMultiplexedSocket(isRunning, multiplexedSocket);
+        removeMultiplexedSocket(isRunning, socket);
       }
     }
   }
 
-  if (_logger->isLoggable(Logger::Notice)) {
-    _logger->log(Logger::Notice, __FILE__, __LINE__, "[%s:%d] stopped", _name,
-                 _epollDescriptor);
-  }
-
-  return false;  // caller should not cleanup this object after this method
-                 // returns
+  ESB_LOG_NOTICE("Multiplexer '%s' stopped", _name);
+  return false;
 }
 
 int EpollMultiplexer::getCurrentSockets() { return _currentSocketCount.get(); }
@@ -694,10 +536,7 @@ Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
     return ESB_SUCCESS;
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__,
-                 "[%s:%d] starting idle socket check", _name, _epollDescriptor);
-  }
+  ESB_LOG_DEBUG("%s:%d starting idle socket check", _name, _epollDescriptor);
 
   WriteScopeLock scopeLock(_lock);
 
@@ -709,13 +548,10 @@ Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
     next = (MultiplexedSocket *)current->getNext();
 
     if (current->isIdle()) {
-      if (_logger->isLoggable(Logger::Debug)) {
-        _logger->log(Logger::Debug, __FILE__, __LINE__,
-                     "[%s:%d] found idle socket %d", _name, _epollDescriptor,
+      ESB_LOG_DEBUG("%s:%d found idle socket %d", _name, _epollDescriptor,
                      current->getSocketDescriptor());
-      }
 
-      if (current->handleIdleEvent(isRunning, _logger)) {
+      if (current->handleIdleEvent(isRunning)) {
         updateMultiplexedSocket(isRunning, current);
       } else {
         removeMultiplexedSocket(isRunning, current, false);
@@ -728,11 +564,7 @@ Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
     current = next;
   }
 
-  if (_logger->isLoggable(Logger::Debug)) {
-    _logger->log(Logger::Debug, __FILE__, __LINE__,
-                 "[%s:%d] finished idle socket check", _name, _epollDescriptor);
-  }
-
+  ESB_LOG_DEBUG("%s:%d finished idle socket check", _name, _epollDescriptor);
   return ESB_SUCCESS;
 }
 

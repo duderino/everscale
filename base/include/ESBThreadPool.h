@@ -25,10 +25,6 @@
 #include <ESBCommand.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
 #endif
@@ -47,12 +43,10 @@ class ThreadPool {
    *  Caller responsible for the strings memory - use a string literal if
    * possible.
    * @param threads The number of threads to start for the thread pool.
-   * @param logger An optional logger.  Pass NULL to not log anything.
    * @param allocator Worker threads will be allocated with this
    *  allocator.
    */
-  ThreadPool(const char *name, int threads, Logger *logger,
-             Allocator *allocator);
+  ThreadPool(const char *name, int threads, Allocator *allocator);
 
   /** Destructor.
    */
@@ -111,8 +105,6 @@ class ThreadPool {
   const char *_name;
   Thread **_threads;
   Allocator *_allocator;
-  Logger *_logger;
-
   SharedEmbeddedQueue _queue;
 };
 

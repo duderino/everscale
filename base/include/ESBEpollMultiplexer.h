@@ -49,11 +49,9 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  handle. When this limit is hit, the multiplexer will stop accepting
    *  new connections from any listening sockets and reject any application
    *  requests to add new sockets.
-   * @param logger An optional logger.  Pass NULL to not log anything.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  EpollMultiplexer(const char *name, int maxSockets, Logger *logger,
-                   Allocator *allocator);
+  EpollMultiplexer(const char *name, int maxSockets, Allocator *allocator);
 
   /** Destructor.
    */
@@ -86,11 +84,11 @@ class EpollMultiplexer : public SocketMultiplexer {
 
   /** Add a new multiplexed socket to the socket multiplexer
    *
-   * @param multiplexedSocket The multiplexed socket
+   * @param socket The multiplexed socket
    * @return ESB_SUCCESS if successful, ESB_OVERFLOW if the maxSockets limit has
    *  been reached, another error code otherwise.
    */
-  virtual Error addMultiplexedSocket(MultiplexedSocket *multiplexedSocket);
+  virtual Error addMultiplexedSocket(MultiplexedSocket *socket);
 
   /** Run the multiplexer's event loop until shutdown.
    *
@@ -130,17 +128,17 @@ class EpollMultiplexer : public SocketMultiplexer {
   /** Keep socket in epoll and socket list, but possibly change the readiness
    *  events of interest.  This does not modify the _currentSocketCount.
    *
-   * @param multiplexedSocket The multiplexedSocket
+   * @param socket The multiplexedSocket
    */
   Error updateMultiplexedSocket(SharedInt *isRunning,
-                                MultiplexedSocket *multiplexedSocket);
+                                MultiplexedSocket *socket);
 
   /** Remove a multiplexed socket form the socket multiplexer
    *
-   * @param multiplexedSocket The multiplexed socket to remove
+   * @param socket The multiplexed socket to remove
    */
   Error removeMultiplexedSocket(SharedInt *isRunning,
-                                MultiplexedSocket *multiplexedSocket,
+                                MultiplexedSocket *socket,
                                 bool removeFromList = true);
 
   /** Periodically check for any idle sockets and delete them.

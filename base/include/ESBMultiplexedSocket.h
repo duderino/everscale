@@ -21,10 +21,6 @@
 #include <ESBSharedCounter.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 namespace ESB {
 
 /** A socket that can register for and receive events from a socket multiplexer
@@ -83,49 +79,45 @@ class MultiplexedSocket : public Command {
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleAcceptEvent(SharedInt *isRunning) = 0;
 
   /** Client connected socket has connected to the peer endpoint.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleConnectEvent(SharedInt *isRunning) = 0;
 
   /** Data is ready to be read.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleReadableEvent(SharedInt *isRunning) = 0;
 
   /** There is free space in the outgoing socket buffer.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleWritableEvent(SharedInt *isRunning) = 0;
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -133,48 +125,43 @@ class MultiplexedSocket : public Command {
    * @param errorCode The error code.
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(Error errorCode, SharedInt *isRunning,
-                                Logger *logger) = 0;
+  virtual bool handleErrorEvent(Error errorCode, SharedInt *isRunning) = 0;
 
   /** The socket's connection was closed.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleEndOfFileEvent(SharedInt *isRunning) = 0;
 
   /** The socket's connection has been idle for too long
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleIdleEvent(SharedInt *isRunning) = 0;
 
   /** The socket has been removed from the multiplexer
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(SharedInt *isRunning, Logger *logger) = 0;
+  virtual bool handleRemoveEvent(SharedInt *isRunning) = 0;
 
   /** Get the socket's socket descriptor.
    *

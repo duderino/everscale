@@ -47,7 +47,7 @@ class ConsoleLogger : public Logger {
    *
    *  @return the instance
    */
-  static ConsoleLogger *Instance();
+  static ConsoleLogger &Instance();
 
   /** Destructor
    */
@@ -65,20 +65,17 @@ class ConsoleLogger : public Logger {
    *  @param severity Messages with a severity greater than or equal to
    *      this severity level will be logged
    */
-  void setSeverity(Severity severity);
+  virtual void setSeverity(Severity severity);
 
   /** Log a message.
    *
    *  @param severity The severity of the event.
-   *  @param file The name of the file logging the message.
-   *  @param line The line of the file that the message was logged.
    *  @param format A printf-style format string.
    *  @return ESB_SUCCESS if successful, ESB_NULL_POINTER if any mandatory
    *      arguments are NULL, ESB_OPERATION_NOT_SUPPORTED if this platform
    *      does not suppoort console logging.
    */
-  Error log(Severity severity, const char *file, int line, const char *format,
-            ...);
+  virtual Error log(Severity severity, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 
   /** Placement new.
    *

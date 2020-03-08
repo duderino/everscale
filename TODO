@@ -1,8 +1,21 @@
+make all these unsigned chars in HttpMessage, HttpRequest, and HttpReponse chars
+
 perf counters
  - log to logger not FILE *
  - revisit efficency of historical perf counter.  turn into a composite with an interval?  rename time series?
  - simple perf counter and averaging counter should track variance - online/incremental variance algo
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
+multiplex socket
+ - consider not exposing isRunning to impls... they should be returning asap anyways
+ - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers
+logging
+ - No eval logging macros.  
+   - macros for logging error descriptions with 50 byte stack buffers
+   - Take care of non-atomic newline issue
+   - pretty print thread ids
+   - filenames, not full paths
+   - caching timestamp (check time every x increments)
+ - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
 http stack test
  - create proxy test:  proxy callbacks + route API
  - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
@@ -57,16 +70,12 @@ http stuff
  - perfect forward secrecy
  - sni-based cert serving
  - tls staples
+ - support 100 Continue
+ - support max requests per connection
+ - support receiving half closed from client while still sending outstanding response
 URL 
  - canonicalization / encode and decode per chromium RFC
  - username and pass
-logging
- - No eval logging macros.  
-   - macros for logging error descriptions with 50 byte stack buffers
-   - Take care of non-atomic newline issue
-   - pretty print thread ids
-   - filenames, not full paths
- - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
 bootstrap config
  - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
  - xds agent could just regenerate this, serializing updates and using atomic moves

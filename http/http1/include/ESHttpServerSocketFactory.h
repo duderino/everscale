@@ -35,7 +35,7 @@ namespace ES {
  */
 class HttpServerSocketFactory {
  public:
-  HttpServerSocketFactory(HttpServerCounters *counters, ESB::Logger *logger);
+  HttpServerSocketFactory(HttpServerCounters *counters);
 
   virtual ~HttpServerSocketFactory();
 
@@ -87,7 +87,6 @@ class HttpServerSocketFactory {
     HttpServerSocketFactory *_factory;
   };
 
-  ESB::Logger *_logger;
   HttpServerCounters *_counters;
   ESB::DiscardAllocator _unprotectedAllocator;
   ESB::SharedAllocator _allocator;
