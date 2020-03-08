@@ -13,6 +13,10 @@
 #include <ESBThread.h>
 #endif
 
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
+#endif
+
 namespace ESB {
 
 /** @defgroup log Logging
@@ -109,15 +113,15 @@ class Logger {
 
 #define ESB_STRING_LITERAL2(x) #x
 #define ESB_STRING_LITERAL(x) ESB_STRING_LITERAL2(x)
-#define ESB_LOG_PREFIX __FILE__ ":" ESB_STRING_LITERAL(__LINE__) ":%lu] "
-#define ESB_EMERGENCY_LOG_PREFIX "[EMERGENCY:" ESB_LOG_PREFIX
-#define ESB_ALERT_LOG_PREFIX "[ALERT:" ESB_LOG_PREFIX
-#define ESB_CRITICAL_LOG_PREFIX "[CRITICAL:" ESB_LOG_PREFIX
-#define ESB_ERROR_LOG_PREFIX "[ERROR:" ESB_LOG_PREFIX
-#define ESB_WARNING_LOG_PREFIX "[WARNING:" ESB_LOG_PREFIX
-#define ESB_NOTICE_LOG_PREFIX "[NOTICE:" ESB_LOG_PREFIX
-#define ESB_INFO_LOG_PREFIX "[INFO:" ESB_LOG_PREFIX
-#define ESB_DEBUG_LOG_PREFIX "[DEBUG:" ESB_LOG_PREFIX
+#define ESB_LOG_PREFIX __FILE__ ":" ESB_STRING_LITERAL(__LINE__) "] "
+#define ESB_EMERGENCY_LOG_PREFIX "[%lu:%lu:EMERGENCY:" ESB_LOG_PREFIX
+#define ESB_ALERT_LOG_PREFIX "[%lu:%lu:ALERT:" ESB_LOG_PREFIX
+#define ESB_CRITICAL_LOG_PREFIX "[%lu:%lu:CRITICAL:" ESB_LOG_PREFIX
+#define ESB_ERROR_LOG_PREFIX "[%lu:%lu:ERROR:" ESB_LOG_PREFIX
+#define ESB_WARNING_LOG_PREFIX "[%lu:%lu:WARNING:" ESB_LOG_PREFIX
+#define ESB_NOTICE_LOG_PREFIX "[%lu:%lu:NOTICE:" ESB_LOG_PREFIX
+#define ESB_INFO_LOG_PREFIX "[%lu:%lu:INFO:" ESB_LOG_PREFIX
+#define ESB_DEBUG_LOG_PREFIX "[%lu:%lu:DEBUG:" ESB_LOG_PREFIX
 #define ESB_ERRNO_BUFFER_SIZE 50
 #define ESB_EMERGENCY_LOGGABLE \
   (ESB::Logger::Instance().isLoggable(ESB::Logger::Emergency))
@@ -141,6 +145,7 @@ class Logger {
     if (ESB_EMERGENCY_LOGGABLE) {                                             \
       ESB::Logger::Instance().log(ESB::Logger::Emergency,                     \
                                   ESB_EMERGENCY_LOG_PREFIX FORMAT "\n",       \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
@@ -152,7 +157,8 @@ class Logger {
       ESB::DescribeError(ERRNO, buffer, sizeof(buffer));                    \
       ESB::Logger::Instance().log(                                          \
           ESB::Logger::Emergency, ESB_EMERGENCY_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);               \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(),       \
+          ##__VA_ARGS__, buffer);                                           \
     }                                                                       \
   } while (0)
 
@@ -161,19 +167,21 @@ class Logger {
     if (ESB_ALERT_LOGGABLE) {                                                 \
       ESB::Logger::Instance().log(ESB::Logger::Alert,                         \
                                   ESB_ALERT_LOG_PREFIX FORMAT "\n",           \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
 
-#define ESB_LOG_ALERT_ERRNO(ERRNO, FORMAT, ...)                     \
-  do {                                                              \
-    if (ESB_ALERT_LOGGABLE) {                                       \
-      char buffer[ESB_ERRNO_BUFFER_SIZE];                           \
-      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));            \
-      ESB::Logger::Instance().log(                                  \
-          ESB::Logger::Alert, ESB_ALERT_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);       \
-    }                                                               \
+#define ESB_LOG_ALERT_ERRNO(ERRNO, FORMAT, ...)                       \
+  do {                                                                \
+    if (ESB_ALERT_LOGGABLE) {                                         \
+      char buffer[ESB_ERRNO_BUFFER_SIZE];                             \
+      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));              \
+      ESB::Logger::Instance().log(                                    \
+          ESB::Logger::Alert, ESB_ALERT_LOG_PREFIX FORMAT ": %s\n",   \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(), \
+          ##__VA_ARGS__, buffer);                                     \
+    }                                                                 \
   } while (0)
 
 #define ESB_LOG_CRITICAL(FORMAT, ...)                                         \
@@ -181,6 +189,7 @@ class Logger {
     if (ESB_CRITICAL_LOGGABLE) {                                              \
       ESB::Logger::Instance().log(ESB::Logger::Critical,                      \
                                   ESB_CRITICAL_LOG_PREFIX FORMAT "\n",        \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
@@ -192,7 +201,8 @@ class Logger {
       ESB::DescribeError(ERRNO, buffer, sizeof(buffer));                  \
       ESB::Logger::Instance().log(                                        \
           ESB::Logger::Critical, ESB_CRITICAL_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);             \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(),     \
+          ##__VA_ARGS__, buffer);                                         \
     }                                                                     \
   } while (0)
 
@@ -201,19 +211,21 @@ class Logger {
     if (ESB_ERROR_LOGGABLE) {                                                 \
       ESB::Logger::Instance().log(ESB::Logger::Err,                           \
                                   ESB_ERROR_LOG_PREFIX FORMAT "\n",           \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
 
-#define ESB_LOG_ERROR_ERRNO(ERRNO, FORMAT, ...)                   \
-  do {                                                            \
-    if (ESB_ERROR_LOGGABLE) {                                     \
-      char buffer[ESB_ERRNO_BUFFER_SIZE];                         \
-      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));          \
-      ESB::Logger::Instance().log(                                \
-          ESB::Logger::Err, ESB_ERROR_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);     \
-    }                                                             \
+#define ESB_LOG_ERROR_ERRNO(ERRNO, FORMAT, ...)                       \
+  do {                                                                \
+    if (ESB_ERROR_LOGGABLE) {                                         \
+      char buffer[ESB_ERRNO_BUFFER_SIZE];                             \
+      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));              \
+      ESB::Logger::Instance().log(                                    \
+          ESB::Logger::Err, ESB_ERROR_LOG_PREFIX FORMAT ": %s\n",     \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(), \
+          ##__VA_ARGS__, buffer);                                     \
+    }                                                                 \
   } while (0)
 
 #define ESB_LOG_WARNING(FORMAT, ...)                                          \
@@ -221,6 +233,7 @@ class Logger {
     if (ESB_WARNING_LOGGABLE) {                                               \
       ESB::Logger::Instance().log(ESB::Logger::Warning,                       \
                                   ESB_WARNING_LOG_PREFIX FORMAT "\n",         \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
@@ -232,7 +245,8 @@ class Logger {
       ESB::DescribeError(ERRNO, buffer, sizeof(buffer));                \
       ESB::Logger::Instance().log(                                      \
           ESB::Logger::Warning, ESB_WARNING_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);           \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(),   \
+          ##__VA_ARGS__, buffer);                                       \
     }                                                                   \
   } while (0)
 
@@ -241,6 +255,7 @@ class Logger {
     if (ESB_NOTICE_LOGGABLE) {                                                \
       ESB::Logger::Instance().log(ESB::Logger::Notice,                        \
                                   ESB_NOTICE_LOG_PREFIX FORMAT "\n",          \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
@@ -261,19 +276,21 @@ class Logger {
     if (ESB_INFO_LOGGABLE) {                                                  \
       ESB::Logger::Instance().log(ESB::Logger::Info,                          \
                                   ESB_INFO_LOG_PREFIX FORMAT "\n",            \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
 
-#define ESB_LOG_INFO_ERRNO(ERRNO, FORMAT, ...)                    \
-  do {                                                            \
-    if (ESB_INFO_LOGGABLE) {                                      \
-      char buffer[ESB_ERRNO_BUFFER_SIZE];                         \
-      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));          \
-      ESB::Logger::Instance().log(                                \
-          ESB::Logger::Info, ESB_INFO_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);     \
-    }                                                             \
+#define ESB_LOG_INFO_ERRNO(ERRNO, FORMAT, ...)                        \
+  do {                                                                \
+    if (ESB_INFO_LOGGABLE) {                                          \
+      char buffer[ESB_ERRNO_BUFFER_SIZE];                             \
+      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));              \
+      ESB::Logger::Instance().log(                                    \
+          ESB::Logger::Info, ESB_INFO_LOG_PREFIX FORMAT ": %s\n",     \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(), \
+          ##__VA_ARGS__, buffer);                                     \
+    }                                                                 \
   } while (0)
 
 #define ESB_LOG_DEBUG(FORMAT, ...)                                            \
@@ -281,19 +298,21 @@ class Logger {
     if (ESB_DEBUG_LOGGABLE) {                                                 \
       ESB::Logger::Instance().log(ESB::Logger::Debug,                         \
                                   ESB_DEBUG_LOG_PREFIX FORMAT "\n",           \
+                                  ESB::Time::Instance().nowSec(),             \
                                   ESB::Thread::GetThreadId(), ##__VA_ARGS__); \
     }                                                                         \
   } while (0)
 
-#define ESB_LOG_DEBUG_ERRNO(ERRNO, FORMAT, ...)                     \
-  do {                                                              \
-    if (ESB_DEBUG_LOGGABLE) {                                       \
-      char buffer[ESB_ERRNO_BUFFER_SIZE];                           \
-      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));            \
-      ESB::Logger::Instance().log(                                  \
-          ESB::Logger::Debug, ESB_DEBUG_LOG_PREFIX FORMAT ": %s\n", \
-          ESB::Thread::GetThreadId(), ##__VA_ARGS__, buffer);       \
-    }                                                               \
+#define ESB_LOG_DEBUG_ERRNO(ERRNO, FORMAT, ...)                       \
+  do {                                                                \
+    if (ESB_DEBUG_LOGGABLE) {                                         \
+      char buffer[ESB_ERRNO_BUFFER_SIZE];                             \
+      ESB::DescribeError(ERRNO, buffer, sizeof(buffer));              \
+      ESB::Logger::Instance().log(                                    \
+          ESB::Logger::Debug, ESB_DEBUG_LOG_PREFIX FORMAT ": %s\n",   \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(), \
+          ##__VA_ARGS__, buffer);                                     \
+    }                                                                 \
   } while (0)
 
 #endif

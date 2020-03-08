@@ -11,6 +11,14 @@
 #include <time.h>
 #endif
 
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 namespace ESB {
 
 void *Thread::ThreadEntry(void *arg) {
@@ -81,7 +89,9 @@ void Thread::Sleep(long msec) {
 }
 
 Thread::ThreadId Thread::GetThreadId() {
-#ifdef HAVE_PTHREAD_SELF
+#if defined HAVE_SYSCALL && defined HAVE_GETTID
+  return syscall(SYS_gettid);
+#elif defined HAVE_PTHREAD_SELF
   return pthread_self();
 #else
 #error "pthread_self or equivalent is required"

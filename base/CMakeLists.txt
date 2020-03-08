@@ -53,6 +53,7 @@ set(SOURCE_FILES
         src/ESBHistoricalPerformanceCounter.cpp
         src/ESBSimplePerformanceCounter.cpp
         src/ESBProcessLimits.cpp
+        src/ESBTime.cpp
         )
 
 add_library(base STATIC ${SOURCE_FILES})
@@ -94,3 +95,4 @@ add_gtest(simple-performance-counter-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJE
 add_gtest(process-limits-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBProcessLimitsTest.cpp)
 add_gtest(discard-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBDiscardAllocatorTest2.cpp)
 add_gtest(logger-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBLoggerTest.cpp)
+add_gtest(time-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBTimeTest.cpp)

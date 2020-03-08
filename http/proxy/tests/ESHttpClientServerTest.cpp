@@ -54,6 +54,10 @@
 #include <ESTFAssert.h>
 #endif
 
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -123,6 +127,7 @@ int main(int argc, char **argv) {
     }
   }
 
+  ESB::Time::Instance().start();
   ESB::ConsoleLogger logger;
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
@@ -237,6 +242,10 @@ int main(int argc, char **argv) {
   clientStack.destroy();
   serverStack.destroy();
   allocator.destroy();  // context destructors will not be called.
+
+  ESB::Time::Instance().stop();
+  error = ESB::Time::Instance().join();
+  assert(ESB_SUCCESS == error);
 
   fflush(outputFile);
   fclose(outputFile);

@@ -83,7 +83,6 @@ check_symbol_exists(sigaction "signal.h" HAVE_SIGACTION)
 check_struct_has_member("struct sigaction" sa_handler "signal.h" HAVE_STRUCT_SIGACTION)
 
 check_include_file("stdio.h" HAVE_STDIO_H)
-set(ALLOW_CONSOLE_LOGGING 1) # TODO expose this as an option
 check_symbol_exists(vfprintf "stdio.h" HAVE_VFPRINTF)
 check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
 set(HAVE_FILE_T 1) # TODO detect with a test program
@@ -131,6 +130,7 @@ check_symbol_exists(memmove "string.h" HAVE_MEMMOVE)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 check_symbol_exists(gethostname "unistd.h" HAVE_GETHOSTNAME)
 check_symbol_exists(close "unistd.h" HAVE_CLOSE)
+check_symbol_exists(usleep "unistd.h" HAVE_USLEEP)
 
 check_include_file("sys/param.h" HAVE_SYS_PARAM_H)
 check_symbol_exists(MAXHOSTNAMELEN "sys/param.h" HAVE_MAXHOSTNAMELEN)
@@ -156,6 +156,16 @@ check_symbol_exists(getsockopt "sys/socket.h" HAVE_GETSOCKOPT)
 check_include_file("sys/ioctl.h" HAVE_SYS_IOCTL_H)
 check_symbol_exists(ioctl "sys/ioctl.h" HAVE_IOCTL)
 set(USE_IOCTL_FOR_NONBLOCK 1) #TODO make this decision with a test program
+
+check_include_file("sys/syscall.h" HAVE_SYS_SYSCALL_H)
+check_cxx_source_compiles("
+#include <unistd.h>
+#include <sys/syscall.h>
+int main () {
+  pid_t tid = syscall(SYS_gettid);
+  return 0 < tid;
+}" HAVE_GETTID)
+set(HAVE_SYSCALL ${HAVE_GETTID})
 
 check_include_file("sys/time.h" HAVE_SYS_TIME_H)
 check_struct_has_member("struct timeval" tv_usec "sys/time.h" HAVE_STRUCT_TIMEVAL)
