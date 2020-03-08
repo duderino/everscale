@@ -26,6 +26,10 @@
 #include <ESHttpServerSimpleCounters.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -42,7 +46,7 @@ static void printHelp() {
 int main(int argc, char **argv) {
   int port = 8080;
   int threads = 4;
-  int logLevel = ESB::Logger::Debug;
+  int logLevel = ESB::Logger::Notice;
 
   {
     int result = 0;
@@ -91,14 +95,12 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
-  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
+  ESB::ConsoleLogger logger;
+  logger.setSeverity((ESB::Logger::Severity)logLevel);
+  ESB::Logger::SetInstance(&logger);
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                "[main] starting. logLevel: %d, threads: %d, port: %d",
-                logLevel, threads, port);
-  }
+  ESB_LOG_NOTICE("[main] starting. logLevel: %d, threads: %d, port: %d",
+                 logLevel, threads, port);
 
   //
   // Install signal handlers
@@ -117,23 +119,14 @@ int main(int argc, char **argv) {
   ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
       ESB::ProcessLimits::GetSocketHardMax());
 
-  if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[256];
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "Cannot raise max fd limit: %s", buffer);
-    }
-    return -5;
-  }
+  ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
 
-  HttpEchoServerHandler handler(logger);
-  ESB::SystemDnsClient dnsClient(logger);
+  HttpEchoServerHandler handler;
+  ESB::SystemDnsClient dnsClient;
   HttpClientSimpleCounters clientCounters;
   HttpServerSimpleCounters serverCounters;
-
   HttpStack stack(&handler, &dnsClient, port, threads, &clientCounters,
-                  &serverCounters, logger);
+                  &serverCounters);
 
   error = stack.initialize();
 
@@ -158,10 +151,7 @@ int main(int argc, char **argv) {
   }
 
   serverCounters.printSummary(stdout);
-
   stack.destroy();
-
-  ESB::ConsoleLogger::Destroy();
 
   return 0;
 }

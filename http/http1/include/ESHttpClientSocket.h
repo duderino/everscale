@@ -36,7 +36,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @param cleanupHandler An object that can be used to destroy this one
    */
   HttpClientSocket(HttpConnectionPool *pool, HttpClientTransaction *transaction,
-                   HttpClientCounters *counters, ESB::CleanupHandler *cleanupHandler);
+                   HttpClientCounters *counters,
+                   ESB::CleanupHandler *cleanupHandler);
 
   /** Destructor.
    */
@@ -136,7 +137,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see ESB::TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::SharedInt *isRunning);
+  virtual bool handleErrorEvent(ESB::Error errorCode,
+                                ESB::SharedInt *isRunning);
 
   /** The socket's connection was closed.
    *

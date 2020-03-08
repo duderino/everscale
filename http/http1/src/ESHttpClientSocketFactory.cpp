@@ -54,8 +54,8 @@ AddressComparator::AddressComparator() {}
 AddressComparator::~AddressComparator() {}
 
 int AddressComparator::compare(const void *first, const void *second) const {
-  ESB::SocketAddress *address1 = (ESB::SocketAddress *) first;
-  ESB::SocketAddress *address2 = (ESB::SocketAddress *) second;
+  ESB::SocketAddress *address1 = (ESB::SocketAddress *)first;
+  ESB::SocketAddress *address2 = (ESB::SocketAddress *)second;
 
   assert(address1);
   assert(address2);
@@ -66,14 +66,15 @@ int AddressComparator::compare(const void *first, const void *second) const {
 
 static AddressComparator AddressComparator;
 
-HttpClientSocketFactory::HttpClientSocketFactory(HttpClientCounters *clientCounters)
+HttpClientSocketFactory::HttpClientSocketFactory(
+    HttpClientCounters *clientCounters)
     : _clientCounters(clientCounters),
       _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpClientSocket)) * 100,
                             ESB::SystemAllocator::GetInstance()),
       _allocator(&_unprotectedAllocator),
       _map(true, &AddressComparator,
            &_allocator,  // Will result in a leak if erase(), clear(), or
-          // insert() with a uniqueness violation
+                         // insert() with a uniqueness violation
            ESB::NullLock::Instance()),
       _embeddedList(),
       _mutex(),
@@ -82,24 +83,24 @@ HttpClientSocketFactory::HttpClientSocketFactory(HttpClientCounters *clientCount
 ESB::Error HttpClientSocketFactory::initialize() { return ESB_SUCCESS; }
 
 void HttpClientSocketFactory::destroy() {
-  HttpClientSocket *socket = (HttpClientSocket *) _embeddedList.removeFirst();
+  HttpClientSocket *socket = (HttpClientSocket *)_embeddedList.removeFirst();
 
   while (socket) {
     socket->~HttpClientSocket();
-    socket = (HttpClientSocket *) _embeddedList.removeFirst();
+    socket = (HttpClientSocket *)_embeddedList.removeFirst();
   }
 
   ESB::SocketAddress *address = 0;
 
   for (ESB::MapIterator iterator = _map.getMinimumIterator();
        false == iterator.isNull(); iterator = iterator.getNext()) {
-    address = (ESB::SocketAddress *) iterator.getKey();
+    address = (ESB::SocketAddress *)iterator.getKey();
 
     assert(address);
 
     address->~SocketAddress();
 
-    socket = (HttpClientSocket *) iterator.getValue();
+    socket = (HttpClientSocket *)iterator.getValue();
 
     assert(socket);
 
@@ -118,10 +119,10 @@ HttpClientSocket *HttpClientSocketFactory::create(
   {
     ESB::WriteScopeLock scopeLock(_mutex);
     ESB::EmbeddedList *list =
-        (ESB::EmbeddedList *) _map.find(transaction->getPeerAddress());
+        (ESB::EmbeddedList *)_map.find(transaction->getPeerAddress());
 
     if (list) {
-      socket = (HttpClientSocket *) list->removeLast();
+      socket = (HttpClientSocket *)list->removeLast();
 
       if (socket) {
         if (ESB_DEBUG_LOGGABLE) {
@@ -145,7 +146,7 @@ HttpClientSocket *HttpClientSocketFactory::create(
     }
 
     // Try to reuse the memory of a dead socket
-    socket = (HttpClientSocket *) _embeddedList.removeLast();
+    socket = (HttpClientSocket *)_embeddedList.removeLast();
 
     if (socket) {
       assert(false == socket->isConnected());
@@ -156,8 +157,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
   }
 
   // Failing all else, allocate a new socket
-  socket = new(&_allocator) HttpClientSocket(
-      pool, transaction, _clientCounters, &_cleanupHandler);
+  socket = new (&_allocator)
+      HttpClientSocket(pool, transaction, _clientCounters, &_cleanupHandler);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
@@ -181,7 +182,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
       char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
       ESB_LOG_DEBUG("Not returning connection to '%s:%d' to pool", buffer,
-                   socket->getPeerAddress()->getPort());
+                    socket->getPeerAddress()->getPort());
     }
 
     socket->close();  // idempotent, just to be safe
@@ -190,14 +191,14 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   }
 
   ESB::EmbeddedList *list =
-      (ESB::EmbeddedList *) _map.find(socket->getPeerAddress());
+      (ESB::EmbeddedList *)_map.find(socket->getPeerAddress());
 
   if (list) {
     if (ESB_DEBUG_LOGGABLE) {
       char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(buffer, sizeof(buffer));
       ESB_LOG_DEBUG("Returning connection to '%s:%d' to pool", buffer,
-                   socket->getPeerAddress()->getPort());
+                    socket->getPeerAddress()->getPort());
     }
 
     list->addLast(socket);
@@ -205,7 +206,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   }
 
   ESB::SocketAddress *address =
-      new(&_allocator) ESB::SocketAddress(*socket->getPeerAddress());
+      new (&_allocator) ESB::SocketAddress(*socket->getPeerAddress());
 
   if (!address) {
     if (ESB_CRITICAL_LOGGABLE) {
@@ -220,7 +221,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     return;
   }
 
-  list = new(&_allocator) ESB::EmbeddedList();
+  list = new (&_allocator) ESB::EmbeddedList();
 
   if (0 == list) {
     if (ESB_WARNING_LOGGABLE) {
@@ -243,8 +244,9 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     if (ESB_WARNING_LOGGABLE) {
       char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
       socket->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
-      ESB_LOG_ERRNO_WARNING(error, "Cannot return connection to '%s:%d' to pool",
-                   dottedIP, socket->getPeerAddress()->getPort());
+      ESB_LOG_WARNING_ERRNO(error,
+                            "Cannot return connection to '%s:%d' to pool",
+                            dottedIP, socket->getPeerAddress()->getPort());
     }
 
     socket->close();
@@ -259,7 +261,7 @@ HttpClientSocketFactory::CleanupHandler::CleanupHandler(
 HttpClientSocketFactory::CleanupHandler::~CleanupHandler() {}
 
 void HttpClientSocketFactory::CleanupHandler::destroy(ESB::Object *object) {
-  _factory->release((HttpClientSocket *) object);
+  _factory->release((HttpClientSocket *)object);
 }
 
 }  // namespace ES

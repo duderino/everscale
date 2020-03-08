@@ -26,28 +26,9 @@ namespace ESB {
  */
 class ConsoleLogger : public Logger {
  public:
-  /** Initialize the ConsoleLogger
-   *
-   *  @param severity Messages with a severity greater than or equal to
-   *      this severity level will be logged.
-   *  @return ESB_SUCCESS if successful, ESB_OPERATION_NOT_SUPPORTED if this
-   *      platform does support console logging.
+  /** Constructor
    */
-  static Error Initialize(Severity severity);
-
-  /** Destroy the ConsoleLogger
-   *
-   *  @return ESB_SUCCESS if successful, ESB_OPERATION_NOT_SUPPORTED if this
-   *      platform does not support console logging.
-   */
-  static Error Destroy();
-
-  /** Get a ConsoleLogger instance.  This method should only be called
-   *  when the ConsoleLogger is initialized.
-   *
-   *  @return the instance
-   */
-  static ConsoleLogger &Instance();
+  ConsoleLogger();
 
   /** Destructor
    */
@@ -75,7 +56,8 @@ class ConsoleLogger : public Logger {
    *      arguments are NULL, ESB_OPERATION_NOT_SUPPORTED if this platform
    *      does not suppoort console logging.
    */
-  virtual Error log(Severity severity, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
+  virtual Error log(Severity severity, const char *format, ...)
+      __attribute__((format(printf, 3, 4)));
 
   /** Placement new.
    *
@@ -88,14 +70,9 @@ class ConsoleLogger : public Logger {
   }
 
  private:
-  // Singleton idiom
-  ConsoleLogger();
-
   // Disabled
   ConsoleLogger(const ConsoleLogger &);
   ConsoleLogger &operator=(const ConsoleLogger &);
-
-  static ConsoleLogger _Instance;
 
   Severity _severity;
 };

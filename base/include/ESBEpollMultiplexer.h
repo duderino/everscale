@@ -137,8 +137,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @param socket The multiplexed socket to remove
    */
-  Error removeMultiplexedSocket(SharedInt *isRunning,
-                                MultiplexedSocket *socket,
+  Error removeMultiplexedSocket(SharedInt *isRunning, MultiplexedSocket *socket,
                                 bool removeFromList = true);
 
   /** Periodically check for any idle sockets and delete them.

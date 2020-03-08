@@ -35,126 +35,83 @@ HttpEchoServerHandler::~HttpEchoServerHandler() {}
 
 HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
     ESB::SocketAddress *address) {
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedIP[16];
-
+  if (ESB_INFO_LOGGABLE) {
+    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
     address->getIPAddress(dottedIP, sizeof(dottedIP));
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Accepted new connection: %s/%u", dottedIP,
+    ESB_LOG_INFO("Accepted new connection from %s:%u", dottedIP,
                  address->getPort());
   }
-
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::begin(
     HttpTransaction *transaction) {
   assert(transaction);
-
   ESB::Allocator *allocator = transaction->getAllocator();
-
   assert(allocator);
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedIP[16];
-
+  if (ESB_DEBUG_LOGGABLE) {
+    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
     transaction->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Beginning new transaction: %s/%u", dottedIP,
-                 transaction->getPeerAddress()->getPort());
+    ESB_LOG_DEBUG("Begin new transaction with %s:%u", dottedIP,
+                  transaction->getPeerAddress()->getPort());
   }
 
   HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
 
-  if (0 == context) {
-    if (_logger->isLoggable(ESB::Logger::Critical)) {
-      _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                   "[handler] Cannot allocate new context");
-    }
-
+  if (!context && ESB_WARNING_LOGGABLE) {
+    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
+    transaction->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
+    ESB_LOG_WARNING("Cannot allocate new transaction for %s:%u", dottedIP,
+                    transaction->getPeerAddress()->getPort());
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
-  assert(0 == transaction->getApplicationContext());
-
+  assert(!transaction->getApplicationContext());
   transaction->setApplicationContext(context);
-
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
     HttpTransaction *transaction) {
   assert(transaction);
-
   HttpRequest *request = transaction->getRequest();
-
   assert(request);
-
   HttpRequestUri *requestUri = request->getRequestUri();
-
   assert(requestUri);
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Method: %s",
-                 transaction->getRequest()->getMethod());
+  if (ESB_DEBUG_LOGGABLE) {
+    ESB_LOG_DEBUG("Received request headers");
+    ESB_LOG_DEBUG("Method: %s", transaction->getRequest()->getMethod());
 
     switch (transaction->getRequest()->getRequestUri()->getType()) {
       case HttpRequestUri::ES_URI_ASTERISK:
-
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] Asterisk Request-URI");
-
+        ESB_LOG_DEBUG("Asterisk Request-URI");
         break;
-
       case HttpRequestUri::ES_URI_HTTP:
       case HttpRequestUri::ES_URI_HTTPS:
-
-        _logger->log(
-            ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Scheme: %s",
-            HttpRequestUri::ES_URI_HTTP == requestUri->getType() ? "http"
-                                                                 : "https");
-        _logger->log(
-            ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Host: %s",
-            0 == requestUri->getHost() ? "none"
-                                       : (const char *)requestUri->getHost());
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] Port: %d", requestUri->getPort());
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] AbsPath: %s", requestUri->getAbsPath());
-        _logger->log(
-            ESB::Logger::Debug, __FILE__, __LINE__, "[handler] Query: %s",
-            requestUri->getQuery() ? "none"
-                                   : (const char *)requestUri->getQuery());
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] Fragment: %s",
-                     requestUri->getFragment()
-                         ? "none"
-                         : (const char *)requestUri->getFragment());
-
+        ESB_LOG_DEBUG("Scheme: %s",
+                      HttpRequestUri::ES_URI_HTTP == requestUri->getType()
+                          ? "http"
+                          : "https");
+        ESB_LOG_DEBUG("Host: %s", ESB_SAFE_STR(requestUri->getHost()));
+        ESB_LOG_DEBUG("Port: %d", requestUri->getPort());
+        ESB_LOG_DEBUG("AbsPath: %s", ESB_SAFE_STR(requestUri->getAbsPath()));
+        ESB_LOG_DEBUG("Query: %s", ESB_SAFE_STR(requestUri->getQuery()));
+        ESB_LOG_DEBUG("Fragment: %s", ESB_SAFE_STR(requestUri->getFragment()));
         break;
-
       case HttpRequestUri::ES_URI_OTHER:
-
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] Other: %s", requestUri->getOther());
-
+        ESB_LOG_DEBUG("Other: %s", ESB_SAFE_STR(requestUri->getOther()));
         break;
     }
 
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Version: HTTP/%d.%d\n",
-                 request->getHttpVersion() / 100,
-                 request->getHttpVersion() % 100 / 10);
+    ESB_LOG_DEBUG("Version: HTTP/%d.%d", request->getHttpVersion() / 100,
+                  request->getHttpVersion() % 100 / 10);
 
     for (HttpHeader *header = (HttpHeader *)request->getHeaders()->getFirst();
          header; header = (HttpHeader *)header->getNext()) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__, "[handler] %s: %s\n",
-                   (const char *)header->getFieldName(),
-                   0 == header->getFieldValue()
-                       ? "null"
-                       : (const char *)header->getFieldValue());
+      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->getFieldName()),
+                    ESB_SAFE_STR(header->getFieldValue()));
     }
   }
 
@@ -172,27 +129,19 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
   assert(response);
 
   if (0U == chunkSize) {
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[handler] Request body finished");
-    }
-
+    ESB_LOG_DEBUG("Request body finished");
     response->setStatusCode(200);
     response->setReasonPhrase((const unsigned char *)"OK");
-
     return ES_HTTP_SERVER_HANDLER_SEND_RESPONSE;
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
+  if (ESB_DEBUG_LOGGABLE) {
     char buffer[4096];
     unsigned int size =
         (sizeof(buffer) - 1) > chunkSize ? chunkSize : (sizeof(buffer) - 1);
-
     memcpy(buffer, chunk, size);
     buffer[size] = 0;
-
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[handler] Received body chunk: %s", buffer);
+    ESB_LOG_DEBUG("Received body chunk: %s", buffer);
   }
 
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
@@ -201,9 +150,7 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
 int HttpEchoServerHandler::reserveResponseChunk(HttpTransaction *transaction) {
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->getApplicationContext();
-
   assert(context);
-
   return BodySize - context->getBytesSent();
 }
 
@@ -213,10 +160,8 @@ void HttpEchoServerHandler::fillResponseChunk(HttpTransaction *transaction,
   assert(transaction);
   assert(chunk);
   assert(0 < chunkSize);
-
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->getApplicationContext();
-
   assert(context);
 
   unsigned int totalBytesRemaining = BodySize - context->getBytesSent();
@@ -231,14 +176,10 @@ void HttpEchoServerHandler::fillResponseChunk(HttpTransaction *transaction,
 void HttpEchoServerHandler::end(HttpTransaction *transaction,
                                 HttpServerHandler::State state) {
   assert(transaction);
-
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->getApplicationContext();
-
   assert(context);
-
   ESB::Allocator *allocator = transaction->getAllocator();
-
   assert(allocator);
 
   context->~HttpEchoServerContext();
@@ -247,69 +188,25 @@ void HttpEchoServerHandler::end(HttpTransaction *transaction,
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[handler] Transaction failed at begin state");
-      }
-
+      ESB_LOG_INFO("Transaction failed at begin state");
       break;
-
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at request header parse state");
-      }
-
+      ESB_LOG_INFO("Transaction failed at request header parse state");
       break;
-
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at request body parse state");
-      }
-
+      ESB_LOG_INFO("Transaction failed at request body parse state");
       break;
-
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at response header send state");
-      }
-
+      ESB_LOG_INFO("Transaction failed at response header send state");
       break;
-
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
-
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(
-            ESB::Logger::Warning, __FILE__, __LINE__,
-            "[handler] Transaction failed at response header send state");
-      }
-
+      ESB_LOG_INFO("Transaction failed at response header send state");
       break;
-
     case ES_HTTP_SERVER_HANDLER_END:
-
-      if (_logger->isLoggable(ESB::Logger::Debug)) {
-        _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                     "[handler] Transaction finished");
-      }
-
+      ESB_LOG_DEBUG("Transaction finished");
       break;
-
     default:
-
-      if (_logger->isLoggable(ESB::Logger::Critical)) {
-        _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                     "[handler] Transaction failed at unknown state");
-      }
+      ESB_LOG_WARNING("Transaction failed at unknown state");
   }
 }
 

@@ -68,7 +68,8 @@ void HistoricalPerformanceCounter::addObservation(const Date &start,
           SimplePerformanceCounter(_name, windowStart, windowStop);
 
       if (!counter) {
-        ESB_LOG_WARNING("Cannot allocate memory for new window, dropping observation");
+        ESB_LOG_WARNING(
+            "Cannot allocate memory for new window, dropping observation");
         return;
       }
 

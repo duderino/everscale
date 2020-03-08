@@ -25,19 +25,6 @@
 
 namespace ESB {
 
-ConsoleLogger ConsoleLogger::_Instance;
-
-Error ConsoleLogger::Initialize(Severity severity) {
-  _Instance._severity = severity;
-  return ESB_SUCCESS;
-}
-
-Error ConsoleLogger::Destroy() {
-  return ESB_SUCCESS;
-}
-
-ConsoleLogger &ConsoleLogger::Instance() { return _Instance; }
-
 ConsoleLogger::ConsoleLogger() : _severity(None) {}
 
 ConsoleLogger::~ConsoleLogger() {}
@@ -57,7 +44,7 @@ Error ConsoleLogger::log(Severity severity, const char *format, ...) {
     return ESB_SUCCESS;
   }
 
-#if defined HAVE_VA_START && defined HAVE_VFPRINTF && defined HAVE_VA_END
+#if defined HAVE_VA_START && defined HAVE_VA_END && defined HAVE_VFPRINTF
   va_list vaList;
   va_start(vaList, format);
   vfprintf(stderr, format, vaList);
@@ -68,4 +55,5 @@ Error ConsoleLogger::log(Severity severity, const char *format, ...) {
 
   return ESB_SUCCESS;
 }
-}
+
+}  // namespace ESB

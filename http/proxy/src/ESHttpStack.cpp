@@ -66,21 +66,21 @@ ESB::Error HttpStack::initialize() {
   ESB::Error error = _rootAllocator.initialize();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot initialize root allocator");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize root allocator");
     return error;
   }
 
   error = _clientSocketFactory.initialize();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot initialize client socket factory");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize client socket factory");
     return error;
   }
 
   error = _clientTransactionFactory.initialize();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot initialize client trans factory");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize client trans factory");
     return error;
   }
 
@@ -92,21 +92,21 @@ ESB::Error HttpStack::initialize() {
   error = _listeningSocket.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot bind to port %d", _port);
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %d", _port);
     return error;
   }
 
   error = _listeningSocket.listen();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot listen on port %d", _port);
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %d", _port);
     return error;
   }
 
   error = _serverSocketFactory.initialize();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot initialize server socket factory");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize server socket factory");
     return error;
   }
 
@@ -120,7 +120,7 @@ ESB::Error HttpStack::start() {
   ESB::Error error = _dispatcher.start();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot start multiplexer dispatcher");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot start multiplexer dispatcher");
     return error;
   }
 
@@ -145,7 +145,8 @@ ESB::Error HttpStack::start() {
     error = _dispatcher.addMultiplexedSocket(i, socket);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERRNO_CRITICAL(error, "Cannot add listening socket to multiplexer");
+      ESB_LOG_CRITICAL_ERRNO(error,
+                             "Cannot add listening socket to multiplexer");
       return error;
     }
   }
@@ -247,10 +248,10 @@ ESB::Error HttpStack::executeClientTransaction(
   if (false == socket->isConnected()) {
     error = socket->connect();
 
-    if (ESB_SUCCESS!=error) {
+    if (ESB_SUCCESS != error) {
       _clientCounters->getFailures()->addObservation(
           transaction->getStartTime(), ESB::Date::Now());
-      ESB_LOG_ERRNO_WARNING(error, "Cannot connect to %s:%d", hostname, port);
+      ESB_LOG_WARNING_ERRNO(error, "Cannot connect to %s:%d", hostname, port);
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
       socket->close();
@@ -267,7 +268,7 @@ ESB::Error HttpStack::executeClientTransaction(
     socket->close();
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot add cient socket to multiplexer");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add cient socket to multiplexer");
     _clientSocketFactory.release(socket);
     return error;
   }

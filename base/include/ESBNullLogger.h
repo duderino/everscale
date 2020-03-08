@@ -13,9 +13,9 @@ namespace ESB {
  */
 class NullLogger : public Logger {
  public:
-  /** Singleton accessor.
+  /** Constructor
    */
-  inline static NullLogger *GetInstance() { return &_Instance; }
+  NullLogger();
 
   /** Destructor
    */
@@ -43,18 +43,13 @@ class NullLogger : public Logger {
    *  @param format A printf-style format string.
    *  @return ESB_SUCCESS if successful, another value otherwise.
    */
-  virtual Error log(Severity severity, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
+  virtual Error log(Severity severity, const char *format, ...)
+      __attribute__((format(printf, 3, 4)));
 
  private:
-  /** Constructor
-   */
-  NullLogger();
-
   // Disabled
   NullLogger(const NullLogger &);
   void operator=(const NullLogger &);
-
-  static NullLogger _Instance;
 };
 
 }  // namespace ESB

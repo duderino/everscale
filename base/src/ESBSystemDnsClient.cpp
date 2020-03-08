@@ -52,14 +52,16 @@ Error SystemDnsClient::resolve(SocketAddress *address,
     switch (hostErrno) {
       case HOST_NOT_FOUND:
       case NO_ADDRESS:
-        ESB_LOG_ERRNO_DEBUG(hostErrno, "Cannot resolve hostname %s", hostname);
+        ESB_LOG_DEBUG_ERRNO(hostErrno, "Cannot resolve hostname %s", hostname);
         return ESB_CANNOT_FIND;
       case TRY_AGAIN:
-        ESB_LOG_ERRNO_DEBUG(hostErrno, "Temporary error resolving hostname %s", hostname);
+        ESB_LOG_DEBUG_ERRNO(hostErrno, "Temporary error resolving hostname %s",
+                            hostname);
         return ESB_AGAIN;
       case NO_RECOVERY:
       default:
-        ESB_LOG_ERRNO_DEBUG(hostErrno, "Permanent error resolving hostname %s", hostname);
+        ESB_LOG_DEBUG_ERRNO(hostErrno, "Permanent error resolving hostname %s",
+                            hostname);
         return ESB_OTHER_ERROR;
     }
   }

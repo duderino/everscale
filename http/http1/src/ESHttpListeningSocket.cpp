@@ -71,13 +71,13 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("listener:%d not ready to accept - thundering herd",
-                   _socket->getSocketDescriptor());
+                  _socket->getSocketDescriptor());
     return true;
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_INFO(error, "listener:%d error accepting new connection",
-                   _socket->getSocketDescriptor());
+    ESB_LOG_INFO_ERRNO(error, "listener:%d error accepting new connection",
+                       _socket->getSocketDescriptor());
     return true;
   }
 
@@ -88,7 +88,7 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
 
   if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
     ESB_LOG_DEBUG("listener:%d Handler rejected connection",
-                   _socket->getSocketDescriptor());
+                  _socket->getSocketDescriptor());
     ESB::TCPSocket::Close(acceptData._sockFd);
     return true;
   }
@@ -97,7 +97,7 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
 
   if (!serverSocket) {
     ESB_LOG_CRITICAL("listener:%d cannot allocate new server socket",
-                   _socket->getSocketDescriptor());
+                     _socket->getSocketDescriptor());
     ESB::TCPSocket::Close(acceptData._sockFd);
     return true;
   }
@@ -105,15 +105,19 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
   error = _dispatcher->addMultiplexedSocket(serverSocket);
 
   if (ESB_SHUTDOWN == error) {
-    ESB_LOG_WARNING("listener:%d Dispatcher has been shutdown, closing newly "
-                   "accepted connection", _socket->getSocketDescriptor());
+    ESB_LOG_WARNING(
+        "listener:%d Dispatcher has been shutdown, closing newly "
+        "accepted connection",
+        _socket->getSocketDescriptor());
     _factory->release(serverSocket);
     return true;
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_ERROR(error, "listener:%d cannot add accepted connection to "
-                   "dispatcher", _socket->getSocketDescriptor());
+    ESB_LOG_ERROR_ERRNO(error,
+                        "listener:%d cannot add accepted connection to "
+                        "dispatcher",
+                        _socket->getSocketDescriptor());
     _factory->release(serverSocket);
     return true;
   }
@@ -130,44 +134,44 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
 
 bool HttpListeningSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
   ESB_LOG_ERROR("listener:%d Cannot handle connect events",
-                 _socket->getSocketDescriptor());
+                _socket->getSocketDescriptor());
   return true;
 }
 
 bool HttpListeningSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
   ESB_LOG_ERROR("listener:%d Cannot handle readable events",
-                 _socket->getSocketDescriptor());
+                _socket->getSocketDescriptor());
   return true;
 }
 
 bool HttpListeningSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
   ESB_LOG_ERROR("listener:%d Cannot handle writable events",
-                 _socket->getSocketDescriptor());
+                _socket->getSocketDescriptor());
   return true;
 }
 
 bool HttpListeningSocket::handleErrorEvent(ESB::Error error,
                                            ESB::SharedInt *isRunning) {
-  ESB_LOG_ERRNO_ERROR(error, "listener:%d listening socket error",
-                 _socket->getSocketDescriptor());
+  ESB_LOG_ERROR_ERRNO(error, "listener:%d listening socket error",
+                      _socket->getSocketDescriptor());
   return true;
 }
 
 bool HttpListeningSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
   ESB_LOG_ERROR("listener:%d Cannot handle eof events",
-                 _socket->getSocketDescriptor());
+                _socket->getSocketDescriptor());
   return true;
 }
 
 bool HttpListeningSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
   ESB_LOG_ERROR("listener:%d Cannot handle idle events",
-                 _socket->getSocketDescriptor());
+                _socket->getSocketDescriptor());
   return true;
 }
 
 bool HttpListeningSocket::handleRemoveEvent(ESB::SharedInt *flag) {
   ESB_LOG_INFO("listener:%d Removed from multiplexer",
-                 _socket->getSocketDescriptor());
+               _socket->getSocketDescriptor());
   return true;  // call cleanup handler on us after this returns
 }
 

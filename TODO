@@ -10,10 +10,6 @@ multiplex socket
  - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers
 logging
  - No eval logging macros.  
-   - macros for logging error descriptions with 50 byte stack buffers
-   - Take care of non-atomic newline issue
-   - pretty print thread ids
-   - filenames, not full paths
    - caching timestamp (check time every x increments)
  - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
 http stack test
@@ -76,6 +72,7 @@ http stuff
 URL 
  - canonicalization / encode and decode per chromium RFC
  - username and pass
+ - fully parse query string
 bootstrap config
  - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
  - xds agent could just regenerate this, serializing updates and using atomic moves

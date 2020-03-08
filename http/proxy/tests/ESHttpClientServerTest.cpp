@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   unsigned int connections = 500;  // concurrent connections
   unsigned int iterations = 500;   // http requests per concurrent connection
   bool reuseConnections = true;
-  int logLevel = ESB::Logger::Info;
+  int logLevel = ESB::Logger::Notice;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
@@ -123,8 +123,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
-  ESB::Logger::SetInstance(ESB::ConsoleLogger::Instance());
+  ESB::ConsoleLogger logger;
+  logger.setSeverity((ESB::Logger::Severity)logLevel);
+  ESB::Logger::SetInstance(&logger);
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
@@ -137,14 +138,14 @@ int main(int argc, char **argv) {
       ESB::ProcessLimits::GetSocketHardMax());
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot raise max fd limit");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
     return -5;
   }
 
   // Init
 
-  HttpEchoServerHandler serverHandler();
-  ESB::SystemDnsClient dnsClient();
+  HttpEchoServerHandler serverHandler;
+  ESB::SystemDnsClient dnsClient;
   HttpClientSimpleCounters clientCounters;
   HttpServerSimpleCounters serverCounters;
 
@@ -157,8 +158,8 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  HttpClientHistoricalCounters counters(
-      windowSizeSec, ESB::SystemAllocator::GetInstance());
+  HttpClientHistoricalCounters counters(windowSizeSec,
+                                        ESB::SystemAllocator::GetInstance());
   HttpStack clientStack(&dnsClient, clientThreads, &counters);
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
                                       sizeof(body), connections * iterations,
@@ -239,8 +240,6 @@ int main(int argc, char **argv) {
 
   fflush(outputFile);
   fclose(outputFile);
-
-  ESB::ConsoleLogger::Destroy();
 
   return ESB_SUCCESS;
 }

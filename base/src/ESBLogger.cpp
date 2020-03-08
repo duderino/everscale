@@ -8,16 +8,15 @@
 
 namespace ESB {
 
-Logger &Logger::_Instance = NullLogger::Instance();
+static NullLogger NullInstance;
+Logger *Logger::_Instance = &NullInstance;
 
-Logger::Logger() {
+Logger::Logger() {}
+
+Logger::~Logger() {}
+
+void Logger::SetInstance(Logger *logger) {
+  _Instance = logger ? logger : &NullInstance;
 }
 
-Logger::~Logger() {
-}
-
-void Logger::SetInstance(Logger &logger) {
-  _Instance = logger;
-}
-
-}
+}  // namespace ESB

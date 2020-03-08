@@ -42,6 +42,10 @@
 #include <ESHttpClientHistoricalCounters.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -107,7 +111,7 @@ int main(int argc, char **argv) {
   int connections = 1;
   int iterations = 1;
   bool reuseConnections = false;
-  int logLevel = ESB::Logger::Info;
+  int logLevel = ESB::Logger::Notice;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *bodyFilePath = 0;
@@ -205,17 +209,16 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
-  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
+  ESB::ConsoleLogger logger;
+  logger.setSeverity((ESB::Logger::Severity)logLevel);
+  ESB::Logger::SetInstance(&logger);
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                "Starting. logLevel: %d, threads: %d, host: %s, port: %d, "
-                "connections: %d, iterations: %d, method: %s, contentType: %s, "
-                "bodyFile %s, reuseConnections: %s",
-                logLevel, threads, host, port, connections, iterations, method,
-                contentType, bodyFilePath, reuseConnections ? "true" : "false");
-  }
+  ESB_LOG_NOTICE(
+      "Starting. logLevel: %d, threads: %d, host: %s, port: %d, "
+      "connections: %d, iterations: %d, method: %s, contentType: %s, "
+      "bodyFile %s, reuseConnections: %s",
+      logLevel, threads, host, port, connections, iterations, method,
+      contentType, bodyFilePath, reuseConnections ? "true" : "false");
 
   //
   // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
@@ -235,12 +238,7 @@ int main(int argc, char **argv) {
       ESB::ProcessLimits::GetSocketHardMax());
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[256];
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "Cannot raise max fd limit: %s", buffer);
-    }
+    ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
     return -5;
   }
 
@@ -316,14 +314,12 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  ESB::SystemDnsClient dnsClient(logger);
-  HttpClientHistoricalCounters counters(30, ESB::SystemAllocator::GetInstance(),
-                                        logger);
-
-  HttpStack stack(&dnsClient, threads, &counters, logger);
-
+  ESB::SystemDnsClient dnsClient;
+  HttpClientHistoricalCounters counters(30,
+                                        ESB::SystemAllocator::GetInstance());
+  HttpStack stack(&dnsClient, threads, &counters);
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
-                                connections * iterations, &stack, logger);
+                                connections * iterations, &stack);
 
   // TODO - make configuration stack-specific and increase options richness
   HttpClientSocket::SetReuseConnections(reuseConnections);
@@ -369,10 +365,7 @@ int main(int argc, char **argv) {
         new (&echoClientContextAllocator) HttpEchoClientContext(iterations - 1);
 
     if (0 == context) {
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] cannot create new client context");
-      }
+      ESB_LOG_ERROR("[main] cannot create new client context");
 
       if (body) {
         free(body);
@@ -388,10 +381,7 @@ int main(int argc, char **argv) {
       context->~HttpEchoClientContext();
       echoClientContextAllocator.deallocate(context);
 
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] cannot create new client transaction");
-      }
+      ESB_LOG_ERROR("[main] cannot create new client transaction");
 
       if (body) {
         free(body);
@@ -413,14 +403,7 @@ int main(int argc, char **argv) {
       echoClientContextAllocator.deallocate(context);
       stack.destroyClientTransaction(transaction);
 
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        char buffer[100];
-
-        ESB::DescribeError(error, buffer, sizeof(buffer));
-
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] cannot build request: %s");
-      }
+      ESB_LOG_ERROR_ERRNO(error, "[main] cannot build request");
 
       if (body) {
         free(body);
@@ -440,14 +423,7 @@ int main(int argc, char **argv) {
       echoClientContextAllocator.deallocate(context);
       stack.destroyClientTransaction(transaction);
 
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        char buffer[100];
-
-        ESB::DescribeError(error, buffer, sizeof(buffer));
-
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] Cannot execute client transaction: %s", buffer);
-      }
+      ESB_LOG_ERROR_ERRNO(error, "[main] Cannot execute client transaction");
 
       if (body) {
         free(body);
@@ -474,16 +450,10 @@ int main(int argc, char **argv) {
   }
 
   stack.getClientCounters()->printSummary(outputFile);
-
   stack.destroy();
-
-  echoClientContextAllocator
-      .destroy();  // echo client context destructors will not be called.
-
-  ESB::ConsoleLogger::Destroy();
+  echoClientContextAllocator.destroy();  // client context dtors not called.
 
   fflush(outputFile);
-
   fclose(outputFile);
 
   return ESB_SUCCESS;

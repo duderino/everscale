@@ -4,8 +4,6 @@
 
 namespace ESB {
 
-NullLogger NullLogger::_Instance;
-
 NullLogger::NullLogger() {}
 
 NullLogger::~NullLogger() {}

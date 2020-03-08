@@ -16,7 +16,10 @@
 
 namespace ES {
 
-HttpEchoClientHandler::HttpEchoClientHandler(const char *absPath, const char *method, const char *contentType,const unsigned char *body, int bodySize, int totalTransactions,HttpConnectionPool *pool)
+HttpEchoClientHandler::HttpEchoClientHandler(
+    const char *absPath, const char *method, const char *contentType,
+    const unsigned char *body, int bodySize, int totalTransactions,
+    HttpConnectionPool *pool)
     : _absPath(absPath),
       _method(method),
       _contentType(contentType),
@@ -67,17 +70,17 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
   assert(response);
 
   if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("[handler] headers parsed");
-    ESB_LOG_DEBUG("[handler] StatusCode: %d", response->getStatusCode());
-    ESB_LOG_DEBUG("[handler] ReasonPhrase: %s", response->getReasonPhrase());
-    ESB_LOG_DEBUG("[handler] Version: HTTP/%d.%d\n",
-                 response->getHttpVersion() / 100,
-                 response->getHttpVersion() % 100 / 10);
+    ESB_LOG_DEBUG("Response headers parsed");
+    ESB_LOG_DEBUG("StatusCode: %d", response->getStatusCode());
+    ESB_LOG_DEBUG("ReasonPhrase: %s",
+                  ESB_SAFE_STR(response->getReasonPhrase()));
+    ESB_LOG_DEBUG("Version: HTTP/%d.%d", response->getHttpVersion() / 100,
+                  response->getHttpVersion() % 100 / 10);
 
     for (HttpHeader *header = (HttpHeader *)response->getHeaders()->getFirst();
          header; header = (HttpHeader *)header->getNext()) {
-      ESB_LOG_DEBUG("[handler] %s: %s\n",(const char *)header->getFieldName(),
-                   !header->getFieldValue() ? "null" : (const char *)header->getFieldValue());
+      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->getFieldName()),
+                    ESB_SAFE_STR(header->getFieldValue()));
     }
   }
 
@@ -91,7 +94,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   assert(chunk);
 
   if (0U == chunkSize) {
-    ESB_LOG_DEBUG("[handler] Response body finished");
+    ESB_LOG_DEBUG("Response body finished");
     return ES_HTTP_CLIENT_HANDLER_CONTINUE;
   }
 
@@ -101,7 +104,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
         (sizeof(buffer) - 1) > chunkSize ? chunkSize : (sizeof(buffer) - 1);
     memcpy(buffer, chunk, size);
     buffer[size] = 0;
-    ESB_LOG_DEBUG("[handler] Received body chunk: %s", buffer);
+    ESB_LOG_DEBUG("Received body chunk: %s", buffer);
   }
 
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
@@ -109,7 +112,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
 
 void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
   if (_totalTransactions == _completedTransactions.inc()) {
-    ESB_LOG_NOTICE("[handler] All transactions completed");
+    ESB_LOG_NOTICE("All transactions completed");
   }
 
   assert(transaction);
@@ -121,30 +124,30 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
-      ESB_LOG_INFO("[handler] Transaction failed at begin state");
+      ESB_LOG_INFO("Transaction failed at begin state");
       break;
     case ES_HTTP_CLIENT_HANDLER_RESOLVE:
-      ESB_LOG_INFO("[handler] Transaction failed at resolve state");
+      ESB_LOG_INFO("Transaction failed at resolve state");
       break;
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
-      ESB_LOG_INFO("[handler] Transaction failed at connect state");
+      ESB_LOG_INFO("Transaction failed at connect state");
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
-      ESB_LOG_INFO("[handler] Transaction failed at send request headers state");
+      ESB_LOG_INFO("Transaction failed at send request headers state");
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
-      ESB_LOG_INFO("[handler] Transaction failed at send request body state");
+      ESB_LOG_INFO("Transaction failed at send request body state");
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
-      ESB_LOG_INFO("[handler] Transaction failed at receive response headers state");
+      ESB_LOG_INFO("Transaction failed at receive response headers state");
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
-      ESB_LOG_INFO("[handler] Transaction failed at receive response body state");
+      ESB_LOG_INFO("Transaction failed at receive response body state");
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
-      ESB_LOG_INFO("[handler] Transaction finished");
+      ESB_LOG_DEBUG("Transaction finished");
       break;
     default:
-      ESB_LOG_INFO("[handler] Transaction failed at unknown state");
+      ESB_LOG_WARNING("Transaction failed at unknown state");
   }
 
   if (0U == context->getRemainingIterations()) {
@@ -157,7 +160,7 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
   HttpClientTransaction *newTransaction = _pool->createClientTransaction(this);
 
   if (!newTransaction) {
-    ESB_LOG_WARNING("[handler] Cannot create new transaction: bad alloc");
+    ESB_LOG_WARNING("Cannot create new transaction: bad alloc");
     return;
   }
 
@@ -176,7 +179,7 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
 
   if (ESB_SUCCESS != error) {
     _pool->destroyClientTransaction(newTransaction);
-    ESB_LOG_ERRNO_WARNING(error, "[handler] cannot build request");
+    ESB_LOG_WARNING_ERRNO(error, "cannot build request");
     return;
   }
 
@@ -184,12 +187,12 @@ void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
 
   if (ESB_SUCCESS != error) {
     _pool->destroyClientTransaction(newTransaction);
-    ESB_LOG_ERRNO_WARNING(error, "[handler] cannot execute transaction");
+    ESB_LOG_WARNING_ERRNO(error, "cannot execute transaction");
     return;
   }
 
-  ESB_LOG_DEBUG("[handler] Resubmitted transaction.  %u iterations remaining",
-                 context->getRemainingIterations());
+  ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
+                context->getRemainingIterations());
 }
 
 }  // namespace ES

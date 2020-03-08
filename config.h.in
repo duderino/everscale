@@ -213,5 +213,8 @@
 #include <stdio.h>
 #endif
 
+#ifndef ESB_SAFE_STR
+#define ESB_SAFE_STR(EXPR) ((EXPR) ? (const char *) EXPR : "null")
+#endif
 
 #endif

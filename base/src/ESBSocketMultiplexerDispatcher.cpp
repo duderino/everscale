@@ -51,14 +51,14 @@ Error SocketMultiplexerDispatcher::start() {
   Error error = createMultiplexers();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot create multiplexer for '%s'", _name);
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot create multiplexer for '%s'", _name);
     return error;
   }
 
   error = _threadPool.start();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERRNO_CRITICAL(error, "Cannot start threadpool for '%s'", _name);
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot start threadpool for '%s'", _name);
     destroyMultiplexers();
     return error;
   }
@@ -69,14 +69,14 @@ Error SocketMultiplexerDispatcher::start() {
     error = _multiplexers[i]->initialize();
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERRNO_ERROR(error, "Cannot init multiplexer for '%s'", _name);
+      ESB_LOG_ERROR_ERRNO(error, "Cannot init multiplexer for '%s'", _name);
       continue;
     }
 
     error = _threadPool.execute(_multiplexers[i]);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERRNO_ERROR(error, "Cannot execute multiplexer for '%s'", _name);
+      ESB_LOG_ERROR_ERRNO(error, "Cannot execute multiplexer for '%s'", _name);
       continue;
     }
 
@@ -133,7 +133,7 @@ Error SocketMultiplexerDispatcher::addMultiplexedSocket(
   }
 
   ESB_LOG_DEBUG("Adding socket to multiplexer '%s:%d' with %d active sockets",
-      _name, minIndex + 1, minCount);
+                _name, minIndex + 1, minCount);
   return _multiplexers[minIndex]->addMultiplexedSocket(multiplexedSocket);
 }
 
@@ -144,7 +144,7 @@ Error SocketMultiplexerDispatcher::addMultiplexedSocket(
   }
 
   ESB_LOG_DEBUG("Adding socket to multiplexer '%s:%d'", _name,
-      multiplexerIndex);
+                multiplexerIndex);
 
   return _multiplexers[multiplexerIndex]->addMultiplexedSocket(
       multiplexedSocket);
