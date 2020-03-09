@@ -38,10 +38,25 @@
 #include <ESTPerformanceCounter.h>
 #endif
 
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
 #include <signal.h>
+#endif
+
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 static void ClientSignalHandler(int signal);
 static volatile ESB::Word IsRunning = 1;
@@ -124,16 +139,16 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
-  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
+  ESB::Time::Instance().start();
+  ESB::ConsoleLogger logger;
+  logger.setSeverity((ESB::Logger::Severity)logLevel);
+  ESB::Logger::SetInstance(&logger);
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                "[main] starting. logLevel: %d, threads: %d, server: %s, port: "
-                "%d, sockets: %u, reuseConnections: %s",
-                logLevel, multiplexerCount, dottedIp, port, sockets,
-                reuseConnections ? "true" : "false");
-  }
+  ESB_LOG_NOTICE(
+      "starting. logLevel: %d, threads: %d, server: %s, port: "
+      "%d, sockets: %u, reuseConnections: %s",
+      logLevel, multiplexerCount, dottedIp, port, sockets,
+      reuseConnections ? "true" : "false");
 
   EST::ClientSocket::SetReuseConnections(reuseConnections);
   ESB::SocketAddress serverAddress(dottedIp, port, ESB::SocketAddress::TCP);
@@ -156,60 +171,35 @@ int main(int argc, char **argv) {
   ESB::Error error = rootAllocator.initialize();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot initialize root allocator: %s", buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize root allocator");
     return error;
   }
 
-  ESB::EpollMultiplexerFactory epollFactory("EpollMultiplexer", logger,
-                                            &rootAllocator);
+  ESB::EpollMultiplexerFactory epollFactory("EpollMultiplexer", &rootAllocator);
 
   ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
   ESB::UInt32 maxSockets = ESB::ProcessLimits::GetSocketSoftMax();
 
   if (sockets > maxSockets) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "Raise ulimit -n, only %d sockets can be created\n",
+    ESB_LOG_ERROR("Raise ulimit -n, only %d sockets can be created",
                   maxSockets);
-    }
-
     return 1;
   }
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                "[main] Maximum sockets %d", maxSockets);
-  }
+  ESB_LOG_NOTICE("Maximum sockets %d", maxSockets);
 
   ESB::SocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount,
                                               &epollFactory, &rootAllocator,
-                                              "EpollDispatcher", logger);
+                                              "EpollDispatcher");
 
   error = dispatcher.start();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot start multiplexer dispatcher: %s", buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "Cannot start multiplexer dispatcher");
     return error;
   }
 
-  EST::ClientSocketFactory factory(maxSockets, &SuccessCounter, &dispatcher,
-                                   logger);
+  EST::ClientSocketFactory factory(maxSockets, &SuccessCounter, &dispatcher);
 
   sleep(1);  // give the worker threads a chance to start - cleans up perf
              // testing numbers a bit
@@ -221,38 +211,19 @@ int main(int argc, char **argv) {
     error = factory.addNewConnection(serverAddress);
 
     if (ESB_SUCCESS != error) {
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        char buffer[100];
-
-        ESB::DescribeError(error, buffer, sizeof(buffer));
-
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] Cannot add new connection: %s", buffer);
-      }
-
+      ESB_LOG_WARNING_ERRNO(error, "Cannot add new connection");
       return error;
     }
   }
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[main] started");
-  }
-
+  ESB_LOG_NOTICE("started");
   while (IsRunning) {
-    sleep(60);
+    sleep(1);
   }
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[main] stopping");
-  }
-
+  ESB_LOG_NOTICE("stopping");
   dispatcher.stop();
-
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[main] stopped");
-  }
-
-  ESB::ConsoleLogger::Destroy();
+  ESB_LOG_NOTICE("stopped");
 
   ESB::UInt32 seconds = StopTime.tv_sec - startTime.tv_sec;
   ESB::UInt32 microseconds = 0;
@@ -267,6 +238,10 @@ int main(int argc, char **argv) {
 
   SuccessCounter.printSummary();
   fprintf(stdout, "\tTotal Sec: %u.%u\n", seconds, microseconds);
+
+  ESB::Time::Instance().stop();
+  error = ESB::Time::Instance().join();
+  assert(ESB_SUCCESS == error);
 
   return ESB_SUCCESS;
 }

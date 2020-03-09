@@ -17,11 +17,9 @@ ESB::BufferPool ServerSocket::_BufferPool(1024, 900,
                                           ESB::SystemAllocator::GetInstance());
 
 ServerSocket::ServerSocket(ESB::TCPSocket::AcceptData *acceptData,
-                           ESB::CleanupHandler *cleanupHandler,
-                           ESB::Logger *logger)
+                           ESB::CleanupHandler *cleanupHandler)
     : _hasBeenRemoved(false),
       _inReadMode(true),
-      _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _cleanupHandler(cleanupHandler),
       _buffer(0),
       _socket(acceptData) {}
@@ -29,85 +27,58 @@ ServerSocket::ServerSocket(ESB::TCPSocket::AcceptData *acceptData,
 ServerSocket::~ServerSocket() {}
 
 bool ServerSocket::wantAccept() {
-  assert(false == _hasBeenRemoved);
-
+  assert(!_hasBeenRemoved);
   return false;
 }
 
 bool ServerSocket::wantConnect() {
-  assert(false == _hasBeenRemoved);
-
+  assert(!_hasBeenRemoved);
   return false;
 }
 
 bool ServerSocket::wantRead() {
-  assert(false == _hasBeenRemoved);
-
-  if (0 == _buffer) {
+  assert(!_hasBeenRemoved);
+  if (!_buffer) {
     return true;
   }
-
   return _inReadMode && _buffer->isWritable();
 }
 
 bool ServerSocket::wantWrite() {
-  assert(false == _hasBeenRemoved);
-
-  if (0 == _buffer) {
+  assert(!_hasBeenRemoved);
+  if (!_buffer) {
     return false;
   }
-
-  return false == _inReadMode && _buffer->isReadable();
+  return !_inReadMode && _buffer->isReadable();
 }
 
-bool ServerSocket::isIdle()  // todo pass in current time to reduce number of
-                             // syscalls
-{
-  assert(false == _hasBeenRemoved);
-
+bool ServerSocket::isIdle() {
+  assert(!_hasBeenRemoved);
   return false;  // todo - implement
 }
 
-bool ServerSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
-                                     ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
-
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Cannot handle accept events",
-                 _socket.getSocketDescriptor());
-  }
-
+bool ServerSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
+  ESB_LOG_WARNING("[socket:%d] Cannot handle accept events",
+                  _socket.getSocketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleConnectEvent(ESB::SharedInt *isRunning,
-                                      ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
-
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Cannot handle connect events",
-                 _socket.getSocketDescriptor());
-  }
-
+bool ServerSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
+  ESB_LOG_WARNING("[socket:%d] Cannot handle connect events",
+                  _socket.getSocketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning,
-                                       ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
+bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
 
-  if (0 == _buffer) {
+  if (!_buffer) {
     _buffer = _BufferPool.acquireBuffer();
-
     if (!_buffer) {
-      if (_logger->isLoggable(ESB::Logger::Err)) {
-        _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
-                     "[socket:%d] Cannot acquire new buffer",
-                     _socket.getSocketDescriptor());
-      }
-
+      ESB_LOG_WARNING("[socket:%d] Cannot acquire new buffer",
+                      _socket.getSocketDescriptor());
       return false;  // remove from multiplexer
     }
   }
@@ -125,62 +96,44 @@ bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning,
       error = ESB::GetLastError();
 
       if (ESB_AGAIN == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] not ready for read",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] not ready for read",
+                      _socket.getSocketDescriptor());
         return true;  // keep in multiplexer
       }
 
       if (ESB_INTR == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] interrupted",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] interrupted", _socket.getSocketDescriptor());
         continue;
       }
 
-      return handleErrorEvent(error, isRunning, logger);
+      return handleErrorEvent(error, isRunning);
     }
 
     if (0 == result) {
-      return handleEndOfFileEvent(isRunning, logger);
+      return handleEndOfFileEvent(isRunning);
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] Read %d bytes", _socket.getSocketDescriptor(),
-                   result);
-    }
+    ESB_LOG_DEBUG("[socket:%d] Read %ld bytes", _socket.getSocketDescriptor(),
+                  result);
   }
 
   if (!isRunning->get()) {
     return false;  // remove from multiplexer
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Received complete request",
-                 _socket.getSocketDescriptor());
-  }
+  ESB_LOG_DEBUG("[socket:%d] Received complete request",
+                _socket.getSocketDescriptor());
 
   _inReadMode = false;
-
   assert(wantWrite());
-
-  return handleWritableEvent(isRunning, logger);
+  return handleWritableEvent(isRunning);
 }
 
-bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning,
-                                       ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
+bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
 
   assert(_buffer);
-  assert(false == _inReadMode);
+  assert(!_inReadMode);
   assert(_buffer->isReadable());
 
   ESB::SSize result = 0;
@@ -193,118 +146,88 @@ bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning,
       error = ESB::GetLastError();
 
       if (ESB_AGAIN == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] Not ready for write",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] Not ready for write",
+                      _socket.getSocketDescriptor());
         return true;  // keep in multiplexer
       }
 
       if (ESB_INTR == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] Interrupted",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] Interrupted", _socket.getSocketDescriptor());
         continue;
       }
 
-      return handleErrorEvent(error, isRunning, logger);
+      return handleErrorEvent(error, isRunning);
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] Wrote %d bytes", _socket.getSocketDescriptor(),
-                   result);
-    }
+    ESB_LOG_DEBUG("[socket:%d] Wrote %ld bytes", _socket.getSocketDescriptor(),
+                  result);
   }
 
   if (!isRunning->get()) {
     return false;  // remove from multiplexer
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Sent complete response",
-                 _socket.getSocketDescriptor());
-  }
+  ESB_LOG_DEBUG("[socket:%d] Sent complete response",
+                _socket.getSocketDescriptor());
 
   _inReadMode = true;
   _buffer->compact();
-
   _BufferPool.releaseBuffer(_buffer);
   _buffer = 0;
 
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleErrorEvent(ESB::Error errorCode,
-                                    ESB::SharedInt *isRunning,
-                                    ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
+bool ServerSocket::handleErrorEvent(ESB::Error error,
+                                    ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
 
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
-    char buffer[100];
-    char dottedAddress[16];
-
+  if (ESB_WARNING_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB::DescribeError(errorCode, buffer, sizeof(buffer));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Error from client %s: %s",
-                 _socket.getSocketDescriptor(), dottedAddress, buffer);
+    ESB_LOG_WARNING_ERRNO(error, "[socket:%d] Error from client %s:%d",
+                          _socket.getSocketDescriptor(), dottedAddress,
+                          _socket.getPeerAddress().getPort());
   }
 
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
-                                        ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
+bool ServerSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
-
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Client %s closed socket",
-                 _socket.getSocketDescriptor(), dottedAddress);
+    ESB_LOG_INFO("[socket:%d] client at %s:%d closed socket",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleIdleEvent(ESB::SharedInt *isRunning,
-                                   ESB::Logger *logger) {
-  assert(false == _hasBeenRemoved);
+bool ServerSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
+  assert(!_hasBeenRemoved);
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
-
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Client %s is idle", _socket.getSocketDescriptor(),
-                 dottedAddress);
+    ESB_LOG_INFO("[socket:%d] client at %s:%d is idle",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
-                                     ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
-
+bool ServerSocket::handleRemoveEvent(ESB::SharedInt *isRunning) {
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Closing socket for client %s",
-                 _socket.getSocketDescriptor(), dottedAddress);
+    ESB_LOG_INFO("[socket:%d] socket to %s:%d is closed",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   _socket.close();

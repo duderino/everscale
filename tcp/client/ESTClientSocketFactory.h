@@ -13,10 +13,6 @@
 #include <ESBAllocatorCleanupHandler.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ESB_SOCKET_MULTIPLEXER_DISPATCHER_H
 #include <ESBSocketMultiplexerDispatcher.h>
 #endif
@@ -41,11 +37,9 @@ class ClientSocketFactory {
    * @param maxSockets The maximum number of sockets the factory will have to
    * create
    * @param dispatcher New sockets will be added to this dispatcher
-   * @param logger A logger
    */
   ClientSocketFactory(int maxSockets, PerformanceCounter *successCounter,
-                      ESB::SocketMultiplexerDispatcher *dispatcher,
-                      ESB::Logger *logger);
+                      ESB::SocketMultiplexerDispatcher *dispatcher);
 
   /** Destructor.
    */
@@ -67,7 +61,6 @@ class ClientSocketFactory {
 
   ESB::SocketMultiplexerDispatcher *_dispatcher;
   PerformanceCounter *_successCounter;
-  ESB::Logger *_logger;
   ESB::FixedAllocator _fixedAllocator;
   ESB::SharedAllocator _sharedAllocator;
   ESB::AllocatorCleanupHandler _cleanupHandler;

@@ -10,16 +10,21 @@
 #include <ESTClientSocket.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
+#endif
 
 namespace EST {
 
 ClientSocketFactory::ClientSocketFactory(
     int maxSockets, PerformanceCounter *successCounter,
-    ESB::SocketMultiplexerDispatcher *dispatcher, ESB::Logger *logger)
+    ESB::SocketMultiplexerDispatcher *dispatcher)
     : _dispatcher(dispatcher),
       _successCounter(successCounter),
-      _logger(logger),
       _fixedAllocator(maxSockets + 10, sizeof(ClientSocket),
                       ESB::SystemAllocator::GetInstance()),
       _sharedAllocator(&_fixedAllocator),
@@ -33,61 +38,38 @@ ESB::Error ClientSocketFactory::initialize() {
 
 ESB::Error ClientSocketFactory::addNewConnection(
     const ESB::SocketAddress &address) {
-  ClientSocket *socket = new (&_sharedAllocator) ClientSocket(
-      this, _successCounter, -1, address, &_cleanupHandler, _logger);
+  ClientSocket *socket = new (&_sharedAllocator)
+      ClientSocket(this, _successCounter, -1, address, &_cleanupHandler);
 
   if (!socket) {
-    if (_logger->isLoggable(ESB::Logger::Critical)) {
-      _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                   "[factory] Cannot allocate new client socket");
-    }
-
+    ESB_LOG_ERROR("Cannot allocate new client socket");
     return ESB_OUT_OF_MEMORY;
   }
 
   ESB::Error error = ESB_SUCCESS;
 
-  while (true) {
+  for (int i = 0; i < 3; ++i) {
     error = socket->connect();
-
     if (EADDRNOTAVAIL == errno) {
-      if (_logger->isLoggable(ESB::Logger::Warning)) {
-        _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                     "[factory] Spurious EADDRNOTAVAIL on connect");
-      }
-
       continue;
     }
-
     break;
   }
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                   "[factory] Cannot connect to peer: %s", buffer);
+    if (ESB_INFO_LOGGABLE) {
+      char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
+      address.getIPAddress(dottedIP, sizeof(dottedIP));
+      ESB_LOG_INFO_ERRNO(error, "Cannot connect to %s:%d", dottedIP,
+                         address.getPort());
     }
-
     return error;
   }
 
   error = _dispatcher->addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    if (_logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      _logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                   "[factory] Cannot add client socket to multiplexer: %s",
-                   buffer);
-    }
-
+    ESB_LOG_WARNING_ERRNO(error, "Cannot add client socket to multiplexer");
     return error;
   }
 

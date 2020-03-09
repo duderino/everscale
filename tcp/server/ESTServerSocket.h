@@ -33,10 +33,9 @@ class ServerSocket : public ESB::MultiplexedSocket {
    *
    * @param acceptData A new connection accepted by a listening socket
    * @param cleanupHandler An object that can be used to destroy this one
-   * @param logger A logger
    */
   ServerSocket(ESB::TCPSocket::AcceptData *acceptData,
-               ESB::CleanupHandler *cleanupHandler, ESB::Logger *logger);
+               ESB::CleanupHandler *cleanupHandler);
 
   /** Destructor.
    */
@@ -84,53 +83,45 @@ class ServerSocket : public ESB::MultiplexedSocket {
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(ESB::SharedInt *isRunning,
-                                 ESB::Logger *logger);
+  virtual bool handleAcceptEvent(ESB::SharedInt *isRunning);
 
   /** Client connected socket has connected to the peer endpoint.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(ESB::SharedInt *isRunning,
-                                  ESB::Logger *logger);
+  virtual bool handleConnectEvent(ESB::SharedInt *isRunning);
 
   /** Data is ready to be read.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(ESB::SharedInt *isRunning,
-                                   ESB::Logger *logger);
+  virtual bool handleReadableEvent(ESB::SharedInt *isRunning);
 
   /** There is free space in the outgoing socket buffer.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(ESB::SharedInt *isRunning,
-                                   ESB::Logger *logger);
+  virtual bool handleWritableEvent(ESB::SharedInt *isRunning);
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -138,50 +129,44 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * @param errorCode The error code.
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor.
    * @see ESB::TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::SharedInt *isRunning,
-                                ESB::Logger *logger);
+  virtual bool handleErrorEvent(ESB::Error errorCode,
+                                ESB::SharedInt *isRunning);
 
   /** The socket's connection was closed.
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(ESB::SharedInt *isRunning,
-                                    ESB::Logger *logger);
+  virtual bool handleEndOfFileEvent(ESB::SharedInt *isRunning);
 
   /** The socket's connection has been idle for too long
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(ESB::SharedInt *isRunning, ESB::Logger *logger);
+  virtual bool handleIdleEvent(ESB::SharedInt *isRunning);
 
   /** The socket has been removed from the multiplexer
    *
    * @param isRunning If this object returns false, this method should return as
    * soon as possible.
-   * @param logger Log messages should be sent to this object.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(ESB::SharedInt *isRunning,
-                                 ESB::Logger *logger);
+  virtual bool handleRemoveEvent(ESB::SharedInt *isRunning);
 
   /** Get the socket's socket descriptor.
    *

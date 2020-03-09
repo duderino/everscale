@@ -2,8 +2,8 @@
 #include <ESTClientSocket.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -29,12 +29,10 @@ ClientSocket::ClientSocket(ClientSocketFactory *factory,
                            PerformanceCounter *counter,
                            int requestsPerConnection,
                            const ESB::SocketAddress &peer,
-                           ESB::CleanupHandler *cleanupHandler,
-                           ESB::Logger *logger)
+                           ESB::CleanupHandler *cleanupHandler)
     : _requestsPerConnection(requestsPerConnection),
       _inReadMode(false),
       _successCounter(counter),
-      _logger(logger ? logger : ESB::NullLogger::GetInstance()),
       _cleanupHandler(cleanupHandler),
       _buffer(0),
       _socket(peer, false),
@@ -66,44 +64,30 @@ bool ClientSocket::wantWrite() {
          0 < _buffer->getReadable();
 }
 
-bool ClientSocket::isIdle()  // todo pass in current time to reduce number of
-                             // syscalls
-{
+bool ClientSocket::isIdle() {
   return false;  // todo - implement
 }
 
-bool ClientSocket::handleAcceptEvent(ESB::SharedInt *isRunning,
-                                     ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Cannot handle accept events",
-                 _socket.getSocketDescriptor());
-  }
-
-  return true;  // todo - keep in multiplexer
+bool ClientSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
+  ESB_LOG_WARNING("[socket:%d] Cannot handle accept events",
+                  _socket.getSocketDescriptor());
+  return true;  // keep in multiplexer
 }
 
-bool ClientSocket::handleConnectEvent(ESB::SharedInt *isRunning,
-                                      ESB::Logger *logger) {
-  if (0 == _buffer && false == setupBuffer()) {
+bool ClientSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
+  if (0 == _buffer && !setupBuffer()) {
     return false;
   }
 
   assert(_socket.isConnected());
-
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Connected", _socket.getSocketDescriptor());
-  }
-
+  ESB_LOG_INFO("[socket:%d] Connected", _socket.getSocketDescriptor());
   assert(wantWrite());
 
-  return handleWritableEvent(isRunning, logger);
+  return handleWritableEvent(isRunning);
 }
 
-bool ClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
-                                       ESB::Logger *logger) {
-  if (0 == _buffer && false == setupBuffer()) {
+bool ClientSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
+  if (0 == _buffer && !setupBuffer()) {
     return false;
   }
 
@@ -121,37 +105,24 @@ bool ClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
       error = ESB::GetLastError();
 
       if (ESB_AGAIN == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] not ready for read",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] not ready for read",
+                      _socket.getSocketDescriptor());
         return true;  // keep in multiplexer
       }
 
       if (ESB_INTR == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] interrupted",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] interrupted", _socket.getSocketDescriptor());
         continue;
       }
-
-      return handleErrorEvent(error, isRunning, logger);
+      return handleErrorEvent(error, isRunning);
     }
 
     if (0 == result) {
-      return handleEndOfFileEvent(isRunning, logger);
+      return handleEndOfFileEvent(isRunning);
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] Read %d bytes", _socket.getSocketDescriptor(),
-                   result);
-    }
+    ESB_LOG_DEBUG("[socket:%d] Read %ld bytes", _socket.getSocketDescriptor(),
+                  result);
   }
 
   if (!isRunning->get()) {
@@ -159,37 +130,29 @@ bool ClientSocket::handleReadableEvent(ESB::SharedInt *isRunning,
   }
 
   _successCounter->addObservation(&_start);
-
   _start.tv_usec = 0;
   _start.tv_sec = 0;
-
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Received complete response",
-                 _socket.getSocketDescriptor());
-  }
+  ESB_LOG_DEBUG("[socket:%d] Received complete response",
+                _socket.getSocketDescriptor());
 
   _inReadMode = false;
-
   assert(wantWrite());
 
-  if (false == _ReuseConnections) {
+  if (!_ReuseConnections) {
     return false;  // remove from multiplexer
   }
 
   PerformanceCounter::GetTime(&_start);
-
   return true;  // keep in multiplexer - also yields to other sockets
 }
 
-bool ClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
-                                       ESB::Logger *logger) {
-  if (0 == _buffer && false == setupBuffer()) {
+bool ClientSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
+  if (0 == _buffer && !setupBuffer()) {
     return false;
   }
 
   assert(_buffer);
-  assert(false == _inReadMode);
+  assert(!_inReadMode);
   assert(_buffer->isReadable());
 
   ESB::SSize result = 0;
@@ -200,133 +163,91 @@ bool ClientSocket::handleWritableEvent(ESB::SharedInt *isRunning,
 
     if (0 > result) {
       error = ESB::GetLastError();
-
       if (ESB_AGAIN == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] Not ready for write",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] Not ready for write",
+                      _socket.getSocketDescriptor());
         return true;  // keep in multiplexer
       }
 
       if (ESB_INTR == error) {
-        if (_logger->isLoggable(ESB::Logger::Debug)) {
-          _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                       "[socket:%d] Interrupted",
-                       _socket.getSocketDescriptor());
-        }
-
+        ESB_LOG_DEBUG("[socket:%d] Interrupted", _socket.getSocketDescriptor());
         continue;
       }
-
-      return handleErrorEvent(error, isRunning, logger);
+      return handleErrorEvent(error, isRunning);
     }
 
-    if (_logger->isLoggable(ESB::Logger::Debug)) {
-      _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                   "[socket:%d] Wrote %d bytes", _socket.getSocketDescriptor(),
-                   result);
-    }
+    ESB_LOG_DEBUG("[socket:%d] Wrote %ld bytes", _socket.getSocketDescriptor(),
+                  result);
   }
 
   if (!isRunning->get()) {
     return false;  // remove from multiplexer
   }
 
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    _logger->log(ESB::Logger::Debug, __FILE__, __LINE__,
-                 "[socket:%d] Sent complete request",
-                 _socket.getSocketDescriptor());
-  }
+  ESB_LOG_DEBUG("[socket:%d] Sent complete request",
+                _socket.getSocketDescriptor());
 
   _inReadMode = true;
   _buffer->compact();
-  assert(true == wantRead());
-
-  return handleReadableEvent(isRunning, logger);
+  assert(wantRead());
+  return handleReadableEvent(isRunning);
 }
 
-bool ClientSocket::handleErrorEvent(ESB::Error errorCode,
-                                    ESB::SharedInt *isRunning,
-                                    ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Warning)) {
-    char buffer[100];
-    char dottedAddress[16];
-
+bool ClientSocket::handleErrorEvent(ESB::Error error,
+                                    ESB::SharedInt *isRunning) {
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB::DescribeError(errorCode, buffer, sizeof(buffer));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Error from server %s: %s",
-                 _socket.getSocketDescriptor(), dottedAddress, buffer);
+    ESB_LOG_INFO_ERRNO(error, "[socket:%d] Error from server %s:%d",
+                       _socket.getSocketDescriptor(), dottedAddress,
+                       _socket.getPeerAddress().getPort());
   }
-
   return false;  // remove from multiplexer
 }
 
-bool ClientSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning,
-                                        ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
-
+bool ClientSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Server %s closed socket",
-                 _socket.getSocketDescriptor(), dottedAddress);
+    ESB_LOG_INFO("[socket:%d] Server %s:%d closed socket",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
-
   return false;  // remove from multiplexer
 }
 
-bool ClientSocket::handleIdleEvent(ESB::SharedInt *isRunning,
-                                   ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
-
+bool ClientSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Server %s is idle", _socket.getSocketDescriptor(),
-                 dottedAddress);
+    ESB_LOG_INFO("[socket:%d] Server %s:%d is idle",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
-
   return false;  // remove from multiplexer
 }
 
-bool ClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning,
-                                     ESB::Logger *logger) {
-  if (_logger->isLoggable(ESB::Logger::Debug)) {
-    char dottedAddress[16];
-
+bool ClientSocket::handleRemoveEvent(ESB::SharedInt *isRunning) {
+  if (ESB_INFO_LOGGABLE) {
+    char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-
-    _logger->log(ESB::Logger::Warning, __FILE__, __LINE__,
-                 "[socket:%d] Closing socket for server %s",
-                 _socket.getSocketDescriptor(), dottedAddress);
+    ESB_LOG_INFO("[socket:%d] Socket to server %s:%d closed",
+                 _socket.getSocketDescriptor(), dottedAddress,
+                 _socket.getPeerAddress().getPort());
   }
 
   _BufferPool.releaseBuffer(_buffer);
   _buffer = 0;
   _socket.close();
 
-  if (false == isRunning->get()) {
+  if (!isRunning->get()) {
     return true;  // call cleanup handler on us after this returns
   }
 
   ESB::Error error = _factory->addNewConnection(_socket.getPeerAddress());
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[socket] Cannot add new connection: %s", buffer);
-    }
+    ESB_LOG_WARNING_ERRNO(error, "[socket] Cannot add new connection");
   }
 
   return true;  // call cleanup handler on us after this returns
@@ -354,27 +275,18 @@ bool ClientSocket::setupBuffer() {
   _buffer = _BufferPool.acquireBuffer();
 
   if (!_buffer) {
-    if (_logger->isLoggable(ESB::Logger::Err)) {
-      _logger->log(ESB::Logger::Err, __FILE__, __LINE__,
-                   "[socket:%d] Cannot acquire new buffer",
-                   _socket.getSocketDescriptor());
-    }
-
+    ESB_LOG_ERROR("[socket:%d] Cannot acquire new buffer",
+                  _socket.getSocketDescriptor());
     return false;
   }
 
   assert(_buffer->isWritable());
-
   _buffer->clear();
-
   unsigned int capacity = _buffer->getCapacity();
-
   memset(_buffer->getBuffer(), ESB::Thread::GetThreadId() % 256, capacity);
-
   _buffer->setWritePosition(capacity);
 
   _inReadMode = false;
-
   assert(capacity = _buffer->getReadable());
   assert(0 == _buffer->getWritable());
 

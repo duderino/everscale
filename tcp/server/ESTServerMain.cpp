@@ -106,14 +106,13 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::ConsoleLogger::Initialize((ESB::Logger::Severity)logLevel);
-  ESB::Logger *logger = ESB::ConsoleLogger::Instance();
+  ESB::Time::Instance().start();
+  ESB::ConsoleLogger logger;
+  logger.setSeverity((ESB::Logger::Severity)logLevel);
+  ESB::Logger::SetInstance(&logger);
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                "[main] starting. logLevel: %d, threads: %d, port: %d",
-                logLevel, multiplexerCount, port);
-  }
+  ESB_LOG_NOTICE("[main] starting. logLevel: %d, threads: %d, port: %d",
+                 logLevel, multiplexerCount, port);
 
   //
   // Install signal handlers
@@ -133,28 +132,16 @@ int main(int argc, char **argv) {
   ESB::Error error = rootAllocator.initialize();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot initialize root allocator: %s", buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot initialize root allocator");
     return error;
   }
 
-  ESB::EpollMultiplexerFactory epollFactory("EpollMultiplexer", logger,
-                                            &rootAllocator);
+  ESB::EpollMultiplexerFactory epollFactory("EpollMultiplexer", &rootAllocator);
 
   ESB::ProcessLimits::SetSocketSoftMax(ESB::ProcessLimits::GetSocketHardMax());
   ESB::UInt32 maxSockets = ESB::ProcessLimits::GetSocketSoftMax();
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__,
-                "[main] Maximum sockets %d", maxSockets);
-  }
+  ESB_LOG_NOTICE("[main] Maximum sockets %d", maxSockets);
 
   ESB::FixedAllocator fixedAllocator(maxSockets, sizeof(EST::ServerSocket),
                                      ESB::SystemAllocator::GetInstance());
@@ -164,66 +151,34 @@ int main(int argc, char **argv) {
   error = socketAllocator.initialize();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot initialize socket allocator: %s", buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot initialize socket allocator: %s",
+                        buffer);
     return error;
   }
 
   ESB::ListeningTCPSocket listeningSocket(port, ESB_UINT16_MAX, false);
-
   error = listeningSocket.bind();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot bind to port %d: %s", port, buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot bind to port %d", port);
     return error;
   }
 
   error = listeningSocket.listen();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot listen on port %d: %s", port, buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot listen on port %d", port);
     return error;
   }
 
   ESB::SocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount,
                                               &epollFactory, &rootAllocator,
-                                              "EpollDispatcher", logger);
+                                              "EpollDispatcher");
 
   error = dispatcher.start();
 
   if (ESB_SUCCESS != error) {
-    if (logger->isLoggable(ESB::Logger::Critical)) {
-      char buffer[100];
-
-      ESB::DescribeError(error, buffer, sizeof(buffer));
-
-      logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                  "[main] Cannot start multiplexer dispatcher: %s", buffer);
-    }
-
+    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot start multiplexer dispatcher");
     return error;
   }
 
@@ -231,54 +186,36 @@ int main(int argc, char **argv) {
 
   for (int i = 0; i < multiplexerCount; ++i) {
     socket = new (&rootAllocator) EST::ListeningSocket(
-        &listeningSocket, &socketAllocator, &dispatcher, logger,
+        &listeningSocket, &socketAllocator, &dispatcher,
         &rootAllocatorCleanupHandler, &socketAllocatorCleanupHandler);
 
     if (!socket) {
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] Cannot allocate new listening socket");
-      }
-
+      ESB_LOG_ERROR("[main] Cannot allocate new listening socket");
       return ESB_OUT_OF_MEMORY;
     }
 
     error = dispatcher.addMultiplexedSocket(i, socket);
 
     if (ESB_SUCCESS != error) {
-      if (logger->isLoggable(ESB::Logger::Critical)) {
-        char buffer[100];
-
-        ESB::DescribeError(error, buffer, sizeof(buffer));
-
-        logger->log(ESB::Logger::Critical, __FILE__, __LINE__,
-                    "[main] Cannot add listening socket to multiplexer: %s",
-                    buffer);
-      }
-
+      ESB_LOG_ERROR_ERRNO(error,
+                          "[main] Cannot add listening socket to multiplexer");
       return error;
     }
   }
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[main] started");
-  }
+  ESB_LOG_NOTICE("[main] started");
 
   while (IsRunning) {
-    sleep(60);
+    sleep(1);
   }
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[main] stopping");
-  }
-
+  ESB_LOG_NOTICE("[main] stopping");
   dispatcher.stop();
+  ESB_LOG_NOTICE("[main] stopped");
 
-  if (logger->isLoggable(ESB::Logger::Notice)) {
-    logger->log(ESB::Logger::Notice, __FILE__, __LINE__, "[main] stopped");
-  }
-
-  ESB::ConsoleLogger::Destroy();
+  ESB::Time::Instance().stop();
+  error = ESB::Time::Instance().join();
+  assert(ESB_SUCCESS == error);
 
   return ESB_SUCCESS;
 }
