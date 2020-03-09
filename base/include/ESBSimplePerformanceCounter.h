@@ -40,13 +40,15 @@ class SimplePerformanceCounter : public PerformanceCounter {
 
   double getQueriesPerSec() const;
 
-  inline UInt32 getQueries() const { return _queries; }
+  UInt32 getQueries() const;
 
-  inline double getAvgMsec() const { return _avgMSec; }
+  double getMeanMsec() const;
+  
+  double getVarianceMsec() const;
 
-  inline double getMinMsec() const { return 0 > _minMSec ? 0 : _minMSec; }
+  double getMinMsec() const;
 
-  inline double getMaxMsec() const { return _maxMSec; }
+  double getMaxMsec() const;
 
   virtual void addObservation(const Date &start, const Date &stop);
 
@@ -68,11 +70,13 @@ class SimplePerformanceCounter : public PerformanceCounter {
   SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
 
   double getQueriesPerSecNoLock() const;
+  double getVarianceMsecNoLock() const;
 
   const char *_name;
   Date _windowStart;
   Date _windowStop;
-  double _avgMSec;
+  double _meanMSec;
+  double _avgDistToMeanSq;
   double _minMSec;
   double _maxMSec;
   UInt32 _queries;
