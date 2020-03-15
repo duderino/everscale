@@ -27,7 +27,7 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
 
   virtual ~HttpClientHistoricalCounters();
 
-  virtual void printSummary(FILE *file) const;
+  virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const;
 
   virtual ESB::PerformanceCounter *getSuccesses();
 

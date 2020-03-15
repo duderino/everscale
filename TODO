@@ -1,5 +1,4 @@
 perf counters
- - log to logger not FILE *
  - averaging counter should track variance
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
 multiplex socket

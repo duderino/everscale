@@ -101,7 +101,8 @@ double SimplePerformanceCounter::getVarianceMsec() const {
   return getVarianceMsecNoLock();
 }
 
-void SimplePerformanceCounter::printSummary(FILE *file) const {
+void SimplePerformanceCounter::log(Logger &logger,
+                                   Logger::Severity severity) const {
   double meanMSec, varianceMSec, minMSec, maxMSec, qps = 0.0;
   UInt32 queries = 0U;
 
@@ -116,9 +117,9 @@ void SimplePerformanceCounter::printSummary(FILE *file) const {
     queries = _queries;
   }
 
-  fprintf(file,
-          "%s: QPS=%.2lf, N=%u, LATENCY MSEC MEAN=%.2lf, VAR=%.2f, "
-          "MIN=%.2lf, MAX =%.2lf\n",
+  ESB_LOG(logger, severity,
+          "%s: QPS=%.2lf, N=%u, LATENCY MSEC MEAN=%.2lf, VAR=%.2f, MIN=%.2lf, "
+          "MAX=%.2lf",
           _name, qps, queries, meanMSec, varianceMSec, minMSec, maxMSec);
 }
 UInt32 SimplePerformanceCounter::getQueries() const {

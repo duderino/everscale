@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
     return -3;
   }
 
-  serverCounters.printSummary(stdout);
+  serverCounters.log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   stack.destroy();
 
   return 0;

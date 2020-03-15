@@ -9,9 +9,10 @@ HttpClientSimpleCounters::HttpClientSimpleCounters()
 
 HttpClientSimpleCounters::~HttpClientSimpleCounters() {}
 
-void HttpClientSimpleCounters::printSummary(FILE *file) const {
-  _successes.printSummary(file);
-  _failures.printSummary(file);
+void HttpClientSimpleCounters::log(ESB::Logger &logger,
+                                   ESB::Logger::Severity severity) const {
+  _successes.log(logger, severity);
+  _failures.log(logger, severity);
 }
 
 ESB::PerformanceCounter *HttpClientSimpleCounters::getSuccesses() {

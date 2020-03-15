@@ -105,6 +105,8 @@ class Logger {
 
   static inline Logger &Instance() { return *_Instance; };
 
+  static const char *SeverityToString(Severity severity);
+
  private:
   static Logger *_Instance;
 };
@@ -139,6 +141,16 @@ class Logger {
   (ESB::Logger::Instance().isLoggable(ESB::Logger::Info))
 #define ESB_DEBUG_LOGGABLE \
   (ESB::Logger::Instance().isLoggable(ESB::Logger::Debug))
+
+#define ESB_LOG(LOGGER, SEVERITY, FORMAT, ...)                        \
+  do {                                                                \
+    if (LOGGER.isLoggable(SEVERITY)) {                                \
+      ESB::Logger::Instance().log(                                    \
+          SEVERITY, "[%lu:%lu:%s:" ESB_LOG_PREFIX FORMAT "\n",        \
+          ESB::Time::Instance().nowSec(), ESB::Thread::GetThreadId(), \
+          ESB::Logger::SeverityToString(SEVERITY), ##__VA_ARGS__);    \
+    }                                                                 \
+  } while (0)
 
 #define ESB_LOG_EMERGENCY(FORMAT, ...)                                        \
   do {                                                                        \

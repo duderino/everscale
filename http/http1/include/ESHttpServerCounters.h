@@ -13,6 +13,10 @@
 #include <ESBPerformanceCounter.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 namespace ES {
 class HttpServerCounters {
  public:
@@ -20,7 +24,8 @@ class HttpServerCounters {
 
   virtual ~HttpServerCounters();
 
-  virtual void printSummary(FILE *file) const = 0;
+  virtual void log(ESB::Logger &logger,
+                   ESB::Logger::Severity severity) const = 0;
 
   virtual ESB::PerformanceCounter *getSuccessfulTransactions() = 0;
 

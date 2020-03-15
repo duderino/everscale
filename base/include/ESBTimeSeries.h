@@ -48,7 +48,7 @@ class TimeSeries : public PerformanceCounter {
    */
   inline const EmbeddedList *getCounters() const { return &_list; }
 
-  virtual void printSummary(FILE *file) const;
+  virtual void log(Logger &logger, Logger::Severity severity) const;
 
  private:
   // Disabled

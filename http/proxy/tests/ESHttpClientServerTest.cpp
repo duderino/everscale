@@ -81,7 +81,6 @@ int main(int argc, char **argv) {
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
-  FILE *outputFile = stdout;
   const ESB::UInt16 maxWindows = 1000;
   const ESB::UInt16 windowSizeSec = 1;
   unsigned char body[1024];
@@ -235,8 +234,9 @@ int main(int argc, char **argv) {
   assert(ESB_SUCCESS == error);
 
   // TODO assert on counters here
-  clientStack.getClientCounters()->printSummary(outputFile);
-  serverCounters.printSummary(outputFile);
+  clientStack.getClientCounters()->log(ESB::Logger::Instance(),
+                                       ESB::Logger::Severity::Notice);
+  serverCounters.log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
 
   // Destroy
 
@@ -247,9 +247,6 @@ int main(int argc, char **argv) {
   ESB::Time::Instance().stop();
   error = ESB::Time::Instance().join();
   assert(ESB_SUCCESS == error);
-
-  fflush(outputFile);
-  fclose(outputFile);
 
   return ESB_SUCCESS;
 }

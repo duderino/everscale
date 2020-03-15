@@ -23,22 +23,24 @@ HttpServerSimpleCounters::HttpServerSimpleCounters()
 
 HttpServerSimpleCounters::~HttpServerSimpleCounters() {}
 
-void HttpServerSimpleCounters::printSummary(FILE *file) const {
-  _successfulTransactions.printSummary(file);
-  _requestHeaderErrors.printSummary(file);
-  _requestHeaderFailures.printSummary(file);
-  _requestHeaderTimeouts.printSummary(file);
-  _requestBodyErrors.printSummary(file);
-  _requestBodyFailures.printSummary(file);
-  _requestBodyTimeouts.printSummary(file);
-  _responseHeaderErrors.printSummary(file);
-  _responseHeaderFailures.printSummary(file);
-  _responseHeaderTimeouts.printSummary(file);
-  _responseBodyErrors.printSummary(file);
-  _responseBodyFailures.printSummary(file);
-  _responseHeaderTimeouts.printSummary(file);
-  fprintf(file, "SERVER CONNECTION ACCEPTS: %d\n", _totalConnections.get());
-  fprintf(file, "SERVER AVG TRANS PER CONNECTION: %.2f\n",
+void HttpServerSimpleCounters::log(ESB::Logger &logger,
+                                   ESB::Logger::Severity severity) const {
+  _successfulTransactions.log(logger, severity);
+  _requestHeaderErrors.log(logger, severity);
+  _requestHeaderFailures.log(logger, severity);
+  _requestHeaderTimeouts.log(logger, severity);
+  _requestBodyErrors.log(logger, severity);
+  _requestBodyFailures.log(logger, severity);
+  _requestBodyTimeouts.log(logger, severity);
+  _responseHeaderErrors.log(logger, severity);
+  _responseHeaderFailures.log(logger, severity);
+  _responseHeaderTimeouts.log(logger, severity);
+  _responseBodyErrors.log(logger, severity);
+  _responseBodyFailures.log(logger, severity);
+  _responseHeaderTimeouts.log(logger, severity);
+  ESB_LOG(logger, severity, "SERVER CONNECTION ACCEPTS: %d",
+          _totalConnections.get());
+  ESB_LOG(logger, severity, "SERVER AVG TRANS PER CONNECTION: %.2f",
           _averageTransactionsPerConnection.getValue());
 }
 

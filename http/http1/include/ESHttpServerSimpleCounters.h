@@ -25,7 +25,7 @@ class HttpServerSimpleCounters : public HttpServerCounters {
 
   virtual ~HttpServerSimpleCounters();
 
-  virtual void printSummary(FILE *file) const;
+  virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const;
 
   virtual ESB::PerformanceCounter *getSuccessfulTransactions();
 

@@ -52,7 +52,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
 
   virtual void addObservation(const Date &start, const Date &stop);
 
-  virtual void printSummary(FILE *file) const;
+  virtual void log(Logger &logger, Logger::Severity severity) const;
 
   /** Placement new.
    *

@@ -82,13 +82,13 @@ void TimeSeries::addObservation(const Date &start, const Date &stop) {
   counter->addObservation(start, stop);
 }
 
-void TimeSeries::printSummary(FILE *file) const {
+void TimeSeries::log(Logger &logger, Logger::Severity severity) const {
   ReadScopeLock lock(_lock);
 
   for (SimplePerformanceCounter *counter =
            (SimplePerformanceCounter *)_list.getFirst();
        counter; counter = (SimplePerformanceCounter *)counter->getNext()) {
-    counter->printSummary(file);
+    counter->log(logger, severity);
   }
 }
 

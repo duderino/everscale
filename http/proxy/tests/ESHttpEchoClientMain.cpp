@@ -116,13 +116,12 @@ int main(int argc, char **argv) {
   const char *contentType = "octet-stream";
   const char *bodyFilePath = 0;
   const char *absPath = "/";
-  FILE *outputFile = stdout;
 
   {
     int result = 0;
 
     while (true) {
-      result = getopt(argc, argv, "l:t:H:p:c:i:m:C:b:a:o:rh");
+      result = getopt(argc, argv, "l:t:H:p:c:i:m:C:b:a:rh");
 
       if (0 > result) {
         break;
@@ -177,17 +176,6 @@ int main(int argc, char **argv) {
         case 'a':
 
           absPath = optarg;
-          break;
-
-        case 'o':
-
-          outputFile = fopen(optarg, "w");
-
-          if (0 == outputFile) {
-            fprintf(stderr, "Cannot open %s: %s\n", optarg, strerror(errno));
-            return -10;
-          }
-
           break;
 
         case 'r':
@@ -449,12 +437,10 @@ int main(int argc, char **argv) {
     return -3;
   }
 
-  stack.getClientCounters()->printSummary(outputFile);
+  stack.getClientCounters()->log(ESB::Logger::Instance(),
+                                 ESB::Logger::Severity::Notice);
   stack.destroy();
   echoClientContextAllocator.destroy();  // client context dtors not called.
-
-  fflush(outputFile);
-  fclose(outputFile);
 
   return ESB_SUCCESS;
 }

@@ -9,12 +9,8 @@
 #include <ESBDate.h>
 #endif
 
-#ifdef HAVE_STDIO_H
-#include <stdio.h>
-#endif
-
-#ifndef HAVE_FILE_T
-#error "FILE or equivalent is required"
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 namespace ESB {
@@ -27,7 +23,8 @@ class PerformanceCounter : public EmbeddedListElement {
 
   virtual void addObservation(const Date &start, const Date &stop) = 0;
 
-  virtual void printSummary(FILE *file) const = 0;
+  virtual void log(Logger &logger, Logger::Severity severity =
+                                       Logger::Severity::Debug) const = 0;
 
   virtual CleanupHandler *getCleanupHandler();
 

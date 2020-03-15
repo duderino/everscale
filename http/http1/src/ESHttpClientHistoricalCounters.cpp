@@ -12,9 +12,10 @@ HttpClientHistoricalCounters::HttpClientHistoricalCounters(
 
 HttpClientHistoricalCounters::~HttpClientHistoricalCounters() {}
 
-void HttpClientHistoricalCounters::printSummary(FILE *file) const {
-  _successes.printSummary(file);
-  _failures.printSummary(file);
+void HttpClientHistoricalCounters::log(ESB::Logger &logger,
+                                       ESB::Logger::Severity severity) const {
+  _successes.log(logger, severity);
+  _failures.log(logger, severity);
 }
 
 ESB::PerformanceCounter *HttpClientHistoricalCounters::getSuccesses() {
