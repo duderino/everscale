@@ -9,7 +9,7 @@ set(SOURCE_FILES
         src/ESBCommand.cpp
         src/ESBCommandThread.cpp
         src/ESBComparator.cpp
-        src/ESBConsoleLogger.cpp
+        src/ESBSimpleFileLogger.cpp
         src/ESBConnectedTCPSocket.cpp
         src/ESBCountingSemaphore.cpp
         src/ESBDate.cpp

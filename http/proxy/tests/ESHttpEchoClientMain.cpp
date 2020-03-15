@@ -1,5 +1,5 @@
-#ifndef ESB_CONSOLE_LOGGER_H
-#include <ESBConsoleLogger.h>
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
 #endif
 
 #ifndef ESB_DISCARD_ALLOCATOR_H
@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::ConsoleLogger logger;
+  ESB::SimpleFileLogger logger;
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
 

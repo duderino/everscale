@@ -2,8 +2,8 @@
 #include <ESBLogger.h>
 #endif
 
-#ifndef ESB_CONSOLE_LOGGER_H
-#include <ESBConsoleLogger.h>
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
 #endif
 
 #ifndef ESB_NULL_LOGGER_H
@@ -76,7 +76,7 @@ TEST(Logger, NullLogger) {
 }
 
 TEST(Logger, ConsoleLogger) {
-  ConsoleLogger logger;
+  SimpleFileLogger logger;
   logger.setSeverity(Logger::Warning);
   Logger::SetInstance(&logger);
 
@@ -87,7 +87,7 @@ TEST(Logger, ConsoleLogger) {
 }
 
 TEST(Logger, Severity) {
-  ConsoleLogger logger;
+  SimpleFileLogger logger;
   TestLogger decorator(logger);
   decorator.setSeverity(Logger::Warning);
   Logger::SetInstance(&decorator);
@@ -110,7 +110,7 @@ TEST(Logger, Severity) {
 }
 
 TEST(Logger, Errno) {
-  ConsoleLogger logger;
+  SimpleFileLogger logger;
   logger.setSeverity(Logger::Warning);
   Logger::SetInstance(&logger);
 

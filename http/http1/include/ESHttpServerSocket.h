@@ -14,7 +14,6 @@
 #endif
 
 #ifndef ES_HTTP_SERVER_COUNTERS_H
-#include <ESBConsoleLogger.h>
 #include <ESHttpServerCounters.h>
 #endif
 

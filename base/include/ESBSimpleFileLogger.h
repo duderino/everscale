@@ -1,5 +1,5 @@
-#ifndef ESB_CONSOLE_LOGGER_H
-#define ESB_CONSOLE_LOGGER_H
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#define ESB_SIMPLE_FILE_LOGGER_H
 
 #ifndef ESB_CONFIG_H
 #include <ESBConfig.h>
@@ -17,22 +17,27 @@
 #include <ESBLogger.h>
 #endif
 
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
 namespace ESB {
 
-/** ConsoleLogger is a singleton that implements the Logger interface by
- *  writing log messages to stderr.
+/** SimpleFileLogger writes log messages to a file with no file rotation.
  *
  *  @ingroup log
  */
-class ConsoleLogger : public Logger {
+class SimpleFileLogger : public Logger {
  public:
   /** Constructor
+   *
+   * @param file All log messages will be written to this file handle.
    */
-  ConsoleLogger();
+  SimpleFileLogger(FILE *file = stdout);
 
   /** Destructor
    */
-  virtual ~ConsoleLogger();
+  virtual ~SimpleFileLogger();
 
   /** Determine whether a log message will really be logged.
    *
@@ -71,10 +76,15 @@ class ConsoleLogger : public Logger {
 
  private:
   // Disabled
-  ConsoleLogger(const ConsoleLogger &);
-  ConsoleLogger &operator=(const ConsoleLogger &);
+  SimpleFileLogger(const SimpleFileLogger &);
+  SimpleFileLogger &operator=(const SimpleFileLogger &);
 
   Severity _severity;
+#ifdef HAVE_FILE_T
+  FILE *_file;
+#else
+#error "FILE * or equivalent is required"
+#endif
 };
 
 }  // namespace ESB

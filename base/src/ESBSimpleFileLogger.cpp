@@ -1,5 +1,5 @@
-#ifndef ESB_CONSOLE_LOGGER_H
-#include <ESBConsoleLogger.h>
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
 #endif
 #ifndef ESB_THREAD_H
 #include <ESBThread.h>
@@ -25,17 +25,17 @@
 
 namespace ESB {
 
-ConsoleLogger::ConsoleLogger() : _severity(None) {}
+SimpleFileLogger::SimpleFileLogger(FILE *file) : _severity(None), _file(file) {}
 
-ConsoleLogger::~ConsoleLogger() {}
+SimpleFileLogger::~SimpleFileLogger() {}
 
-bool ConsoleLogger::isLoggable(Severity severity) {
+bool SimpleFileLogger::isLoggable(Severity severity) {
   return !(severity > _severity);
 }
 
-void ConsoleLogger::setSeverity(Severity severity) { _severity = severity; }
+void SimpleFileLogger::setSeverity(Severity severity) { _severity = severity; }
 
-Error ConsoleLogger::log(Severity severity, const char *format, ...) {
+Error SimpleFileLogger::log(Severity severity, const char *format, ...) {
   if (!format) {
     return ESB_NULL_POINTER;
   }
@@ -47,7 +47,7 @@ Error ConsoleLogger::log(Severity severity, const char *format, ...) {
 #if defined HAVE_VA_START && defined HAVE_VA_END && defined HAVE_VFPRINTF
   va_list vaList;
   va_start(vaList, format);
-  vfprintf(stderr, format, vaList);
+  vfprintf(_file, format, vaList);
   va_end(vaList);
 #else
 #error "va_start, vfprintf, and va_end or equivalent is required"
