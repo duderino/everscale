@@ -15,3 +15,5 @@ unit-tf/include/ESTFConfig.h
 .idea
 *-test
 _deps
+*_include.cmake
+*_tests.cmake

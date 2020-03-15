@@ -82,7 +82,8 @@ int main(int argc, char **argv) {
   const char *contentType = "octet-stream";
   const char *absPath = "/";
   FILE *outputFile = stdout;
-  const time_t windowSizeSec = 1;
+  const ESB::UInt16 maxWindows = 1000;
+  const ESB::UInt16 windowSizeSec = 1;
   unsigned char body[1024];
 
   memset(body, 42, sizeof(body));
@@ -163,7 +164,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  HttpClientHistoricalCounters counters(windowSizeSec,
+  HttpClientHistoricalCounters counters(maxWindows, windowSizeSec,
                                         ESB::SystemAllocator::GetInstance());
   HttpStack clientStack(&dnsClient, clientThreads, &counters);
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,

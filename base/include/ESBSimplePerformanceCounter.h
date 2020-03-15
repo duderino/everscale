@@ -43,7 +43,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
   UInt32 getQueries() const;
 
   double getMeanMsec() const;
-  
+
   double getVarianceMsec() const;
 
   double getMinMsec() const;
@@ -63,6 +63,12 @@ class SimplePerformanceCounter : public PerformanceCounter {
   inline void *operator new(size_t size, Allocator *allocator) {
     return allocator->allocate(size);
   }
+
+  inline void *operator new(size_t size, SimplePerformanceCounter *counter) {
+    return counter;
+  }
+
+  // inline void *operator new(size_t size, void *block) { return block; }
 
  private:
   // Disabled

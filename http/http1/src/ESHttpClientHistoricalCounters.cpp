@@ -5,9 +5,10 @@
 namespace ES {
 
 HttpClientHistoricalCounters::HttpClientHistoricalCounters(
-    time_t windowSizeSec, ESB::Allocator *allocator)
-    : _successes("CLIENT TRANS SUCCESS", windowSizeSec, allocator),
-      _failures("CLIENT TRANS FAILURE", windowSizeSec, allocator) {}
+    ESB::UInt16 maxWindows, ESB::UInt16 windowSizeSec,
+    ESB::Allocator *allocator)
+    : _successes("CLIENT TRANS SUCCESS", maxWindows, windowSizeSec, allocator),
+      _failures("CLIENT TRANS FAILURE", maxWindows, windowSizeSec, allocator) {}
 
 HttpClientHistoricalCounters::~HttpClientHistoricalCounters() {}
 

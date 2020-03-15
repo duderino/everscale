@@ -1,8 +1,6 @@
-make all these unsigned chars in HttpMessage, HttpRequest, and HttpReponse chars
 perf counters
  - log to logger not FILE *
- - revisit efficency of historical perf counter.  turn into a composite with an interval?  rename time series?
- - simple perf counter and averaging counter should track variance - online/incremental variance algo
+ - averaging counter should track variance
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
 multiplex socket
  - consider not exposing isRunning to impls... they should be returning asap anyways
@@ -66,6 +64,7 @@ http stuff
  - support 100 Continue
  - support max requests per connection
  - support receiving half closed from client while still sending outstanding response
+ - make all the unsigned chars in HttpMessage, HttpRequest, and HttpReponse chars?  UTF-8 only in encoded form?
 URL 
  - canonicalization / encode and decode per chromium RFC
  - username and pass

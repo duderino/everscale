@@ -5,8 +5,8 @@
 #include <ESHttpClientCounters.h>
 #endif
 
-#ifndef ESB_HISTORICAL_PERFORMANCE_COUNTER_H
-#include <ESBHistoricalPerformanceCounter.h>
+#ifndef ESB_TIME_SERIES_H
+#include <ESBTimeSeries.h>
 #endif
 
 namespace ES {
@@ -21,7 +21,9 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
    * @param allocator The counter will grab memory from this allocator
    *   for each new window it creates.
    */
-  HttpClientHistoricalCounters(time_t windowSizeSec, ESB::Allocator *allocator);
+  HttpClientHistoricalCounters(ESB::UInt16 maxWindows,
+                               ESB::UInt16 windowSizeSec,
+                               ESB::Allocator *allocator);
 
   virtual ~HttpClientHistoricalCounters();
 
@@ -40,8 +42,8 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
   HttpClientHistoricalCounters(const HttpClientHistoricalCounters &counters);
   void operator=(const HttpClientHistoricalCounters &counters);
 
-  ESB::HistoricalPerformanceCounter _successes;
-  ESB::HistoricalPerformanceCounter _failures;
+  ESB::TimeSeries _successes;
+  ESB::TimeSeries _failures;
 };
 
 }  // namespace ES

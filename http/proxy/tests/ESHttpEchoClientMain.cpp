@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
   //
 
   ESB::SystemDnsClient dnsClient;
-  HttpClientHistoricalCounters counters(30,
+  HttpClientHistoricalCounters counters(1000, 30,
                                         ESB::SystemAllocator::GetInstance());
   HttpStack stack(&dnsClient, threads, &counters);
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
