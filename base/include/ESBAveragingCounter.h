@@ -5,24 +5,38 @@
 #include <ESBMutex.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 namespace ESB {
 
+/**
+ * An unsynchronized counter that computes the mean and variance of a series of
+ * values.
+ */
 class AveragingCounter {
  public:
   AveragingCounter();
 
   virtual ~AveragingCounter();
 
-  inline void setValue(double value, double observations) {
-    _observations = observations;
-    _value = value;
+  void add(double value);
+
+  inline double getMean() const { return _mean; }
+
+  inline double getVariance() const {
+    return 1 >= _observations ? 0.0 : _avgDistToMeanSq / (_observations - 1);
   }
 
-  void addValue(double value);
+  inline double getMin() const { return _min; }
 
-  inline double getValue() const { return _value; }
+  inline double getMax() const { return _max; }
 
-  inline double getObservations() const { return _observations; }
+  inline UInt32 getObservations() const { return _observations; }
+
+  void log(Logger &logger, Logger::Severity severity,
+           const char *description) const;
 
   /** Placement new.
    *
@@ -39,9 +53,11 @@ class AveragingCounter {
   AveragingCounter(const AveragingCounter &counter);
   void operator=(const AveragingCounter &counter);
 
-  double _value;
-  double _observations;
-  Mutex _lock;
+  double _mean;
+  double _avgDistToMeanSq;
+  double _min;
+  double _max;
+  UInt32 _observations;
 };
 
 }  // namespace ESB

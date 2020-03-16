@@ -533,8 +533,7 @@ bool HttpServerSocket::handleRemoveEvent(ESB::SharedInt *isRunning) {
 
   _transaction.reset();
   _state = HAS_BEEN_REMOVED;
-  _counters->getAverageTransactionsPerConnection()->addValue(
-      _requestsPerConnection);
+  _counters->getAverageTransactionsPerConnection()->add(_requestsPerConnection);
   _requestsPerConnection = 0;
 
   return true;  // call cleanup handler on us after this returns

@@ -5,8 +5,8 @@
 #include <ESBSharedInt.h>
 #endif
 
-#ifndef ESB_AVERAGING_COUNTER_H
-#include <ESBAveragingCounter.h>
+#ifndef ESB_SHARED_AVERAGING_COUNTER_H
+#include <ESBSharedAveragingCounter.h>
 #endif
 
 #ifndef ESB_PERFORMANCE_COUNTER_H
@@ -83,10 +83,11 @@ class HttpServerCounters {
 
   virtual const ESB::SharedInt *getTotalConnections() const = 0;
 
-  virtual ESB::AveragingCounter *getAverageTransactionsPerConnection() = 0;
+  virtual ESB::SharedAveragingCounter *
+  getAverageTransactionsPerConnection() = 0;
 
-  virtual const ESB::AveragingCounter *getAverageTransactionsPerConnection()
-      const = 0;
+  virtual const ESB::SharedAveragingCounter *
+  getAverageTransactionsPerConnection() const = 0;
 
  private:
   // Disabled

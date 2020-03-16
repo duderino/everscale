@@ -17,11 +17,7 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name)
       _name(name),
       _windowStart(),
       _windowStop(),
-      _meanMSec(0.0),
-      _avgDistToMeanSq(0.0),
-      _minMSec(0.0),
-      _maxMSec(0.0),
-      _queries(0UL),
+      _latencyMsec(),
       _lock() {}
 
 SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
@@ -31,11 +27,7 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
       _name(name),
       _windowStart(windowStart),
       _windowStop(windowStop),
-      _meanMSec(0.0),
-      _avgDistToMeanSq(0.0),
-      _minMSec(0.0),
-      _maxMSec(0.0),
-      _queries(0UL),
+      _latencyMsec(),
       _lock() {}
 
 SimplePerformanceCounter::~SimplePerformanceCounter() {}
@@ -46,7 +38,7 @@ double SimplePerformanceCounter::getQueriesPerSec() const {
 }
 
 double SimplePerformanceCounter::getQueriesPerSecNoLock() const {
-  if (0 == _queries) {
+  if (0 == _latencyMsec.getObservations()) {
     return 0;
   }
 
@@ -61,7 +53,7 @@ double SimplePerformanceCounter::getQueriesPerSecNoLock() const {
   double diffMsec =
       window.getSeconds() * 1000.0 + window.getMicroSeconds() / 1000.0;
 
-  return _queries / diffMsec * 1000.0;
+  return _latencyMsec.getObservations() / diffMsec * 1000.0;
 }
 
 void SimplePerformanceCounter::addObservation(const Date &start,
@@ -77,28 +69,13 @@ void SimplePerformanceCounter::addObservation(const Date &start,
       _windowStart = Date::Now();
     }
 
-    // Welford's online algorithm
-    double n = ++_queries;
-    double delta = diffMSec - _meanMSec;
-    _meanMSec += delta / n;
-    double delta2 = diffMSec - _meanMSec;
-    _avgDistToMeanSq += delta * delta2;
-
-    if (0 >= _minMSec) {
-      _minMSec = diffMSec;
-    } else if (_minMSec > diffMSec) {
-      _minMSec = diffMSec;
-    }
-
-    if (diffMSec > _maxMSec) {
-      _maxMSec = diffMSec;
-    }
+    _latencyMsec.add(diffMSec);
   }
 }
 
 double SimplePerformanceCounter::getVarianceMsec() const {
   ReadScopeLock lock(_lock);
-  return getVarianceMsecNoLock();
+  return _latencyMsec.getVariance();
 }
 
 void SimplePerformanceCounter::log(Logger &logger,
@@ -109,12 +86,12 @@ void SimplePerformanceCounter::log(Logger &logger,
   {
     ReadScopeLock lock(_lock);
 
-    meanMSec = _meanMSec;
-    varianceMSec = getVarianceMsecNoLock();
-    minMSec = _minMSec;
-    maxMSec = _maxMSec;
+    meanMSec = _latencyMsec.getMean();
+    varianceMSec = _latencyMsec.getVariance();
+    minMSec = _latencyMsec.getMin();
+    maxMSec = _latencyMsec.getMax();
     qps = getQueriesPerSecNoLock();
-    queries = _queries;
+    queries = _latencyMsec.getObservations();
   }
 
   ESB_LOG(logger, severity,
@@ -122,32 +99,25 @@ void SimplePerformanceCounter::log(Logger &logger,
           "MAX=%.2lf",
           _name, qps, queries, meanMSec, varianceMSec, minMSec, maxMSec);
 }
+
 UInt32 SimplePerformanceCounter::getQueries() const {
   ReadScopeLock lock(_lock);
-  return _queries;
+  return _latencyMsec.getObservations();
 }
 
 double SimplePerformanceCounter::getMeanMsec() const {
   ReadScopeLock lock(_lock);
-  return _meanMSec;
+  return _latencyMsec.getMean();
 }
 
 double SimplePerformanceCounter::getMinMsec() const {
   ReadScopeLock lock(_lock);
-  return 0 > _minMSec ? 0 : _minMSec;
+  return _latencyMsec.getMin();
 }
 
 double SimplePerformanceCounter::getMaxMsec() const {
   ReadScopeLock lock(_lock);
-  return _maxMSec;
-}
-
-double SimplePerformanceCounter::getVarianceMsecNoLock() const {
-  if (1 >= _queries) {
-    return 0.0;
-  }
-
-  return _avgDistToMeanSq / (_queries - 1);
+  return _latencyMsec.getMax();
 }
 
 }  // namespace ESB

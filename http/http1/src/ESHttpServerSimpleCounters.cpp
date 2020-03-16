@@ -40,8 +40,8 @@ void HttpServerSimpleCounters::log(ESB::Logger &logger,
   _responseHeaderTimeouts.log(logger, severity);
   ESB_LOG(logger, severity, "SERVER CONNECTION ACCEPTS: %d",
           _totalConnections.get());
-  ESB_LOG(logger, severity, "SERVER AVG TRANS PER CONNECTION: %.2f",
-          _averageTransactionsPerConnection.getValue());
+  _averageTransactionsPerConnection.log(logger, severity,
+                                        "SERVER AVG TRANS PER CONNECTION");
 }
 
 ESB::PerformanceCounter *HttpServerSimpleCounters::getSuccessfulTransactions() {
@@ -169,12 +169,12 @@ const ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() const {
   return &_totalConnections;
 }
 
-ESB::AveragingCounter *
+ESB::SharedAveragingCounter *
 HttpServerSimpleCounters::getAverageTransactionsPerConnection() {
   return &_averageTransactionsPerConnection;
 }
 
-const ESB::AveragingCounter *
+const ESB::SharedAveragingCounter *
 HttpServerSimpleCounters::getAverageTransactionsPerConnection() const {
   return &_averageTransactionsPerConnection;
 }

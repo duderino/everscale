@@ -9,6 +9,10 @@
 #include <ESBPerformanceCounter.h>
 #endif
 
+#ifndef ESB_AVERAGING_COUNTER_H
+#include <ESBAveragingCounter.h>
+#endif
+
 namespace ESB {
 
 class SimplePerformanceCounter : public PerformanceCounter {
@@ -76,16 +80,11 @@ class SimplePerformanceCounter : public PerformanceCounter {
   SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
 
   double getQueriesPerSecNoLock() const;
-  double getVarianceMsecNoLock() const;
 
   const char *_name;
   Date _windowStart;
   Date _windowStop;
-  double _meanMSec;
-  double _avgDistToMeanSq;
-  double _minMSec;
-  double _maxMSec;
-  UInt32 _queries;
+  AveragingCounter _latencyMsec;
   mutable Mutex _lock;
 };
 

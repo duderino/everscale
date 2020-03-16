@@ -1,11 +1,6 @@
-perf counters
- - averaging counter should track variance
- - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
 multiplex socket
  - consider not exposing isRunning to impls... they should be returning asap anyways
  - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers
-logging
- - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
 http stack test
  - create proxy test:  proxy callbacks + route API
  - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
@@ -19,8 +14,6 @@ proxy main
  - load shedding
  - readiness and liveness check support - e2e vs local options
  - plugin api
-build types
- - existence check in embedded list may be excessive even in NDEBUG.  instead just put flag in embedded list base indicating whether it is in a list or not?
 multiplexer dispatcher
  - helpful or harmful?  better to allow unbalance and just let each multipler add whatever it accepts?
  - dispatch to multiplexer with silo affinity/be-fe connection alignment?
@@ -75,3 +68,7 @@ bootstrap config
  - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid filling disk
 xds support
  - protobuf stubs
+logging
+ - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
+perf counters
+ - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
