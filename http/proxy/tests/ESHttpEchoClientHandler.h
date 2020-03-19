@@ -45,7 +45,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveRequestChunk(HttpTransaction *transaction);
+  virtual int reserveRequestChunk(ESB::SocketMultiplexer &multiplexer,
+                                  HttpTransaction *transaction);
 
   /**
    * Fill a request body chunk with data.
@@ -56,7 +57,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
    */
-  virtual void fillRequestChunk(HttpTransaction *transaction,
+  virtual void fillRequestChunk(ESB::SocketMultiplexer &multiplexer,
+                                HttpTransaction *transaction,
                                 unsigned char *chunk, unsigned int chunkSize);
 
   /**
@@ -66,7 +68,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveResponseHeaders(HttpTransaction *transaction);
+  virtual Result receiveResponseHeaders(ESB::SocketMultiplexer &multiplexer,
+                                        HttpTransaction *transaction);
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -81,7 +84,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveResponseBody(HttpTransaction *transaction,
+  virtual Result receiveResponseBody(ESB::SocketMultiplexer &multiplexer,
+                                     HttpTransaction *transaction,
                                      unsigned const char *chunk,
                                      unsigned int chunkSize);
 
@@ -93,7 +97,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void endClientTransaction(HttpTransaction *transaction, State state);
+  virtual void endClientTransaction(ESB::SocketMultiplexer &multiplexer,
+                                    HttpTransaction *transaction, State state);
 
   inline bool isFinished() const {
     return _totalTransactions <= _completedTransactions.get();

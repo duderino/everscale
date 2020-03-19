@@ -5,6 +5,10 @@
 #include <ESHttpTransaction.h>
 #endif
 
+#ifndef ESB_SOCKET_MULTIPLEXER_H
+#include <ESBSocketMultiplexer.h>
+#endif
+
 namespace ES {
 
 class HttpClientHandler {
@@ -52,7 +56,8 @@ class HttpClientHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveRequestChunk(HttpTransaction *transaction) = 0;
+  virtual int reserveRequestChunk(ESB::SocketMultiplexer &multiplexer,
+                                  HttpTransaction *transaction) = 0;
 
   /**
    * Fill a request body chunk with data.
@@ -63,7 +68,8 @@ class HttpClientHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
    */
-  virtual void fillRequestChunk(HttpTransaction *transaction,
+  virtual void fillRequestChunk(ESB::SocketMultiplexer &multiplexer,
+                                HttpTransaction *transaction,
                                 unsigned char *chunk,
                                 unsigned int chunkSize) = 0;
 
@@ -74,7 +80,8 @@ class HttpClientHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveResponseHeaders(HttpTransaction *transaction) = 0;
+  virtual Result receiveResponseHeaders(ESB::SocketMultiplexer &multiplexer,
+                                        HttpTransaction *transaction) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -89,7 +96,8 @@ class HttpClientHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveResponseBody(HttpTransaction *transaction,
+  virtual Result receiveResponseBody(ESB::SocketMultiplexer &multiplexer,
+                                     HttpTransaction *transaction,
                                      unsigned const char *chunk,
                                      unsigned int chunkSize) = 0;
 
@@ -104,7 +112,8 @@ class HttpClientHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endClientTransaction(HttpTransaction *transaction,
+  virtual void endClientTransaction(ESB::SocketMultiplexer &multiplexer,
+                                    HttpTransaction *transaction,
                                     State state) = 0;
 
  private:

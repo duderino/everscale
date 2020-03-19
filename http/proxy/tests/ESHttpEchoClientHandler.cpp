@@ -31,7 +31,8 @@ HttpEchoClientHandler::HttpEchoClientHandler(
 
 HttpEchoClientHandler::~HttpEchoClientHandler() {}
 
-int HttpEchoClientHandler::reserveRequestChunk(HttpTransaction *transaction) {
+int HttpEchoClientHandler::reserveRequestChunk(
+    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   assert(transaction);
 
   HttpEchoClientContext *context =
@@ -42,9 +43,9 @@ int HttpEchoClientHandler::reserveRequestChunk(HttpTransaction *transaction) {
   return _bodySize - context->getBytesSent();
 }
 
-void HttpEchoClientHandler::fillRequestChunk(HttpTransaction *transaction,
-                                             unsigned char *chunk,
-                                             unsigned int chunkSize) {
+void HttpEchoClientHandler::fillRequestChunk(
+    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    unsigned char *chunk, unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
   assert(0 < chunkSize);
@@ -64,7 +65,7 @@ void HttpEchoClientHandler::fillRequestChunk(HttpTransaction *transaction,
 }
 
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
-    HttpTransaction *transaction) {
+    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   assert(transaction);
   HttpResponse *response = transaction->getResponse();
   assert(response);
@@ -88,8 +89,8 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
 }
 
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
-    HttpTransaction *transaction, unsigned const char *chunk,
-    unsigned int chunkSize) {
+    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    unsigned const char *chunk, unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
 
@@ -110,8 +111,9 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-void HttpEchoClientHandler::endClientTransaction(HttpTransaction *transaction,
-                                                 State state) {
+void HttpEchoClientHandler::endClientTransaction(
+    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    State state) {
   if (_totalTransactions == _completedTransactions.inc()) {
     ESB_LOG_NOTICE("All transactions completed");
   }

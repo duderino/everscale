@@ -85,7 +85,7 @@ bool HttpListeningSocket::handleAcceptEvent(
   _counters->getTotalConnections()->inc();
 
   HttpServerHandler::Result result =
-      _handler->acceptConnection(&acceptData._peerAddress);
+      _handler->acceptConnection(multiplexer, &acceptData._peerAddress);
 
   if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
     ESB_LOG_DEBUG("listener:%d Handler rejected connection",

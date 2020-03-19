@@ -9,6 +9,10 @@
 #include <ESHttpTransaction.h>
 #endif
 
+#ifndef ESB_SOCKET_MULTIPLEXER_H
+#include <ESBSocketMultiplexer.h>
+#endif
+
 namespace ES {
 
 class HttpServerHandler {
@@ -43,7 +47,8 @@ class HttpServerHandler {
    * @param address The IP address and port of the client.
    * @return a result code
    */
-  virtual Result acceptConnection(ESB::SocketAddress *address) = 0;
+  virtual Result acceptConnection(ESB::SocketMultiplexer &multiplexer,
+                                  ESB::SocketAddress *address) = 0;
 
   /**
    * Handle the beginning of a transaction.  This will be called 1+ times after
@@ -54,7 +59,8 @@ class HttpServerHandler {
    * objects, etc
    * @return a result code
    */
-  virtual Result beginServerTransaction(HttpTransaction *transaction) = 0;
+  virtual Result beginServerTransaction(ESB::SocketMultiplexer &multiplexer,
+                                        HttpTransaction *transaction) = 0;
 
   /**
    * Process a request's HTTP headers.
@@ -63,7 +69,8 @@ class HttpServerHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveRequestHeaders(HttpTransaction *transaction) = 0;
+  virtual Result receiveRequestHeaders(ESB::SocketMultiplexer &multiplexer,
+                                       HttpTransaction *transaction) = 0;
 
   /**
    * Incrementally process a request's body.  This will be called 1+ times as
@@ -79,7 +86,8 @@ class HttpServerHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveRequestBody(HttpTransaction *transaction,
+  virtual Result receiveRequestBody(ESB::SocketMultiplexer &multiplexer,
+                                    HttpTransaction *transaction,
                                     unsigned const char *chunk,
                                     unsigned int chunkSize) = 0;
 
@@ -100,7 +108,8 @@ class HttpServerHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveResponseChunk(HttpTransaction *transaction) = 0;
+  virtual int reserveResponseChunk(ESB::SocketMultiplexer &multiplexer,
+                                   HttpTransaction *transaction) = 0;
 
   /**
    * Fill a response body chunk with data.
@@ -111,7 +120,8 @@ class HttpServerHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestResponseChunk method.
    */
-  virtual void fillResponseChunk(HttpTransaction *transaction,
+  virtual void fillResponseChunk(ESB::SocketMultiplexer &multiplexer,
+                                 HttpTransaction *transaction,
                                  unsigned char *chunk,
                                  unsigned int chunkSize) = 0;
 
@@ -126,7 +136,8 @@ class HttpServerHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endServerTransaction(HttpTransaction *transaction,
+  virtual void endServerTransaction(ESB::SocketMultiplexer &multiplexer,
+                                    HttpTransaction *transaction,
                                     State state) = 0;
 
  private:

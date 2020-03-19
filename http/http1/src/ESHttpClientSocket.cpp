@@ -189,7 +189,8 @@ bool HttpClientSocket::handleReadableEvent(
       }
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
-          _transaction->getHandler()->receiveResponseHeaders(_transaction)) {
+          _transaction->getHandler()->receiveResponseHeaders(multiplexer,
+                                                             _transaction)) {
         ESB_LOG_DEBUG(
             "socket:%d Client request header handler aborting connection",
             _socket.getSocketDescriptor());
@@ -200,8 +201,8 @@ bool HttpClientSocket::handleReadableEvent(
         unsigned char byte = 0;
 
         if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
-            _transaction->getHandler()->receiveResponseBody(_transaction, &byte,
-                                                            0)) {
+            _transaction->getHandler()->receiveResponseBody(
+                multiplexer, _transaction, &byte, 0)) {
           ESB_LOG_DEBUG("socket:%d Client body handler aborting connection",
                         _socket.getSocketDescriptor());
           return false;  // remove from multiplexer
@@ -436,40 +437,42 @@ bool HttpClientSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
                                              ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+        multiplexer, _transaction,
+        HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
     _counters->getFailures()->addObservation(_transaction->getStartTime(),
                                              ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+        multiplexer, _transaction,
+        HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
     _counters->getFailures()->addObservation(_transaction->getStartTime(),
                                              ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction,
+        multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
     _counters->getFailures()->addObservation(_transaction->getStartTime(),
                                              ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction,
+        multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
     _counters->getFailures()->addObservation(_transaction->getStartTime(),
                                              ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction,
+        multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
     _counters->getFailures()->addObservation(_transaction->getStartTime(),
                                              ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction,
+        multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
     _counters->getSuccesses()->addObservation(_transaction->getStartTime(),
@@ -490,7 +493,8 @@ bool HttpClientSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
     }
 
     _transaction->getHandler()->endClientTransaction(
-        _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
+        multiplexer, _transaction,
+        HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
   } else if (_state & RETRY_STALE_CONNECTION) {
     ESB_LOG_DEBUG("socket:%d connection stale, retrying transaction",
                   _socket.getSocketDescriptor());
@@ -505,7 +509,8 @@ bool HttpClientSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
       _state |= TRANSACTION_BEGIN;
 
       _transaction->getHandler()->endClientTransaction(
-          _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+          multiplexer, _transaction,
+          HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
     }
   }
 
@@ -618,8 +623,8 @@ ESB::Error HttpClientSocket::parseResponseBody(
       ESB_LOG_DEBUG("socket:%d parsed body", _socket.getSocketDescriptor());
       unsigned char byte = 0;
       HttpClientHandler::Result result =
-          _transaction->getHandler()->receiveResponseBody(_transaction, &byte,
-                                                          0);
+          _transaction->getHandler()->receiveResponseBody(
+              multiplexer, _transaction, &byte, 0);
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
         ESB_LOG_DEBUG(
@@ -649,7 +654,7 @@ ESB::Error HttpClientSocket::parseResponseBody(
     HttpClientHandler::Result result;
 
     result = _transaction->getHandler()->receiveResponseBody(
-        _transaction,
+        multiplexer, _transaction,
         _transaction->getIOBuffer()->getBuffer() + startingPosition, chunkSize);
 
     if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
@@ -703,8 +708,8 @@ ESB::Error HttpClientSocket::formatRequestBody(
   while (multiplexer.isRunning()) {
     availableSize = 0;
 
-    requestedSize =
-        _transaction->getHandler()->reserveRequestChunk(_transaction);
+    requestedSize = _transaction->getHandler()->reserveRequestChunk(
+        multiplexer, _transaction);
 
     if (0 > requestedSize) {
       ESB_LOG_DEBUG(
@@ -740,7 +745,7 @@ ESB::Error HttpClientSocket::formatRequestBody(
     // write the body data
 
     _transaction->getHandler()->fillRequestChunk(
-        _transaction,
+        multiplexer, _transaction,
         _transaction->getIOBuffer()->getBuffer() +
             _transaction->getIOBuffer()->getWritePosition(),
         availableSize);
