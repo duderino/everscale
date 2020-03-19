@@ -9,8 +9,8 @@
 #include <ESBAllocator.h>
 #endif
 
-#ifndef ESB_COMMAND_H
-#include <ESBCommand.h>
+#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
+#include <ESBEmbeddedListElement.h>
 #endif
 
 #ifndef ESB_SOCKET_H
@@ -18,7 +18,11 @@
 #endif
 
 #ifndef ESB_SHARED_INT_H
-#include <ESBSharedCounter.h>
+#include <ESBSharedInt.h>
+#endif
+
+#ifndef ESB_SOCKET_MULTIPLEXER_H
+#include <ESBSocketMultiplexer.h>
 #endif
 
 namespace ESB {
@@ -27,7 +31,7 @@ namespace ESB {
  *
  *  @ingroup network
  */
-class MultiplexedSocket : public Command {
+class MultiplexedSocket : public EmbeddedListElement {
  public:
   /** Constructor
    */
@@ -77,91 +81,84 @@ class MultiplexedSocket : public Command {
    * threads may not actually be able to accept a new connection when this is
    * called.  This is not an error condition.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(SharedInt *isRunning) = 0;
+  virtual bool handleAcceptEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** Client connected socket has connected to the peer endpoint.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(SharedInt *isRunning) = 0;
+  virtual bool handleConnectEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** Data is ready to be read.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(SharedInt *isRunning) = 0;
+  virtual bool handleReadableEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** There is free space in the outgoing socket buffer.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(SharedInt *isRunning) = 0;
+  virtual bool handleWritableEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
    *
    * @param errorCode The error code.
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(Error errorCode, SharedInt *isRunning) = 0;
+  virtual bool handleErrorEvent(Error errorCode,
+                                SocketMultiplexer &multiplexer) = 0;
 
   /** The socket's connection was closed.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(SharedInt *isRunning) = 0;
+  virtual bool handleEndOfFileEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** The socket's connection has been idle for too long
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(SharedInt *isRunning) = 0;
+  virtual bool handleIdleEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** The socket has been removed from the multiplexer
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(SharedInt *isRunning) = 0;
+  virtual bool handleRemoveEvent(SocketMultiplexer &multiplexer) = 0;
 
   /** Get the socket's socket descriptor.
    *

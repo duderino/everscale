@@ -48,7 +48,8 @@ bool HttpListeningSocket::wantWrite() { return false; }
 
 bool HttpListeningSocket::isIdle() { return false; }
 
-bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleAcceptEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   assert(_socket);
   assert(!_socket->isBlocking());
   assert(_dispatcher);
@@ -132,44 +133,49 @@ bool HttpListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
   return true;
 }
 
-bool HttpListeningSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleConnectEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle connect events",
                 _socket->getSocketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleReadableEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle readable events",
                 _socket->getSocketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleWritableEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle writable events",
                 _socket->getSocketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleErrorEvent(ESB::Error error,
-                                           ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleErrorEvent(
+    ESB::Error error, ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR_ERRNO(error, "listener:%d listening socket error",
                       _socket->getSocketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleEndOfFileEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle eof events",
                 _socket->getSocketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
+bool HttpListeningSocket::handleIdleEvent(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle idle events",
                 _socket->getSocketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleRemoveEvent(ESB::SharedInt *flag) {
+bool HttpListeningSocket::handleRemoveEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_INFO("listener:%d Removed from multiplexer",
                _socket->getSocketDescriptor());
   return true;  // call cleanup handler on us after this returns
@@ -185,10 +191,6 @@ ESB::CleanupHandler *HttpListeningSocket::getCleanupHandler() {
 
 const char *HttpListeningSocket::getName() const {
   return "HttpListeningSocket";
-}
-
-bool HttpListeningSocket::run(ESB::SharedInt *isRunning) {
-  return false;  // todo - log
 }
 
 }  // namespace ES

@@ -17,11 +17,9 @@
 #include <ESBCommand.h>
 #endif
 
-#ifndef ESB_MULTIPLEXED_SOCKET_H
-#include <ESBMultiplexedSocket.h>
-#endif
-
 namespace ESB {
+
+class MultiplexedSocket;
 
 /** A command that delegates i/o readiness events to multiple
  * MultiplexedSockets.  The command can be run in the current thread of
@@ -65,13 +63,20 @@ class SocketMultiplexer : public Command {
    *
    * @return the number of sockets this multiplexer is currently handling.
    */
-  virtual int getCurrentSockets() = 0;
+  virtual int getCurrentSockets() const = 0;
 
   /** Get the maximum number of sockets this multiplexer can handle.
    *
    * @return the maximum number of sockets this multiplexer can handle.
    */
-  virtual int getMaximumSockets() = 0;
+  virtual int getMaximumSockets() const = 0;
+
+  /** Determine whether this multiplexer has been shutdown.
+   *
+   * @return true if the multiplexer should still run, false if it has been
+   *   told to shutdown.
+   */
+  virtual bool isRunning() const = 0;
 
   /** Placement new.
    *

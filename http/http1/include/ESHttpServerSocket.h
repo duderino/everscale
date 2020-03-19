@@ -77,92 +77,84 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * threads may not actually be able to accept a new connection when this is
    * called.  This is not an error condition.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(ESB::SharedInt *isRunning);
+  virtual bool handleAcceptEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** Client connected socket has connected to the peer endpoint.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(ESB::SharedInt *isRunning);
+  virtual bool handleConnectEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** Data is ready to be read.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(ESB::SharedInt *isRunning);
+  virtual bool handleReadableEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** There is free space in the outgoing socket buffer.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(ESB::SharedInt *isRunning);
+  virtual bool handleWritableEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
    *
    * @param errorCode The error code.
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor.
-   * @see ESB::TCPSocket::getLastError to get the socket error
+   * @see TCPSocket::getLastError to get the socket error
    */
   virtual bool handleErrorEvent(ESB::Error errorCode,
-                                ESB::SharedInt *isRunning);
+                                ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection was closed.
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(ESB::SharedInt *isRunning);
+  virtual bool handleEndOfFileEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection has been idle for too long
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(ESB::SharedInt *isRunning);
+  virtual bool handleIdleEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** The socket has been removed from the multiplexer
    *
-   * @param isRunning If this object returns false, this method should return as
-   * soon as possible.
+   * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(ESB::SharedInt *isRunning);
+  virtual bool handleRemoveEvent(ESB::SocketMultiplexer &multiplexer);
 
   /** Get the socket's socket descriptor.
    *
@@ -183,14 +175,6 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * @return The multiplexer's name
    */
   virtual const char *getName() const;
-
-  /** Run the command
-   *
-   * @param isRunning This object will return true as long as the controlling
-   * thread isRunning, false when the controlling thread wants to shutdown.
-   * @return If true, caller should destroy the command with the CleanupHandler.
-   */
-  virtual bool run(ESB::SharedInt *isRunning);
 
   /** Reset the server socket
    *
@@ -216,15 +200,15 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
   HttpServerSocket(const HttpServerSocket &);
   HttpServerSocket &operator=(const HttpServerSocket &);
 
-  ESB::Error parseRequestHeaders(ESB::SharedInt *isRunning);
-  ESB::Error parseRequestBody(ESB::SharedInt *isRunning);
-  ESB::Error skipTrailer(ESB::SharedInt *isRunning);
-  ESB::Error formatResponseHeaders(ESB::SharedInt *isRunning);
-  ESB::Error formatResponseBody(ESB::SharedInt *isRunning);
-  ESB::Error flushBuffer(ESB::SharedInt *isRunning);
-  bool sendResponse(ESB::SharedInt *isRunning);
-  bool sendBadRequestResponse(ESB::SharedInt *isRunning);
-  bool sendInternalServerErrorResponse(ESB::SharedInt *isRunning);
+  ESB::Error parseRequestHeaders(ESB::SocketMultiplexer &multiplexer);
+  ESB::Error parseRequestBody(ESB::SocketMultiplexer &multiplexer);
+  ESB::Error skipTrailer(ESB::SocketMultiplexer &multiplexer);
+  ESB::Error formatResponseHeaders(ESB::SocketMultiplexer &multiplexer);
+  ESB::Error formatResponseBody(ESB::SocketMultiplexer &multiplexer);
+  ESB::Error flushBuffer(ESB::SocketMultiplexer &multiplexer);
+  bool sendResponse(ESB::SocketMultiplexer &multiplexer);
+  bool sendBadRequestResponse(ESB::SocketMultiplexer &multiplexer);
+  bool sendInternalServerErrorResponse(ESB::SocketMultiplexer &multiplexer);
 
   int _state;
   int _bodyBytesWritten;

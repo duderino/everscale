@@ -30,7 +30,7 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * objects, etc
    * @return a result code
    */
-  virtual Result begin(HttpTransaction *transaction);
+  virtual Result beginServerTransaction(HttpTransaction *transaction);
 
   /**
    * Process a request's HTTP headers.
@@ -68,7 +68,7 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * A good implementation will always return the known size of remaining body
    * data.  This function may be called multiple times before fillResponseChunk
    * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't 'deduct' the amount requested from the
+   * the underlying tcp buffers.  Don't deduct the amount requested from the
    * remaining amount until fillResponseChunk is called.
    *
    * @param transaction The http transaction - contains request and response
@@ -98,7 +98,7 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void end(HttpTransaction *transaction, State state);
+  virtual void endServerTransaction(HttpTransaction *transaction, State state);
 
  private:
   // Disabled

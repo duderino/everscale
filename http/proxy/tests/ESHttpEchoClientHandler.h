@@ -37,7 +37,7 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * A good implementation will always return the known size of remaining body
    * data.  This function may be called multiple times before fillRequestChunk
    * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't 'deduct' the amount requested from the
+   * the underlying tcp buffers.  Don't deduct the amount requested from the
    * remaining amount until fillRequestChunk is called.
    *
    * @param transaction The http transaction - contains request and response
@@ -93,7 +93,7 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void end(HttpTransaction *transaction, State state);
+  virtual void endClientTransaction(HttpTransaction *transaction, State state);
 
   inline bool isFinished() const {
     return _totalTransactions <= _completedTransactions.get();

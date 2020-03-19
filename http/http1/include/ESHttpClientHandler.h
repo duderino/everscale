@@ -16,8 +16,7 @@ class HttpClientHandler {
   } Result;
 
   typedef enum {
-    ES_HTTP_CLIENT_HANDLER_BEGIN =
-        0, /**< Transaction starting - nothing happend yet */
+    ES_HTTP_CLIENT_HANDLER_BEGIN = 0,   /**< Transaction starting */
     ES_HTTP_CLIENT_HANDLER_RESOLVE = 1, /**< Trying to resolve client address */
     ES_HTTP_CLIENT_HANDLER_CONNECT = 2, /**< Trying to connect to client */
     ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS =
@@ -45,7 +44,7 @@ class HttpClientHandler {
    * A good implementation will always return the known size of remaining body
    * data.  This function may be called multiple times before fillRequestChunk
    * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't 'deduct' the amount requested from the
+   * the underlying tcp buffers.  Don't deduct the amount requested from the
    * remaining amount until fillRequestChunk is called.
    *
    * @param transaction The http transaction - contains request and response
@@ -105,7 +104,8 @@ class HttpClientHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void end(HttpTransaction *transaction, State state) = 0;
+  virtual void endClientTransaction(HttpTransaction *transaction,
+                                    State state) = 0;
 
  private:
   // Disabled

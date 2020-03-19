@@ -41,7 +41,7 @@ bool ListeningSocket::wantWrite() { return false; }
 
 bool ListeningSocket::isIdle() { return false; }
 
-bool ListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
+bool ListeningSocket::handleAcceptEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(_socket);
   assert(_dispatcher);
 
@@ -112,44 +112,45 @@ bool ListeningSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
   return true;
 }
 
-bool ListeningSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
+bool ListeningSocket::handleConnectEvent(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_WARNING("[listener:%d] Cannot handle connect events",
                   _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
+bool ListeningSocket::handleReadableEvent(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_WARNING("[listener:%d] Cannot handle readable events",
                   _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
+bool ListeningSocket::handleWritableEvent(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_WARNING("[listener:%d] Cannot handle writable events",
                   _socket->getSocketDescriptor());
   return true;
 }
 
 bool ListeningSocket::handleErrorEvent(ESB::Error error,
-                                       ESB::SharedInt *isRunning) {
+                                       ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR_ERRNO(error, "[listener:%d] Error on socket",
                       _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
+bool ListeningSocket::handleEndOfFileEvent(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_WARNING("[listener:%d] Cannot handle eof events",
                   _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
+bool ListeningSocket::handleIdleEvent(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_WARNING("[listener:%d] Cannot handle idle events",
                   _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleRemoveEvent(ESB::SharedInt *flag) {
+bool ListeningSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_NOTICE("[listener:%d] Removed from multiplexer",
                  _socket->getSocketDescriptor());
   return true;  // call cleanup handler on us after this returns
@@ -164,9 +165,5 @@ ESB::CleanupHandler *ListeningSocket::getCleanupHandler() {
 }
 
 const char *ListeningSocket::getName() const { return "ListeningSocket"; }
-
-bool ListeningSocket::run(ESB::SharedInt *isRunning) {
-  return false;  // todo - log
-}
 
 }  // namespace EST

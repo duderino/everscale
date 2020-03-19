@@ -57,21 +57,21 @@ bool ServerSocket::isIdle() {
   return false;  // todo - implement
 }
 
-bool ServerSocket::handleAcceptEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleAcceptEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
   ESB_LOG_WARNING("[socket:%d] Cannot handle accept events",
                   _socket.getSocketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleConnectEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleConnectEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
   ESB_LOG_WARNING("[socket:%d] Cannot handle connect events",
                   _socket.getSocketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleReadableEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
 
   if (!_buffer) {
@@ -89,7 +89,7 @@ bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
   ESB::SSize result = 0;
   ESB::Error error = ESB_SUCCESS;
 
-  while (isRunning->get() && _buffer->isWritable()) {
+  while (multiplexer.isRunning() && _buffer->isWritable()) {
     result = _socket.receive(_buffer);
 
     if (0 > result) {
@@ -106,18 +106,18 @@ bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
         continue;
       }
 
-      return handleErrorEvent(error, isRunning);
+      return handleErrorEvent(error, multiplexer);
     }
 
     if (0 == result) {
-      return handleEndOfFileEvent(isRunning);
+      return handleEndOfFileEvent(multiplexer);
     }
 
     ESB_LOG_DEBUG("[socket:%d] Read %ld bytes", _socket.getSocketDescriptor(),
                   result);
   }
 
-  if (!isRunning->get()) {
+  if (!multiplexer.isRunning()) {
     return false;  // remove from multiplexer
   }
 
@@ -126,10 +126,10 @@ bool ServerSocket::handleReadableEvent(ESB::SharedInt *isRunning) {
 
   _inReadMode = false;
   assert(wantWrite());
-  return handleWritableEvent(isRunning);
+  return handleWritableEvent(multiplexer);
 }
 
-bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleWritableEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
 
   assert(_buffer);
@@ -139,7 +139,7 @@ bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
   ESB::SSize result = 0;
   ESB::Error error = ESB_SUCCESS;
 
-  while (isRunning->get() && _buffer->isReadable()) {
+  while (multiplexer.isRunning() && _buffer->isReadable()) {
     result = _socket.send(_buffer);
 
     if (0 > result) {
@@ -156,14 +156,14 @@ bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
         continue;
       }
 
-      return handleErrorEvent(error, isRunning);
+      return handleErrorEvent(error, multiplexer);
     }
 
     ESB_LOG_DEBUG("[socket:%d] Wrote %ld bytes", _socket.getSocketDescriptor(),
                   result);
   }
 
-  if (!isRunning->get()) {
+  if (!multiplexer.isRunning()) {
     return false;  // remove from multiplexer
   }
 
@@ -179,7 +179,7 @@ bool ServerSocket::handleWritableEvent(ESB::SharedInt *isRunning) {
 }
 
 bool ServerSocket::handleErrorEvent(ESB::Error error,
-                                    ESB::SharedInt *isRunning) {
+                                    ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
 
   if (ESB_WARNING_LOGGABLE) {
@@ -193,7 +193,7 @@ bool ServerSocket::handleErrorEvent(ESB::Error error,
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleEndOfFileEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
 
   if (ESB_INFO_LOGGABLE) {
@@ -207,7 +207,7 @@ bool ServerSocket::handleEndOfFileEvent(ESB::SharedInt *isRunning) {
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleIdleEvent(ESB::SocketMultiplexer &multiplexer) {
   assert(!_hasBeenRemoved);
 
   if (ESB_INFO_LOGGABLE) {
@@ -221,7 +221,7 @@ bool ServerSocket::handleIdleEvent(ESB::SharedInt *isRunning) {
   return false;  // remove from multiplexer
 }
 
-bool ServerSocket::handleRemoveEvent(ESB::SharedInt *isRunning) {
+bool ServerSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
   if (ESB_INFO_LOGGABLE) {
     char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
@@ -245,9 +245,5 @@ ESB::CleanupHandler *ServerSocket::getCleanupHandler() {
 }
 
 const char *ServerSocket::getName() const { return "ServerSocket"; }
-
-bool ServerSocket::run(ESB::SharedInt *isRunning) {
-  return false;  // todo - log warning
-}
 
 }  // namespace EST

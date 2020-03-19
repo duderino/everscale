@@ -92,8 +92,6 @@ class EpollMultiplexer : public SocketMultiplexer {
 
   /** Run the multiplexer's event loop until shutdown.
    *
-   * @param isRunning This object will return true as long as the controlling
-   * thread isRunning, false when the controlling thread wants to shutdown.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
   virtual bool run(SharedInt *isRunning);
@@ -102,13 +100,20 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @return the number of sockets this multiplexer is currently handling.
    */
-  virtual int getCurrentSockets();
+  virtual int getCurrentSockets() const;
 
   /** Get the maximum number of sockets this multiplexer can handle.
    *
    * @return the maximum number of sockets this multiplexer can handle.
    */
-  virtual int getMaximumSockets();
+  virtual int getMaximumSockets() const;
+
+  /** Determine whether this multiplexer has been shutdown.
+   *
+   * @return true if the multiplexer should still run, false if it has been
+   *   told to shutdown.
+   */
+  virtual bool isRunning() const;
 
   /** Placement new.
    *
@@ -130,14 +135,13 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @param socket The multiplexedSocket
    */
-  Error updateMultiplexedSocket(SharedInt *isRunning,
-                                MultiplexedSocket *socket);
+  Error updateMultiplexedSocket(MultiplexedSocket *socket);
 
   /** Remove a multiplexed socket form the socket multiplexer
    *
    * @param socket The multiplexed socket to remove
    */
-  Error removeMultiplexedSocket(SharedInt *isRunning, MultiplexedSocket *socket,
+  Error removeMultiplexedSocket(MultiplexedSocket *socket,
                                 bool removeFromList = true);
 
   /** Periodically check for any idle sockets and delete them.
@@ -159,6 +163,7 @@ class EpollMultiplexer : public SocketMultiplexer {
 #else
 #error "struct epoll_event is required"
 #endif
+  ESB::SharedInt *_isRunning;
   Allocator *_allocator;
   SharedInt _currentSocketCount;
   EmbeddedList _currentSocketList;

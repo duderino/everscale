@@ -5,6 +5,9 @@ set(SOURCE_FILES
         src/ESHttpStack.cpp
         )
 
+#src/ESHttpProxyHandler.cpp
+#src/ESHttpProxyContext.cpp
+
 add_library(http_stack STATIC ${SOURCE_FILES})
 
 target_include_directories(http_stack PRIVATE

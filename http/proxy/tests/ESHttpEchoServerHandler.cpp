@@ -44,7 +44,7 @@ HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-HttpServerHandler::Result HttpEchoServerHandler::begin(
+HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
     HttpTransaction *transaction) {
   assert(transaction);
   ESB::Allocator *allocator = transaction->getAllocator();
@@ -173,8 +173,8 @@ void HttpEchoServerHandler::fillResponseChunk(HttpTransaction *transaction,
   context->addBytesSent(bytesToSend);
 }
 
-void HttpEchoServerHandler::end(HttpTransaction *transaction,
-                                HttpServerHandler::State state) {
+void HttpEchoServerHandler::endServerTransaction(
+    HttpTransaction *transaction, HttpServerHandler::State state) {
   assert(transaction);
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->getApplicationContext();

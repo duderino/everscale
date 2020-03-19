@@ -15,10 +15,9 @@ class HttpServerHandler {
  public:
   typedef enum {
     ES_HTTP_SERVER_HANDLER_CONTINUE = 0, /**< Continue processing the request */
-    ES_HTTP_SERVER_HANDLER_CLOSE =
-        1, /**< Immediately close the socket / abort the request */
+    ES_HTTP_SERVER_HANDLER_CLOSE = 1,    /**< Immediately close the socket */
     ES_HTTP_SERVER_HANDLER_SEND_RESPONSE =
-        2 /**< Immediately send the response / finish the request */
+        2 /**< Immediately send the response */
   } Result;
 
   typedef enum {
@@ -55,7 +54,7 @@ class HttpServerHandler {
    * objects, etc
    * @return a result code
    */
-  virtual Result begin(HttpTransaction *transaction) = 0;
+  virtual Result beginServerTransaction(HttpTransaction *transaction) = 0;
 
   /**
    * Process a request's HTTP headers.
@@ -93,7 +92,7 @@ class HttpServerHandler {
    * A good implementation will always return the known size of remaining body
    * data.  This function may be called multiple times before fillResponseChunk
    * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't 'deduct' the amount requested from the
+   * the underlying tcp buffers.  Don't deduct the amount requested from the
    * remaining amount until fillResponseChunk is called.
    *
    * @param transaction The http transaction - contains request and response
@@ -127,7 +126,8 @@ class HttpServerHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void end(HttpTransaction *transaction, State state) = 0;
+  virtual void endServerTransaction(HttpTransaction *transaction,
+                                    State state) = 0;
 
  private:
   // Disabled

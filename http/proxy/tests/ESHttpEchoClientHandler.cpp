@@ -110,7 +110,8 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-void HttpEchoClientHandler::end(HttpTransaction *transaction, State state) {
+void HttpEchoClientHandler::endClientTransaction(HttpTransaction *transaction,
+                                                 State state) {
   if (_totalTransactions == _completedTransactions.inc()) {
     ESB_LOG_NOTICE("All transactions completed");
   }

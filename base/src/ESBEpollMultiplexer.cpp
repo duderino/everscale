@@ -58,6 +58,10 @@
 #error "time() or equilvalent is required"
 #endif
 
+#ifndef ESB_MULTIPLEXED_SOCKET_H
+#include <ESBMultiplexedSocket.h>
+#endif
+
 namespace ESB {
 
 #define EPOLL_TIMEOUT_MILLIS 1000
@@ -161,8 +165,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   return ESB_SUCCESS;
 }
 
-Error EpollMultiplexer::updateMultiplexedSocket(SharedInt *isRunning,
-                                                MultiplexedSocket *socket) {
+Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
   }
@@ -217,8 +220,7 @@ Error EpollMultiplexer::updateMultiplexedSocket(SharedInt *isRunning,
   return ESB_SUCCESS;
 }
 
-Error EpollMultiplexer::removeMultiplexedSocket(SharedInt *isRunning,
-                                                MultiplexedSocket *socket,
+Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket,
                                                 bool removeFromList) {
   if (0 > _epollDescriptor) {
     return ESB_INVALID_STATE;
@@ -257,7 +259,7 @@ Error EpollMultiplexer::removeMultiplexedSocket(SharedInt *isRunning,
 
   ESB_LOG_DEBUG("Removed socket %d from %s:%d", fd, _name, _epollDescriptor);
 
-  if (socket->handleRemoveEvent(isRunning)) {
+  if (socket->handleRemoveEvent(*this)) {
     CleanupHandler *cleanupHandler = socket->getCleanupHandler();
     assert(cleanupHandler);
     if (cleanupHandler) {
@@ -299,7 +301,6 @@ void EpollMultiplexer::destroy() {
   ESB_LOG_NOTICE("Destroying multiplexer '%s'", _name);
 
   MultiplexedSocket *head = 0;
-  SharedInt isRunning(false);
 
   while (true) {
     _lock.writeAcquire();
@@ -313,7 +314,7 @@ void EpollMultiplexer::destroy() {
 
     _currentSocketCount.dec();
 
-    removeMultiplexedSocket(&isRunning, head, false);
+    removeMultiplexedSocket(head, false);
   }
 
 #ifndef NDEBUG
@@ -357,8 +358,9 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
   int errorCount = 0;
   SOCKET fd = INVALID_SOCKET;
   bool keepInMultiplexer = true;
+  _isRunning = isRunning;
 
-  while (isRunning->get()) {
+  while (_isRunning->get()) {
     checkIdleSockets(isRunning);
     numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets,
                            EPOLL_TIMEOUT_MILLIS);
@@ -416,11 +418,11 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           error = TCPSocket::GetLastSocketError(fd);
           ESB_LOG_ERROR_ERRNO(error, "%s:%d error on listening socket %d",
                               _name, _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
+          keepInMultiplexer = socket->handleErrorEvent(error, *this);
         } else if (_events[i].events & EPOLLIN) {
           ESB_LOG_INFO("%s:%d accept event on listening socket %d", _name,
                        _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleAcceptEvent(isRunning);
+          keepInMultiplexer = socket->handleAcceptEvent(*this);
         } else {
           ESB_LOG_WARNING("%s:%d unknown event on listening socket %d: %d",
                           _name, _epollDescriptor, fd, _events[i].events);
@@ -447,11 +449,11 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           error = TCPSocket::GetLastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "%s:%d error on connecting socket %d",
                              _name, _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
+          keepInMultiplexer = socket->handleErrorEvent(error, *this);
         } else if (_events[i].events & EPOLLHUP) {
           ESB_LOG_INFO("%s:%d end of file on connecting socket %d", _name,
                        _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleEndOfFileEvent(isRunning);
+          keepInMultiplexer = socket->handleEndOfFileEvent(*this);
         } else if (_events[i].events & EPOLLIN) {
           int bytesReadable = ConnectedTCPSocket::GetBytesReadable(fd);
 
@@ -459,20 +461,20 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
             error = TCPSocket::GetLastSocketError(fd);
             ESB_LOG_INFO_ERRNO(error, "%s:%d error on connecting socket %d",
                                _name, _epollDescriptor, fd);
-            keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
+            keepInMultiplexer = socket->handleErrorEvent(error, *this);
           } else if (0 == bytesReadable) {
             ESB_LOG_INFO("%s:%d immediate close on connecting socket %d", _name,
                          _epollDescriptor, fd);
-            keepInMultiplexer = socket->handleEndOfFileEvent(isRunning);
+            keepInMultiplexer = socket->handleEndOfFileEvent(*this);
           } else {
             ESB_LOG_INFO("%s:%d connecting socket %d connected", _name,
                          _epollDescriptor, fd);
-            keepInMultiplexer = socket->handleConnectEvent(isRunning);
+            keepInMultiplexer = socket->handleConnectEvent(*this);
           }
         } else if (_events[i].events & EPOLLOUT) {
           ESB_LOG_INFO("%s:%d connecting socket %d connected", _name,
                        _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleConnectEvent(isRunning);
+          keepInMultiplexer = socket->handleConnectEvent(*this);
         } else {
           ESB_LOG_WARNING("%s:%d unknown event on connecting socket %d: %d",
                           _name, _epollDescriptor, fd, _events[i].events);
@@ -502,31 +504,31 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           error = TCPSocket::GetLastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "%s:%d error on connected socket %d", _name,
                              _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleErrorEvent(error, isRunning);
+          keepInMultiplexer = socket->handleErrorEvent(error, *this);
         } else if (_events[i].events & EPOLLHUP) {
           ESB_LOG_INFO("%s:%d end of file on connected socket %d", _name,
                        _epollDescriptor, fd);
-          keepInMultiplexer = socket->handleEndOfFileEvent(isRunning);
+          keepInMultiplexer = socket->handleEndOfFileEvent(*this);
         } else {
           if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
             ESB_LOG_DEBUG("%s:%d readable event for connected socket %d", _name,
                           _epollDescriptor, fd);
-            keepInMultiplexer = socket->handleReadableEvent(isRunning);
+            keepInMultiplexer = socket->handleReadableEvent(*this);
           }
 
           if (keepInMultiplexer && socket->wantWrite() &&
               (_events[i].events & EPOLLOUT)) {
             ESB_LOG_DEBUG("%s:%d writable event for connected socket %d", _name,
                           _epollDescriptor, fd);
-            keepInMultiplexer = socket->handleWritableEvent(isRunning);
+            keepInMultiplexer = socket->handleWritableEvent(*this);
           }
         }
       }
 
       if (keepInMultiplexer) {
-        updateMultiplexedSocket(isRunning, socket);
+        updateMultiplexedSocket(socket);
       } else {
-        removeMultiplexedSocket(isRunning, socket);
+        removeMultiplexedSocket(socket);
       }
     }
   }
@@ -535,9 +537,15 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
   return false;
 }
 
-int EpollMultiplexer::getCurrentSockets() { return _currentSocketCount.get(); }
+int EpollMultiplexer::getCurrentSockets() const {
+  return _currentSocketCount.get();
+}
 
-int EpollMultiplexer::getMaximumSockets() { return _maxSockets; }
+int EpollMultiplexer::getMaximumSockets() const { return _maxSockets; }
+
+bool EpollMultiplexer::isRunning() const {
+  return _isRunning ? _isRunning->get() : false;
+}
 
 Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
   if (_lastIdleCheckSec + IDLE_CHECK_SEC < time(0)) {
@@ -559,10 +567,10 @@ Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
       ESB_LOG_DEBUG("%s:%d found idle socket %d", _name, _epollDescriptor,
                     current->getSocketDescriptor());
 
-      if (current->handleIdleEvent(isRunning)) {
-        updateMultiplexedSocket(isRunning, current);
+      if (current->handleIdleEvent(*this)) {
+        updateMultiplexedSocket(current);
       } else {
-        removeMultiplexedSocket(isRunning, current, false);
+        removeMultiplexedSocket(current, false);
         _currentSocketList.remove(current);
         assert(true == _currentSocketList.validate());
         _currentSocketCount.dec();
