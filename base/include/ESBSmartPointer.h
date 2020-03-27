@@ -21,10 +21,10 @@
     SmartPointerDebugger::Instance()->insert(_ptr); \
   }
 
-#define PTR_DEC()                                  \
-  if (_ptr && _ptr->decAndTest()) {                \
-    SmartPointerDebugger::Instance()->erase(_ptr); \
-    destroy();                                     \
+#define PTR_DEC()                                   \
+  if (_ptr && _ptr->decAndTest()) {                 \
+    SmartPointerDebugger::Instance()->remove(_ptr); \
+    destroy();                                      \
   }
 
 #else /* ! defined USE_SMART_POINTER_DEBUGGER */

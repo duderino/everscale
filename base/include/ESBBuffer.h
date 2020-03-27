@@ -19,6 +19,8 @@
 #error "Need string.h or equivalent"
 #endif
 
+#define ESB_BUFFER_OVERHEAD (ESB_WORD_ALIGN(sizeof(ESB::Buffer)))
+
 namespace ESB {
 
 /** A general purpose buffer with parsing and formatting utilities.
@@ -36,61 +38,61 @@ class Buffer : public EmbeddedListElement {
    * @param buffer The buffer to wrap
    * @param capacity The size in bytes of the buffer to wrap.
    */
-  Buffer(unsigned char *buffer, unsigned int capacity);
+  Buffer(unsigned char *buffer, UInt32 capacity);
 
   /** Destructor.
    */
   virtual ~Buffer();
 
   /** Allocate a new buffer of a given size.  The actual amount of data
-   *  allocated will be the size + the buffer object and a few extra bytes.
+   *  allocated will be the size + the buffer object and alignment bytes
    *
    * @param allocator the Allocator to create the buffer with
-   * @param capacity The byte size of the buffer's internal buffer
+   * @param capacitmy The byte size of the buffer's internal buffer
    * @return A newly created buffer object or NULL if sufficient memory could
    *  not be allocated.
    */
-  static Buffer *Create(Allocator *allocator, unsigned int capacity);
+  static Buffer *Create(Allocator &allocator, UInt32 capacity);
+
+  static void Destroy(Allocator &allocator, Buffer *buffer);
 
   /** Return an optional handler that can destroy the element.
    *
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual CleanupHandler *getCleanupHandler();
+  virtual CleanupHandler *cleanupHandler();
 
   /** Get the total storage capacity of the buffer (used + unused space).
    *
    *  @return the total capacity of the buffer
    */
-  inline unsigned int getCapacity() const { return _capacity; }
+  inline UInt32 capacity() const { return _capacity; }
 
   /** Get the remaining number of characters that can be written (put).
    *
    *  @return the remaining number of characters
    */
-  inline unsigned int getWritable() const { return _capacity - _writePosition; }
+  inline UInt32 writable() const { return _capacity - _writePosition; }
 
   /** Get the remaining number of characters that can be read (get).
    *
    *  @return the remaining number of characters
    */
-  inline unsigned int getReadable() const {
-    return _writePosition - _readPosition;
-  }
+  inline UInt32 readable() const { return _writePosition - _readPosition; }
 
   /** Determine whether there are remaining characters to be read.
    *
    * @return whether there are remaining characters/space
    */
-  inline bool isReadable() const { return 0 < getReadable(); }
+  inline bool isReadable() const { return 0 < readable(); }
 
   /** Determine whether there is space to write additional characters.
    *
    *
    * @return whether there are remaining characters/space
    */
-  inline bool isWritable() const { return 0 < getWritable(); }
+  inline bool isWritable() const { return 0 < writable(); }
 
   /** Write a character to the buffer and advance the write position.  If the
    * buffer is full this is a no-op.
@@ -98,7 +100,7 @@ class Buffer : public EmbeddedListElement {
    * @param character The character to be added to the buffer.
    */
   inline void putNext(unsigned char character) {
-    if (false == isWritable()) {
+    if (!isWritable()) {
       return;
     }
 
@@ -110,7 +112,7 @@ class Buffer : public EmbeddedListElement {
    *
    * @return The next character or 0 if there are no more characters
    */
-  inline unsigned char getNext() {
+  inline unsigned char next() {
     return isReadable() ? _buffer[_readPosition++] : 0;
   }
 
@@ -127,7 +129,7 @@ class Buffer : public EmbeddedListElement {
    *  the buffer is empty this is a no-op.  Buffer should be in drain mode.
    */
   inline void skipNext() {
-    _readPosition = false == isReadable() ? _readPosition : _readPosition + 1;
+    _readPosition = !isReadable() ? _readPosition : _readPosition + 1;
   }
 
   /** Save the current read position
@@ -150,19 +152,19 @@ class Buffer : public EmbeddedListElement {
    *
    * @return The current write position
    */
-  inline unsigned int getWritePosition() const { return _writePosition; }
+  inline UInt32 writePosition() const { return _writePosition; }
 
   /** Get the current read position.
    *
    * @return The current read position
    */
-  inline unsigned int getReadPosition() const { return _readPosition; }
+  inline UInt32 readPosition() const { return _readPosition; }
 
   /** Set the current write position
    *
    * @param position The new value for the write position
    */
-  inline void setWritePosition(unsigned int position) {
+  inline void setWritePosition(UInt32 position) {
     _writePosition = position > _capacity ? _capacity : position;
   }
 
@@ -170,7 +172,7 @@ class Buffer : public EmbeddedListElement {
    *
    * @param position The new value for the read position
    */
-  inline void setReadPosition(unsigned int position) {
+  inline void setReadPosition(UInt32 position) {
     _readPosition = position > _capacity ? _capacity : position;
   }
 
@@ -178,19 +180,19 @@ class Buffer : public EmbeddedListElement {
    *
    * @return The underlying buffer
    */
-  inline unsigned char *getBuffer() { return _buffer; }
+  inline unsigned char *buffer() { return _buffer; }
 
   /** Get the underlying buffer.
    *
    * @return The underlying buffer
    */
-  inline const unsigned char *getBuffer() const { return _buffer; }
+  inline const unsigned char *buffer() const { return _buffer; }
 
   /** Advance the read position n steps up to the write position, but no more.
    *
    * @param n The number of steps to advance the read position
    */
-  inline void skip(unsigned int n) {
+  inline void skip(UInt32 n) {
     _readPosition =
         _readPosition + n > _writePosition ? _writePosition : _readPosition + n;
   }
@@ -220,7 +222,7 @@ class Buffer : public EmbeddedListElement {
    * be trimmed
    * @return The duplicate or NULL if memory could not be allocated.
    */
-  unsigned char *duplicate(Allocator *allocator, bool trim) const;
+  unsigned char *duplicate(Allocator &allocator, bool trim) const;
 
   /** Duplicate the data in the buffer.  This will duplicate everything from the
    * 0th position to the write position.  The duplicate will be null terminated
@@ -230,7 +232,7 @@ class Buffer : public EmbeddedListElement {
    * allocator
    * @return The duplicate or NULL if memory could not be allocated.
    */
-  inline unsigned char *duplicate(Allocator *allocator) const {
+  inline unsigned char *duplicate(Allocator &allocator) const {
     return duplicate(allocator, true);
   }
 
@@ -249,8 +251,8 @@ class Buffer : public EmbeddedListElement {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
   /** Placement new
@@ -259,18 +261,20 @@ class Buffer : public EmbeddedListElement {
    * @param block A valid memory block with which the object can be constructed.
    * @return The memory block
    */
-  inline void *operator new(size_t size, void *block) { return block; }
+  inline void *operator new(size_t size, unsigned char *block) noexcept {
+    return block;
+  }
 
  private:
   // Disabled
   Buffer(const Buffer &);
   Buffer &operator=(const Buffer &);
 
-  unsigned int _readMark;
-  unsigned int _writeMark;
-  unsigned int _readPosition;
-  unsigned int _writePosition;
-  unsigned int _capacity;
+  UInt32 _readMark;
+  UInt32 _writeMark;
+  UInt32 _readPosition;
+  UInt32 _writePosition;
+  UInt32 _capacity;
   unsigned char *_buffer;
 };
 

@@ -21,6 +21,10 @@
 #include <pthread.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 namespace ESB {
 
 /** SharedQueue is a self-synchronizing queue that handles many producer
@@ -44,7 +48,7 @@ class SharedQueue {
    *      allocate for every internal node it creates.  This is useful for
    *      constructing fixed length allocators.
    */
-  SharedQueue(Allocator *allocator, UInt32 limit);
+  SharedQueue(UInt32 limit, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor. */
   virtual ~SharedQueue();
@@ -95,7 +99,7 @@ class SharedQueue {
    *  @param size The current size of the queue
    *  @return ESB_SUCCESS if successful, another error code otherwise
    */
-  Error getSize(UInt32 *size);
+  Error size(UInt32 *size);
 
   /** Get the size in bytes of the queue's interal nodes.  This is the amount
    *  of memory that the queue will request from the allocator for every node
@@ -103,7 +107,7 @@ class SharedQueue {
    *
    *  @return The size in bytes of the queue's internal nodes.
    */
-  static Size GetAllocationSize();
+  static Size AllocationSize();
 
   /** Placement new.
    *
@@ -111,8 +115,8 @@ class SharedQueue {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

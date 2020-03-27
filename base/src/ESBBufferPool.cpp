@@ -2,38 +2,21 @@
 #include <ESBBufferPool.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
 #ifndef ESB_WRITE_SCOPE_LOCK_H
 #include <ESBWriteScopeLock.h>
 #endif
 
 namespace ESB {
 
-#define MIN_NUMBER_OF_BUFFERS 1
-#define MIN_BUFFER_SIZE 1
-
-BufferPool::BufferPool(int numberOfBuffers, int bufferSize,
-                       Allocator *allocator)
-    : _numberOfBuffers(numberOfBuffers < MIN_NUMBER_OF_BUFFERS
-                           ? MIN_NUMBER_OF_BUFFERS
-                           : numberOfBuffers),
-      _bufferSize(bufferSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : bufferSize),
-      _listSize(0),
-      _allocator(allocator ? allocator : SystemAllocator::GetInstance()),
-      _embeddedList(),
-      _lock() {}
+BufferPool::BufferPool(UInt32 bufferSize,UInt32 maxBuffers,Lockable &lock, Allocator &allocator) : _maxBuffers(maxBuffers), _bufferSize(bufferSize), _listSize(0U), _lock(lock), _allocator(allocator), _embeddedList() {}
 
 BufferPool::~BufferPool() {
   for (EmbeddedListElement *element = _embeddedList.removeFirst(); element;
        element = _embeddedList.removeFirst()) {
     element->~EmbeddedListElement();
-    _allocator->deallocate(element);
+    _allocator.deallocate(element);
     --_listSize;
   }
-
   assert(0 == _listSize);
 }
 
@@ -44,7 +27,6 @@ Buffer *BufferPool::acquireBuffer() {
 
   if (buffer) {
     --_listSize;
-
     return buffer;
   }
 
@@ -54,10 +36,9 @@ Buffer *BufferPool::acquireBuffer() {
 void BufferPool::releaseBuffer(Buffer *buffer) {
   WriteScopeLock scopeLock(_lock);
 
-  if (_listSize >= _numberOfBuffers) {
+  if (0 < _maxBuffers && _listSize >= _maxBuffers) {
     buffer->~Buffer();
-    _allocator->deallocate(buffer);
-
+    _allocator.deallocate(buffer);
     return;
   }
 

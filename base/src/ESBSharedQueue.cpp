@@ -50,8 +50,8 @@ SharedQueue::Synchronizer::~Synchronizer() {
 #endif
 }
 
-SharedQueue::SharedQueue(Allocator *allocator, UInt32 limit)
-    : _limit(limit), _lock(), _list(allocator, NullLock::Instance()) {}
+SharedQueue::SharedQueue(UInt32 limit, Allocator &allocator)
+    : _limit(limit), _lock(), _list(NullLock::Instance(), allocator) {}
 
 SharedQueue::~SharedQueue() {}
 
@@ -73,7 +73,7 @@ Error SharedQueue::push(void *item) {
     return error;
   }
 
-  while (0 != _limit && _limit <= _list.getSize()) {
+  while (0 != _limit && _limit <= _list.size()) {
     error =
         ConvertError(pthread_cond_wait(&_lock._producerSignal, &_lock._mutex));
 
@@ -123,7 +123,7 @@ Error SharedQueue::tryPush(void *item) {
     return error;
   }
 
-  if (0 != _limit && _limit <= _list.getSize()) {
+  if (0 != _limit && _limit <= _list.size()) {
     error = pthread_mutex_unlock(&_lock._mutex);
 
     return ESB_SUCCESS == error ? ESB_AGAIN : error;
@@ -179,9 +179,9 @@ Error SharedQueue::pop(void **item) {
     }
   }
 
-  UInt32 size = _list.getSize();
+  UInt32 size = _list.size();
 
-  void *tmp = _list.getFront();
+  void *tmp = _list.front();
 
   error = _list.popFront();
 
@@ -228,7 +228,7 @@ Error SharedQueue::tryPop(void **item) {
     return error;
   }
 
-  UInt32 size = _list.getSize();
+  UInt32 size = _list.size();
 
   if (0 == size) {
     error = ConvertError(pthread_mutex_unlock(&_lock._mutex));
@@ -236,7 +236,7 @@ Error SharedQueue::tryPop(void **item) {
     return ESB_SUCCESS == error ? ESB_AGAIN : error;
   }
 
-  void *tmp = _list.getFront();
+  void *tmp = _list.front();
 
   error = _list.popFront();
 
@@ -279,7 +279,7 @@ Error SharedQueue::clear() {
     return error;
   }
 
-  UInt32 size = _list.getSize();
+  UInt32 size = _list.size();
 
   error = _list.clear();
 
@@ -306,7 +306,7 @@ Error SharedQueue::clear() {
 #endif
 }
 
-Error SharedQueue::getSize(UInt32 *size) {
+Error SharedQueue::size(UInt32 *size) {
   if (!size) {
     return ESB_NULL_POINTER;
   }
@@ -323,7 +323,7 @@ Error SharedQueue::getSize(UInt32 *size) {
     return error;
   }
 
-  *size = _list.getSize();
+  *size = _list.size();
 
   return ConvertError(pthread_mutex_unlock(&_lock._mutex));
 
@@ -332,6 +332,6 @@ Error SharedQueue::getSize(UInt32 *size) {
 #endif
 }
 
-Size SharedQueue::GetAllocationSize() { return List::GetAllocationSize(); }
+Size SharedQueue::AllocationSize() { return List::AllocationSize(); }
 
 }  // namespace ESB

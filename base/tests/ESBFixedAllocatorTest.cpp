@@ -103,7 +103,7 @@ static const int Blocks = 160;
 static const int BlockSize = 4096;
 
 FixedAllocatorTest::FixedAllocatorTest()
-    : _rand(), _allocator(Blocks, BlockSize, SystemAllocator::GetInstance()) {}
+    : _rand(), _allocator(Blocks, BlockSize, SystemAllocator::Instance()) {}
 
 FixedAllocatorTest::~FixedAllocatorTest() {}
 
@@ -182,16 +182,6 @@ bool FixedAllocatorTest::run(ESTF::ResultCollector *collector) {
     }
   }
 
-  for (int i = 0; i < Allocations; ++i) {
-    if (allocations[i]._data) {
-      error = _allocator.destroy();
-
-      ESTF_ASSERT(collector, ESB_IN_USE == error);
-
-      break;
-    }
-  }
-
   // Simulation mostly done, return everything to the allocator.
 
   for (int i = 0; i < Allocations; ++i) {
@@ -214,15 +204,6 @@ bool FixedAllocatorTest::run(ESTF::ResultCollector *collector) {
       allocations[i]._lifetime = 0;
       allocations[i]._data = 0;
     }
-  }
-
-  error = _allocator.destroy();
-
-  if (ESB_SUCCESS != error) {
-    DescribeError(error, buffer, sizeof(buffer));
-    ESTF_FAILURE(collector, buffer);
-    ESTF_ERROR(collector, "Failed to destroy allocator");
-    return false;
   }
 
   return true;

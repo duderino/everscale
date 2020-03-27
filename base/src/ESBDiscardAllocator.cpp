@@ -8,31 +8,30 @@
 
 namespace ESB {
 
-#define ESB_MIN_BLOCK_SIZE 128
+DiscardAllocator::DiscardAllocator(UInt32 chunkSize, UInt32 alignmentSize,
+                                   Allocator &source)
+    : _head(NULL),
+      _alignmentSize(alignmentSize),
+      _chunkSize(ESB_ALIGN(128 > chunkSize ? 128 : chunkSize, _alignmentSize)),
+      _source(source),
+      _cleanupHandler(*this) {}
 
-DiscardAllocator::DiscardAllocator(int chunkSize, Allocator *source)
-    : _head(0),
-      _chunkSize(ESB_MIN_BLOCK_SIZE > chunkSize ? ESB_MIN_BLOCK_SIZE
-                                                : chunkSize),
-      _source(source ? source : SystemAllocator::GetInstance()) {}
+DiscardAllocator::~DiscardAllocator() {
+  Chunk *current = _head;
+  Chunk *next = NULL;
 
-DiscardAllocator::DiscardAllocator()
-    : _head(0),
-      _chunkSize(ESB_MIN_BLOCK_SIZE),
-      _source(SystemAllocator::GetInstance()) {}
+  while (current) {
+    next = current->_next;
+    _source.deallocate(current);
+    current = next;
+  }
 
-Error DiscardAllocator::initialize(int chunkSize, Allocator *source) {
-  _chunkSize = ESB_MIN_BLOCK_SIZE > chunkSize ? ESB_MIN_BLOCK_SIZE : chunkSize;
-  _source = source ? source : SystemAllocator::GetInstance();
-
-  return ESB_SUCCESS;
+  _head = NULL;
 }
-
-DiscardAllocator::~DiscardAllocator() { destroy(); }
 
 void *DiscardAllocator::allocate(UWord size) {
   if (1 > size) {
-    return 0;
+    return NULL;
   }
 
   //
@@ -46,7 +45,7 @@ void *DiscardAllocator::allocate(UWord size) {
     Chunk *chunk = allocateChunk(size);
 
     if (!chunk) {
-      return 0;
+      return NULL;
     }
 
     chunk->_idx = chunk->_size;
@@ -64,7 +63,7 @@ void *DiscardAllocator::allocate(UWord size) {
   if (!_head) {
     _head = allocateChunk(_chunkSize);
     if (!_head) {
-      return 0;
+      return NULL;
     }
   }
 
@@ -75,7 +74,7 @@ void *DiscardAllocator::allocate(UWord size) {
 
     if (!_head) {
       _head = oldHead;
-      return 0;
+      return NULL;
     }
 
     _head->_next = oldHead;
@@ -83,8 +82,8 @@ void *DiscardAllocator::allocate(UWord size) {
 
   void *block = _head->_data + _head->_idx;
 
-  // Always keep the next available block word-aligned
-  _head->_idx += ESB_WORD_ALIGN(size);
+  // Always keep the next available block aligned
+  _head->_idx += ESB_ALIGN(size, _alignmentSize);
 
   return block;
 }
@@ -93,80 +92,37 @@ Error DiscardAllocator::deallocate(void *block) {
   return block ? ESB_SUCCESS : ESB_NULL_POINTER;
 }
 
-UWord DiscardAllocator::getOverhead() { return 0; }
-
-Error DiscardAllocator::initialize() { return ESB_SUCCESS; }
-
-Error DiscardAllocator::destroy() {
+Error DiscardAllocator::reset() {
   Chunk *current = _head;
-  Chunk *next = 0;
+  Chunk *next = NULL;
+  _head = NULL;
 
   while (current) {
     next = current->_next;
-    _source->deallocate(current);
+    _source.deallocate(current);
     current = next;
   }
 
-  _head = 0;
-
   return ESB_SUCCESS;
-}
-
-Error DiscardAllocator::reset() {
-  Chunk *current = _head;
-  Chunk *next = 0;
-
-  while (current && current->_next) {
-    next = current->_next;
-    _source->deallocate(current);
-    current = next;
-  }
-
-  _head = current;
-
-  if (_head) {
-    _head->_idx = 0;
-  }
-
-  return ESB_SUCCESS;
-}
-
-Error DiscardAllocator::isInitialized() { return ESB_SUCCESS; }
-
-Error DiscardAllocator::setFailoverAllocator(Allocator *allocator) {
-  return allocator ? ESB_SUCCESS : ESB_NULL_POINTER;
-}
-
-Error DiscardAllocator::getFailoverAllocator(Allocator **allocator) {
-  if (!allocator) {
-    return ESB_NULL_POINTER;
-  }
-
-  *allocator = _source;
-
-  return ESB_SUCCESS;
-}
-
-Size DiscardAllocator::GetOverheadSize() {
-  return ESB_WORD_ALIGN(sizeof(Chunk));
 }
 
 DiscardAllocator::Chunk *DiscardAllocator::allocateChunk(int chunkSize) {
-  Chunk *chunk =
-      (Chunk *)_source->allocate(ESB_WORD_ALIGN(sizeof(Chunk)) + chunkSize);
+  Chunk *chunk = (Chunk *)_source.allocate(
+      ESB_ALIGN(sizeof(Chunk), _alignmentSize) + chunkSize);
 
   if (!chunk) {
-    return 0;
+    return NULL;
   }
 
-  chunk->_next = 0;
+  chunk->_next = NULL;
   chunk->_idx = 0;
   chunk->_size = chunkSize;
 
-  // Always keep the next available block word-aligned
-  chunk->_data = ((char *)chunk) + ESB_WORD_ALIGN(sizeof(Chunk));
+  // Always keep the next available block aligned
+  chunk->_data = ((char *)chunk) + ESB_ALIGN(sizeof(Chunk), _alignmentSize);
 
   return chunk;
 }
+CleanupHandler &DiscardAllocator::cleanupHandler() { return _cleanupHandler; }
 
 }  // namespace ESB

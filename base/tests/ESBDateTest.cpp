@@ -13,19 +13,19 @@ TEST(Date, SecondAddition) {
 
   var += 1;
 
-  EXPECT_EQ(orig.getSeconds() + 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds(), var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() + 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds(), var.microSeconds());
 
   var = orig;
   var += second;
 
-  EXPECT_EQ(orig.getSeconds() + 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds(), var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() + 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds(), var.microSeconds());
 
   var = orig + second;
 
-  EXPECT_EQ(orig.getSeconds() + 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds(), var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() + 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds(), var.microSeconds());
 }
 
 TEST(Date, MicroSecondAddition) {
@@ -36,13 +36,13 @@ TEST(Date, MicroSecondAddition) {
   var = orig;
   var += microsecond;
 
-  EXPECT_EQ(orig.getSeconds(), var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() + 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds(), var.seconds());
+  EXPECT_EQ(orig.microSeconds() + 1, var.microSeconds());
 
   var = orig + microsecond;
 
-  EXPECT_EQ(orig.getSeconds(), var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() + 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds(), var.seconds());
+  EXPECT_EQ(orig.microSeconds() + 1, var.microSeconds());
 }
 
 TEST(Date, MicroSecondAdditionWrap) {
@@ -53,13 +53,13 @@ TEST(Date, MicroSecondAdditionWrap) {
   var = orig;
   var += nearSecond;
 
-  EXPECT_EQ(orig.getSeconds() + 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() - 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() + 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds() - 1, var.microSeconds());
 
   var = orig + nearSecond;
 
-  EXPECT_EQ(orig.getSeconds() + 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() - 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() + 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds() - 1, var.microSeconds());
 }
 
 TEST(Date, SecondSubtraction) {
@@ -69,19 +69,19 @@ TEST(Date, SecondSubtraction) {
 
   var -= 1;
 
-  EXPECT_EQ(orig.getSeconds() - 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds(), var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() - 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds(), var.microSeconds());
 
   var = orig;
   var -= second;
 
-  EXPECT_EQ(orig.getSeconds() - 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds(), var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() - 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds(), var.microSeconds());
 
   var = orig - second;
 
-  EXPECT_EQ(orig.getSeconds() - 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds(), var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() - 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds(), var.microSeconds());
 }
 
 TEST(Date, MicroSecondSubtraction) {
@@ -92,13 +92,13 @@ TEST(Date, MicroSecondSubtraction) {
   var = orig;
   var -= microsecond;
 
-  EXPECT_EQ(orig.getSeconds(), var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() - 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds(), var.seconds());
+  EXPECT_EQ(orig.microSeconds() - 1, var.microSeconds());
 
   var = orig - microsecond;
 
-  EXPECT_EQ(orig.getSeconds(), var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() - 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds(), var.seconds());
+  EXPECT_EQ(orig.microSeconds() - 1, var.microSeconds());
 }
 
 TEST(Date, MicroSecondSubtractionWrap) {
@@ -109,13 +109,13 @@ TEST(Date, MicroSecondSubtractionWrap) {
   var = orig;
   var -= nearSecond;
 
-  EXPECT_EQ(orig.getSeconds() - 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() + 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() - 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds() + 1, var.microSeconds());
 
   var = orig - nearSecond;
 
-  EXPECT_EQ(orig.getSeconds() - 1, var.getSeconds());
-  EXPECT_EQ(orig.getMicroSeconds() + 1, var.getMicroSeconds());
+  EXPECT_EQ(orig.seconds() - 1, var.seconds());
+  EXPECT_EQ(orig.microSeconds() + 1, var.microSeconds());
 }
 
 TEST(Date, SecondComparisons) {

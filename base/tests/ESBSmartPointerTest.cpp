@@ -129,14 +129,14 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
   ReferenceCountSubclassPointer array[ARRAY_SIZE];
   FixedAllocator allocator(ARRAY_SIZE * 10, sizeof(ReferenceCountSubclass));
 
-  int initialRefs = debugger->getSize();
+  int initialRefs = debugger->size();
   int activeRefs = initialRefs;
   int randIdx = 0;
 
   for (int i = 0; i < ARRAY_SIZE * 10; ++i) {
     randIdx = generator.generateRandom(0, ARRAY_SIZE - 1);
 
-    // Each iteration, 1/4 chance to delete, else, create.
+    // Each iteration, 1/4 chance to delete, else, acquire.
 
     if (1 == generator.generateRandom(1, 4)) {
       if (array[randIdx].isNull()) {
@@ -144,7 +144,7 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
       }
       --activeRefs;
       array[randIdx].setNull();
-      ESTF_ASSERT(collector, activeRefs == debugger->getSize());
+      ESTF_ASSERT(collector, activeRefs == debugger->size());
       continue;
     }
 
@@ -152,26 +152,26 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
       ++activeRefs;
     }
 
-    // Alternate between the fixed length allocator and the system allocator
+    // Alternate between the fixed size allocator and the system allocator
     // The smart pointer will keep track.
     if (1 == generator.generateRandom(1, 2)) {
-      array[randIdx] = new (&allocator) ReferenceCountSubclass(i);
+      array[randIdx] = new (allocator) ReferenceCountSubclass(i);
     } else {
       array[randIdx] = new ReferenceCountSubclass(i);
     }
 
-    assert(activeRefs == debugger->getSize());
+    assert(activeRefs == debugger->size());
     ESTF_ASSERT(collector, i == array[randIdx]->getNumber());
   }
 
-  ESTF_ASSERT(collector, activeRefs == debugger->getSize());
+  ESTF_ASSERT(collector, activeRefs == debugger->size());
 
   for (int i = 0; i < ARRAY_SIZE; ++i) {
     if (!array[i].isNull()) {
       array[i].setNull();
       --activeRefs;
     }
-    ESTF_ASSERT(collector, activeRefs == debugger->getSize());
+    ESTF_ASSERT(collector, activeRefs == debugger->size());
   }
 
   return true;
@@ -213,7 +213,7 @@ int main() {
 
   std::cout << collector << std::endl;
   std::cout << "Remaining ESBObject references: "
-            << ESB::SmartPointerDebugger::Instance()->getSize() << std::endl;
+            << ESB::SmartPointerDebugger::Instance()->size() << std::endl;
 
   ESB::SmartPointerDebugger::Destroy();
 

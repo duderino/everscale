@@ -13,6 +13,10 @@
 #include <ESBEmbeddedList.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 namespace ESB {
 
 /**
@@ -32,13 +36,13 @@ class TimeSeries : public PerformanceCounter {
    *
    */
   TimeSeries(const char *name, UInt16 maxWindows, UInt16 windowSizeSec,
-             Allocator *allocator = 0);
+             Allocator &allocator = SystemAllocator::Instance());
 
   virtual ~TimeSeries();
 
-  virtual void addObservation(const Date &start, const Date &stop);
+  virtual void record(const Date &start, const Date &stop);
 
-  inline const char *getName() const { return _name; }
+  inline const char *name() const { return _name; }
 
   /**
    * Get a list of SimplePerformanceCounters.  There will be one counter in
@@ -46,9 +50,13 @@ class TimeSeries : public PerformanceCounter {
    *
    * @return The list of SimplePerformanceCounters.
    */
-  inline const EmbeddedList *getCounters() const { return &_list; }
+  inline const EmbeddedList *counters() const { return &_list; }
 
   virtual void log(Logger &logger, Logger::Severity severity) const;
+
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
+  }
 
  private:
   // Disabled
@@ -61,7 +69,7 @@ class TimeSeries : public PerformanceCounter {
   const char *_name;
   mutable Mutex _lock;
   EmbeddedList _list;
-  Allocator *_allocator;
+  Allocator &_allocator;
 };
 
 }  // namespace ESB

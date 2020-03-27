@@ -16,16 +16,16 @@ TEST(TimeSeries, Basic) {
   const UInt16 windowSizeSec = 1;
   TimeSeries timeSeries("ts-test", maxWindows, windowSizeSec);
   Date start(Date::Now());
-  Date stop(start.getSeconds(), start.getMicroSeconds() + 1000);
+  Date stop(start.seconds(), start.microSeconds() + 1000);
 
   for (int i = 0; i < queries; ++i) {
-    timeSeries.addObservation(start, stop);
+    timeSeries.record(start, stop);
   }
 
-  EXPECT_EQ(timeSeries.getCounters()->length(), 1);
+  EXPECT_EQ(timeSeries.counters()->size(), 1);
   SimplePerformanceCounter *first =
-      (SimplePerformanceCounter *)timeSeries.getCounters()->getFirst();
-  EXPECT_EQ(first->getQueries(), queries);
+      (SimplePerformanceCounter *)timeSeries.counters()->first();
+  EXPECT_EQ(first->queries(), queries);
 }
 
 TEST(TimeSeries, MultipleWindows) {
@@ -37,26 +37,25 @@ TEST(TimeSeries, MultipleWindows) {
   Date stop(start + 1);
 
   for (int i = 0; i < queries; ++i) {
-    timeSeries.addObservation(start, stop);
+    timeSeries.record(start, stop);
   }
 
-  EXPECT_EQ(timeSeries.getCounters()->length(), 1);
+  EXPECT_EQ(timeSeries.counters()->size(), 1);
   SimplePerformanceCounter *first =
-      (SimplePerformanceCounter *)timeSeries.getCounters()->getFirst();
-  EXPECT_EQ(first->getQueries(), queries);
+      (SimplePerformanceCounter *)timeSeries.counters()->first();
+  EXPECT_EQ(first->queries(), queries);
 
   stop += windowSizeSec;
 
   for (int i = 0; i < queries; ++i) {
-    timeSeries.addObservation(start, stop);
+    timeSeries.record(start, stop);
   }
 
-  EXPECT_EQ(timeSeries.getCounters()->length(), 2);
-  first = (SimplePerformanceCounter *)timeSeries.getCounters()->getFirst();
-  EXPECT_EQ(first->getQueries(), queries);
-  SimplePerformanceCounter *second =
-      (SimplePerformanceCounter *)first->getNext();
-  EXPECT_EQ(second->getQueries(), queries);
+  EXPECT_EQ(timeSeries.counters()->size(), 2);
+  first = (SimplePerformanceCounter *)timeSeries.counters()->first();
+  EXPECT_EQ(first->queries(), queries);
+  SimplePerformanceCounter *second = (SimplePerformanceCounter *)first->next();
+  EXPECT_EQ(second->queries(), queries);
 }
 
 TEST(TimeSeries, ExceedMaxWindows) {
@@ -68,21 +67,21 @@ TEST(TimeSeries, ExceedMaxWindows) {
   Date stop(start + 1);
 
   for (int i = 0; i < queries; ++i) {
-    timeSeries.addObservation(start, stop);
+    timeSeries.record(start, stop);
   }
 
-  EXPECT_EQ(timeSeries.getCounters()->length(), 1);
+  EXPECT_EQ(timeSeries.counters()->size(), 1);
   SimplePerformanceCounter *first =
-      (SimplePerformanceCounter *)timeSeries.getCounters()->getFirst();
-  EXPECT_EQ(first->getQueries(), queries);
+      (SimplePerformanceCounter *)timeSeries.counters()->first();
+  EXPECT_EQ(first->queries(), queries);
 
   stop += windowSizeSec;
 
   for (int i = 0; i < queries; ++i) {
-    timeSeries.addObservation(start, stop);
+    timeSeries.record(start, stop);
   }
 
-  EXPECT_EQ(timeSeries.getCounters()->length(), 1);
-  first = (SimplePerformanceCounter *)timeSeries.getCounters()->getFirst();
-  EXPECT_EQ(first->getQueries(), queries);
+  EXPECT_EQ(timeSeries.counters()->size(), 1);
+  first = (SimplePerformanceCounter *)timeSeries.counters()->first();
+  EXPECT_EQ(first->queries(), queries);
 }

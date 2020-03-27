@@ -30,6 +30,10 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
 namespace ESB {
 
 SocketAddress::SocketAddress() : _magic(0) {
@@ -137,9 +141,13 @@ SocketAddress &SocketAddress::operator=(const SocketAddress &address) {
   return *this;
 }
 
-SocketAddress::Address *SocketAddress::getAddress() { return &_address; }
+const SocketAddress::Address *SocketAddress::primitiveAddress() const {
+  return &_address;
+}
 
-void SocketAddress::getIPAddress(char *address, int size) const {
+SocketAddress::Address *SocketAddress::primitiveAddress() { return &_address; }
+
+void SocketAddress::presentationAddress(char *address, int size) const {
   if (!address || 16 > size) {
     return;
   }
@@ -160,7 +168,7 @@ void SocketAddress::getIPAddress(char *address, int size) const {
 #endif
 }
 
-UInt16 SocketAddress::getPort() const {
+UInt16 SocketAddress::port() const {
 #if defined HAVE_NTOHS && defined HAVE_STRUCT_SOCKADDR_IN
   return ntohs(_address.sin_port);
 #else
@@ -176,11 +184,9 @@ void SocketAddress::setPort(UInt16 port) {
 #endif
 }
 
-SocketAddress::TransportType SocketAddress::getTransport() const {
-  return _transport;
-}
+SocketAddress::TransportType SocketAddress::type() const { return _transport; }
 
-void SocketAddress::setTransport(TransportType transport) {
+void SocketAddress::setType(TransportType transport) {
   _transport = transport;
 
   switch (_transport) {
@@ -195,5 +201,13 @@ void SocketAddress::setTransport(TransportType transport) {
 }
 
 bool SocketAddress::isValid() { return ESB_MAGIC == _magic; }
+
+bool SocketAddress::operator<(const SocketAddress &address) const {
+  if (0 > ::memcmp(&_address, &address._address, sizeof(_address))) {
+    return true;
+  }
+
+  return 0 > _transport - address._transport;
+}
 
 }  // namespace ESB

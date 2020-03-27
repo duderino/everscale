@@ -17,6 +17,14 @@
 #include <ESBComparator.h>
 #endif
 
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
+#endif
+
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 namespace ESB {
 
 /** This class is the internal node used by Map and MapIterator.  It
@@ -29,7 +37,9 @@ class MapNode {
 
   ~MapNode();
 
-  void *operator new(size_t size, Allocator *allocator);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
+  }
 
   MapNode *_parent;
   MapNode *_left;
@@ -48,17 +58,6 @@ class MapIterator;
 
 /** Map is a red-black balanced binary tree that implements Cormen,
  *  Leiserson, and Rivest's red-black tree in "Introduction to Algorithms".
- *  Changes were made to optionally support "MultiMaps" (Maps which allow
- *  multiple elements with the same key) and iterators with the same iterator
- *  invalidation rules as the STL Map (unless you delete the node an iterator
- *  is pointing to, operations which modify the tree do not invalidate any
- *  existing iterator).
- *  <p>
- *  The keys inserted into Map instances are not allowed to be NULL, though
- *  the values can be.  Up to 4,294,967,295 elements can be inserted into a
- *  Map instance assuming it can always allocate enough memory for its
- *  internal nodes.
- *  </p>
  *
  *  @ingroup collection
  */
@@ -68,8 +67,6 @@ class Map : public Lockable {
  public:
   /** Constructor.
    *
-   *  @param isUnique True if the map should enforce uniqueness, false
-   *      otherwise.
    *  @param comparator The comparator that will be used to maintain the
    *      tree nodes in sorted order.
    *  @param allocator The allocator that the map will use to create its
@@ -81,8 +78,8 @@ class Map : public Lockable {
    *      allocate for every internal node it creates.  This is useful for
    *      constructing fixed length allocators.
    */
-  Map(bool isUnique, Comparator *comparator, Allocator *allocator,
-      Lockable *lockable);
+  Map(Comparator &comparator, Lockable &lockable = NullLock::Instance(),
+      Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor. */
   virtual ~Map();
@@ -106,7 +103,7 @@ class Map : public Lockable {
    *  @return ESB_SUCCESS if successful, another error code otherwise.
    *      ESB_CANNOT_FIND will be returned if the key cannot be found.
    */
-  Error erase(const void *key);
+  Error remove(const void *key);
 
   /** Find a value in the map given its key.  O(lg n).
    *
@@ -147,7 +144,7 @@ class Map : public Lockable {
    *
    *  @return An iterator pointing to the first element in the map.
    */
-  MapIterator getMinimumIterator();
+  MapIterator minimumIterator();
 
   /** Get an iterator pointing to the largest element of the map.  If the
    *  map is empty, the getKey method of the iterator will return NULL
@@ -159,7 +156,7 @@ class Map : public Lockable {
    *
    *  @return An iterator pointing to the last element in the map.
    */
-  MapIterator getMaximumIterator();
+  MapIterator maximumIterator();
 
   /** Insert a key/value pair into the map and immediately get back its
    *  iterator. O(lg n).
@@ -218,13 +215,7 @@ class Map : public Lockable {
    *
    *  @return The current size of the map.
    */
-  UInt32 getSize() const;
-
-  /** Determine whether the map is empty.  O(1).
-   *
-   *  @return true if the map is empty, false otherwise.
-   */
-  bool isEmpty() const;
+  UInt32 size() const;
 
   /** Block the calling thread until write access is granted.
    *
@@ -273,7 +264,7 @@ class Map : public Lockable {
    *
    *  @return The size in bytes of the Map's internal nodes.
    */
-  Size GetAllocationSize();
+  Size AllocationSize();
 
   /** Determine whether the tree is balanced.  Used only by the unit tests.
    *
@@ -287,8 +278,8 @@ class Map : public Lockable {
    *  @param allocator The source of the object's memory.
    *  @return memory for the object, or NULL if it couldn't be allocated.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -300,24 +291,19 @@ class Map : public Lockable {
   static MapNode *findMaximum(MapNode *x);
   static MapNode *findSuccessor(MapNode *x);
   static MapNode *findPredecessor(MapNode *x);
-
   MapNode *findNode(MapNode *x, const void *k);
   bool insertNode(MapNode *z);
   void deleteNode(MapNode *z);
   void rightRotate(MapNode *x);
   void leftRotate(MapNode *x);
-
   int getBlackHeight(MapNode *node, bool *unbalanced) const;
   int getHeight(MapNode *node) const;
 
   UInt32 _size;
-  bool _isUnique;
-
   MapNode *_root;
-  Allocator *_allocator;
-  Lockable *_lockable;
-  Comparator *_comparator;
-
+  Allocator &_allocator;
+  Lockable &_lockable;
+  Comparator &_comparator;
   MapNode _sentinel;
 };
 
@@ -354,7 +340,6 @@ class MapIterator {
    */
   inline MapIterator &operator=(const MapIterator &iterator) {
     _node = iterator._node;
-
     return *this;
   }
 
@@ -364,7 +349,7 @@ class MapIterator {
    *  @return true if there is, false otherwise.
    */
   inline bool hasNext() {
-    return _node ? (!Map::findSuccessor(_node)->_key) : false;
+    return _node ? (NULL != Map::findSuccessor(_node)->_key) : false;
   }
 
   /** Pre-increment operator.  O(lg n).  Point this iterator at the next
@@ -376,7 +361,6 @@ class MapIterator {
    */
   inline MapIterator &operator++() {
     _node = _node ? Map::findSuccessor(_node) : 0;
-
     return *this;
   }
 
@@ -390,9 +374,7 @@ class MapIterator {
    */
   inline MapIterator operator++(int) {
     MapIterator it(_node);
-
     _node = _node ? Map::findSuccessor(_node) : 0;
-
     return it;
   }
 
@@ -403,9 +385,8 @@ class MapIterator {
    *
    *  @return The next iterator.
    */
-  inline MapIterator getNext() {
+  inline MapIterator next() {
     MapIterator node(_node ? Map::findSuccessor(_node) : 0);
-
     return node;
   }
 
@@ -418,7 +399,6 @@ class MapIterator {
    */
   inline MapIterator &operator--() {
     _node = _node ? Map::findPredecessor(_node) : 0;
-
     return *this;
   }
 
@@ -432,9 +412,7 @@ class MapIterator {
    */
   inline MapIterator operator--(int) {
     MapIterator it(_node);
-
     _node = _node ? Map::findPredecessor(_node) : 0;
-
     return it;
   }
 
@@ -444,7 +422,7 @@ class MapIterator {
    *  @return true if there is, false otherwise.
    */
   inline bool hasPrevious() {
-    return _node ? (!Map::findPredecessor(_node)->_key) : false;
+    return _node ? (NULL != Map::findPredecessor(_node)->_key) : false;
   }
 
   /** Get an iterator for the key/value pair before the key/value pair
@@ -454,9 +432,8 @@ class MapIterator {
    *
    *  @return The previous iterator.
    */
-  inline MapIterator getPrevious() {
+  inline MapIterator previous() {
     MapIterator node(_node ? Map::findPredecessor(_node) : 0);
-
     return node;
   }
 
@@ -465,14 +442,14 @@ class MapIterator {
    *  @return The key or NULL if the iterator does not point to a key/value
    *      pair.
    */
-  inline const void *getKey() { return _node ? _node->_key : 0; }
+  inline const void *key() { return _node ? _node->_key : 0; }
 
   /** Get the value of the key/value pair that this iterator points to.  O(1).
    *
    *  @return The value or NULL if the iterator does not point to a key/value
    *      pair.
    */
-  inline void *getValue() { return _node ? _node->_value : 0; }
+  inline void *value() { return _node ? _node->_value : 0; }
 
   /** Set the value of the key/value pair that this iterator points to.  O(1).
    *  <p>

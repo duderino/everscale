@@ -25,8 +25,8 @@
 #include <ESBCommand.h>
 #endif
 
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
 #endif
 
 namespace ESB {
@@ -46,7 +46,8 @@ class ThreadPool {
    * @param allocator Worker threads will be allocated with this
    *  allocator.
    */
-  ThreadPool(const char *name, int threads, Allocator *allocator);
+  ThreadPool(const char *name, UInt32 threads,
+             Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -80,18 +81,9 @@ class ThreadPool {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
-
-  /** Get the size in bytes used for each worker thread.  This
-   *  might help create an appropriate allocator for the
-   *  thread pool, or the default system allocator could just be
-   *  used.
-   *
-   * @return The size in bytes for each worker thread.
-   */
-  static UWord GetWorkerThreadSize();
 
  private:
   //  Disabled
@@ -101,10 +93,10 @@ class ThreadPool {
   bool createWorkerThreads();
   void destroyWorkerThreads();
 
-  int _numThreads;
+  UInt32 _numThreads;
   const char *_name;
   Thread **_threads;
-  Allocator *_allocator;
+  Allocator &_allocator;
   SharedEmbeddedQueue _queue;
 };
 

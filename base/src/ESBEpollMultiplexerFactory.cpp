@@ -9,14 +9,13 @@
 namespace ESB {
 
 EpollMultiplexerFactory::EpollMultiplexerFactory(const char *name,
-                                                 Allocator *allocator)
-    : _name(name),
-      _allocator(allocator ? allocator : SystemAllocator::GetInstance()) {}
+                                                 Allocator &allocator)
+    : _name(name), _allocator(allocator) {}
 
 EpollMultiplexerFactory::~EpollMultiplexerFactory() {}
 
 SocketMultiplexer *EpollMultiplexerFactory::create(int maxSockets) {
-  return new (_allocator) EpollMultiplexer(_name, maxSockets, _allocator);
+  return new (_allocator) EpollMultiplexer(maxSockets, _allocator);
 }
 
 void EpollMultiplexerFactory::destroy(SocketMultiplexer *multiplexer) {
@@ -25,7 +24,7 @@ void EpollMultiplexerFactory::destroy(SocketMultiplexer *multiplexer) {
   }
 
   multiplexer->~SocketMultiplexer();
-  _allocator->deallocate(multiplexer);
+  _allocator.deallocate(multiplexer);
 }
 
 }  // namespace ESB

@@ -30,11 +30,8 @@ class MultiplexedSocket;
 class SocketMultiplexer : public Command {
  public:
   /** Constructor.
-   *
-   * @param name The name of the multiplexer to be used in log messages.  Caller
-   * is responsible for the strings memory - use a string literal if possible.
    */
-  SocketMultiplexer(const char *name);
+  SocketMultiplexer();
 
   /** Destructor.
    */
@@ -63,13 +60,13 @@ class SocketMultiplexer : public Command {
    *
    * @return the number of sockets this multiplexer is currently handling.
    */
-  virtual int getCurrentSockets() const = 0;
+  virtual int currentSockets() const = 0;
 
   /** Get the maximum number of sockets this multiplexer can handle.
    *
    * @return the maximum number of sockets this multiplexer can handle.
    */
-  virtual int getMaximumSockets() const = 0;
+  virtual int maximumSockets() const = 0;
 
   /** Determine whether this multiplexer has been shutdown.
    *
@@ -77,19 +74,6 @@ class SocketMultiplexer : public Command {
    *   told to shutdown.
    */
   virtual bool isRunning() const = 0;
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
-  }
-
- protected:
-  const char *_name;
 
  private:
   //  Disabled

@@ -14,7 +14,7 @@ void CommandThread::run() {
   }
 
   if (_command->run(&_isRunning)) {
-    CleanupHandler *cleanupHandler = _command->getCleanupHandler();
+    CleanupHandler *cleanupHandler = _command->cleanupHandler();
 
     if (cleanupHandler) {
       cleanupHandler->destroy(_command);

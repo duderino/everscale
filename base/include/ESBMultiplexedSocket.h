@@ -5,20 +5,12 @@
 #include <ESBConfig.h>
 #endif
 
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
 #ifndef ESB_EMBEDDED_LIST_ELEMENT_H
 #include <ESBEmbeddedListElement.h>
 #endif
 
 #ifndef ESB_SOCKET_H
 #include <ESBSocket.h>
-#endif
-
-#ifndef ESB_SHARED_INT_H
-#include <ESBSharedInt.h>
 #endif
 
 #ifndef ESB_SOCKET_MULTIPLEXER_H
@@ -87,7 +79,7 @@ class MultiplexedSocket : public EmbeddedListElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleAccept(SocketMultiplexer &multiplexer) = 0;
 
   /** Client connected socket has connected to the peer endpoint.
    *
@@ -97,7 +89,7 @@ class MultiplexedSocket : public EmbeddedListElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleConnect(SocketMultiplexer &multiplexer) = 0;
 
   /** Data is ready to be read.
    *
@@ -107,7 +99,7 @@ class MultiplexedSocket : public EmbeddedListElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleReadable(SocketMultiplexer &multiplexer) = 0;
 
   /** There is free space in the outgoing socket buffer.
    *
@@ -117,7 +109,7 @@ class MultiplexedSocket : public EmbeddedListElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleWritable(SocketMultiplexer &multiplexer) = 0;
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -130,8 +122,7 @@ class MultiplexedSocket : public EmbeddedListElement {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(Error errorCode,
-                                SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleError(Error errorCode, SocketMultiplexer &multiplexer) = 0;
 
   /** The socket's connection was closed.
    *
@@ -141,7 +132,7 @@ class MultiplexedSocket : public EmbeddedListElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleRemoteClose(SocketMultiplexer &multiplexer) = 0;
 
   /** The socket's connection has been idle for too long
    *
@@ -151,20 +142,20 @@ class MultiplexedSocket : public EmbeddedListElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleIdle(SocketMultiplexer &multiplexer) = 0;
 
   /** The socket has been removed from the multiplexer
    *
    * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleRemove(SocketMultiplexer &multiplexer) = 0;
 
   /** Get the socket's socket descriptor.
    *
    *  @return the socket descriptor
    */
-  virtual SOCKET getSocketDescriptor() const = 0;
+  virtual SOCKET socketDescriptor() const = 0;
 
   /** Placement new.
    *
@@ -172,8 +163,8 @@ class MultiplexedSocket : public EmbeddedListElement {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

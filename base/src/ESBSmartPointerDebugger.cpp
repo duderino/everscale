@@ -50,20 +50,20 @@ void SmartPointerDebugger::insert(ReferenceCount *object) {
   _references.writeRelease();
 }
 
-void SmartPointerDebugger::erase(ReferenceCount *object) {
+void SmartPointerDebugger::remove(ReferenceCount *object) {
   _references.writeAcquire();
 
-  _references.erase(object);
+  _references.remove(object);
 
   _references.writeRelease();
 }
 
-int SmartPointerDebugger::getSize() {
+int SmartPointerDebugger::size() {
   int size;
 
   _references.readAcquire();
 
-  size = _references.getSize();
+  size = _references.size();
 
   _references.readRelease();
 
@@ -71,7 +71,6 @@ int SmartPointerDebugger::getSize() {
 }
 
 SmartPointerDebugger::SmartPointerDebugger()
-    : _references(true, &AddressComparator, SystemAllocator::GetInstance(),
-                  &SmartPointerDebuggerMutex) {}
+    : _references(AddressComparator, SmartPointerDebuggerMutex) {}
 
 }  // namespace ESB

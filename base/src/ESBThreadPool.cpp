@@ -2,10 +2,6 @@
 #include <ESBThreadPool.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
@@ -32,11 +28,11 @@ class ThreadPoolWorker : public Thread {
   SharedEmbeddedQueue *_queue;
 };
 
-ThreadPool::ThreadPool(const char *name, int threads, Allocator *allocator)
+ThreadPool::ThreadPool(const char *name, UInt32 threads, Allocator &allocator)
     : _numThreads(threads < MIN_THREADS ? MIN_THREADS : threads),
       _name(name ? name : "ThreadPool"),
       _threads(0),
-      _allocator(allocator ? allocator : SystemAllocator::GetInstance()),
+      _allocator(allocator),
       _queue() {}
 
 ThreadPool::~ThreadPool() {}
@@ -98,7 +94,7 @@ void ThreadPool::stop() {
 }
 
 bool ThreadPool::createWorkerThreads() {
-  _threads = (Thread **)_allocator->allocate(_numThreads * sizeof(Thread *));
+  _threads = (Thread **)_allocator.allocate(_numThreads * sizeof(Thread *));
 
   if (!_threads) {
     return false;
@@ -132,10 +128,10 @@ void ThreadPool::destroyWorkerThreads() {
     }
 
     _threads[i]->~Thread();
-    _allocator->deallocate(_threads[i]);
+    _allocator.deallocate(_threads[i]);
   }
 
-  _allocator->deallocate(_threads);
+  _allocator.deallocate(_threads);
   _threads = 0;
 }
 
@@ -170,13 +166,13 @@ void ThreadPoolWorker::run() {
     }
 
     ESB_LOG_DEBUG("Thread '%s:%d' starting command '%s'", _name, _workerId,
-                  command->getName());
+                  command->name());
     cleanup = command->run(&_isRunning);
     ESB_LOG_DEBUG("Thread '%s:%d' finished command '%s'", _name, _workerId,
-                  command->getName());
+                  command->name());
 
     if (cleanup) {
-      cleanupHandler = command->getCleanupHandler();
+      cleanupHandler = command->cleanupHandler();
       if (cleanupHandler) {
         cleanupHandler->destroy(command);
       }

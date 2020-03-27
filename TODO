@@ -1,8 +1,31 @@
+Should placement new automatically set cleanup handler... put cleanup handler in ESB::Object
+
+consider creating page allocator using mmap and using this in ESHttpMultiplexerImpl
+Move state from sockets to transactions
+use nullptr.  If not define, define nullptr to 0.
+
+add noexcept to all uses of placement new
+use allocator cleanup handlers in embedded list test and more widely
+is there a way to ensure that server transactions always live longer than their associated client transactions?
+log statements that pretty print peer address
+pause/resume for http server sockets
+pause/resume for http client sockets
+pause/resome for http listening sockets (overloaded use case)
+http client socket should store HttpServerTransaction _transaction
+make http client socket reuse server socket's discard allocator, when there is a server socket
+let http client sockets resume http server sockets and vice versa
+
+discard allocators should round up to nearest page size
+
+           #include <unistd.h>
+           long sz = sysconf(_SC_PAGESIZE);
+
 multiplex socket
+ - SO_REUSE_PORT
  - consider not exposing isRunning to impls... they should be returning asap anyways
  - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers
 http stack test
- - create proxy test:  proxy callbacks + route API
+ - acquire proxy test:  proxy callbacks + route API
  - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
  - make sure failover allocators are sufficiently tested or remove them
  - flakey http1 parser test
@@ -12,6 +35,7 @@ http stack test
 proxy main
  - start as root, bind to ports, drop privs
  - load shedding
+ - support PAUSE returns from HttpServerHandler::acceptConnection
  - readiness and liveness check support - e2e vs local options
  - plugin api
 multiplexer dispatcher
@@ -47,6 +71,7 @@ http stuff
  - max requests per connection option (1 disables keepalives)
  - max header size option
  - max body size option
+ - save don't skip trailer
  - slow loris defense
  - https support
  - h2 support

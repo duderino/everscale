@@ -36,7 +36,7 @@ class Rand {
    *
    *    @return A random number.
    */
-  double generateRandom();
+  double generate();
 
   /** Generate a random integer within a given range.
    *
@@ -44,7 +44,7 @@ class Rand {
    *    @param upperBound The upperbound of the range.  Inclusive.
    *    @return A random number within the given range.
    */
-  int generateRandom(int lowerBound, int upperBound);
+  int generate(int lowerBound, int upperBound);
 
   /** Placement new.
    *
@@ -52,8 +52,8 @@ class Rand {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

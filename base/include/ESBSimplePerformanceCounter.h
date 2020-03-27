@@ -36,25 +36,25 @@ class SimplePerformanceCounter : public PerformanceCounter {
 
   virtual ~SimplePerformanceCounter();
 
-  inline const char *getName() const { return _name; }
+  inline const char *name() const { return _name; }
 
-  inline const Date &getWindowStart() const { return _windowStart; }
+  inline const Date &windowStart() const { return _windowStart; }
 
-  inline const Date &getWindowStop() const { return _windowStop; }
+  inline const Date &windowStop() const { return _windowStop; }
 
-  double getQueriesPerSec() const;
+  double queriesPerSec() const;
 
-  UInt32 getQueries() const;
+  UInt32 queries() const;
 
-  double getMeanMsec() const;
+  double meanMSec() const;
 
-  double getVarianceMsec() const;
+  double varianceMSec() const;
 
-  double getMinMsec() const;
+  double minMSec() const;
 
-  double getMaxMsec() const;
+  double maxMSec() const;
 
-  virtual void addObservation(const Date &start, const Date &stop);
+  virtual void record(const Date &start, const Date &stop);
 
   virtual void log(Logger &logger, Logger::Severity severity) const;
 
@@ -64,22 +64,21 @@ class SimplePerformanceCounter : public PerformanceCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
-  inline void *operator new(size_t size, SimplePerformanceCounter *counter) {
+  inline void *operator new(size_t size,
+                            SimplePerformanceCounter *counter) noexcept {
     return counter;
   }
-
-  // inline void *operator new(size_t size, void *block) { return block; }
 
  private:
   // Disabled
   SimplePerformanceCounter(const SimplePerformanceCounter &counter);
   SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
 
-  double getQueriesPerSecNoLock() const;
+  double queriesPerSecNoLock() const;
 
   const char *_name;
   Date _windowStart;

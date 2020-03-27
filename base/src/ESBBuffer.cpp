@@ -16,7 +16,7 @@
 
 namespace ESB {
 
-Buffer::Buffer(unsigned char *buffer, unsigned int capacity)
+Buffer::Buffer(unsigned char *buffer, UInt32 capacity)
     : _readMark(0),
       _writeMark(0),
       _readPosition(0),
@@ -26,27 +26,37 @@ Buffer::Buffer(unsigned char *buffer, unsigned int capacity)
 
 Buffer::~Buffer() {}
 
-CleanupHandler *Buffer::getCleanupHandler() { return 0; }
+CleanupHandler *Buffer::cleanupHandler() { return 0; }
 
-Buffer *Buffer::Create(Allocator *allocator, unsigned int capacity) {
-  if (0 == allocator || 1 > capacity) {
-    return 0;
+Buffer *Buffer::Create(Allocator &allocator, unsigned int capacity) {
+  if (1 > capacity) {
+    return NULL;
   }
 
-  unsigned char *block = (unsigned char *)allocator->allocate(
-      capacity * sizeof(unsigned char) + ESB_WORD_ALIGN(sizeof(Buffer)));
+  unsigned char *block = (unsigned char *)allocator.allocate(
+      capacity * sizeof(unsigned char) + ESB_BUFFER_OVERHEAD);
 
   if (!block) {
-    return 0;
+    return NULL;
   }
 
-  return new (block) Buffer(block + ESB_WORD_ALIGN(sizeof(Buffer)),
-                            capacity * sizeof(unsigned char));
+  return new (block)
+      Buffer(block + ESB_BUFFER_OVERHEAD, capacity * sizeof(unsigned char));
 }
 
-unsigned char *Buffer::duplicate(Allocator *allocator, bool trim) const {
+void Buffer::Destroy(Allocator &allocator, Buffer *buffer) {
+  assert(buffer);
+  if (!buffer) {
+    return;
+  }
+
+  buffer->~Buffer();
+  allocator.deallocate(buffer);
+}
+
+unsigned char *Buffer::duplicate(Allocator &allocator, bool trim) const {
   unsigned char *dup = 0;
-  int length = getWritePosition();
+  int length = writePosition();
 
   if (trim) {
     for (int i = length - 1; i >= 0; --i) {
@@ -60,11 +70,10 @@ unsigned char *Buffer::duplicate(Allocator *allocator, bool trim) const {
     }
   }
 
-  dup =
-      (unsigned char *)allocator->allocate(length * sizeof(unsigned char) + 1);
+  dup = (unsigned char *)allocator.allocate(length * sizeof(unsigned char) + 1);
 
-  if (0 == dup) {
-    return 0;
+  if (!dup) {
+    return NULL;
   }
 
   if (0 < length) {

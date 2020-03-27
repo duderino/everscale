@@ -54,7 +54,7 @@ class Date {
    *
    *    @return The seconds field of this date object.
    */
-  inline UInt32 getSeconds() const { return _seconds; }
+  inline UInt32 seconds() const { return _seconds; }
 
   /** Set seconds.
    *
@@ -66,7 +66,7 @@ class Date {
    *
    *    @return The microSeconds field of this date object.
    */
-  inline UInt32 getMicroSeconds() const { return _microSeconds; }
+  inline UInt32 microSeconds() const { return _microSeconds; }
 
   /** Set micro seconds.  Will modify seconds field if new value is not
    *    less than one second.
@@ -270,8 +270,8 @@ class Date {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
   /** Get a new date object initialized to the current system time.

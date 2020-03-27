@@ -18,7 +18,7 @@ namespace ESB {
 
 Rand::Rand() {
 #ifdef HAVE_RAND_R
-  _seed = Date::Now().getSeconds();
+  _seed = Date::Now().seconds();
 #endif
 }
 
@@ -26,7 +26,7 @@ Rand::Rand(unsigned int seed) : _seed(seed) {}
 
 Rand::~Rand() {}
 
-double Rand::generateRandom() {
+double Rand::generate() {
 #if defined HAVE_RAND_R && defined HAVE_RAND_MAX
   return rand_r(&_seed) / (RAND_MAX + 1.0);
 #elif defined HAVE_RAND && defined HAVE_RAND_MAX
@@ -36,7 +36,7 @@ double Rand::generateRandom() {
 #endif
 }
 
-int Rand::generateRandom(int lowerBound, int upperBound) {
+int Rand::generate(int lowerBound, int upperBound) {
 #if defined HAVE_RAND_R && defined HAVE_RAND_MAX
   return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) /
                             (RAND_MAX + 1.0));

@@ -104,7 +104,7 @@ SharedQueueTest::~SharedQueueTest() {}
 
 bool SharedQueueTest::run(ESTF::ResultCollector *collector) {
   ESTF::ComponentPtr component;
-  SharedQueue queue(SystemAllocator::GetInstance(), 20);
+  SharedQueue queue(20);
   ESTF::ConcurrencyComposite composite;
 
   for (int i = 0; i < 9; ++i) {

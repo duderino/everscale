@@ -77,7 +77,7 @@ Error CountingSemaphore::writeAcquire() {
       return ESB_SUCCESS;
     }
 
-    error = GetLastError();
+    error = LastError();
 
     if (ESB_INTR == error) {
       continue;
@@ -120,7 +120,7 @@ Error CountingSemaphore::writeAcquire() {
     case WAIT_TIMEOUT:
       return ESB_AGAIN;
     case WAIT_FAILED:
-      return GetLastError();
+      return LastError();
     default:
       return ESB_OTHER_ERROR;
   }
@@ -144,7 +144,7 @@ Error CountingSemaphore::writeAttempt() {
   }
 
   // GetLastError will map EAGAIN to ESB_AGAIN
-  return GetLastError();
+  return LastError();
 
 #elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
     defined HAVE_PTHREAD_MUTEX_UNLOCK
@@ -175,7 +175,7 @@ Error CountingSemaphore::writeAttempt() {
     case WAIT_TIMEOUT:
       return ESB_AGAIN;
     case WAIT_FAILED:
-      return GetLastError();
+      return LastError();
     default:
       return ESB_OTHER_ERROR;
   }
@@ -198,7 +198,7 @@ Error CountingSemaphore::writeRelease() {
     return ESB_SUCCESS;
   }
 
-  return GetLastError();
+  return LastError();
 
 #elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
     defined HAVE_PTHREAD_COND_SIGNAL
@@ -235,7 +235,7 @@ Error CountingSemaphore::writeRelease() {
     return ESB_SUCCESS;
   }
 
-  return GetLastError();
+  return LastError();
 
 #else
 #error "Platform has no counting semaphore write unlock function."

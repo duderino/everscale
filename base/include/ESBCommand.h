@@ -42,7 +42,7 @@ class Command : public EmbeddedListElement {
    *
    * @return The command's name
    */
-  virtual const char *getName() const = 0;
+  virtual const char *name() const = 0;
 
   /** Run the command
    *
@@ -58,8 +58,8 @@ class Command : public EmbeddedListElement {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

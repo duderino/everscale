@@ -17,6 +17,10 @@
 #include <ESBError.h>
 #endif
 
+#ifndef ESB_EMBEDDED_MAP_ELEMENT_H
+#include <ESBEmbeddedMapElement.h>
+#endif
+
 namespace ESB {
 
 /** TCPSocket is a generic base class for connected and listening tcp
@@ -27,15 +31,55 @@ namespace ESB {
 class TCPSocket {
  public:
   /** ListeningTCPSockets create these, ConnectedTCPSockets can be
-   *  constructed from these.  The sole function of this struct is to
-   *  transfer data between those two classes.
+   *  constructed from these, and they can be stored in a connection pool.
    */
-  typedef struct {
+  class State : public EmbeddedMapElement {
+   public:
+    State();
+    State(bool isBlocking, SOCKET sockFd, const SocketAddress &listeningAddress,
+          const SocketAddress &peerAddress,
+          CleanupHandler *cleanupHandler = NULL);
+    virtual ~State();
+
+    inline bool isBlocking() const { return _isBlocking; }
+
+    inline SOCKET socketDescriptor() const { return _socketDescriptor; }
+
+    inline const SocketAddress &listeningAddress() const {
+      return _listeningAddress;
+    }
+
+    inline const SocketAddress &peerAddress() const { return _peerAddress; }
+
+    inline void setIsBlocking(bool isBlocking) { _isBlocking = isBlocking; }
+
+    inline void setSocketDescriptor(SOCKET sockFd) {
+      _socketDescriptor = sockFd;
+    }
+
+    inline void setListeningAddress(const SocketAddress &listeningAddress) {
+      _listeningAddress = listeningAddress;
+    }
+
+    inline void setPeerAddress(const SocketAddress &peerAddress) {
+      _peerAddress = peerAddress;
+    }
+
+    virtual const void *key() const;
+
+    virtual CleanupHandler *cleanupHandler();
+
+   private:
+    // Disabled
+    State(const State &state);
+    State &operator=(const State &state);
+
     bool _isBlocking;
-    SOCKET _sockFd;
+    SOCKET _socketDescriptor;
     SocketAddress _listeningAddress;
     SocketAddress _peerAddress;
-  } AcceptData;
+    CleanupHandler *_cleanupHandler;
+  };
 
   /** Construct an uninitialized TCPSocket.
    */
@@ -52,7 +96,7 @@ class TCPSocket {
    * @param acceptData An object created popupated by ListeningTCPSockets
    *  when accepting a new connection.
    */
-  TCPSocket(AcceptData *acceptData);
+  TCPSocket(const State &state);
 
   /** Destroy the socket.  Will close the socket if it has not
    *  already been closed.
@@ -66,7 +110,7 @@ class TCPSocket {
    *  when accepting a new connection.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  virtual Error reset(AcceptData *acceptData);
+  virtual Error reset(const State &acceptData);
 
   /** Close the socket.
    */
@@ -102,14 +146,14 @@ class TCPSocket {
    *
    *  @return the socket descriptor
    */
-  inline SOCKET getSocketDescriptor() const { return _sockFd; }
+  inline SOCKET socketDescriptor() const { return _sockFd; }
 
   /** Get and clear the last error on this socket.
    *
    *  @return the last error that occurred on this socket or ESB_SUCCESS if
    *      no error has occurred.
    */
-  inline Error getLastError() { return GetLastSocketError(_sockFd); }
+  inline Error lastError() { return LastSocketError(_sockFd); }
 
   /** Get and clear the last error on a socket descriptor.
    *
@@ -117,7 +161,7 @@ class TCPSocket {
    *  @return the last error that occurred on the socket descriptor or
    * ESB_SUCCESS if no error has occurred.
    */
-  static Error GetLastSocketError(SOCKET socket);
+  static Error LastSocketError(SOCKET socket);
 
   /** Placement new.
    *
@@ -125,8 +169,8 @@ class TCPSocket {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  protected:

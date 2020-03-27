@@ -50,7 +50,7 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(UInt16 port, int backlog, bool isBlocking);
+  ListeningTCPSocket(UInt16 port, int backlog, bool isBlocking = false);
 
   /** Construct a new ListeningTCPSocket instance.  This socket will
    *  listen on the port and ip address specified in the SocketAddress
@@ -64,7 +64,8 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(SocketAddress &address, int backlog, bool isBlocking);
+  ListeningTCPSocket(SocketAddress &address, int backlog,
+                     bool isBlocking = false);
 
   /** Destroy the listening socket.  Will close the socket if it has not
    *  already been closed.
@@ -96,13 +97,17 @@ class ListeningTCPSocket : public TCPSocket {
    *      if this is a non-blocking socket and there were no new connections,
    *      or another error code if an error occured on this socket.
    */
-  Error accept(AcceptData *data);
+  Error accept(State *data);
 
   /** Get the socket address of the listening socket.
    *
    *  @return the listening socket's address.
    */
-  const SocketAddress &getListeningAddress() const;
+  const SocketAddress &listeningAddress() const;
+
+  inline const char *presentationAddress() const {
+    return _presentationAddress;
+  }
 
   /** Placement new.
    *
@@ -110,8 +115,8 @@ class ListeningTCPSocket : public TCPSocket {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -120,6 +125,7 @@ class ListeningTCPSocket : public TCPSocket {
   ListeningTCPSocket &operator=(const ListeningTCPSocket &);
 
   int _backlog;
+  char _presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
   SocketAddress _listeningAddress;
 };
 

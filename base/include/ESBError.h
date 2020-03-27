@@ -22,7 +22,7 @@ typedef int Error;
  *      ESB_SUCCESS.
  *  @ingroup error
  */
-extern Error GetLastError();
+extern Error LastError();
 
 /** Convert a system integer error code to an Error code.
  *

@@ -131,6 +131,19 @@ check_include_file("unistd.h" HAVE_UNISTD_H)
 check_symbol_exists(gethostname "unistd.h" HAVE_GETHOSTNAME)
 check_symbol_exists(close "unistd.h" HAVE_CLOSE)
 check_symbol_exists(usleep "unistd.h" HAVE_USLEEP)
+check_cxx_source_compiles("
+#include <unistd.h>
+int main () {
+  long sz = sysconf(_SC_PAGESIZE);
+  return 0 < sz;
+}" HAVE_SC_PAGESIZE)
+set(HAVE_SYSCONF ${HAVE_SC_PAGESIZE})
+check_cxx_source_compiles("
+#include <unistd.h>
+int main () {
+  long sz = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+  return 0 < sz;
+}" HAVE_SC_LEVEL1_DCACHE_LINESIZE)
 
 check_include_file("sys/param.h" HAVE_SYS_PARAM_H)
 check_symbol_exists(MAXHOSTNAMELEN "sys/param.h" HAVE_MAXHOSTNAMELEN)

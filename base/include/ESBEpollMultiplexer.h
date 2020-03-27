@@ -13,6 +13,10 @@
 #include <ESBAllocator.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 #ifndef ESB_EMBEDDED_LIST_H
 #include <ESBEmbeddedList.h>
 #endif
@@ -43,15 +47,13 @@ class EpollMultiplexer : public SocketMultiplexer {
  public:
   /** Constructor.
    *
-   * @param name The name of the multiplexer to be used in log messages.  Caller
-   * is responsible for the strings memory - use a string literal if possible.
    * @param maxSockets The maximum number of sockets the multiplexer will
    *  handle. When this limit is hit, the multiplexer will stop accepting
    *  new connections from any listening sockets and reject any application
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  EpollMultiplexer(const char *name, int maxSockets, Allocator *allocator);
+  explicit EpollMultiplexer(UInt32 maxSockets, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -62,14 +64,14 @@ class EpollMultiplexer : public SocketMultiplexer {
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual CleanupHandler *getCleanupHandler();
+  virtual CleanupHandler *cleanupHandler();
 
   /** Get the name of the multiplexer.  This name can be used in logging
    * messages, etc.
    *
    * @return The multiplexer's name
    */
-  virtual const char *getName() const;
+  virtual const char *name() const;
 
   /** Initialize the multiplexer
    *
@@ -100,13 +102,13 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @return the number of sockets this multiplexer is currently handling.
    */
-  virtual int getCurrentSockets() const;
+  virtual int currentSockets() const;
 
   /** Get the maximum number of sockets this multiplexer can handle.
    *
    * @return the maximum number of sockets this multiplexer can handle.
    */
-  virtual int getMaximumSockets() const;
+  virtual int maximumSockets() const;
 
   /** Determine whether this multiplexer has been shutdown.
    *
@@ -121,8 +123,8 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -152,7 +154,7 @@ class EpollMultiplexer : public SocketMultiplexer {
   Error checkIdleSockets(SharedInt *isRunning);
 
   int _epollDescriptor;
-  int _maxSockets;
+  UInt32 _maxSockets;
 #ifdef HAVE_TIME_T
   time_t _lastIdleCheckSec;
 #else
@@ -164,7 +166,7 @@ class EpollMultiplexer : public SocketMultiplexer {
 #error "struct epoll_event is required"
 #endif
   ESB::SharedInt *_isRunning;
-  Allocator *_allocator;
+  Allocator &_allocator;
   SharedInt _currentSocketCount;
   EmbeddedList _currentSocketList;
   Mutex _lock;

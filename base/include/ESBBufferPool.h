@@ -5,16 +5,16 @@
 #include <ESBBuffer.h>
 #endif
 
-#ifndef ESB_MUTEX_H
-#include <ESBMutex.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
 #endif
 
 #ifndef ESB_EMBEDDED_LIST_H
 #include <ESBEmbeddedList.h>
+#endif
+
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
 #endif
 
 namespace ESB {
@@ -29,11 +29,12 @@ class BufferPool {
  public:
   /** Constructor.
    *
-   * @param numberOfBuffers The maximum number of buffers to keep in the pool
    * @param bufferSize The size in bytes of each individual buffer
-   * @param allocator The allocator to use to allocate buffers.
+   * @param maxBuffers The maximum number of buffers to keep in the pool. 0 for infinite.  Defaults to infinite.
+   * @param lock A lock to use for internal synchronization.  Defaults to null/no locking.
+   * @param allocator The allocator to use to allocate buffers.  Defaults to malloc.
    */
-  BufferPool(int numberOfBuffers, int bufferSize, Allocator *allocator);
+  BufferPool(UInt32 bufferSize, UInt32 maxBuffers = 0, Lockable &lock = NullLock::Instance(), Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -61,8 +62,8 @@ class BufferPool {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -70,12 +71,12 @@ class BufferPool {
   BufferPool(const BufferPool &);
   BufferPool &operator=(const BufferPool &);
 
-  int _numberOfBuffers;
-  int _bufferSize;
-  int _listSize;
-  Allocator *_allocator;
+  const UInt32 _maxBuffers;
+  const UInt32 _bufferSize;
+  UInt32 _listSize;
+  Lockable &_lock;
+  Allocator &_allocator;
   EmbeddedList _embeddedList;
-  Mutex _lock;
 };
 
 }  // namespace ESB

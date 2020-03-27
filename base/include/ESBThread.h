@@ -71,13 +71,13 @@ class Thread {
    *
    *    @return the thread id of this thread.
    */
-  ThreadId getThreadId() const;
+  ThreadId threadId() const;
 
   /** Get the current thread id of the calling thread.
    *
    *    @return the thread id of the calling thread.
    */
-  static ThreadId GetThreadId();
+  static ThreadId CurrentThreadId();
 
   /** Yield the processor to another thread or process.
    */
@@ -101,8 +101,8 @@ class Thread {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  protected:

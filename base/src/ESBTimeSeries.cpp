@@ -25,7 +25,7 @@
 namespace ESB {
 
 TimeSeries::TimeSeries(const char *name, UInt16 maxWindows,
-                       UInt16 windowSizeSec, Allocator *allocator)
+                       UInt16 windowSizeSec, Allocator &allocator)
     : PerformanceCounter(),
       _currentWindows(0U),
       _maxWindows(maxWindows),
@@ -33,31 +33,29 @@ TimeSeries::TimeSeries(const char *name, UInt16 maxWindows,
       _name(name),
       _lock(),
       _list(),
-      _allocator(allocator ? allocator : SystemAllocator::GetInstance()) {}
+      _allocator(allocator) {}
 
 TimeSeries::~TimeSeries() {
   SimplePerformanceCounter *previous = 0;
-  SimplePerformanceCounter *current =
-      (SimplePerformanceCounter *)_list.getFirst();
+  SimplePerformanceCounter *current = (SimplePerformanceCounter *)_list.first();
 
   while (current) {
     previous = current;
-    current = (SimplePerformanceCounter *)current->getNext();
+    current = (SimplePerformanceCounter *)current->next();
     previous->~SimplePerformanceCounter();
-    _allocator->deallocate(previous);
+    _allocator.deallocate(previous);
   }
 }
 
-void TimeSeries::addObservation(const Date &start, const Date &stop) {
+void TimeSeries::record(const Date &start, const Date &stop) {
   WriteScopeLock lock(_lock);
-  SimplePerformanceCounter *counter =
-      (SimplePerformanceCounter *)_list.getLast();
+  SimplePerformanceCounter *counter = (SimplePerformanceCounter *)_list.last();
 
-  if (!counter || counter->getWindowStop() < stop) {
+  if (!counter || counter->windowStop() < stop) {
     // We're in a new window.
 
-    Date windowStart((stop.getSeconds() / _windowSizeSec) * _windowSizeSec, 0);
-    Date windowStop(windowStart.getSeconds() + _windowSizeSec, 0);
+    Date windowStart((stop.seconds() / _windowSizeSec) * _windowSizeSec, 0);
+    Date windowStop(windowStart.seconds() + _windowSizeSec, 0);
 
     if (_currentWindows >= _maxWindows) {
       counter = (SimplePerformanceCounter *)_list.removeFirst();
@@ -79,15 +77,15 @@ void TimeSeries::addObservation(const Date &start, const Date &stop) {
     _list.addLast(counter);
   }
 
-  counter->addObservation(start, stop);
+  counter->record(start, stop);
 }
 
 void TimeSeries::log(Logger &logger, Logger::Severity severity) const {
   ReadScopeLock lock(_lock);
 
   for (SimplePerformanceCounter *counter =
-           (SimplePerformanceCounter *)_list.getFirst();
-       counter; counter = (SimplePerformanceCounter *)counter->getNext()) {
+           (SimplePerformanceCounter *)_list.first();
+       counter; counter = (SimplePerformanceCounter *)counter->next()) {
     counter->log(logger, severity);
   }
 }

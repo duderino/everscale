@@ -4,10 +4,8 @@
 
 namespace ESB {
 
-SharedAllocator::SharedAllocator(Allocator *allocator)
-    : _allocator(allocator), _mutex() {
-  assert(_allocator);
-}
+SharedAllocator::SharedAllocator(Allocator &allocator)
+    : _allocator(allocator), _mutex(), _sharedCleanupHandler(*this) {}
 
 SharedAllocator::~SharedAllocator() {}
 
@@ -16,7 +14,7 @@ void *SharedAllocator::allocate(UWord size) {
     return 0;
   }
 
-  void *block = _allocator->allocate(size);
+  void *block = _allocator.allocate(size);
 
   _mutex.writeRelease();
 
@@ -34,92 +32,15 @@ Error SharedAllocator::deallocate(void *block) {
     return error;
   }
 
-  error = _allocator->deallocate(block);
+  error = _allocator.deallocate(block);
 
   _mutex.writeRelease();
 
   return error;
 }
 
-Error SharedAllocator::initialize() {
-  Error error = _mutex.writeAcquire();
-
-  if (ESB_SUCCESS != error) {
-    return error;
-  }
-
-  error = _allocator->initialize();
-
-  _mutex.writeRelease();
-
-  return error;
-}
-
-Error SharedAllocator::destroy() {
-  Error error = _mutex.writeAcquire();
-
-  if (ESB_SUCCESS != error) {
-    return error;
-  }
-
-  error = _allocator->destroy();
-
-  _mutex.writeRelease();
-
-  return error;
-}
-
-UWord SharedAllocator::getOverhead() {
-  /** @todo document that allocators should make sure this method is
-   *  threadsafe
-   */
-  return _allocator->getOverhead();
-}
-
-Error SharedAllocator::isInitialized() {
-  Error error = _mutex.readAcquire();
-
-  if (ESB_SUCCESS != error) {
-    return error;
-  }
-
-  error = _allocator->isInitialized();
-
-  _mutex.readRelease();
-
-  return error;
-}
-
-Error SharedAllocator::setFailoverAllocator(Allocator *allocator) {
-  Error error = _mutex.writeAcquire();
-
-  if (ESB_SUCCESS != error) {
-    return error;
-  }
-
-  error = _allocator->setFailoverAllocator(allocator);
-
-  _mutex.writeRelease();
-
-  return error;
-}
-
-Error SharedAllocator::getFailoverAllocator(Allocator **allocator) {
-  if (!allocator) {
-    return ESB_NULL_POINTER;
-  }
-
-  Error error = _mutex.readAcquire();
-
-  if (ESB_SUCCESS != error) {
-    return error;
-  }
-
-  error = _allocator->getFailoverAllocator(allocator);
-
-  _mutex.readRelease();
-
-  return error;
+CleanupHandler &SharedAllocator::cleanupHandler() {
+  return _sharedCleanupHandler;
 }
 
 }  // namespace ESB

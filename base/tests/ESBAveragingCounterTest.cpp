@@ -22,9 +22,9 @@ TEST(AveragingCounter, MeanAndVariance) {
   }
 
   double mean = total / observations;
-  EXPECT_EQ(mean, counter.getMean());
-  EXPECT_EQ(1000, counter.getMin());
-  EXPECT_EQ(1000 * observations, counter.getMax());
+  EXPECT_EQ(mean, counter.mean());
+  EXPECT_EQ(1000, counter.min());
+  EXPECT_EQ(1000 * observations, counter.max());
 
   // Calculate Variance in second pass
 
@@ -36,7 +36,7 @@ TEST(AveragingCounter, MeanAndVariance) {
   }
 
   double variance = squaredDistToMean / (observations - 1);
-  EXPECT_EQ(variance, counter.getVariance());
+  EXPECT_EQ(variance, counter.variance());
 }
 
 TEST(SharedAveragingCounter, MeanAndVariance) {
@@ -51,9 +51,9 @@ TEST(SharedAveragingCounter, MeanAndVariance) {
   }
 
   double mean = total / observations;
-  EXPECT_EQ(mean, counter.getMean());
-  EXPECT_EQ(1000, counter.getMin());
-  EXPECT_EQ(1000 * observations, counter.getMax());
+  EXPECT_EQ(mean, counter.mean());
+  EXPECT_EQ(1000, counter.min());
+  EXPECT_EQ(1000 * observations, counter.max());
 
   // Calculate Variance in second pass
 
@@ -65,5 +65,5 @@ TEST(SharedAveragingCounter, MeanAndVariance) {
   }
 
   double variance = squaredDistToMean / (observations - 1);
-  EXPECT_EQ(variance, counter.getVariance());
+  EXPECT_EQ(variance, counter.variance());
 }

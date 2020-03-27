@@ -6,7 +6,7 @@ namespace ESB {
 
 NullLock NullLock::_Instance;
 
-NullLock *NullLock::Instance() { return &_Instance; }
+NullLock &NullLock::Instance() { return _Instance; }
 
 NullLock::NullLock() {}
 

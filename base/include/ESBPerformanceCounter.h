@@ -21,12 +21,12 @@ class PerformanceCounter : public EmbeddedListElement {
 
   virtual ~PerformanceCounter();
 
-  virtual void addObservation(const Date &start, const Date &stop) = 0;
+  virtual void record(const Date &start, const Date &stop) = 0;
 
   virtual void log(Logger &logger, Logger::Severity severity =
                                        Logger::Severity::Debug) const = 0;
 
-  virtual CleanupHandler *getCleanupHandler();
+  virtual CleanupHandler *cleanupHandler();
 
  private:
   // Disabled

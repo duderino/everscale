@@ -13,6 +13,10 @@
 #include <ESBTypes.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 namespace ESB {
 
 /** An allocator good for lots of small allocations with the same lifetime.
@@ -58,29 +62,15 @@ class DiscardAllocator : public Allocator {
    *  allocator if one has been configured.
    *
    *  @param chunkSize The size of the chunks the allocator uses.
+   *  @param alignmentSize Returned allocation addresses will be a multiple of
+   * this value, which must be a power of two.
    *  @param source The allocator to use to allocate any chunks.
    *        This is probably the system allocator.
    *  @see GetOverhead To determine how much extra memory the allocator
    *      will request from the source allocator for each chunk.
    */
-  DiscardAllocator(int chunkSize, Allocator *source);
-
-  /** Constructor.
-   */
-  DiscardAllocator();
-
-  /** Initializer.  The allocator will request memory from the source
-   *  allocator in chunkSize + overhead sized chunks.  The overhead reflects
-   *  the allocator's own internal state that it needs to manage each chunk.
-   *  Any allocation larger than chunkSize will be passed to the failover
-   *  allocator if one has been configured.
-   *
-   *  @param chunkSize The size of the chunks the allocator uses.
-   *  @param source The allocator to use to allocate any chunks.
-   *        This is probably the system allocator.
-   *  @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  Error initialize(int chunkSize, Allocator *source);
+  DiscardAllocator(UInt32 chunkSize, UInt32 alignmentSize = sizeof(ESB::Word),
+                   Allocator &source = SystemAllocator::Instance());
 
   /** Destructor.  Any memory still used by the allocator will be return to
    *  the source allocator at this point.
@@ -110,37 +100,13 @@ class DiscardAllocator : public Allocator {
    */
   virtual Error deallocate(void *block);
 
-  /** Get the overhead in bytes of any additional control structures
-   *  attached to an allocated chunk.  This can be used to optimize
-   *  allocation requests for some allocators.  Power of two allocators,
-   *  for example, will always round the size requested + the overhead up
-   *  to the next power of two.  If the caller always requests powers of
-   *  two, then the allocator can waste a lot of memory.  If, however, the
-   *  caller requests a power of two minus the allocator overhead, then
-   *  the allocator will return the optimal amount of memory.
+  /**
+   * Get a cleanup handler to free memory returned by this allocator.  The
+   * lifetime of the cleanup handler is the lifetime of the allocator.
    *
-   *  @return the allocator's overhead in bytes for each allocation.
+   * @return A cleanup handler that can free memory allocated by this allocator.
    */
-  virtual UWord getOverhead();
-
-  /** Initialize this memory pool.
-   *
-   *  @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  virtual Error initialize();
-
-  /** Destroy this allocator.  The allocator will return all of the memory
-   *  it manages to its source allocator and return itself to a state where
-   *  initialize could be called again.  All memory should be returned to
-   *  the allocator before calling its destroy method.   Some implementations
-   *  may refuse to shutdown if they have outstanding allocations.
-   *
-   *  @return ESB_SUCCESS if the allocator could destroy itself, another
-   *      error code otherwise.  ESB_IN_USE will be returned if the
-   *      allocator has handed out memory that has not been returned.
-   *  @see initialize.
-   */
-  virtual Error destroy();
+  virtual CleanupHandler &cleanupHandler();
 
   /** Free all chunks used by this allocator except for the first chunk.
    *  Mark the first chunk as available so it can be reused.
@@ -149,53 +115,15 @@ class DiscardAllocator : public Allocator {
    */
   Error reset();
 
-  /** Get the allocators current initialization state.
-   *
-   *  @return ESB_SUCCESS if the allocator is initialized,
-   *      ESB_NOT_INITIALIZED if the allocator has not been initialized,
-   *      another error code if an error occurred determining the
-   *      allocator's current state.
-   *  @see initialize.
-   */
-  virtual Error isInitialized();
-
-  /** This is a no-op.  The allocator passed to the constructor is always
-   *  used to allocate chunks.
-   *
-   *  @param allocator The failover allocator.  Set to NULL to clear an
-   *      already registered failover allocator.
-   *  @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  virtual Error setFailoverAllocator(Allocator *allocator);
-
-  /** Get the failover allocator used by this allocator.  This always
-   *  returns the allocator passed to the constructor.
-   *
-   *  @param allocator The failover allocator to get (pointer to a pointer).
-   *      This pointer will be set to NULL if no failover allocator exists.
-   *  @return ESB_SUCCESS if successful, another error code otherwise.  Note
-   *      that if no failover allocator exists, ESB_SUCCESS will be returned
-   *      and the allocator argument will be set to NULL.
-   *  @see setFailoverAllocator
-   */
-  virtual Error getFailoverAllocator(Allocator **allocator);
-
   /** Placement new.
    *
    *  @param size The size of the object.
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
-
-  /** Get the size of the extra overhead the allocator adds to every chunk
-   *  allocation.
-   *
-   *  @return The size in bytes of the allocator's overhead per chunk.
-   */
-  static Size GetOverheadSize();
 
  private:
   //  Disabled
@@ -212,9 +140,10 @@ class DiscardAllocator : public Allocator {
   Chunk *allocateChunk(int chunkSize);
 
   Chunk *_head;
-
-  UWord _chunkSize;
-  Allocator *_source;
+  UInt32 _alignmentSize;
+  UInt32 _chunkSize;
+  Allocator &_source;
+  AllocatorCleanupHandler _cleanupHandler;
 };
 
 }  // namespace ESB

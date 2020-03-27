@@ -17,6 +17,14 @@
 #include <ESBLockable.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
+#endif
+
 namespace ESB {
 
 /** @todo several List operations require const versions */
@@ -95,7 +103,7 @@ class ListIterator {
    *  @return The iterator.  If there is no following element, the iterator's
    *      getValue() method will return NULL.
    */
-  inline ListIterator getNext() {
+  inline ListIterator next() {
     ListIterator iterator(_node ? _node->_next : 0);
 
     return iterator;
@@ -107,7 +115,7 @@ class ListIterator {
    *  @return The iterator.  If there is no prior element, the iterator's
    *      getValue() method will return NULL.
    */
-  inline ListIterator getPrevious() {
+  inline ListIterator previous() {
     ListIterator iterator(_node ? _node->_prev : 0);
 
     return iterator;
@@ -176,7 +184,7 @@ class ListIterator {
    *  @return The element or NULL if this iterator does not point to any
    *      element.
    */
-  inline void *getValue() {
+  inline void *value() {
     if (!_node) return 0;
 
     return _node->_value;
@@ -234,7 +242,8 @@ class List : public Lockable {
    *      allocate for every internal node it creates.  This is useful for
    *      constructing fixed length allocators.
    */
-  List(Allocator *allocator, Lockable *lockable);
+  List(Lockable &lockable = NullLock::Instance(),
+       Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor. */
   virtual ~List();
@@ -258,7 +267,7 @@ class List : public Lockable {
    *
    *  @return The head of the list if the list was not empty, NULL otherwise.
    */
-  void *getFront();
+  void *front();
 
   /** Remove the element at the head of the list.  O(1).
    *
@@ -272,7 +281,7 @@ class List : public Lockable {
    *
    *  @return The tail of the list if the list was not empty, NULL otherwise.
    */
-  void *getBack();
+  void *back();
 
   /** Remove the element at the tail of the list.  O(1).
    *
@@ -297,7 +306,7 @@ class List : public Lockable {
    *  </p>
    *  @return An iterator pointing to the first element in the list.
    */
-  ListIterator getFrontIterator();
+  ListIterator frontIterator();
 
   /** Get an iterator pointing to the tail of the list.  If the list is
    *  empty, the getValue() method of the iterator will return NULL.  O(1).
@@ -307,7 +316,7 @@ class List : public Lockable {
    *  </p>
    *  @return An iterator pointing to the last element in the list.
    */
-  ListIterator getBackIterator();
+  ListIterator backIterator();
 
   /** Remove the element pointed to by this iterator from the list.  Note
    *  that the iterator will be invalidated in the process.  In fact, all
@@ -323,13 +332,13 @@ class List : public Lockable {
    *      the list.
    *  @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  Error erase(ListIterator *iterator);
+  Error remove(ListIterator *iterator);
 
   /** Get the current size of the list.  O(1).
    *
    *  @return The current size of the list.
    */
-  UInt32 getSize() const;
+  UInt32 size() const;
 
   /** Determine whether the list is empty.  O(1).
    *
@@ -344,7 +353,7 @@ class List : public Lockable {
    *
    *  @return The size in bytes of the list's internal nodes.
    */
-  static Size GetAllocationSize();
+  static Size AllocationSize();
 
   /** Block the calling thread until write access is granted.
    *
@@ -394,8 +403,8 @@ class List : public Lockable {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -406,12 +415,10 @@ class List : public Lockable {
   Error deleteNode(ListNode *node);
 
   UInt32 _size;
-
   ListNode *_head;
   ListNode *_tail;
-
-  Allocator *_allocator;
-  Lockable *_lockable;
+  Allocator &_allocator;
+  Lockable &_lockable;
 };
 
 }  // namespace ESB

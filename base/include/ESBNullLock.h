@@ -23,7 +23,7 @@ class NullLock : public Lockable {
    *
    *  @return a NullLock object.
    */
-  static NullLock *Instance();
+  static NullLock &Instance();
 
   /**    Default constructor. */
   NullLock();

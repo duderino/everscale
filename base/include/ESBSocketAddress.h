@@ -87,6 +87,13 @@ class SocketAddress {
    */
   SocketAddress &operator=(const SocketAddress &address);
 
+  /** Less than operator
+   *
+   * @param address The lhs instance
+   * @return true if this instance is less than address
+   */
+  bool operator<(const SocketAddress &address) const;
+
   /** @todo Add setAddress member - wrap inet_pton, etc. */
 
   /** Get the address of SocketAddress for use by the platform's socket
@@ -94,7 +101,14 @@ class SocketAddress {
    *
    *  @return the address
    */
-  Address *getAddress();
+  const Address *primitiveAddress() const;
+
+  /** Get the address of SocketAddress for use by the platform's socket
+   *  API.  On most UNIXes this is actually the sockaddr_in structure.
+   *
+   *  @return the address
+   */
+  Address *primitiveAddress();
 
   /** Get the IP address of the SocketAddress.
    *
@@ -104,13 +118,13 @@ class SocketAddress {
    *      the terminating NULL character.
    *  @param size The size of the character array.
    */
-  void getIPAddress(char *address, int size) const;
+  void presentationAddress(char *address, int size) const;
 
   /** Get the port of the SocketAddress.
    *
    *  @return the port.  Host byte order
    */
-  UInt16 getPort() const;
+  UInt16 port() const;
 
   /** Set the port of the SocketAddress.
    *
@@ -122,13 +136,13 @@ class SocketAddress {
    *
    *  @return the transport type.
    */
-  TransportType getTransport() const;
+  TransportType type() const;
 
   /** Set the transport of the SocketAddress.
    *
    *  @param transport The transport type.
    */
-  void setTransport(TransportType transport);
+  void setType(TransportType transport);
 
   /** Determine whether the socket address is valid (i.e., ip address and
    *  port number fall within valid range, transport type is set to
@@ -144,8 +158,8 @@ class SocketAddress {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

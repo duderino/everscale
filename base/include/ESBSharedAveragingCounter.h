@@ -38,29 +38,29 @@ class SharedAveragingCounter {
     return _counter.add(value);
   }
 
-  inline double getMean() const {
+  inline double mean() const {
     ReadScopeLock lock(_lock);
-    return _counter.getMean();
+    return _counter.mean();
   }
 
-  inline double getVariance() const {
+  inline double variance() const {
     ReadScopeLock lock(_lock);
-    return _counter.getVariance();
+    return _counter.variance();
   }
 
-  inline double getMin() const {
+  inline double min() const {
     ReadScopeLock lock(_lock);
-    return _counter.getMin();
+    return _counter.min();
   }
 
-  inline double getMax() const {
+  inline double max() const {
     ReadScopeLock lock(_lock);
-    return _counter.getMax();
+    return _counter.max();
   }
 
-  inline UInt32 getObservations() const {
+  inline UInt32 n() const {
     ReadScopeLock lock(_lock);
-    return _counter.getObservations();
+    return _counter.n();
   }
 
   void log(Logger &logger, Logger::Severity severity,
@@ -72,8 +72,8 @@ class SharedAveragingCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

@@ -1,9 +1,13 @@
-#ifndef ESB_PROCESS_LIMITS_H
-#include <ESBProcessLimits.h>
+#ifndef ESB_SYSTEM_CONFIG_H
+#include "ESBSystemConfig.h"
 #endif
 
 #ifndef ESB_CONFIG_H
 #include <ESBConfig.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -20,7 +24,27 @@
 
 namespace ESB {
 
-static UInt32 GetSoftLimit(int resource) {
+SystemConfig SystemConfig::_Instance;
+
+static ESB::UInt32 PageSize() {
+#if defined HAVE_SYSCONF && defined HAVE_SC_PAGESIZE
+  return sysconf(_SC_PAGESIZE);
+#elif defined HAVE_GETPAGESIZE
+  return getpagesize();
+#else
+#error "Need sysconf(_SC_PAGESIZE) or equivalent"
+#endif
+}
+
+static ESB::UInt32 CacheLineSize() {
+#if defined HAVE_SYSCONF && defined HAVE_SC_LEVEL1_DCACHE_LINESIZE
+  return sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#else
+#error "Need sysconf(_SC_LEVEL1_DCACHE_LINESIZE) or equivalent"
+#endif
+}
+
+static UInt32 SoftLimit(int resource) {
 #if defined HAVE_STRUCT_RLIMIT && defined HAVE_GETRLIMIT
   struct rlimit rLimit;
 
@@ -42,7 +66,7 @@ static UInt32 GetSoftLimit(int resource) {
 #endif
 }
 
-static UInt32 GetHardLimit(int resource) {
+static UInt32 HardLimit(int resource) {
 #if defined HAVE_STRUCT_RLIMIT && defined HAVE_GETRLIMIT
   struct rlimit rLimit;
 
@@ -69,7 +93,7 @@ static Error SetSoftLimit(int resource, UInt32 limit) {
   struct rlimit rLimit;
 
   rLimit.rlim_cur = limit;
-  rLimit.rlim_max = GetHardLimit(resource);
+  rLimit.rlim_max = HardLimit(resource);
 
   if (0 != setrlimit(resource, &rLimit)) {
     return ConvertError(errno);
@@ -81,14 +105,16 @@ static Error SetSoftLimit(int resource, UInt32 limit) {
 #endif
 }
 
-ProcessLimits::ProcessLimits() {}
-ProcessLimits::~ProcessLimits() {}
+SystemConfig::SystemConfig()
+    : _pageSize(PageSize()), _cacheLineSize(CacheLineSize()) {}
 
-UInt32 ProcessLimits::GetSocketSoftMax() { return GetSoftLimit(RLIMIT_NOFILE); }
+SystemConfig::~SystemConfig() {}
 
-UInt32 ProcessLimits::GetSocketHardMax() { return GetHardLimit(RLIMIT_NOFILE); }
+UInt32 SystemConfig::socketSoftMax() { return SoftLimit(RLIMIT_NOFILE); }
 
-Error ProcessLimits::SetSocketSoftMax(UInt32 limit) {
+UInt32 SystemConfig::socketHardMax() { return HardLimit(RLIMIT_NOFILE); }
+
+Error SystemConfig::setSocketSoftMax(UInt32 limit) {
   return SetSoftLimit(RLIMIT_NOFILE, limit);
 }
 

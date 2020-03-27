@@ -60,11 +60,13 @@ class ReferenceCount {
    *  @param size The size of the object
    *  @return The new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size) throw() {
+  inline void *operator new(size_t size) noexcept {
     ReferenceCount *object =
-        (ReferenceCount *)SystemAllocator::GetInstance()->allocate(size);
+        (ReferenceCount *)SystemAllocator::Instance().allocate(size);
 
-    if (object) object->_allocator = SystemAllocator::GetInstance();
+    if (object) {
+      object->_allocator = &SystemAllocator::Instance();
+    }
 
     return object;
   }
@@ -75,10 +77,12 @@ class ReferenceCount {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) throw() {
-    ReferenceCount *object = (ReferenceCount *)allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    ReferenceCount *object = (ReferenceCount *)allocator.allocate(size);
 
-    if (object) object->_allocator = allocator;
+    if (object) {
+      object->_allocator = &allocator;
+    }
 
     return object;
   }

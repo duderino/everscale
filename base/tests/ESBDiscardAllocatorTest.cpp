@@ -42,6 +42,14 @@
 #include <ESTFComposite.h>
 #endif
 
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
+#endif
+
+#ifndef ESB_THREAD_H
+#include <ESBThread.h>
+#endif
+
 namespace ESB {
 
 /** DiscardAllocatorTest is the unit test for DiscardAllocator.
@@ -103,29 +111,16 @@ ESTF_OBJECT_PTR(DiscardAllocatorTest, ESTF::Component)
 static const int ChunkSize = 1024;
 static const int Iterations = 10;
 static const int AllocationsPerIteration = 10000;
-static int GlobalUnsynchronizedCounter = 0;
 
 DiscardAllocatorTest::DiscardAllocatorTest()
-    : _rand(Date::Now().getMicroSeconds() + GlobalUnsynchronizedCounter++),
-      _allocator(ChunkSize, SystemAllocator::GetInstance()) {}
+    : _rand(ESB::Date::Now().microSeconds() + Thread::CurrentThreadId()),
+      _allocator(ChunkSize, SystemConfig::Instance().cacheLineSize()) {}
 
 DiscardAllocatorTest::~DiscardAllocatorTest() {}
 
 bool DiscardAllocatorTest::run(ESTF::ResultCollector *collector) {
   Error error;
   char buffer[256];
-
-  error = _allocator.initialize();
-
-  if (ESB_SUCCESS != error) {
-    DescribeError(error, buffer, sizeof(buffer));
-
-    ESTF_FAILURE(collector, buffer);
-    ESTF_ERROR(collector, "Failed to initialize allocator");
-
-    return false;
-  }
-
   char *data = 0;
   int allocSize = 0;
 
@@ -153,18 +148,6 @@ bool DiscardAllocatorTest::run(ESTF::ResultCollector *collector) {
       return false;
     }
   }
-
-  error = _allocator.destroy();
-
-  if (ESB_SUCCESS != error) {
-    DescribeError(error, buffer, sizeof(buffer));
-    ESTF_FAILURE(collector, buffer);
-    ESTF_ERROR(collector, "Failed to destroy allocator");
-
-    return false;
-  }
-
-  ESTF_ASSERT(collector, ESB_SUCCESS == error);
 
   return true;
 }

@@ -14,7 +14,7 @@ TEST(Time, MonotonicTime) {
   sleep(2);
   Date second = Time::Instance().now();
 
-  EXPECT_GE(2, (second - first).getSeconds());
+  EXPECT_GE(2, (second - first).seconds());
 
   Time::Instance().stop();
   error = Time::Instance().join();

@@ -126,16 +126,11 @@ class ListTest : public ESTF::Component {
 
 ESTF_OBJECT_PTR(ListTest, ESTF::Component)
 
-NullLock ListTest::_Lock;
 const int ListTest::_Iterations = 500;
 const int ListTest::_Records = 1000;
 static const bool Debug = false;
 
-ListTest::ListTest()
-    : _records(0),
-      _rand(),
-      _list(SystemAllocator::GetInstance(), &_Lock),
-      _stlList() {}
+ListTest::ListTest() : _records(0), _rand(), _list(), _stlList() {}
 
 ListTest::~ListTest() {}
 
@@ -175,7 +170,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
                         ESB_SUCCESS == _list.pushBack(_records[j]._value));
 
             if (_records[j]._useIterator) {
-              _records[j]._iterator = _list.getBackIterator();
+              _records[j]._iterator = _list.backIterator();
 
               ESTF_ASSERT(collector, !_records[j]._iterator.isNull());
             }
@@ -186,7 +181,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
                         ESB_SUCCESS == _list.pushFront(_records[j]._value));
 
             if (_records[j]._useIterator) {
-              _records[j]._iterator = _list.getFrontIterator();
+              _records[j]._iterator = _list.frontIterator();
 
               ESTF_ASSERT(collector, !_records[j]._iterator.isNull());
             }
@@ -194,7 +189,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
           if (Debug) {
             std::cerr << "Inserted: " << (char *)_records[j]._value
-                      << " (List size: " << _list.getSize()
+                      << " (List size: " << _list.size()
                       << " stl size: " << _stlList.size() << ") at time " << i
                       << std::endl;
           }
@@ -209,7 +204,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
           if (_records[j]._useIterator) {
             ESTF_ASSERT(collector,
-                        ESB_SUCCESS == _list.erase(&_records[j]._iterator));
+                        ESB_SUCCESS == _list.remove(&_records[j]._iterator));
 
             ESTF_ASSERT(collector, _records[j]._iterator.isNull());
           } else {
@@ -217,7 +212,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
             ESTF_ASSERT(collector, !iterator.isNull());
 
-            ESTF_ASSERT(collector, ESB_SUCCESS == _list.erase(&iterator));
+            ESTF_ASSERT(collector, ESB_SUCCESS == _list.remove(&iterator));
 
             ESTF_ASSERT(collector, iterator.isNull());
           }
@@ -237,7 +232,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 
           if (Debug) {
             std::cerr << "Deleted: " << (char *)_records[j]._value
-                      << " (list size: " << _list.getSize()
+                      << " (list size: " << _list.size()
                       << " stl size: " << _stlList.size() << ") at time " << i
                       << std::endl;
           }
@@ -257,8 +252,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
     ListIterator temp;
     char *value = 0;
 
-    for (value = (char *)_list.getFront(); !_list.isEmpty();
-         value = (char *)_list.getFront()) {
+    for (value = (char *)_list.front(); !_list.isEmpty();
+         value = (char *)_list.front()) {
       ESTF_ASSERT(collector, ESB_SUCCESS == _list.popFront());
 
       bool stlResult = findSTLIterator(value, &stlIterator);
@@ -270,7 +265,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
       _stlList.erase(stlIterator);
 
       if (Debug) {
-        std::cerr << "Deleted: " << value << " (List size: " << _list.getSize()
+        std::cerr << "Deleted: " << value << " (List size: " << _list.size()
                   << " stl size: " << _stlList.size() << ") at cleanup stage"
                   << std::endl;
       }
@@ -290,8 +285,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
 ListIterator ListTest::findIterator(void *value) {
   ListIterator it;
 
-  for (it = _list.getFrontIterator(); it.hasNext(); it = it.getNext()) {
-    if (0 == strcmp((char *)value, (char *)it.getValue())) {
+  for (it = _list.frontIterator(); it.hasNext(); it = it.next()) {
+    if (0 == strcmp((char *)value, (char *)it.value())) {
       return it;
     }
   }
@@ -315,7 +310,7 @@ void ListTest::validateList(ESTF::ResultCollector *collector) {
   char *value = 0;
   UInt32 counter = 0;
 
-  ESTF_ASSERT(collector, _list.getSize() == _stlList.size());
+  ESTF_ASSERT(collector, _list.size() == _stlList.size());
 
   for (stlIterator = _stlList.begin(); stlIterator != _stlList.end();
        ++stlIterator) {
@@ -329,16 +324,16 @@ void ListTest::validateList(ESTF::ResultCollector *collector) {
   //  are in the same order.
   //
 
-  for (stlIterator = _stlList.begin(), iterator = _list.getFrontIterator();
+  for (stlIterator = _stlList.begin(), iterator = _list.frontIterator();
        !iterator.isNull();
-       ++stlIterator, iterator = iterator.getNext(), ++counter) {
-    value = (char *)iterator.getValue();
+       ++stlIterator, iterator = iterator.next(), ++counter) {
+    value = (char *)iterator.value();
 
     ESTF_ASSERT(collector, 0 == strcmp(value, *stlIterator));
   }
 
   ESTF_ASSERT(collector, !iterator.hasNext());
-  ESTF_ASSERT(collector, counter == _list.getSize());
+  ESTF_ASSERT(collector, counter == _list.size());
 
   //
   //  Reverse iterate through both lists and make sure that their records
@@ -347,15 +342,15 @@ void ListTest::validateList(ESTF::ResultCollector *collector) {
   counter = 0;
   stlIterator = _stlList.end();
 
-  for (--stlIterator, iterator = _list.getBackIterator(); !iterator.isNull();
-       --stlIterator, iterator = iterator.getPrevious(), ++counter) {
-    value = (char *)iterator.getValue();
+  for (--stlIterator, iterator = _list.backIterator(); !iterator.isNull();
+       --stlIterator, iterator = iterator.previous(), ++counter) {
+    value = (char *)iterator.value();
 
     ESTF_ASSERT(collector, 0 == strcmp(value, *stlIterator));
   }
 
   ESTF_ASSERT(collector, !iterator.hasPrevious());
-  ESTF_ASSERT(collector, counter == _list.getSize());
+  ESTF_ASSERT(collector, counter == _list.size());
 }
 
 bool ListTest::setup() { return true; }

@@ -28,26 +28,63 @@
 
 namespace ESB {
 
+TCPSocket::State::State() :
+EmbeddedMapElement(),
+                             _isBlocking(false),
+                             _socketDescriptor(INVALID_SOCKET),
+                             _listeningAddress(),
+                             _peerAddress(),
+                             _cleanupHandler(NULL) {}
+
+TCPSocket::State::State(bool isBlocking, SOCKET sockFd,
+                        const SocketAddress &listeningAddress,
+                        const SocketAddress &peerAddress,
+                        CleanupHandler *cleanupHandler)
+    : EmbeddedMapElement(),
+      _isBlocking(isBlocking),
+      _socketDescriptor(sockFd),
+      _listeningAddress(listeningAddress),
+      _peerAddress(peerAddress),
+      _cleanupHandler(cleanupHandler) {}
+
+TCPSocket::State::~State() {}
+
+TCPSocket::State::State(const TCPSocket::State &state) {
+  _isBlocking = state._isBlocking;
+  _socketDescriptor = state._socketDescriptor;
+  _listeningAddress = state._listeningAddress;
+  _peerAddress = state._peerAddress;
+  // do not copy cleanup handler
+}
+
+TCPSocket::State &TCPSocket::State::operator=(const TCPSocket::State &state) {
+  _isBlocking = state._isBlocking;
+  _socketDescriptor = state._socketDescriptor;
+  _listeningAddress = state._listeningAddress;
+  _peerAddress = state._peerAddress;
+  // do not copy cleanup handler
+  return *this;
+}
+
+CleanupHandler *TCPSocket::State::cleanupHandler() { return _cleanupHandler; }
+
+const void *TCPSocket::State::key() const { return &_peerAddress; }
+
 TCPSocket::TCPSocket() : _isBlocking(false), _sockFd(INVALID_SOCKET) {}
 
 TCPSocket::TCPSocket(bool isBlocking)
     : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
-TCPSocket::TCPSocket(AcceptData *acceptData)
-    : _isBlocking(acceptData->_isBlocking), _sockFd(acceptData->_sockFd) {}
+TCPSocket::TCPSocket(const State &state)
+    : _isBlocking(state.isBlocking()),
+      _sockFd(state.socketDescriptor()) {}
 
 TCPSocket::~TCPSocket() { close(); }
 
-Error TCPSocket::reset(AcceptData *acceptData) {
-  if (!acceptData) {
-    return ESB_NULL_POINTER;
-  }
-
+Error TCPSocket::reset(const State &state) {
   close();
-
-  _isBlocking = acceptData->_isBlocking;
-  _sockFd = acceptData->_sockFd;
-
+  _isBlocking = state.isBlocking();
+  _sockFd = state.socketDescriptor();
   return ESB_SUCCESS;
 }
 
@@ -62,13 +99,9 @@ void TCPSocket::Close(SOCKET socket) {
   }
 
 #if defined HAVE_CLOSE
-
   ::close(socket);
-
 #elif defined HAVE_CLOSESOCKET
-
   closesocket(socket);
-
 #else
 #error "close or equivalent is required for sockets"
 #endif
@@ -77,7 +110,7 @@ void TCPSocket::Close(SOCKET socket) {
 Error TCPSocket::setBlocking(bool isBlocking) {
 #if defined HAVE_FCNTL && defined USE_FCNTL_FOR_NONBLOCK
 
-  int value = fcntl(_sockFd, F_GETFL, 0);
+  int value = fcntl(_socketDescriptor, F_GETFL, 0);
 
   if (SOCKET_ERROR == value) {
     return GetLastError();
@@ -94,26 +127,24 @@ Error TCPSocket::setBlocking(bool isBlocking) {
     value &= ~O_NONBLOCK;
   }
 
-  if (SOCKET_ERROR == fcntl(_sockFd, F_SETFL, value)) {
+  if (SOCKET_ERROR == fcntl(_socketDescriptor, F_SETFL, value)) {
     return GetLastError();
   }
 
 #elif defined HAVE_IOCTL && defined USE_IOCTL_FOR_NONBLOCK
 
-  int value = (false == isBlocking);
+  int value = !isBlocking;
 
   if (SOCKET_ERROR == ioctl(_sockFd, FIONBIO, &value)) {
-    return GetLastError();
+    return LastError();
   }
 
 #elif defined HAVE_IOCTLSOCKET
-
   unsigned long value = (false == isBlocking);
 
-  if (SOCKET_ERROR == ioctlsocket(_sockFd, FIONBIO, &value)) {
-    return GetLastError();
+  if (SOCKET_ERROR == ioctlsocket(_socketDescriptor, FIONBIO, &value)) {
+    return LastError();
   }
-
 #else
 #error "Method to set socket to blocking/non-blocking is required."
 #endif
@@ -144,10 +175,10 @@ Error TCPSocket::SetBlocking(SOCKET sockFd, bool isBlocking) {
 
 #elif defined HAVE_IOCTL && defined USE_IOCTL_FOR_NONBLOCK
 
-  int value = (false == isBlocking);
+  int value = !isBlocking;
 
   if (SOCKET_ERROR == ioctl(sockFd, FIONBIO, &value)) {
-    return GetLastError();
+    return LastError();
   }
 
 #elif defined HAVE_IOCTLSOCKET
@@ -165,7 +196,7 @@ Error TCPSocket::SetBlocking(SOCKET sockFd, bool isBlocking) {
   return ESB_SUCCESS;
 }
 
-Error TCPSocket::GetLastSocketError(SOCKET socket) {
+Error TCPSocket::LastSocketError(SOCKET socket) {
   if (0 > socket) {
     return ESB_INVALID_ARGUMENT;
   }
@@ -182,7 +213,7 @@ Error TCPSocket::GetLastSocketError(SOCKET socket) {
 
   if (SOCKET_ERROR ==
       getsockopt(socket, SOL_SOCKET, SO_ERROR, (char *)&error, &socketLength)) {
-    return GetLastError();
+    return LastError();
   }
 
 #else

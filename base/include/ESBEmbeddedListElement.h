@@ -38,17 +38,17 @@ class EmbeddedListElement : public Object {
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual CleanupHandler *getCleanupHandler() = 0;
+  virtual CleanupHandler *cleanupHandler() = 0;
 
-  inline EmbeddedListElement *getNext() { return _next; }
+  inline EmbeddedListElement *next() { return _next; }
 
-  inline const EmbeddedListElement *getNext() const { return _next; }
+  inline const EmbeddedListElement *next() const { return _next; }
 
   inline void setNext(EmbeddedListElement *next) { _next = next; }
 
-  inline EmbeddedListElement *getPrevious() { return _previous; }
+  inline EmbeddedListElement *previous() { return _previous; }
 
-  inline const EmbeddedListElement *getPrevious() const { return _previous; }
+  inline const EmbeddedListElement *previous() const { return _previous; }
 
   inline void setPrevious(EmbeddedListElement *previous) {
     _previous = previous;
@@ -60,8 +60,8 @@ class EmbeddedListElement : public Object {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

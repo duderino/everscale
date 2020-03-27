@@ -8,29 +8,26 @@
 
 namespace ESB {
 
-FixedAllocator::FixedAllocator(int blocks, int blockSize, Allocator *source)
-    : _availList(0),
-      _pool(0),
-      _sourceAllocator(source ? source : SystemAllocator::GetInstance()),
-      _failoverAllocator(0),
+FixedAllocator::FixedAllocator(UInt32 blocks, UInt32 blockSize,
+                               Allocator &source)
+    : _availList(NULL),
+      _pool(NULL),
+      _sourceAllocator(source),
       _blockSize(blockSize),
-      _blocks(blocks) {}
+      _blocks(blocks),
+      _cleanupHandler(*this) {}
 
 FixedAllocator::~FixedAllocator() { destroy(); }
 
 void *FixedAllocator::allocate(UWord size) {
   if (!_pool) {
     if (ESB_SUCCESS != initialize()) {
-      return 0;
+      return NULL;
     }
   }
 
   if (!_availList || size > _blockSize) {
-    if (_failoverAllocator) {
-      return _failoverAllocator->allocate(size);
-    }
-
-    return 0;
+    return NULL;
   }
 
   char *elem = ((char *)_availList) + sizeof(AvailListElem);
@@ -54,10 +51,6 @@ Error FixedAllocator::deallocate(void *block) {
   if (elem < _pool ||
       elem > (char *)_pool + (_blocks * (_blockSize + sizeof(AvailListElem)) -
                               _blockSize - sizeof(AvailListElem))) {
-    if (_failoverAllocator) {
-      return _failoverAllocator->deallocate(block);
-    }
-
     return ESB_NOT_OWNER;
   }
 
@@ -67,17 +60,15 @@ Error FixedAllocator::deallocate(void *block) {
   return ESB_SUCCESS;
 }
 
-UWord FixedAllocator::getOverhead() { return ESB_UWORD_C(0); }
-
 Error FixedAllocator::initialize() {
-  if (_pool || 0 >= _blocks || 0 >= _blockSize || !_sourceAllocator) {
+  if (_pool || 0 >= _blocks || 0 >= _blockSize) {
     return ESB_INVALID_STATE;
   }
 
-  _pool = _sourceAllocator->allocate(_blocks *
-                                     (_blockSize + sizeof(AvailListElem)));
+  _pool =
+      _sourceAllocator.allocate(_blocks * (_blockSize + sizeof(AvailListElem)));
 
-  if (0 == _pool) {
+  if (NULL == _pool) {
     return ESB_OUT_OF_MEMORY;
   }
 
@@ -86,9 +77,9 @@ Error FixedAllocator::initialize() {
   _availList = (AvailListElem *)_pool;
 
   char *elem = (char *)_pool;
-  char *next = 0;
+  char *next = NULL;
 
-  for (int i = 0; i < _blocks - 1; ++i) {
+  for (UInt32 i = 0; i < _blocks - 1; ++i) {
     next = (elem + sizeof(AvailListElem) + _blockSize);
 
     ((AvailListElem *)elem)->_next = (AvailListElem *)next;
@@ -96,7 +87,7 @@ Error FixedAllocator::initialize() {
     elem = next;
   }
 
-  ((AvailListElem *)elem)->_next = 0;
+  ((AvailListElem *)elem)->_next = NULL;
 
   return ESB_SUCCESS;
 }
@@ -106,7 +97,7 @@ Error FixedAllocator::destroy() {
     return ESB_INVALID_STATE;
   }
 
-  int blocks = 0;
+  UInt32 blocks = 0U;
 
   for (AvailListElem *elem = _availList; elem; elem = elem->_next, ++blocks) {
   }
@@ -115,40 +106,12 @@ Error FixedAllocator::destroy() {
     return ESB_IN_USE;
   }
 
-  if (_failoverAllocator) {
-    Error error = _failoverAllocator->destroy();
-
-    if (ESB_SUCCESS != error) {
-      return error;
-    }
-  }
-
-  _sourceAllocator->deallocate((void *)_pool);
-  _pool = 0;
+  _sourceAllocator.deallocate((void *)_pool);
+  _pool = NULL;
 
   return ESB_SUCCESS;
 }
 
-Error FixedAllocator::isInitialized() {
-  return _pool ? ESB_SUCCESS : ESB_NOT_INITIALIZED;
-}
-
-Error FixedAllocator::setFailoverAllocator(Allocator *allocator) {
-  _failoverAllocator = allocator;
-
-  return ESB_SUCCESS;
-}
-
-Error FixedAllocator::getFailoverAllocator(Allocator **allocator) {
-  if (!allocator) {
-    return ESB_NULL_POINTER;
-  }
-
-  *allocator = _failoverAllocator;
-
-  return ESB_SUCCESS;
-}
-
-int FixedAllocator::getBlockSize() { return _blockSize; }
+CleanupHandler &FixedAllocator::cleanupHandler() { return _cleanupHandler; }
 
 }  // namespace ESB

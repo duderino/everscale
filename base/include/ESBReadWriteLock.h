@@ -17,6 +17,10 @@
 #include <pthread.h>
 #endif
 
+#ifndef ESB_ALLOCATOR_H
+#include <ESBAllocator.h>
+#endif
+
 namespace ESB {
 
 /** ReadWriteLock realizes the Lockable interface with a multiple
@@ -74,6 +78,10 @@ class ReadWriteLock : public Lockable {
    *  @return ESB_SUCCESS if successful, another error code otherwise.
    */
   virtual Error readRelease();
+
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
+  }
 
  private:
   //  Disabled

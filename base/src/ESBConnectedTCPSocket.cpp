@@ -44,19 +44,15 @@ ConnectedTCPSocket::ConnectedTCPSocket(const SocketAddress &peer,
       _listenerAddress(),
       _peerAddress(peer) {}
 
-ConnectedTCPSocket::ConnectedTCPSocket(AcceptData *acceptData)
-    : TCPSocket(acceptData),
+ConnectedTCPSocket::ConnectedTCPSocket(const State &state)
+    : TCPSocket(state),
       _isConnected(true),
-      _listenerAddress(acceptData->_listeningAddress),
-      _peerAddress(acceptData->_peerAddress) {}
+      _listenerAddress(state.listeningAddress()),
+      _peerAddress(state.peerAddress()) {}
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
 
-Error ConnectedTCPSocket::reset(AcceptData *acceptData) {
-  if (!acceptData) {
-    return ESB_NULL_POINTER;
-  }
-
+Error ConnectedTCPSocket::reset(const State &acceptData) {
   Error error = TCPSocket::reset(acceptData);
 
   if (ESB_SUCCESS != error) {
@@ -64,8 +60,8 @@ Error ConnectedTCPSocket::reset(AcceptData *acceptData) {
   }
 
   _isConnected = true;
-  _listenerAddress = acceptData->_listeningAddress;
-  _peerAddress = acceptData->_peerAddress;
+  _listenerAddress = acceptData.listeningAddress();
+  _peerAddress = acceptData.peerAddress();
 
   return ESB_SUCCESS;
 }
@@ -76,11 +72,11 @@ void ConnectedTCPSocket::setPeerAddress(const SocketAddress &address) {
   _peerAddress = address;
 }
 
-const SocketAddress &ConnectedTCPSocket::getPeerAddress() const {
+const SocketAddress &ConnectedTCPSocket::peerAddress() const {
   return _peerAddress;
 }
 
-const SocketAddress &ConnectedTCPSocket::getListenerAddress() const {
+const SocketAddress &ConnectedTCPSocket::listenerAddress() const {
   return _listenerAddress;
 }
 
@@ -98,7 +94,7 @@ Error ConnectedTCPSocket::connect() {
 #endif
 
   if (INVALID_SOCKET == _sockFd) {
-    return GetLastError();
+    return LastError();
   }
 
   error = setBlocking(_isBlocking);
@@ -111,9 +107,10 @@ Error ConnectedTCPSocket::connect() {
 
 #if defined HAVE_CONNECT && defined HAVE_STRUCT_SOCKADDR
 
-  if (SOCKET_ERROR == ::connect(_sockFd, (sockaddr *)_peerAddress.getAddress(),
+  if (SOCKET_ERROR == ::connect(_sockFd,
+                                (sockaddr *)_peerAddress.primitiveAddress(),
                                 sizeof(SocketAddress::Address))) {
-    error = GetLastError();
+    error = LastError();
 
     if (false == _isBlocking) {
 #if defined UNIX_NONBLOCKING_CONNECT_ERROR
@@ -180,7 +177,7 @@ bool ConnectedTCPSocket::isConnected() {
 }
 
 bool ConnectedTCPSocket::isClient() const {
-  return 0 != _listenerAddress.getPort();
+  return 0 != _listenerAddress.port();
 }
 
 SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
@@ -192,14 +189,14 @@ SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
 }
 
 SSize ConnectedTCPSocket::receive(Buffer *buffer) {
-  SSize size = receive((char *)buffer->getBuffer() + buffer->getWritePosition(),
-                       buffer->getWritable());
+  SSize size = receive((char *)buffer->buffer() + buffer->writePosition(),
+                       buffer->writable());
 
   if (0 >= size) {
     return size;
   }
 
-  buffer->setWritePosition(buffer->getWritePosition() + size);
+  buffer->setWritePosition(buffer->writePosition() + size);
 
   return size;
 }
@@ -213,22 +210,22 @@ SSize ConnectedTCPSocket::send(const char *buffer, Size bufferSize) {
 }
 
 SSize ConnectedTCPSocket::send(Buffer *buffer) {
-  Size size = send((char *)buffer->getBuffer() + buffer->getReadPosition(),
-                   buffer->getReadable());
+  Size size = send((char *)buffer->buffer() + buffer->readPosition(),
+                   buffer->readable());
 
   if (0 >= size) {
     return size;
   }
 
-  buffer->setReadPosition(buffer->getReadPosition() + size);
+  buffer->setReadPosition(buffer->readPosition() + size);
   buffer->compact();
 
   return size;
 }
 
-int ConnectedTCPSocket::getBytesReadable() { return GetBytesReadable(_sockFd); }
+int ConnectedTCPSocket::bytesReadable() { return BytesReadable(_sockFd); }
 
-int ConnectedTCPSocket::GetBytesReadable(SOCKET socketDescriptor) {
+int ConnectedTCPSocket::BytesReadable(SOCKET socketDescriptor) {
   if (INVALID_SOCKET == socketDescriptor) {
     return 0;
   }

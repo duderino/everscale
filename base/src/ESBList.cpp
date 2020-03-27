@@ -13,7 +13,7 @@ ListIterator::ListIterator(const ListIterator &iterator)
 
 ListIterator::~ListIterator() {}
 
-List::List(Allocator *allocator, Lockable *lockable)
+List::List(Lockable &lockable, Allocator &allocator)
     : _size(0),
       _head(0),
       _tail(0),
@@ -27,17 +27,13 @@ Error List::pushFront(void *element) {
     return ESB_NULL_POINTER;
   }
 
-  if (!_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
-  }
-
   if (ESB_UINT32_MAX == _size) {
     return ESB_OVERFLOW;
   }
 
-  ListNode *node = (ListNode *)_allocator->allocate(sizeof(ListNode));
+  ListNode *node = (ListNode *)_allocator.allocate(sizeof(ListNode));
 
-  if (0 == node) {
+  if (!node) {
     return ESB_OUT_OF_MEMORY;
   }
 
@@ -72,17 +68,13 @@ Error List::pushBack(void *element) {
     return ESB_NULL_POINTER;
   }
 
-  if (!_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
-  }
-
   if (ESB_UINT32_MAX == _size) {
     return ESB_OVERFLOW;
   }
 
-  ListNode *node = (ListNode *)_allocator->allocate(sizeof(ListNode));
+  ListNode *node = (ListNode *)_allocator.allocate(sizeof(ListNode));
 
-  if (0 == node) {
+  if (!node) {
     return ESB_OUT_OF_MEMORY;
   }
 
@@ -112,7 +104,7 @@ Error List::pushBack(void *element) {
   return ESB_SUCCESS;
 }
 
-void *List::getFront() {
+void *List::front() {
   if (!_head) {
     return 0;
   }
@@ -121,10 +113,6 @@ void *List::getFront() {
 }
 
 Error List::popFront() {
-  if (!_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
-  }
-
   if (!_head) {
     return ESB_SUCCESS;
   }
@@ -139,11 +127,10 @@ Error List::popFront() {
     _tail = 0;
   }
 
-  Error error = _allocator->deallocate((void *)node);
+  Error error = _allocator.deallocate((void *)node);
 
   if (ESB_SUCCESS == error) {
     --_size;
-
     return ESB_SUCCESS;
   }
 
@@ -162,7 +149,7 @@ Error List::popFront() {
   return error;
 }
 
-void *List::getBack() {
+void *List::back() {
   if (!_tail) {
     return 0;
   }
@@ -171,10 +158,6 @@ void *List::getBack() {
 }
 
 Error List::popBack() {
-  if (!_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
-  }
-
   if (!_tail) {
     return ESB_SUCCESS;
   }
@@ -189,7 +172,7 @@ Error List::popBack() {
     _head = 0;
   }
 
-  Error error = _allocator->deallocate((void *)node);
+  Error error = _allocator.deallocate((void *)node);
 
   if (ESB_SUCCESS == error) {
     --_size;
@@ -213,10 +196,6 @@ Error List::popBack() {
 }
 
 Error List::clear() {
-  if (!_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
-  }
-
   Error error = ESB_SUCCESS;
   ListNode *current = _head;
   ListNode *next = 0;
@@ -224,7 +203,7 @@ Error List::clear() {
   while (current) {
     next = current->_next;
 
-    error = _allocator->deallocate((void *)current);
+    error = _allocator.deallocate((void *)current);
 
     if (ESB_SUCCESS != error) {
       // failed to delete the node, restore the list to a stable state
@@ -250,32 +229,27 @@ Error List::clear() {
   return ESB_SUCCESS;
 }
 
-ListIterator List::getFrontIterator() {
+ListIterator List::frontIterator() {
   ListIterator iterator(_head);
 
   return iterator;
 }
 
-ListIterator List::getBackIterator() {
+ListIterator List::backIterator() {
   ListIterator iterator(_tail);
 
   return iterator;
 }
 
-Error List::erase(ListIterator *iterator) {
+Error List::remove(ListIterator *iterator) {
   if (!iterator || iterator->isNull()) {
     return ESB_INVALID_ITERATOR;
-  }
-
-  if (!_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
   }
 
   Error error = deleteNode(iterator->_node);
 
   if (ESB_SUCCESS == error) {
     --_size;
-
     iterator->_node = 0;
   }
 
@@ -307,7 +281,7 @@ Error List::deleteNode(ListNode *node) {
     if (node->_prev) node->_prev->_next = 0;
   }
 
-  Error error = _allocator->deallocate((void *)node);
+  Error error = _allocator.deallocate((void *)node);
 
   if (ESB_SUCCESS == error) {
     return ESB_SUCCESS;
@@ -332,46 +306,22 @@ Error List::deleteNode(ListNode *node) {
   return error;
 }
 
-UInt32 List::getSize() const { return _size; }
+UInt32 List::size() const { return _size; }
 
 bool List::isEmpty() const { return !_head; }
 
-Size List::GetAllocationSize() { return sizeof(ListNode); }
+Size List::AllocationSize() { return sizeof(ListNode); }
 
-Error List::writeAcquire() {
-  if (!_lockable) return ESB_INVALID_STATE;
+Error List::writeAcquire() { return _lockable.writeAcquire(); }
 
-  return _lockable->writeAcquire();
-}
+Error List::readAcquire() { return _lockable.readAcquire(); }
 
-Error List::readAcquire() {
-  if (!_lockable) return ESB_INVALID_STATE;
+Error List::writeAttempt() { return _lockable.writeAttempt(); }
 
-  return _lockable->readAcquire();
-}
+Error List::readAttempt() { return _lockable.readAttempt(); }
 
-Error List::writeAttempt() {
-  if (!_lockable) return ESB_INVALID_STATE;
+Error List::writeRelease() { return _lockable.writeRelease(); }
 
-  return _lockable->writeAttempt();
-}
-
-Error List::readAttempt() {
-  if (!_lockable) return ESB_INVALID_STATE;
-
-  return _lockable->readAttempt();
-}
-
-Error List::writeRelease() {
-  if (!_lockable) return ESB_INVALID_STATE;
-
-  return _lockable->writeRelease();
-}
-
-Error List::readRelease() {
-  if (!_lockable) return ESB_INVALID_STATE;
-
-  return _lockable->readRelease();
-}
+Error List::readRelease() { return _lockable.readRelease(); }
 
 }  // namespace ESB

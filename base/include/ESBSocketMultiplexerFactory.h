@@ -23,7 +23,7 @@ class SocketMultiplexerFactory {
 
   /** Create a new socket multiplexer
    *
-   * @param maxSockets The maxium number of sockets the multiplexer should
+   * @param maxSockets The maximum number of sockets the multiplexer should
    * handle.
    * @return a new socket multiplexer or NULL if it could not be created
    */
@@ -41,8 +41,8 @@ class SocketMultiplexerFactory {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

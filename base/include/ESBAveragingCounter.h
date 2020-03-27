@@ -23,17 +23,17 @@ class AveragingCounter {
 
   void add(double value);
 
-  inline double getMean() const { return _mean; }
+  inline double mean() const { return _mean; }
 
-  inline double getVariance() const {
-    return 1 >= _observations ? 0.0 : _avgDistToMeanSq / (_observations - 1);
+  inline double variance() const {
+    return 1 >= _n ? 0.0 : _avgDistToMeanSq / (_n - 1);
   }
 
-  inline double getMin() const { return _min; }
+  inline double min() const { return _min; }
 
-  inline double getMax() const { return _max; }
+  inline double max() const { return _max; }
 
-  inline UInt32 getObservations() const { return _observations; }
+  inline UInt32 n() const { return _n; }
 
   void log(Logger &logger, Logger::Severity severity,
            const char *description) const;
@@ -44,8 +44,8 @@ class AveragingCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -57,7 +57,7 @@ class AveragingCounter {
   double _avgDistToMeanSq;
   double _min;
   double _max;
-  UInt32 _observations;
+  UInt32 _n;
 };
 
 }  // namespace ESB

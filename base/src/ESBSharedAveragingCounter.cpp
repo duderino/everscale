@@ -23,11 +23,11 @@ void SharedAveragingCounter::log(Logger &logger, Logger::Severity severity,
 
   {
     ReadScopeLock lock(_lock);
-    n = _counter.getObservations();
-    mean = _counter.getMean();
-    variance = _counter.getVariance();
-    min = _counter.getMin();
-    max = _counter.getMax();
+    n = _counter.n();
+    mean = _counter.mean();
+    variance = _counter.variance();
+    min = _counter.min();
+    max = _counter.max();
   }
 
   ESB_LOG(logger, severity,

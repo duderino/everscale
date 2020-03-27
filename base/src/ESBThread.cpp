@@ -50,7 +50,7 @@ Error Thread::join() {
 #endif
 }
 
-Thread::ThreadId Thread::getThreadId() const { return _threadId; }
+Thread::ThreadId Thread::threadId() const { return _threadId; }
 
 void Thread::Yield() {
 #ifdef HAVE_SCHED_YIELD
@@ -66,8 +66,8 @@ void Thread::Sleep(const Date &date) {
 #if defined HAVE_NANOSLEEP && defined HAVE_TIMESPEC_T
   struct timespec timeToSleep;
 
-  timeToSleep.tv_sec = date.getSeconds();
-  timeToSleep.tv_nsec = date.getMicroSeconds() * 1000L;
+  timeToSleep.tv_sec = date.seconds();
+  timeToSleep.tv_nsec = date.microSeconds() * 1000L;
 
   nanosleep(&timeToSleep, 0);
 #else
@@ -88,7 +88,7 @@ void Thread::Sleep(long msec) {
 #endif
 }
 
-Thread::ThreadId Thread::GetThreadId() {
+Thread::ThreadId Thread::CurrentThreadId() {
 #if defined HAVE_SYSCALL && defined HAVE_GETTID
   return syscall(SYS_gettid);
 #elif defined HAVE_PTHREAD_SELF

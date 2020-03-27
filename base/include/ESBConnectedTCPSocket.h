@@ -58,10 +58,10 @@ class ConnectedTCPSocket : public TCPSocket {
 
   /** Construct a new server ConnectedTCPSocket.
    *
-   * @param acceptData An object populated by ListeningTCPSockets
+   * @param state An object populated by ListeningTCPSockets
    *  when accepting a new connection.
    */
-  ConnectedTCPSocket(AcceptData *acceptData);
+  ConnectedTCPSocket(const State &state);
 
   /** Destroy the connected socket.  Will close the socket if it has not
    *  already been closed.
@@ -75,7 +75,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *  when accepting a new connection.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  virtual Error reset(AcceptData *acceptData);
+  virtual Error reset(const State &acceptData);
 
   /** Set the address of the peer.  A client socket will attempt to connect
    *  to this address.
@@ -88,7 +88,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *
    *  @return address The address of the peer.
    */
-  const SocketAddress &getPeerAddress() const;
+  const SocketAddress &peerAddress() const;
 
   /** Get the address of the listening socket that created this connected
    *  socket.
@@ -97,7 +97,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *      socket.  If this socket was not created by a listening socket,
    *      the address will be uninitialized (i.e., all fields will be 0).
    */
-  const SocketAddress &getListenerAddress() const;
+  const SocketAddress &listenerAddress() const;
 
   /** Attempt to connect to the peer.
    *
@@ -187,7 +187,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *  @return The number of bytes that could be read or SOCKET_ERROR if
    *      an error occurred.
    */
-  int getBytesReadable();
+  int bytesReadable();
 
   /** Get the number of bytes of data that could be read from a socket
    *  descriptor.
@@ -196,7 +196,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *  @return The number of bytes that could be read or SOCKET_ERROR if
    *      an error occurred.
    */
-  static int GetBytesReadable(SOCKET socketDescriptor);
+  static int BytesReadable(SOCKET socketDescriptor);
 
   /** Placement new.
    *
@@ -204,8 +204,8 @@ class ConnectedTCPSocket : public TCPSocket {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

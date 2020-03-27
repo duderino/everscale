@@ -29,33 +29,33 @@ class EmbeddedList {
    *      destroyed with their cleanup handlers.  Otherwise the elements
    *      are removed from the list but not destroyed.
    */
-  void clear(bool cleanup);
+  void clear(bool cleanup = true);
 
   /** Determine whether the list is empty.  This is O(1)
    *
    * @return true if empty, false otherwise.
    */
-  inline bool isEmpty() const { return 0 == _head; }
+  inline bool isEmpty() const { return NULL == _head; }
 
   /** Determine the number of elements in the list.  This is O(n)
    *
    * @return the number of elements in the list.
    */
-  int length() const;
+  int size() const;
 
   /** Get the first element in the list, but do not remove the element from the
    * list.
    *
    * @return The first element in the list or NULL if the list has no elements
    */
-  inline EmbeddedListElement *getFirst() { return _head; }
+  inline EmbeddedListElement *first() { return _head; }
 
   /** Get the first element in the list, but do not remove the element from the
    * list.
    *
    * @return The first element in the list or NULL if the list has no elements
    */
-  inline const EmbeddedListElement *getFirst() const { return _head; }
+  inline const EmbeddedListElement *first() const { return _head; }
 
   /** Remove and return the first element in the list.  This does not call the
    * element's cleanup handler.
@@ -81,14 +81,14 @@ class EmbeddedList {
    *
    * @return The last element in the list or NULL if the list has no elements
    */
-  inline EmbeddedListElement *getLast() { return _tail; }
+  inline EmbeddedListElement *last() { return _tail; }
 
   /** Get the last element in the list, but do not remove the element from the
    * list.
    *
    * @return The last element in the list or NULL if the list has no elements
    */
-  inline const EmbeddedListElement *getLast() const { return _tail; }
+  inline const EmbeddedListElement *last() const { return _tail; }
 
   /** Remove and return the last element in the list.  This does not call the
    * element's cleanup handler.
@@ -122,8 +122,18 @@ class EmbeddedList {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
+  }
+
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, EmbeddedList *list) noexcept {
+    return list;
   }
 
   /** Validate the internal invariants of the list

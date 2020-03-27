@@ -17,31 +17,19 @@ MapNode::MapNode(MapNode *parent, MapNode *left, MapNode *right, bool isBlack,
 
 MapNode::~MapNode() {}
 
-void *MapNode::operator new(size_t size, Allocator *allocator) {
-  return allocator->allocate(size);
-}
-
-Map::Map(bool isUnique, Comparator *comparator, Allocator *allocator,
-         Lockable *lockable)
+Map::Map(Comparator &comparator, Lockable &lockable, Allocator &allocator)
     : _size(0),
-      _isUnique(isUnique),
       _root(&_sentinel),
       _allocator(allocator),
       _lockable(lockable),
       _comparator(comparator),
-      _sentinel(&_sentinel, &_sentinel, &_sentinel, true, 0, 0)
+      _sentinel(&_sentinel, &_sentinel, &_sentinel, true, NULL, NULL) {}
 
-{}
-
-Map::~Map() {}
+Map::~Map() { clear(); }
 
 Error Map::insert(const void *key, void *value) {
   if (!key) {
     return ESB_NULL_POINTER;
-  }
-
-  if (!_comparator || !_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
   }
 
   if (ESB_UINT32_MAX == _size) {
@@ -55,9 +43,9 @@ Error Map::insert(const void *key, void *value) {
     return ESB_OUT_OF_MEMORY;
   }
 
-  if (false == insertNode(node)) {
+  if (!insertNode(node)) {
     node->~MapNode();
-    _allocator->deallocate((void *)node);
+    _allocator.deallocate((void *)node);
 
     return ESB_UNIQUENESS_VIOLATION;
   }
@@ -65,13 +53,9 @@ Error Map::insert(const void *key, void *value) {
   return ESB_SUCCESS;
 }
 
-Error Map::erase(const void *key) {
+Error Map::remove(const void *key) {
   if (!key) {
     return ESB_NULL_POINTER;
-  }
-
-  if (!_comparator || !_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
   }
 
   MapNode *node = findNode(_root, key);
@@ -87,17 +71,13 @@ Error Map::erase(const void *key) {
 
 void *Map::find(const void *key) {
   if (!key) {
-    return 0;
-  }
-
-  if (!_comparator || !_allocator || !_lockable) {
-    return 0;
+    return NULL;
   }
 
   MapNode *node = findNode(_root, key);
 
   if (!node->_key) {
-    return 0;
+    return NULL;
   }
 
   return node->_value;
@@ -106,10 +86,6 @@ void *Map::find(const void *key) {
 Error Map::update(const void *key, void *value, void **old) {
   if (!key) {
     return ESB_NULL_POINTER;
-  }
-
-  if (!_comparator || !_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
   }
 
   MapNode *node = findNode(_root, key);
@@ -147,7 +123,7 @@ Error Map::clear() {
       assert(_root == x);
 
       x->~MapNode();
-      _allocator->deallocate((void *)x);
+      _allocator.deallocate((void *)x);
 
       _root = &_sentinel;
 
@@ -160,7 +136,7 @@ Error Map::clear() {
       x = x->_parent;
 
       x->_right->~MapNode();
-      _allocator->deallocate((void *)x->_right);
+      _allocator.deallocate((void *)x->_right);
 
       x->_right = &_sentinel;
 
@@ -172,7 +148,7 @@ Error Map::clear() {
     x = x->_parent;
 
     x->_left->~MapNode();
-    _allocator->deallocate((void *)x->_left);
+    _allocator.deallocate((void *)x->_left);
 
     x->_left = &_sentinel;
   }
@@ -180,25 +156,19 @@ Error Map::clear() {
   return ESB_SUCCESS;
 }
 
-MapIterator Map::getMinimumIterator() {
+MapIterator Map::minimumIterator() {
   MapIterator iterator(findMinimum(_root));
-
   return iterator;
 }
 
-MapIterator Map::getMaximumIterator() {
+MapIterator Map::maximumIterator() {
   MapIterator iterator(findMaximum(_root));
-
   return iterator;
 }
 
 Error Map::insert(const void *key, void *value, MapIterator *iterator) {
   if (!key || !value || !iterator) {
     return ESB_NULL_POINTER;
-  }
-
-  if (!_comparator || !_allocator || !_lockable) {
-    return ESB_INVALID_STATE;
   }
 
   MapNode *node = new (_allocator)
@@ -210,8 +180,7 @@ Error Map::insert(const void *key, void *value, MapIterator *iterator) {
 
   if (false == insertNode(node)) {
     node->~MapNode();
-    _allocator->deallocate((void *)node);
-
+    _allocator.deallocate((void *)node);
     return ESB_UNIQUENESS_VIOLATION;
   }
 
@@ -224,10 +193,6 @@ MapIterator Map::findIterator(const void *key) {
   MapIterator iterator;
 
   if (!key) {
-    return iterator;
-  }
-
-  if (!_comparator || !_allocator || !_lockable) {
     return iterator;
   }
 
@@ -253,46 +218,22 @@ Error Map::erase(MapIterator *iterator) {
 
   deleteNode(iterator->_node);
 
-  iterator->_node = 0;
+  iterator->_node = NULL;
 
   return ESB_SUCCESS;
 }
 
-Error Map::writeAcquire() {
-  if (!_lockable) return ESB_INVALID_STATE;
+Error Map::writeAcquire() { return _lockable.writeAcquire(); }
 
-  return _lockable->writeAcquire();
-}
+Error Map::readAcquire() { return _lockable.readAcquire(); }
 
-Error Map::readAcquire() {
-  if (!_lockable) return ESB_INVALID_STATE;
+Error Map::writeAttempt() { return _lockable.writeAttempt(); }
 
-  return _lockable->readAcquire();
-}
+Error Map::readAttempt() { return _lockable.readAttempt(); }
 
-Error Map::writeAttempt() {
-  if (!_lockable) return ESB_INVALID_STATE;
+Error Map::writeRelease() { return _lockable.writeRelease(); }
 
-  return _lockable->writeAttempt();
-}
-
-Error Map::readAttempt() {
-  if (!_lockable) return ESB_INVALID_STATE;
-
-  return _lockable->readAttempt();
-}
-
-Error Map::writeRelease() {
-  if (!_lockable) return ESB_INVALID_STATE;
-
-  return _lockable->writeRelease();
-}
-
-Error Map::readRelease() {
-  if (!_lockable) return ESB_INVALID_STATE;
-
-  return _lockable->readRelease();
-}
+Error Map::readRelease() { return _lockable.readRelease(); }
 
 MapNode *Map::findNode(MapNode *x, const void *k) {
   //
@@ -303,34 +244,9 @@ MapNode *Map::findNode(MapNode *x, const void *k) {
   int result = 0;
 
   while (x->_key) {
-    result = _comparator->compare(k, x->_key);
+    result = _comparator.compare(k, x->_key);
 
     if (0 == result) {
-      if (_isUnique) {
-        return x;
-      }
-
-      //
-      //  This is a departure from Cormen et. al.'s algorithm.  If the
-      //  map allows multiple elements with the same key, we could have
-      //  inserted them to the right of the current node.  We always
-      //  return the node that is the "smallest" one in the tree so that
-      //  any iteration from this point would yield a different key
-      //  if it did a getPrevious() and could yield a node with the
-      //  same key if it did a getNext().
-      //
-      MapNode *y = 0;
-
-      while (true) {
-        y = findSuccessor(x);
-
-        if (!y->_key) break;
-
-        if (0 != _comparator->compare(y->_key, x->_key)) break;
-
-        x = y;
-      }
-
       return x;
     } else if (0 < result) {
       x = x->_right;
@@ -423,16 +339,14 @@ bool Map::insertNode(MapNode *z) {
   while (x->_key) {
     y = x;
 
-    result = _comparator->compare(z->_key, x->_key);
+    result = _comparator.compare(z->_key, x->_key);
 
     if (0 > result) {
       x = x->_left;
     } else if (0 < result) {
       x = x->_right;
-    } else if (_isUnique) {
-      return false;
     } else {
-      break;
+      return false;
     }
   }
 
@@ -442,7 +356,7 @@ bool Map::insertNode(MapNode *z) {
 
   if (&_sentinel == y) {
     _root = z;
-  } else if (0 > result) {
+  } else if (0 >= result) {
     y->_left = z;
   } else {
     y->_right = z;
@@ -459,11 +373,11 @@ bool Map::insertNode(MapNode *z) {
 
   x->_isBlack = false;
 
-  while (x != _root && false == x->_parent->_isBlack) {
+  while (x != _root && !x->_parent->_isBlack) {
     if (x->_parent == x->_parent->_parent->_left) {
       y = x->_parent->_parent->_right;
 
-      if (false == y->_isBlack) {
+      if (!y->_isBlack) {
         x->_parent->_isBlack = true;
         y->_isBlack = true;
         x->_parent->_parent->_isBlack = false;
@@ -479,7 +393,7 @@ bool Map::insertNode(MapNode *z) {
     } else {
       y = x->_parent->_parent->_left;
 
-      if (false == y->_isBlack) {
+      if (!y->_isBlack) {
         x->_parent->_isBlack = true;
         y->_isBlack = true;
         x->_parent->_parent->_isBlack = false;
@@ -506,8 +420,8 @@ void Map::deleteNode(MapNode *z) {
   //  Rivest, p. 273.
   //
 
-  MapNode *y = 0;
-  MapNode *x = 0;
+  MapNode *y = NULL;
+  MapNode *x = NULL;
 
   if (!z->_left->_key || !z->_right->_key) {
     y = z;
@@ -566,8 +480,8 @@ void Map::deleteNode(MapNode *z) {
   }
 
   z->~MapNode();
-  _allocator->deallocate((void *)z);
-  z = 0;
+  _allocator.deallocate((void *)z);
+  z = NULL;
 
   --_size;
 
@@ -578,7 +492,7 @@ void Map::deleteNode(MapNode *z) {
   //  Rivest, p. 274.
   //
 
-  MapNode *w = 0;
+  MapNode *w = NULL;
 
   while (_root != x && x->_isBlack) {
     if (x == x->_parent->_left) {
@@ -695,9 +609,7 @@ void Map::leftRotate(MapNode *x) {
   x->_parent = y;
 }
 
-UInt32 Map::getSize() const { return _size; }
-
-bool Map::isEmpty() const { return 0 == _size; }
+UInt32 Map::size() const { return _size; }
 
 bool Map::isBalanced() const {
   int height = 0;
@@ -766,9 +678,9 @@ int Map::getHeight(MapNode *node) const {
   return (right > left) ? right + 1 : left + 1;
 }
 
-Size Map::GetAllocationSize() { return sizeof(MapNode); }
+Size Map::AllocationSize() { return sizeof(MapNode); }
 
-MapIterator::MapIterator() : _node(0) {}
+MapIterator::MapIterator() : _node(NULL) {}
 
 MapIterator::MapIterator(MapNode *node) : _node(node) {}
 

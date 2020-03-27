@@ -79,8 +79,8 @@ class SharedEmbeddedQueue {
    *  @return The memory for the new object or NULL of the memory allocation
    * failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:

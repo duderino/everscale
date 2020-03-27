@@ -65,12 +65,8 @@ namespace ESB {
 class MapTest : public ESTF::Component {
  public:
   /**	Constructor.
-   *
-   *  @param isUnique If true, a map that enforces uniqueness will be tested,
-   *      if false, a map that allows multiple elements with the same key
-   *      will be tested.
    */
-  MapTest(bool isUnique);
+  MapTest();
 
   /** Destructor. */
   virtual ~MapTest();
@@ -146,7 +142,6 @@ class MapTest : public ESTF::Component {
   static NullLock _Lock;
   static StringComparator _Comparator;
 
-  bool _isUnique;
   Record *_records;
   ESTF::Rand _rand;
   Map _map;
@@ -157,7 +152,6 @@ class MapTest : public ESTF::Component {
 ESTF_OBJECT_PTR(MapTest, ESTF::Component)
 
 MapTest::StringComparator MapTest::_Comparator;
-NullLock MapTest::_Lock;
 const int MapTest::_Iterations = 2000;
 const int MapTest::_Records = 1000;
 
@@ -165,13 +159,8 @@ Mutex StlLock;
 
 static const bool Debug = false;
 
-MapTest::MapTest(bool isUnique)
-    : _isUnique(isUnique),
-      _records(0),
-      _rand(),
-      _map(isUnique, &_Comparator, SystemAllocator::GetInstance(), &_Lock),
-      _stlMultiMap(),
-      _stlMap() {}
+MapTest::MapTest()
+    : _records(0), _rand(), _map(_Comparator), _stlMultiMap(), _stlMap() {}
 
 MapTest::~MapTest() {}
 
@@ -200,22 +189,11 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
           _records[j]._lifetime = i + generateLifetime();
           _records[j]._useIterator = (1 == _rand.generateRandom(1, 2));
 
-          if (_isUnique) {
-            // ESBWriteScopeLock scopeLock( StlLock );
-
-            stlResult = _stlMap
-                            .insert(std::pair<const char *, char *>(
-                                (const char *)_records[j]._key,
-                                (char *)_records[j]._value))
-                            .second;
-          } else {
-            // ESBWriteScopeLock scopeLock( StlLock );
-
-            _stlMultiMap.insert(std::pair<const char *, char *>(
-                (const char *)_records[j]._key, (char *)_records[j]._value));
-
-            stlResult = true;
-          }
+          stlResult = _stlMap
+                          .insert(std::pair<const char *, char *>(
+                              (const char *)_records[j]._key,
+                              (char *)_records[j]._value))
+                          .second;
 
           if (_records[j]._useIterator) {
             error = _map.insert(_records[j]._key, _records[j]._value,
@@ -248,10 +226,8 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
             _records[j]._value = 0;
           } else {
             if (Debug) {
-              // ESBWriteScopeLock scopeLock( StlLock );
-
               std::cerr << "Inserted: " << (char *)_records[j]._key
-                        << " (Map size: " << _map.getSize()
+                        << " (Map size: " << _map.size()
                         << " stl size: " << _stlMap.size() << ") at time " << i
                         << std::endl;
             }
@@ -270,70 +246,22 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
 
             ESTF_ASSERT(collector, ESB_SUCCESS == error);
 
-            if (_isUnique) {
-              // ESBWriteScopeLock scopeLock( StlLock );
-
-              _stlMap.erase((const char *)_records[j]._key);
-            } else {
-              assert(0 == "erase from multimap");
-            }
+            _stlMap.erase((const char *)_records[j]._key);
           } else {
-            if (_isUnique) {
-              error = _map.erase(_records[j]._key);
+            error = _map.remove(_records[j]._key);
 
-              ESTF_ASSERT(collector, ESB_SUCCESS == error);
+            ESTF_ASSERT(collector, ESB_SUCCESS == error);
 
-              void *dummy = _map.find(_records[j]._key);
+            void *dummy = _map.find(_records[j]._key);
 
-              ESTF_ASSERT(collector, 0 == dummy);
+            ESTF_ASSERT(collector, 0 == dummy);
 
-              // ESBWriteScopeLock scopeLock( StlLock );
-
-              _stlMap.erase((const char *)_records[j]._key);
-            } else {
-              iterator = _map.findIterator(_records[j]._key);
-
-              ESTF_ASSERT(collector, !iterator.isNull());
-
-              //
-              //  The way we generated the values, even if we
-              //  have multiple elements with the same key, their
-              //  values are guaranteed to be different.
-              //
-
-              if (iterator.getValue() == _records[j]._value) {
-                error = _map.erase(&iterator);
-
-                ESTF_ASSERT(collector, ESB_SUCCESS == error);
-              } else {
-                MapIterator next;
-
-                error = ESB_CANNOT_FIND;
-
-                while (iterator.hasNext()) {
-                  next = iterator.getNext();
-
-                  if (_Comparator.compare(next.getKey(), _records[j]._key)) {
-                    break;
-                  }
-
-                  if (next.getValue() == _records[j]._value) {
-                    error = _map.erase(&next);
-
-                    break;
-                  }
-                }
-
-                ESTF_ASSERT(collector, ESB_SUCCESS == error);
-              }
-            }
+            _stlMap.erase((const char *)_records[j]._key);
           }
 
           if (Debug) {
-            // ESBWriteScopeLock scopeLock( StlLock );
-
             std::cerr << "Deleted: " << (char *)_records[j]._key
-                      << " (Map size: " << _map.getSize()
+                      << " (Map size: " << _map.size()
                       << " stl size: " << _stlMap.size() << ") at time " << i
                       << std::endl;
           }
@@ -356,29 +284,21 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
     char *key = 0;
     char *value = 0;
 
-    for (iterator = _map.getMinimumIterator(); !iterator.isNull();
+    for (iterator = _map.minimumIterator(); !iterator.isNull();
          iterator = temp) {
-      key = (char *)iterator.getKey();
-      value = (char *)iterator.getValue();
+      key = (char *)iterator.key();
+      value = (char *)iterator.value();
 
-      if (_isUnique) {
-        // ESBWriteScopeLock scopeLock( StlLock );
+      _stlMap.erase(key);
 
-        _stlMap.erase(key);
-      } else {
-        assert(0 == "erase from multimap");
-      }
-
-      temp = iterator.getNext();
+      temp = iterator.next();
 
       error = _map.erase(&iterator);
 
       ESTF_ASSERT(collector, ESB_SUCCESS == error);
 
       if (Debug) {
-        // ESBWriteScopeLock scopeLock( StlLock );
-
-        std::cerr << "Deleted: " << key << " (Map size: " << _map.getSize()
+        std::cerr << "Deleted: " << key << " (Map size: " << _map.size()
                   << " stl size: " << _stlMap.size() << ") at cleanup stage"
                   << std::endl;
       }
@@ -400,57 +320,25 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
 
 void MapTest::validateTree(ESTF::ResultCollector *collector) {
   MapIterator iterator;
-  Error error;
-  void *value = 0;
+  void *value = NULL;
 
   //
   //  Run through the stl map or multimap and verify that we can find
   //  every record in the map in the tree.
   //
 
-  if (_isUnique) {
-    // ESBWriteScopeLock scopeLock( StlLock );
+  std::map<const char *, char *, STLStringComparator>::iterator it;
 
-    std::map<const char *, char *, STLStringComparator>::iterator it;
+  for (it = _stlMap.begin(); it != _stlMap.end(); ++it) {
+    value = _map.find(it->first);
 
-    for (it = _stlMap.begin(); it != _stlMap.end(); ++it) {
-      value = _map.find(it->first);
-
-      if (Debug && !value) {
-        std::cerr << "Couldn't find: " << (char *)it->first << std::endl;
-      }
-
-      ESTF_ASSERT(collector, value);
-
-      ESTF_ASSERT(collector, 0 == _Comparator.compare(value, it->second));
+    if (Debug && !value) {
+      std::cerr << "Couldn't find: " << (char *)it->first << std::endl;
     }
-  } else {
-    // ESBWriteScopeLock scopeLock( StlLock );
 
-    std::multimap<const char *, char *, STLStringComparator>::iterator it;
+    ESTF_ASSERT(collector, value);
 
-    for (it = _stlMultiMap.begin(); it != _stlMultiMap.end(); ++it) {
-      iterator = _map.findIterator(it->first);
-
-      ESTF_ASSERT(collector, !iterator.isNull());
-
-      if (iterator.isNull()) continue;
-
-      error = ESB_CANNOT_FIND;
-
-      while (true) {
-        if (0 != _Comparator.compare(iterator.getKey(), it->first)) {
-          break;
-        }
-
-        if (0 == _Comparator.compare(iterator.getValue(), it->second)) {
-          error = ESB_SUCCESS;
-          break;
-        }
-      }
-
-      ESTF_ASSERT(collector, ESB_SUCCESS == error);
-    }
+    ESTF_ASSERT(collector, 0 == _Comparator.compare(value, it->second));
   }
 
   //
@@ -463,15 +351,9 @@ void MapTest::validateTree(ESTF::ResultCollector *collector) {
   //  Make sure our sizes are right.
   //
 
-  if (_isUnique) {
-    // ESBWriteScopeLock scopeLock( StlLock );
-    ESTF_ASSERT(collector, _map.getSize() == _stlMap.size());
-  } else {
-    // ESBWriteScopeLock scopeLock( StlLock );
-    ESTF_ASSERT(collector, _map.getSize() == _stlMultiMap.size());
-  }
+  ESTF_ASSERT(collector, _map.size() == _stlMap.size());
 
-  if (2 > _map.getSize()) return;
+  if (2 > _map.size()) return;
 
   //
   //  Iterate through the map in forward order and make sure the keys
@@ -479,18 +361,18 @@ void MapTest::validateTree(ESTF::ResultCollector *collector) {
   //
 
   MapIterator next;
-  iterator = _map.getMinimumIterator();
+  iterator = _map.minimumIterator();
   UInt32 i = 1;
   int comparison = 0;
 
   while (true) {
-    next = iterator.getNext();
+    next = iterator.next();
 
     if (next.isNull()) {
       break;
     }
 
-    comparison = _Comparator.compare(next.getKey(), iterator.getKey());
+    comparison = _Comparator.compare(next.key(), iterator.key());
 
     ESTF_ASSERT(collector, 0 <= comparison);
 
@@ -498,7 +380,7 @@ void MapTest::validateTree(ESTF::ResultCollector *collector) {
     ++i;
   }
 
-  ESTF_ASSERT(collector, i == _map.getSize());
+  ESTF_ASSERT(collector, i == _map.size());
 
   //
   //  Iterate through the map in reverse order and make sure the keys
@@ -506,18 +388,18 @@ void MapTest::validateTree(ESTF::ResultCollector *collector) {
   //
 
   MapIterator prev;
-  iterator = _map.getMaximumIterator();
+  iterator = _map.maximumIterator();
   i = 1;
   comparison = 0;
 
   while (true) {
-    prev = iterator.getPrevious();
+    prev = iterator.previous();
 
     if (prev.isNull()) {
       break;
     }
 
-    comparison = _Comparator.compare(prev.getKey(), iterator.getKey());
+    comparison = _Comparator.compare(prev.key(), iterator.key());
 
     ESTF_ASSERT(collector, 0 >= comparison);
 
@@ -525,7 +407,7 @@ void MapTest::validateTree(ESTF::ResultCollector *collector) {
     ++i;
   }
 
-  ESTF_ASSERT(collector, i == _map.getSize());
+  ESTF_ASSERT(collector, i == _map.size());
 }
 
 bool MapTest::setup() { return true; }
@@ -533,8 +415,7 @@ bool MapTest::setup() { return true; }
 bool MapTest::tearDown() { return true; }
 
 ESTF::ComponentPtr MapTest::clone() {
-  ESTF::ComponentPtr component(new MapTest(_isUnique));
-
+  ESTF::ComponentPtr component(new MapTest());
   return component;
 }
 
@@ -582,35 +463,26 @@ int MapTest::generateLifetime() {
 }  // namespace ESB
 
 int main() {
-  ESB::MapTestPtr mapTest = new ESB::MapTest(true);
-  ESB::MapTestPtr multiMapTest = new ESB::MapTest(false);
-
+  ESB::MapTestPtr mapTest = new ESB::MapTest();
   ESTF::ConcurrencyDecoratorPtr mapDecorator =
       new ESTF::ConcurrencyDecorator(mapTest, 10);
-  ESTF::ConcurrencyDecoratorPtr multiMapDecorator =
-      new ESTF::ConcurrencyDecorator(multiMapTest, 10);
-
   ESTF::CompositePtr testSuite = new ESTF::Composite();
-
   testSuite->add(mapDecorator);
-  // TODO fix multimap test testSuite->add(multiMapDecorator);
-
   ESTF::RepetitionDecoratorPtr root =
       new ESTF::RepetitionDecorator(testSuite, 3);
-
   ESTF::ResultCollector collector;
 
-  if (false == root->setup()) {
+  if (!root->setup()) {
     std::cerr << "Testing framework setup failed" << std::endl;
     return 1;
   }
 
-  if (false == root->run(&collector)) {
+  if (!root->run(&collector)) {
     std::cerr << "Testing framework run failed" << std::endl;
     return 1;
   }
 
-  if (false == root->tearDown()) {
+  if (!root->tearDown()) {
     std::cerr << "Testing framework tear down failed" << std::endl;
     return 1;
   }

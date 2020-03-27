@@ -151,13 +151,12 @@ typedef SSIZE_T SSize;
 
 #define ESB_MAGIC ESB_UINT8_C(0x23)
 
-#define ESB_WORD_ALIGN(value)                                       \
-  (((value) % sizeof(ESB::Word))                                    \
-       ? (((value) & ~(sizeof(ESB::Word) - 1)) + sizeof(ESB::Word)) \
-       : (value))
+// Note, size must be a power of two
+#define ESB_ALIGN(value, size) \
+  (((value) % (size)) ? (((value) & ~((size)-1)) + (size)) : (value))
+#define ESB_WORD_ALIGN(value) ESB_ALIGN(value, sizeof(ESB::Word))
 
 #define ESB_MIN(a, b) ((a) > (b) ? (b) : (a))
-
 #define ESB_MAX(a, b) ((a) > (b) ? (a) : (b))
 
 }  // namespace ESB

@@ -27,7 +27,7 @@ Error SystemDnsClient::resolve(SocketAddress *address,
    * name2_r().  These return 0 on success and nonzero on error. The result
    * of  the  call is now stored in the struct with address ret.  After the
    * call, *result will be NULL on error or point to the result on success.
-   * Auxiliary  data is stored in the buffer buf of length buflen.  (If the
+   * Auxiliary  data is stored in the buffer buf of size buflen.  (If the
    * buffer is too small, these functions will return ERANGE.)   No  global
    * variable  h_errno  is modified, but the address of a variable in which
    * to store error numbers is passed in h_errnop.
@@ -66,14 +66,14 @@ Error SystemDnsClient::resolve(SocketAddress *address,
     }
   }
 
-  memset(address->getAddress(), 0, sizeof(SocketAddress::Address));
+  memset(address->primitiveAddress(), 0, sizeof(SocketAddress::Address));
 
-  memcpy(&address->getAddress()->sin_addr, hostEntry.h_addr_list[0],
-         sizeof(address->getAddress()->sin_addr));
-  address->getAddress()->sin_family = AF_INET;
-  address->getAddress()->sin_port = htons(port);
+  memcpy(&address->primitiveAddress()->sin_addr, hostEntry.h_addr_list[0],
+         sizeof(address->primitiveAddress()->sin_addr));
+  address->primitiveAddress()->sin_family = AF_INET;
+  address->primitiveAddress()->sin_port = htons(port);
 
-  address->setTransport(isSecure ? SocketAddress::TLS : SocketAddress::TCP);
+  address->setType(isSecure ? SocketAddress::TLS : SocketAddress::TCP);
 
   return ESB_SUCCESS;
 }

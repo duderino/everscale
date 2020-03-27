@@ -8,6 +8,6 @@ PerformanceCounter::PerformanceCounter() : EmbeddedListElement() {}
 
 PerformanceCounter::~PerformanceCounter() {}
 
-CleanupHandler *PerformanceCounter::getCleanupHandler() { return 0; }
+CleanupHandler *PerformanceCounter::cleanupHandler() { return 0; }
 
 }  // namespace ESB

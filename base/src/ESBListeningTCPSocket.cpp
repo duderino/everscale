@@ -24,7 +24,7 @@ ListeningTCPSocket::ListeningTCPSocket(UInt16 port, int backlog,
                                        bool isBlocking)
     : TCPSocket(isBlocking), _backlog(backlog), _listeningAddress() {
   _listeningAddress.setPort(port);
-  _listeningAddress.setTransport(SocketAddress::TCP);
+  _listeningAddress.setType(SocketAddress::TCP);
 }
 
 ListeningTCPSocket::ListeningTCPSocket(SocketAddress &address, int backlog,
@@ -47,7 +47,7 @@ Error ListeningTCPSocket::bind() {
 #endif
 
   if (INVALID_SOCKET == _sockFd) {
-    return GetLastError();
+    return LastError();
   }
 
   error = setBlocking(_isBlocking);
@@ -65,7 +65,7 @@ Error ListeningTCPSocket::bind() {
                                  (const char *)&value, sizeof(value))) {
     close();
 
-    return GetLastError();
+    return LastError();
   }
 #else
 #error "setsockopt or equivalent is required"
@@ -73,11 +73,11 @@ Error ListeningTCPSocket::bind() {
 
 #if defined HAVE_BIND && defined HAVE_STRUCT_SOCKADDR
   if (SOCKET_ERROR == ::bind(_sockFd,
-                             (sockaddr *)_listeningAddress.getAddress(),
+                             (sockaddr *)_listeningAddress.primitiveAddress(),
                              sizeof(SocketAddress::Address))) {
     close();
 
-    return GetLastError();
+    return LastError();
   }
 #else
 #error "bind and sockaddr or equivalent is required."
@@ -93,10 +93,12 @@ Error ListeningTCPSocket::listen() {
     return ESB_INVALID_STATE;
   }
 
+  _listeningAddress.presentationAddress(_presentationAddress, sizeof(_presentationAddress));
+
 #ifdef HAVE_LISTEN
 
   if (SOCKET_ERROR == ::listen(_sockFd, _backlog)) {
-    return GetLastError();
+    return LastError();
   }
 
   return ESB_SUCCESS;
@@ -106,7 +108,7 @@ Error ListeningTCPSocket::listen() {
 #endif
 }
 
-Error ListeningTCPSocket::accept(AcceptData *data) {
+Error ListeningTCPSocket::accept(State *data) {
   if (!data) {
     return ESB_NULL_POINTER;
   }
@@ -118,38 +120,35 @@ Error ListeningTCPSocket::accept(AcceptData *data) {
 #endif
 
 #if defined HAVE_ACCEPT && defined HAVE_STRUCT_SOCKADDR
-
   addressSize = sizeof(SocketAddress::Address);
-
-  data->_sockFd = ::accept(_sockFd, (sockaddr *)data->_peerAddress.getAddress(),
-                           &addressSize);
-
+  data->setSocketDescriptor(
+      ::accept(_sockFd, (sockaddr *)data->peerAddress().primitiveAddress(),
+               &addressSize));
 #else
 #error "accept and sockaddr or equivalent is required."
 #endif
 
-  if (INVALID_SOCKET == data->_sockFd) {
-    return GetLastError();
+  if (INVALID_SOCKET == data->socketDescriptor()) {
+    return LastError();
   }
 
-  if (false == _isBlocking) {
-    Error error = TCPSocket::SetBlocking(data->_sockFd, _isBlocking);
+  if (!_isBlocking) {
+    Error error = TCPSocket::SetBlocking(data->socketDescriptor(), _isBlocking);
 
     if (ESB_SUCCESS != error) {
-      TCPSocket::Close(data->_sockFd);
-      data->_sockFd = -1;
-
+      TCPSocket::Close(data->socketDescriptor());
+      data->setSocketDescriptor(-1);
       return error;
     }
   }
 
-  data->_listeningAddress = _listeningAddress;
-  data->_isBlocking = _isBlocking;
+  data->setListeningAddress(_listeningAddress);
+  data->setIsBlocking(_isBlocking);
 
   return ESB_SUCCESS;
 }
 
-const SocketAddress &ListeningTCPSocket::getListeningAddress() const {
+const SocketAddress &ListeningTCPSocket::listeningAddress() const {
   return _listeningAddress;
 }
 

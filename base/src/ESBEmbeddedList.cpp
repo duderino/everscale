@@ -16,11 +16,9 @@ void EmbeddedList::clear(bool cleanup) {
     return;
   }
 
-  CleanupHandler *cleanupHandler = 0;
-
   for (EmbeddedListElement *element = removeFirst(); element;
        element = removeFirst()) {
-    cleanupHandler = element->getCleanupHandler();
+    CleanupHandler *cleanupHandler = element->cleanupHandler();
 
     if (cleanupHandler) {
       cleanupHandler->destroy(element);
@@ -28,11 +26,11 @@ void EmbeddedList::clear(bool cleanup) {
   }
 }
 
-int EmbeddedList::length() const {
+int EmbeddedList::size() const {
   int length = 0;
 
   for (EmbeddedListElement *current = _head; current;
-       current = current->getNext()) {
+       current = current->next()) {
     ++length;
   }
 
@@ -51,7 +49,7 @@ void EmbeddedList::remove(EmbeddedListElement *element) {
 #ifndef NDEBUG
   {
     bool foundElement = false;
-    for (EmbeddedListElement *elem = _head; elem; elem = elem->getNext()) {
+    for (EmbeddedListElement *elem = _head; elem; elem = elem->next()) {
       if (elem == element) {
         foundElement = true;
       }
@@ -60,24 +58,24 @@ void EmbeddedList::remove(EmbeddedListElement *element) {
   }
 #endif
 
-  if (element->getPrevious()) {
-    element->getPrevious()->setNext(element->getNext());
+  if (element->previous()) {
+    element->previous()->setNext(element->next());
   } else {
     assert(_head == element);
 
-    _head = element->getNext();
+    _head = element->next();
 
     if (_head) {
       _head->setPrevious(0);
     }
   }
 
-  if (element->getNext()) {
-    element->getNext()->setPrevious(element->getPrevious());
+  if (element->next()) {
+    element->next()->setPrevious(element->previous());
   } else {
     assert(_tail == element);
 
-    _tail = element->getPrevious();
+    _tail = element->previous();
 
     if (_tail) {
       _tail->setNext(0);
@@ -89,8 +87,8 @@ void EmbeddedList::remove(EmbeddedListElement *element) {
 }
 
 void EmbeddedList::addFirst(EmbeddedListElement *element) {
-  assert(!element->getNext());
-  assert(!element->getPrevious());
+  assert(!element->next());
+  assert(!element->previous());
   if (0 == _head) {
     _head = element;
     _tail = element;
@@ -107,8 +105,8 @@ void EmbeddedList::addFirst(EmbeddedListElement *element) {
 }
 
 void EmbeddedList::addLast(EmbeddedListElement *element) {
-  assert(!element->getNext());
-  assert(!element->getPrevious());
+  assert(!element->next());
+  assert(!element->previous());
   if (0 == _tail) {
     _head = element;
     _tail = element;
@@ -126,11 +124,11 @@ void EmbeddedList::addLast(EmbeddedListElement *element) {
 
 bool EmbeddedList::validate() const {
   for (EmbeddedListElement *current = _head; current;
-       current = current->getNext()) {
-    if (current->getNext()) {
-      assert(current == current->getNext()->getPrevious());
+       current = current->next()) {
+    if (current->next()) {
+      assert(current == current->next()->previous());
 
-      if (current != current->getNext()->getPrevious()) {
+      if (current != current->next()->previous()) {
         return false;
       }
     } else {
@@ -141,10 +139,10 @@ bool EmbeddedList::validate() const {
       }
     }
 
-    if (current->getPrevious()) {
-      assert(current == current->getPrevious()->getNext());
+    if (current->previous()) {
+      assert(current == current->previous()->next());
 
-      if (current != current->getPrevious()->getNext()) {
+      if (current != current->previous()->next()) {
         return false;
       }
     } else {

@@ -32,40 +32,37 @@ SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
 
 SimplePerformanceCounter::~SimplePerformanceCounter() {}
 
-double SimplePerformanceCounter::getQueriesPerSec() const {
+double SimplePerformanceCounter::queriesPerSec() const {
   ReadScopeLock lock(_lock);
-  return getQueriesPerSecNoLock();
+  return queriesPerSecNoLock();
 }
 
-double SimplePerformanceCounter::getQueriesPerSecNoLock() const {
-  if (0 == _latencyMsec.getObservations()) {
+double SimplePerformanceCounter::queriesPerSecNoLock() const {
+  if (0 == _latencyMsec.n()) {
     return 0;
   }
 
   Date window;
 
-  if (0 == _windowStop.getSeconds() && 0 == _windowStop.getMicroSeconds()) {
+  if (0 == _windowStop.seconds() && 0 == _windowStop.microSeconds()) {
     window = Date::Now() - _windowStart;
   } else {
     window = _windowStop - _windowStart;
   }
 
-  double diffMsec =
-      window.getSeconds() * 1000.0 + window.getMicroSeconds() / 1000.0;
+  double diffMsec = window.seconds() * 1000.0 + window.microSeconds() / 1000.0;
 
-  return _latencyMsec.getObservations() / diffMsec * 1000.0;
+  return _latencyMsec.n() / diffMsec * 1000.0;
 }
 
-void SimplePerformanceCounter::addObservation(const Date &start,
-                                              const Date &stop) {
+void SimplePerformanceCounter::record(const Date &start, const Date &stop) {
   Date diff(stop - start);
-  double diffMSec =
-      diff.getSeconds() * 1000.0 + diff.getMicroSeconds() / 1000.0;
+  double diffMSec = diff.seconds() * 1000.0 + diff.microSeconds() / 1000.0;
 
   {
     WriteScopeLock lock(_lock);
 
-    if (0 == _windowStart.getSeconds() && 0 == _windowStart.getMicroSeconds()) {
+    if (0 == _windowStart.seconds() && 0 == _windowStart.microSeconds()) {
       _windowStart = Date::Now();
     }
 
@@ -73,9 +70,9 @@ void SimplePerformanceCounter::addObservation(const Date &start,
   }
 }
 
-double SimplePerformanceCounter::getVarianceMsec() const {
+double SimplePerformanceCounter::varianceMSec() const {
   ReadScopeLock lock(_lock);
-  return _latencyMsec.getVariance();
+  return _latencyMsec.variance();
 }
 
 void SimplePerformanceCounter::log(Logger &logger,
@@ -86,12 +83,12 @@ void SimplePerformanceCounter::log(Logger &logger,
   {
     ReadScopeLock lock(_lock);
 
-    meanMSec = _latencyMsec.getMean();
-    varianceMSec = _latencyMsec.getVariance();
-    minMSec = _latencyMsec.getMin();
-    maxMSec = _latencyMsec.getMax();
-    qps = getQueriesPerSecNoLock();
-    queries = _latencyMsec.getObservations();
+    meanMSec = _latencyMsec.mean();
+    varianceMSec = _latencyMsec.variance();
+    minMSec = _latencyMsec.min();
+    maxMSec = _latencyMsec.max();
+    qps = queriesPerSecNoLock();
+    queries = _latencyMsec.n();
   }
 
   ESB_LOG(logger, severity,
@@ -100,24 +97,24 @@ void SimplePerformanceCounter::log(Logger &logger,
           _name, qps, queries, meanMSec, varianceMSec, minMSec, maxMSec);
 }
 
-UInt32 SimplePerformanceCounter::getQueries() const {
+UInt32 SimplePerformanceCounter::queries() const {
   ReadScopeLock lock(_lock);
-  return _latencyMsec.getObservations();
+  return _latencyMsec.n();
 }
 
-double SimplePerformanceCounter::getMeanMsec() const {
+double SimplePerformanceCounter::meanMSec() const {
   ReadScopeLock lock(_lock);
-  return _latencyMsec.getMean();
+  return _latencyMsec.mean();
 }
 
-double SimplePerformanceCounter::getMinMsec() const {
+double SimplePerformanceCounter::minMSec() const {
   ReadScopeLock lock(_lock);
-  return _latencyMsec.getMin();
+  return _latencyMsec.min();
 }
 
-double SimplePerformanceCounter::getMaxMsec() const {
+double SimplePerformanceCounter::maxMSec() const {
   ReadScopeLock lock(_lock);
-  return _latencyMsec.getMax();
+  return _latencyMsec.max();
 }
 
 }  // namespace ESB

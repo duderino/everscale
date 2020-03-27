@@ -98,7 +98,7 @@ class BuddyAllocatorTest : public ESTF::Component {
 ESTF_OBJECT_PTR(BuddyAllocatorTest, ESTF::Component)
 
 BuddyAllocatorTest::BuddyAllocatorTest()
-    : _rand(), _allocator(17, SystemAllocator::GetInstance()) {}
+    : _rand(), _allocator(17, SystemAllocator::Instance()) {}
 
 BuddyAllocatorTest::~BuddyAllocatorTest() {}
 
@@ -112,17 +112,6 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
   Error error;
   int bytesAllocated = 0;
   char buffer[256];
-
-  error = _allocator.initialize();
-
-  if (ESB_SUCCESS != error) {
-    DescribeError(error, buffer, sizeof(buffer));
-
-    ESTF_FAILURE(collector, buffer);
-    ESTF_ERROR(collector, "Failed to initialize allocator");
-
-    return false;
-  }
 
   struct allocation {
     int size;
@@ -179,27 +168,14 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
                     << std::endl;
         }
 
-        error = _allocator.allocate(&allocations[j].data, allocations[j].size);
+        allocations[j].data = _allocator.allocate(allocations[j].size);
 
         //
-        //  We allow failures after half of the allocators memory
-        //  has been allocated.
+        //  We ignore failures due to internal fragmentation after half of the
+        //  allocators memory has been allocated.
         //
-        if ((bytesAllocated < (1 << 16)) || allocations[j].data) {
-          if (ESB_SUCCESS != error) {
-            DescribeError(error, buffer, sizeof(buffer));
-            ESTF_FAILURE(collector, buffer);
-          }
-
-          ESTF_ASSERT(collector, ESB_SUCCESS == error);
+        if ((bytesAllocated < (1 << 16))) {
           ESTF_ASSERT(collector, allocations[j].data);
-        } else {
-          if (ESB_OUT_OF_MEMORY != error) {
-            DescribeError(error, buffer, sizeof(buffer));
-            ESTF_FAILURE(collector, buffer);
-          }
-
-          ESTF_ASSERT(collector, ESB_OUT_OF_MEMORY == error);
         }
 
         if (!allocations[j].data) {
@@ -272,22 +248,11 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
   // big block, try a really big allocation.
   //
 
-  error = _allocator.allocate(&allocations[0].data, 1 << 16);
-
-  if (ESB_SUCCESS != error) {
-    DescribeError(error, buffer, sizeof(buffer));
-    ESTF_FAILURE(collector, buffer);
-  }
-
-  ESTF_ASSERT(collector, ESB_SUCCESS == error);
+  allocations[0].data = _allocator.allocate(1 << 16);
   ESTF_ASSERT(collector, allocations[0].data);
 
   if (allocations[0].data) {
     memset(allocations[0].data, 'B', 1 << 16);
-
-    error = _allocator.destroy();
-
-    ESTF_ASSERT(collector, ESB_IN_USE == error);
 
     if (Debug) {
       std::cerr << "Allocated big block of size " << (1 << 16) << std::endl;
@@ -306,17 +271,6 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
   } else {
     std::cerr << "Failed to alloc big block of size " << (1 << 16) << std::endl;
   }
-
-  error = _allocator.destroy();
-
-  if (ESB_SUCCESS != error) {
-    DescribeError(error, buffer, sizeof(buffer));
-    ESTF_FAILURE(collector, buffer);
-    ESTF_ERROR(collector, "Failed to destroy allocator");
-    return false;
-  }
-
-  ESTF_ASSERT(collector, ESB_SUCCESS == error);
 
   return true;
 }

@@ -63,22 +63,20 @@ class SmartPointerDebugger {
    *
    *  @param object The object to unregister.
    */
-  void erase(ReferenceCount *object);
+  void remove(ReferenceCount *object);
 
   /** Get the current number of registered objects.  That is, the current
    *  number of active object references.
    *
    *  @return The current number of registered objects.
    */
-  int getSize();
+  int size();
 
  private:
-  /** Constructor */
+  // Singleton
   SmartPointerDebugger();
-
   // Disabled
   SmartPointerDebugger(const SmartPointerDebugger &);
-  // Disabled
   SmartPointerDebugger *operator=(const SmartPointerDebugger &);
 
   static SmartPointerDebugger _Instance;

@@ -8,8 +8,7 @@
 
 namespace ESB {
 
-SocketMultiplexer::SocketMultiplexer(const char *name)
-    : _name(name ? name : "SocketMultiplexer") {}
+SocketMultiplexer::SocketMultiplexer() {}
 
 SocketMultiplexer::~SocketMultiplexer() {}
 

@@ -22,7 +22,7 @@ namespace ESB {
 
 #ifdef HAVE_ERRNO
 
-Error GetLastError() { return ConvertError(errno); }
+Error LastError() { return ConvertError(errno); }
 
 Error ConvertError(int error) {
   switch (error) {
