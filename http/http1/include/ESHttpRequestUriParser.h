@@ -33,7 +33,7 @@ class HttpRequestUriParser {
    * strings.
    */
   HttpRequestUriParser(ESB::Buffer *workingBuffer,
-                       ESB::DiscardAllocator *allocator);
+                       ESB::DiscardAllocator &allocator);
 
   virtual ~HttpRequestUriParser();
 
@@ -112,7 +112,7 @@ class HttpRequestUriParser {
 
   int _state;
   ESB::Buffer *_workingBuffer;
-  ESB::DiscardAllocator *_allocator;
+  ESB::DiscardAllocator &_allocator;
 };
 
 }  // namespace ES

@@ -17,16 +17,8 @@
 #include <ESBEpollMultiplexerFactory.h>
 #endif
 
-#ifndef ESB_SOCKET_MULTIPLEXER_DISPATCHER_H
-#include <ESBSocketMultiplexerDispatcher.h>
-#endif
-
 #ifndef ESB_SHARED_ALLOCATOR_H
 #include <ESBSharedAllocator.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_CLEANUP_HANDLER_H
-#include <ESBAllocatorCleanupHandler.h>
 #endif
 
 #ifndef ES_HTTP_LISTENING_SOCKET_H
@@ -79,6 +71,14 @@
 
 #ifndef ES_HTTP_SERVER_COUNTERS_H
 #include <ESHttpServerCounters.h>
+#endif
+
+#ifndef ESB_THREAD_POOL_H
+#include <ESBThreadPool.h>
+#endif
+
+#ifndef ESB_LIST_H
+#include <ESBList.h>
 #endif
 
 namespace ES {
@@ -175,11 +175,12 @@ class HttpStack : public HttpConnectionPool {
   ESB::SharedAllocator _rootAllocator;
   ESB::AllocatorCleanupHandler _rootAllocatorCleanupHandler;
   ESB::EpollMultiplexerFactory _epollFactory;
+  ESB::List _multiplexers;
+  ESB::ThreadPool _threadPool;
   ESB::ListeningTCPSocket _listeningSocket;
   HttpServerSocketFactory _serverSocketFactory;
   HttpClientSocketFactory _clientSocketFactory;
   HttpClientTransactionFactory _clientTransactionFactory;
-  ESB::SocketMultiplexerDispatcher _dispatcher;
 };
 
 }  // namespace ES

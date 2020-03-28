@@ -18,7 +18,7 @@ namespace ES {
 #define ES_PARSE_COMPLETE (1 << 3)
 
 HttpRequestParser::HttpRequestParser(ESB::Buffer *workingBuffer,
-                                     ESB::DiscardAllocator *allocator)
+                                     ESB::DiscardAllocator &allocator)
     : HttpMessageParser(workingBuffer, allocator),
       _requestState(0x00),
       _requestUriParser(workingBuffer, allocator) {}
@@ -124,7 +124,7 @@ ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsSpace(octet)) {
       request->setMethod(_workingBuffer->duplicate(_allocator));

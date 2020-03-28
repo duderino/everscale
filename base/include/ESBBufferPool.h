@@ -30,11 +30,16 @@ class BufferPool {
   /** Constructor.
    *
    * @param bufferSize The size in bytes of each individual buffer
-   * @param maxBuffers The maximum number of buffers to keep in the pool. 0 for infinite.  Defaults to infinite.
-   * @param lock A lock to use for internal synchronization.  Defaults to null/no locking.
-   * @param allocator The allocator to use to allocate buffers.  Defaults to malloc.
+   * @param maxBuffers The maximum number of buffers to keep in the pool. 0 for
+   * infinite.  Defaults to infinite.
+   * @param lock A lock to use for internal synchronization.  Defaults to
+   * null/no locking.
+   * @param allocator The allocator to use to allocate buffers.  Defaults to
+   * malloc.
    */
-  BufferPool(UInt32 bufferSize, UInt32 maxBuffers = 0, Lockable &lock = NullLock::Instance(), Allocator &allocator = SystemAllocator::Instance());
+  BufferPool(UInt32 bufferSize, UInt32 maxBuffers = 0,
+             Lockable &lock = NullLock::Instance(),
+             Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */

@@ -8,7 +8,14 @@
 
 namespace ESB {
 
-BufferPool::BufferPool(UInt32 bufferSize,UInt32 maxBuffers,Lockable &lock, Allocator &allocator) : _maxBuffers(maxBuffers), _bufferSize(bufferSize), _listSize(0U), _lock(lock), _allocator(allocator), _embeddedList() {}
+BufferPool::BufferPool(UInt32 bufferSize, UInt32 maxBuffers, Lockable &lock,
+                       Allocator &allocator)
+    : _maxBuffers(maxBuffers),
+      _bufferSize(bufferSize),
+      _listSize(0U),
+      _lock(lock),
+      _allocator(allocator),
+      _embeddedList() {}
 
 BufferPool::~BufferPool() {
   for (EmbeddedListElement *element = _embeddedList.removeFirst(); element;

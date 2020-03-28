@@ -6,7 +6,7 @@ namespace ES {
 
 HttpServerTransaction::HttpServerTransaction()
     : HttpTransaction(0),
-      _parser(getWorkingBuffer(), &_allocator),
+      _parser(getWorkingBuffer(), _allocator),
       _formatter() {}
 
 HttpServerTransaction::~HttpServerTransaction() {}

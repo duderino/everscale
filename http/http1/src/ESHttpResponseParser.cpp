@@ -18,7 +18,7 @@ namespace ES {
 #define ES_PARSE_COMPLETE (1 << 3)
 
 HttpResponseParser::HttpResponseParser(ESB::Buffer *workingBuffer,
-                                       ESB::DiscardAllocator *allocator)
+                                       ESB::DiscardAllocator &allocator)
     : HttpMessageParser(workingBuffer, allocator), _responseState(0x00) {}
 
 HttpResponseParser::~HttpResponseParser() {}
@@ -108,7 +108,7 @@ ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
 
   HttpUtil::SkipSpaces(inputBuffer);
 
-  if (4 > inputBuffer->getReadable()) {
+  if (4 > inputBuffer->readable()) {
     return ESB_AGAIN;
   }
 
@@ -118,7 +118,7 @@ ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
   for (int i = 0; i < 3; ++i) {
     assert(inputBuffer->isReadable());
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (false == HttpUtil::IsDigit(octet)) {
       return ES_HTTP_BAD_STATUS_CODE;
@@ -129,7 +129,7 @@ ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
 
   assert(inputBuffer->isReadable());
 
-  if (false == HttpUtil::IsSpace(inputBuffer->getNext())) {
+  if (false == HttpUtil::IsSpace(inputBuffer->next())) {
     return ES_HTTP_BAD_STATUS_CODE;
   }
 
@@ -156,10 +156,10 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsLWS(octet)) {
-      inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+      inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
       error = HttpUtil::SkipLWS(inputBuffer);
 
@@ -186,7 +186,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
           // LWS encountered - replace with a single space & trim leading white
           // space
 
-          if (0 < _workingBuffer->getWritePosition()) {
+          if (0 < _workingBuffer->writePosition()) {
             _workingBuffer->putNext(' ');
           }
 

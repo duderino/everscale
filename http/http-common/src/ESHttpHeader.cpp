@@ -12,5 +12,5 @@ HttpHeader::HttpHeader(const unsigned char *fieldName,
 
 HttpHeader::~HttpHeader() {}
 
-ESB::CleanupHandler *HttpHeader::getCleanupHandler() { return 0; }
+ESB::CleanupHandler *HttpHeader::cleanupHandler() { return 0; }
 }  // namespace ES

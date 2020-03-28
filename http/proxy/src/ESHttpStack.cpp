@@ -6,8 +6,8 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESB_PROCESS_LIMITS_H
-#include <ESBProcessLimits.h>
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
 #endif
 
 #include <errno.h>
@@ -25,16 +25,16 @@ HttpStack::HttpStack(HttpServerHandler *serverHandler,
       _serverHandler(serverHandler),
       _serverCounters(serverCounters),
       _clientCounters(clientCounters),
-      _discardAllocator(4000, ESB::SystemAllocator::GetInstance()),
-      _rootAllocator(&_discardAllocator),
-      _rootAllocatorCleanupHandler(&_rootAllocator),
-      _epollFactory("HttpMultiplexer", &_rootAllocator),
+      _discardAllocator(ESB::SystemConfig::Instance().pageSize()),
+      _rootAllocator(_discardAllocator),
+      _rootAllocatorCleanupHandler(_rootAllocator),
+      _epollFactory("HttpMultiplexer", _rootAllocator),
+      _multiplexers(),
+      _threadPool("HttpMultiplexerPool", _threads),
       _listeningSocket(_port, ESB_UINT16_MAX, false),
       _serverSocketFactory(_serverCounters),
       _clientSocketFactory(_clientCounters),
-      _clientTransactionFactory(),
-      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads,
-                  &_epollFactory, &_rootAllocator, "HttpDispatcher") {}
+      _clientTransactionFactory() {}
 
 HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
                      HttpClientCounters *clientCounters)
@@ -45,32 +45,26 @@ HttpStack::HttpStack(ESB::DnsClient *dnsClient, int threads,
       _serverHandler(0),
       _serverCounters(0),
       _clientCounters(clientCounters),
-      _discardAllocator(4000, ESB::SystemAllocator::GetInstance()),
-      _rootAllocator(&_discardAllocator),
-      _rootAllocatorCleanupHandler(&_rootAllocator),
-      _epollFactory("HttpMultiplexer", &_rootAllocator),
+      _discardAllocator(ESB::SystemConfig::Instance().pageSize()),
+      _rootAllocator(_discardAllocator),
+      _rootAllocatorCleanupHandler(_rootAllocator),
+      _epollFactory("HttpMultiplexer", _rootAllocator),
+      _multiplexers(),
+      _threadPool("HttpMultiplexerPool", _threads),
       _listeningSocket(_port, ESB_UINT16_MAX, false),
       _serverSocketFactory(_serverCounters),
       _clientSocketFactory(_clientCounters),
-      _clientTransactionFactory(),
-      _dispatcher(ESB::ProcessLimits::GetSocketSoftMax(), _threads,
-                  &_epollFactory, &_rootAllocator, "HttpDispatcher") {}
+      _clientTransactionFactory() {}
 
 HttpStack::~HttpStack() {}
 
 ESB::Error HttpStack::initialize() {
   assert(ES_HTTP_STACK_IS_DESTROYED == _state.get());
 
-  ESB_LOG_NOTICE("Maximum sockets %u", ESB::ProcessLimits::GetSocketSoftMax());
+  ESB_LOG_NOTICE("Maximum sockets %u",
+                 ESB::SystemConfig::Instance().socketSoftMax());
 
-  ESB::Error error = _rootAllocator.initialize();
-
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize root allocator");
-    return error;
-  }
-
-  error = _clientSocketFactory.initialize();
+  ESB::Error error = _clientSocketFactory.initialize();
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize client socket factory");
@@ -117,24 +111,50 @@ ESB::Error HttpStack::initialize() {
 ESB::Error HttpStack::start() {
   assert(ES_HTTP_STACK_IS_INITIALIZED == _state.get());
 
-  ESB::Error error = _dispatcher.start();
+  ESB::Error error = _threadPool.start();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot start multiplexer dispatcher");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot start multiplexer threads");
     return error;
-  }
-
-  if (0 > _port || 0 == _serverHandler) {
-    _state.set(ES_HTTP_STACK_IS_STARTED);
-    ESB_LOG_NOTICE("Started");
-    return ESB_SUCCESS;
   }
 
   HttpListeningSocket *socket = 0;
 
   for (int i = 0; i < _threads; ++i) {
-    socket = new (&_rootAllocator) HttpListeningSocket(
-        _serverHandler, &_listeningSocket, &_dispatcher, &_serverSocketFactory,
+    ESB::SocketMultiplexer *multiplexer =
+        _epollFactory.create(ESB::SystemConfig::Instance().socketSoftMax());
+    if (!multiplexer) {
+      ESB_LOG_CRITICAL("Cannot allocate new multiplexer");
+      return ESB_OUT_OF_MEMORY;
+    }
+
+    error = multiplexer->initialize();
+
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize multiplexer");
+      return error;
+    }
+
+    error = _threadPool.execute(multiplexer);
+
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot schedule multiplexer on thread");
+      return error;
+    }
+
+    error = _multiplexers.pushBack(multiplexer);
+
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot add multiplexer to multiplexers");
+      return error;
+    }
+
+    if (0 > _port || !_serverHandler) {
+      continue;
+    }
+
+    socket = new (_rootAllocator) HttpListeningSocket(
+        _serverHandler, &_listeningSocket, &_serverSocketFactory,
         &_rootAllocatorCleanupHandler, _serverCounters);
 
     if (!socket) {
@@ -142,11 +162,10 @@ ESB::Error HttpStack::start() {
       return ESB_OUT_OF_MEMORY;
     }
 
-    error = _dispatcher.addMultiplexedSocket(i, socket);
+    error = multiplexer->addMultiplexedSocket(socket);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error,
-                             "Cannot add listening socket to multiplexer");
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot add listener to multiplexer");
       return error;
     }
   }
@@ -161,7 +180,7 @@ ESB::Error HttpStack::stop() {
   _state.set(ES_HTTP_STACK_IS_STOPPED);
 
   ESB_LOG_NOTICE("Stopping");
-  _dispatcher.stop();
+  _threadPool.stop();
   ESB_LOG_NOTICE("Stopped");
 
   return ESB_SUCCESS;
@@ -227,8 +246,8 @@ ESB::Error HttpStack::executeClientTransaction(
                               isSecure);
 
   if (ESB_SUCCESS != error) {
-    _clientCounters->getFailures()->addObservation(transaction->getStartTime(),
-                                                   ESB::Date::Now());
+    _clientCounters->getFailures()->record(transaction->getStartTime(),
+                                           ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RESOLVE);
     return error;
@@ -237,8 +256,8 @@ ESB::Error HttpStack::executeClientTransaction(
   HttpClientSocket *socket = _clientSocketFactory.create(this, transaction);
 
   if (!socket) {
-    _clientCounters->getFailures()->addObservation(transaction->getStartTime(),
-                                                   ESB::Date::Now());
+    _clientCounters->getFailures()->record(transaction->getStartTime(),
+                                           ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
     ESB_LOG_CRITICAL("Cannot allocate new client socket");
@@ -249,8 +268,8 @@ ESB::Error HttpStack::executeClientTransaction(
     error = socket->connect();
 
     if (ESB_SUCCESS != error) {
-      _clientCounters->getFailures()->addObservation(
-          transaction->getStartTime(), ESB::Date::Now());
+      _clientCounters->getFailures()->record(transaction->getStartTime(),
+                                             ESB::Date::Now());
       ESB_LOG_WARNING_ERRNO(error, "Cannot connect to %s:%d", hostname, port);
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -260,15 +279,39 @@ ESB::Error HttpStack::executeClientTransaction(
     }
   }
 
-  error = _dispatcher.addMultiplexedSocket(socket);
+  ESB::SocketMultiplexer *multiplexer = NULL;
+  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
+       it = it.next()) {
+    ESB::SocketMultiplexer *current = (ESB::SocketMultiplexer *)it.value();
+    if (!multiplexer) {
+      multiplexer = current;
+      continue;
+    }
+    if (current->currentSockets() < multiplexer->currentSockets()) {
+      multiplexer = current;
+    }
+  }
+
+  assert(multiplexer);
+  if (!multiplexer) {
+    ESB_LOG_CRITICAL(
+        "Cannot add client socket to multiplexer, no multiplexers");
+    _clientCounters->getFailures()->record(transaction->getStartTime(),
+                                           ESB::Date::Now());
+    socket->close();
+    _clientSocketFactory.release(socket);
+    return error;
+  }
+
+  error = multiplexer->addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    _clientCounters->getFailures()->addObservation(transaction->getStartTime(),
-                                                   ESB::Date::Now());
+    _clientCounters->getFailures()->record(transaction->getStartTime(),
+                                           ESB::Date::Now());
     socket->close();
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add cient socket to multiplexer");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add client socket to multiplexer");
     _clientSocketFactory.release(socket);
     return error;
   }

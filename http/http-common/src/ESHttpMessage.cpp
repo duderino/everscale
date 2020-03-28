@@ -21,8 +21,8 @@ const HttpHeader *HttpMessage::getHeader(unsigned const char *fieldName) const {
     return 0;
   }
 
-  for (const HttpHeader *header = (const HttpHeader *)_headers.getFirst();
-       header; header = (const HttpHeader *)header->getNext()) {
+  for (const HttpHeader *header = (const HttpHeader *)_headers.first(); header;
+       header = (const HttpHeader *)header->next()) {
     if (0 == strcasecmp((const char *)fieldName,
                         (const char *)header->getFieldName())) {
       return header;

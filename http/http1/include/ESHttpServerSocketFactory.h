@@ -44,7 +44,7 @@ class HttpServerSocketFactory {
   void destroy();
 
   HttpServerSocket *create(HttpServerHandler *handler,
-                           ESB::TCPSocket::AcceptData *acceptData);
+                           ESB::TCPSocket::State &state);
 
   void release(HttpServerSocket *socket);
 

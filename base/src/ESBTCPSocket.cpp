@@ -28,13 +28,13 @@
 
 namespace ESB {
 
-TCPSocket::State::State() :
-EmbeddedMapElement(),
-                             _isBlocking(false),
-                             _socketDescriptor(INVALID_SOCKET),
-                             _listeningAddress(),
-                             _peerAddress(),
-                             _cleanupHandler(NULL) {}
+TCPSocket::State::State()
+    : EmbeddedMapElement(),
+      _isBlocking(false),
+      _socketDescriptor(INVALID_SOCKET),
+      _listeningAddress(),
+      _peerAddress(),
+      _cleanupHandler(NULL) {}
 
 TCPSocket::State::State(bool isBlocking, SOCKET sockFd,
                         const SocketAddress &listeningAddress,
@@ -76,8 +76,7 @@ TCPSocket::TCPSocket(bool isBlocking)
     : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
 TCPSocket::TCPSocket(const State &state)
-    : _isBlocking(state.isBlocking()),
-      _sockFd(state.socketDescriptor()) {}
+    : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
 
 TCPSocket::~TCPSocket() { close(); }
 

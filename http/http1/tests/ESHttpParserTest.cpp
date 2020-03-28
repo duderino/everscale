@@ -42,10 +42,9 @@ static ESB::Buffer OutputBuffer(OutputBufferStorage,
                                 sizeof(OutputBufferStorage));
 static ESB::Buffer WorkingBuffer(WorkingBufferStorage,
                                  sizeof(WorkingBufferStorage));
-static ESB::DiscardAllocator Allocator(4096,
-                                       ESB::SystemAllocator::GetInstance());
-static HttpRequestParser RequestParser(&WorkingBuffer, &Allocator);
-static HttpResponseParser ResponseParser(&WorkingBuffer, &Allocator);
+static ESB::DiscardAllocator Allocator(4096, 64);
+static HttpRequestParser RequestParser(&WorkingBuffer, Allocator);
+static HttpResponseParser ResponseParser(&WorkingBuffer, Allocator);
 static HttpRequestFormatter RequestFormatter;
 static HttpResponseFormatter ResponseFormatter;
 static bool ParseRequest(const char *file);
@@ -105,7 +104,7 @@ bool ParseRequest(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
-      bytesToRead = Random.generateRandom(1, InputBuffer.getWritable());
+      bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
         if (1 < Debug)
@@ -117,8 +116,7 @@ bool ParseRequest(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd,
-                    InputBuffer.getBuffer() + InputBuffer.getWritePosition(),
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
                     bytesToRead);
 
       if (0 > result) {
@@ -132,7 +130,7 @@ bool ParseRequest(const char *inputFileName) {
         return false;
       }
 
-      InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
+      InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
@@ -196,8 +194,8 @@ bool ParseRequest(const char *inputFileName) {
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (HttpHeader *)request.getHeaders()->getFirst(); header;
-           header = (HttpHeader *)header->getNext()) {
+      for (header = (HttpHeader *)request.getHeaders()->first(); header;
+           header = (HttpHeader *)header->next()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->getFieldName(),
                 0 == header->getFieldValue()
                     ? "null"
@@ -225,8 +223,8 @@ bool ParseRequest(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.getBuffer(),
-                       OutputBuffer.getReadable());
+        result =
+            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
           fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -255,8 +253,7 @@ bool ParseRequest(const char *inputFileName) {
     fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result =
-        write(outputFd, OutputBuffer.getBuffer(), OutputBuffer.getReadable());
+    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
       fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -285,7 +282,7 @@ bool ParseRequest(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
-      bytesToRead = Random.generateRandom(1, InputBuffer.getWritable());
+      bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
         if (1 < Debug)
@@ -297,8 +294,7 @@ bool ParseRequest(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd,
-                    InputBuffer.getBuffer() + InputBuffer.getWritePosition(),
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
                     bytesToRead);
 
       if (0 > result) {
@@ -312,7 +308,7 @@ bool ParseRequest(const char *inputFileName) {
         break;
       }
 
-      InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
+      InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
@@ -335,7 +331,7 @@ bool ParseRequest(const char *inputFileName) {
     if (Debug) {
       char buffer[sizeof(InputBufferStorage) + 1];
 
-      memcpy(buffer, InputBuffer.getBuffer() + startingPosition, chunkSize);
+      memcpy(buffer, InputBuffer.buffer() + startingPosition, chunkSize);
       buffer[chunkSize] = 0;
 
       if (3 < Debug) fprintf(stderr, "read chunk:\n");
@@ -359,8 +355,8 @@ bool ParseRequest(const char *inputFileName) {
         }
 
         while (OutputBuffer.isReadable()) {
-          result = write(outputFd, OutputBuffer.getBuffer(),
-                         OutputBuffer.getReadable());
+          result =
+              write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
           if (0 > result) {
             fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -380,11 +376,11 @@ bool ParseRequest(const char *inputFileName) {
         return false;
       }
 
-      memcpy(OutputBuffer.getBuffer() + OutputBuffer.getWritePosition(),
-             InputBuffer.getBuffer() + startingPosition + bytesWritten,
+      memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(),
+             InputBuffer.buffer() + startingPosition + bytesWritten,
              availableSize);
 
-      OutputBuffer.setWritePosition(OutputBuffer.getWritePosition() +
+      OutputBuffer.setWritePosition(OutputBuffer.writePosition() +
                                     availableSize);
 
       bytesWritten += availableSize;
@@ -403,8 +399,8 @@ bool ParseRequest(const char *inputFileName) {
           }
 
           while (OutputBuffer.isReadable()) {
-            result = write(outputFd, OutputBuffer.getBuffer(),
-                           OutputBuffer.getReadable());
+            result =
+                write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
             if (0 > result) {
               fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -444,8 +440,8 @@ bool ParseRequest(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.getBuffer(),
-                       OutputBuffer.getReadable());
+        result =
+            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
           fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -474,8 +470,7 @@ bool ParseRequest(const char *inputFileName) {
     fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result =
-        write(outputFd, OutputBuffer.getBuffer(), OutputBuffer.getReadable());
+    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
       fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -497,7 +492,7 @@ bool ParseRequest(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
-      bytesToRead = Random.generateRandom(1, InputBuffer.getWritable());
+      bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
         if (1 < Debug)
@@ -509,8 +504,7 @@ bool ParseRequest(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd,
-                    InputBuffer.getBuffer() + InputBuffer.getWritePosition(),
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
                     bytesToRead);
 
       if (0 > result) {
@@ -524,7 +518,7 @@ bool ParseRequest(const char *inputFileName) {
         return false;
       }
 
-      InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
+      InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
@@ -607,7 +601,7 @@ bool ParseResponse(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
-      bytesToRead = Random.generateRandom(1, InputBuffer.getWritable());
+      bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
         if (1 < Debug)
@@ -619,8 +613,7 @@ bool ParseResponse(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd,
-                    InputBuffer.getBuffer() + InputBuffer.getWritePosition(),
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
                     bytesToRead);
 
       if (0 > result) {
@@ -634,7 +627,7 @@ bool ParseResponse(const char *inputFileName) {
         return false;
       }
 
-      InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
+      InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
@@ -658,8 +651,8 @@ bool ParseResponse(const char *inputFileName) {
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (HttpHeader *)response.getHeaders()->getFirst(); header;
-           header = (HttpHeader *)header->getNext()) {
+      for (header = (HttpHeader *)response.getHeaders()->first(); header;
+           header = (HttpHeader *)header->next()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->getFieldName(),
                 0 == header->getFieldValue()
                     ? "null"
@@ -687,8 +680,8 @@ bool ParseResponse(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.getBuffer(),
-                       OutputBuffer.getReadable());
+        result =
+            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
           fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -717,8 +710,7 @@ bool ParseResponse(const char *inputFileName) {
     fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result =
-        write(outputFd, OutputBuffer.getBuffer(), OutputBuffer.getReadable());
+    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
       fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -747,7 +739,7 @@ bool ParseResponse(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
-      bytesToRead = Random.generateRandom(1, InputBuffer.getWritable());
+      bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
         if (1 < Debug)
@@ -759,8 +751,7 @@ bool ParseResponse(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd,
-                    InputBuffer.getBuffer() + InputBuffer.getWritePosition(),
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
                     bytesToRead);
 
       if (0 > result) {
@@ -774,7 +765,7 @@ bool ParseResponse(const char *inputFileName) {
         break;
       }
 
-      InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
+      InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
@@ -797,7 +788,7 @@ bool ParseResponse(const char *inputFileName) {
     if (Debug) {
       char buffer[sizeof(InputBufferStorage) + 1];
 
-      memcpy(buffer, InputBuffer.getBuffer() + startingPosition, chunkSize);
+      memcpy(buffer, InputBuffer.buffer() + startingPosition, chunkSize);
       buffer[chunkSize] = 0;
 
       if (3 < Debug) fprintf(stderr, "read chunk:\n");
@@ -821,8 +812,8 @@ bool ParseResponse(const char *inputFileName) {
         }
 
         while (OutputBuffer.isReadable()) {
-          result = write(outputFd, OutputBuffer.getBuffer(),
-                         OutputBuffer.getReadable());
+          result =
+              write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
           if (0 > result) {
             fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -842,11 +833,11 @@ bool ParseResponse(const char *inputFileName) {
         return false;
       }
 
-      memcpy(OutputBuffer.getBuffer() + OutputBuffer.getWritePosition(),
-             InputBuffer.getBuffer() + startingPosition + bytesWritten,
+      memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(),
+             InputBuffer.buffer() + startingPosition + bytesWritten,
              availableSize);
 
-      OutputBuffer.setWritePosition(OutputBuffer.getWritePosition() +
+      OutputBuffer.setWritePosition(OutputBuffer.writePosition() +
                                     availableSize);
 
       bytesWritten += availableSize;
@@ -865,8 +856,8 @@ bool ParseResponse(const char *inputFileName) {
           }
 
           while (OutputBuffer.isReadable()) {
-            result = write(outputFd, OutputBuffer.getBuffer(),
-                           OutputBuffer.getReadable());
+            result =
+                write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
             if (0 > result) {
               fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -906,8 +897,8 @@ bool ParseResponse(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.getBuffer(),
-                       OutputBuffer.getReadable());
+        result =
+            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
           fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -936,8 +927,7 @@ bool ParseResponse(const char *inputFileName) {
     fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result =
-        write(outputFd, OutputBuffer.getBuffer(), OutputBuffer.getReadable());
+    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
       fprintf(stderr, "error writing %s: %s\n", outputFileName,
@@ -959,7 +949,7 @@ bool ParseResponse(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "need more data from file %s\n", inputFileName);
 
-      bytesToRead = Random.generateRandom(1, InputBuffer.getWritable());
+      bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
         if (1 < Debug)
@@ -971,8 +961,7 @@ bool ParseResponse(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd,
-                    InputBuffer.getBuffer() + InputBuffer.getWritePosition(),
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
                     bytesToRead);
 
       if (0 > result) {
@@ -986,7 +975,7 @@ bool ParseResponse(const char *inputFileName) {
         return false;
       }
 
-      InputBuffer.setWritePosition(InputBuffer.getWritePosition() + result);
+      InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,

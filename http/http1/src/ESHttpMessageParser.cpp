@@ -32,7 +32,7 @@ namespace ES {
 #define ES_PARSING_BODY_UNTIL_CLOSE (1 << 13)
 
 HttpMessageParser::HttpMessageParser(ESB::Buffer *workingBuffer,
-                                     ESB::DiscardAllocator *allocator)
+                                     ESB::DiscardAllocator &allocator)
     : _workingBuffer(workingBuffer),
       _allocator(allocator),
       _state(0x00),
@@ -120,7 +120,7 @@ ESB::Error HttpMessageParser::parseHeaders(ESB::Buffer *inputBuffer,
         inputBuffer->skipNext();
 
         if (false == inputBuffer->isReadable()) {
-          inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+          inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
           return ESB_AGAIN;
         }
@@ -201,7 +201,7 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (':' == octet) {
       unsigned char *fieldName = _workingBuffer->duplicate(_allocator);
@@ -213,7 +213,7 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
       HttpHeader *header = new (_allocator) HttpHeader(fieldName, 0);
 
       if (!header) {
-        _allocator->deallocate(fieldName);  // no-op
+        _allocator.deallocate(fieldName);  // no-op
 
         return ESB_OUT_OF_MEMORY;
       }
@@ -260,7 +260,7 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsLWS(octet)) {
       // The field-content does not include any leading or trailing LWS:
@@ -272,7 +272,7 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
       // before interpreting the field value or forwarding the message
       // downstream.
 
-      inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+      inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
       error = HttpUtil::SkipLWS(inputBuffer);
 
@@ -289,7 +289,7 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
               return ESB_OUT_OF_MEMORY;
             }
 
-            HttpHeader *header = (HttpHeader *)message->getHeaders()->getLast();
+            HttpHeader *header = (HttpHeader *)message->getHeaders()->last();
 
             assert(header);
 
@@ -307,7 +307,7 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
           // LWS encountered - replace with a single space & trim leading white
           // space
 
-          if (0 < _workingBuffer->getWritePosition()) {
+          if (0 < _workingBuffer->writePosition()) {
             _workingBuffer->putNext(' ');
           }
 
@@ -382,9 +382,9 @@ ESB::Error HttpMessageParser::parseUnencodedBody(ESB::Buffer *inputBuffer,
     return ESB_AGAIN;
   }
 
-  int bytesRemaining = MIN(_bodyBytesRemaining, inputBuffer->getReadable());
+  int bytesRemaining = MIN(_bodyBytesRemaining, inputBuffer->readable());
 
-  *startingPosition = inputBuffer->getReadPosition();
+  *startingPosition = inputBuffer->readPosition();
   *chunkSize = bytesRemaining;
 
   inputBuffer->skip(bytesRemaining);
@@ -535,10 +535,10 @@ ESB::Error HttpMessageParser::parseChunkSize(ESB::Buffer *inputBuffer) {
       return ESB_AGAIN;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (false == HttpUtil::IsHex(octet)) {
-      inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+      inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
       return ESB_SUCCESS;
     }
@@ -577,9 +577,9 @@ ESB::Error HttpMessageParser::parseChunkData(ESB::Buffer *inputBuffer,
     return ESB_AGAIN;
   }
 
-  int bytesRemaining = MIN(_bodyBytesRemaining, inputBuffer->getReadable());
+  int bytesRemaining = MIN(_bodyBytesRemaining, inputBuffer->readable());
 
-  *startingPosition = inputBuffer->getReadPosition();
+  *startingPosition = inputBuffer->readPosition();
   *chunkSize = bytesRemaining;
 
   inputBuffer->skip(bytesRemaining);
@@ -656,8 +656,8 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
   message->setReuseConnection(1.1 > message->getHttpVersion() ? false : true);
   message->setSend100Continue(false);
 
-  for (HttpHeader *header = (HttpHeader *)message->getHeaders()->getFirst();
-       header; header = (HttpHeader *)header->getNext()) {
+  for (HttpHeader *header = (HttpHeader *)message->getHeaders()->first();
+       header; header = (HttpHeader *)header->next()) {
     if (0 == strcasecmp((const char *)header->getFieldName(), "Expect")) {
       if (0 == header->getFieldValue()) {
         continue;
@@ -821,11 +821,11 @@ ESB::Error HttpMessageParser::parseVersion(ESB::Buffer *inputBuffer,
   HttpUtil::SkipSpaces(inputBuffer);
 
   if (clientMode) {
-    if (sizeof("HTTP/1.1") > inputBuffer->getReadable()) {
+    if (sizeof("HTTP/1.1") > inputBuffer->readable()) {
       return ESB_AGAIN;
     }
   } else {
-    if (sizeof("HTTP/1.1") + 1 > inputBuffer->getReadable()) {
+    if (sizeof("HTTP/1.1") + 1 > inputBuffer->readable()) {
       return ESB_AGAIN;
     }
   }
@@ -846,18 +846,18 @@ ESB::Error HttpMessageParser::parseVersion(ESB::Buffer *inputBuffer,
   }
 
   if (clientMode) {
-    if (false == HttpUtil::IsSpace(inputBuffer->getNext())) {
+    if (false == HttpUtil::IsSpace(inputBuffer->next())) {
       return ES_HTTP_BAD_REQUEST_VERSION;
     }
   } else {
-    switch (inputBuffer->getNext()) {
+    switch (inputBuffer->next()) {
       case '\n':
 
         break;
 
       case '\r':
 
-        if ('\n' != inputBuffer->getNext()) {
+        if ('\n' != inputBuffer->next()) {
           return ES_HTTP_BAD_REQUEST_VERSION;
         }
 

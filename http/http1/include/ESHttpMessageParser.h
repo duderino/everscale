@@ -29,7 +29,7 @@ class HttpMessageParser {
    * strings.
    */
   HttpMessageParser(ESB::Buffer *workingBuffer,
-                    ESB::DiscardAllocator *allocator);
+                    ESB::DiscardAllocator &allocator);
 
   virtual ~HttpMessageParser();
 
@@ -97,7 +97,7 @@ class HttpMessageParser {
                           bool clientMode);
 
   ESB::Buffer *_workingBuffer;
-  ESB::DiscardAllocator *_allocator;
+  ESB::DiscardAllocator &_allocator;
   int _state;
   ESB::UInt64 _bodyBytesRemaining;
 

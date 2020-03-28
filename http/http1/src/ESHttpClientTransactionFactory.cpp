@@ -18,13 +18,16 @@
 #include <ESBWriteScopeLock.h>
 #endif
 
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
+#endif
+
 namespace ES {
 
 HttpClientTransactionFactory::HttpClientTransactionFactory()
-    : _unprotectedAllocator(
-          ESB_WORD_ALIGN(sizeof(HttpClientTransaction)) * 1000,
-          ESB::SystemAllocator::GetInstance()),
-      _allocator(&_unprotectedAllocator),
+    : _unprotectedAllocator(ESB::SystemConfig::Instance().pageSize(),
+                            ESB::SystemConfig::Instance().cacheLineSize()),
+      _allocator(_unprotectedAllocator),
       _embeddedList(),
       _mutex(),
       _cleanupHandler(this) {}
@@ -42,8 +45,6 @@ void HttpClientTransactionFactory::destroy() {
       transaction = (HttpClientTransaction *)_embeddedList.removeFirst();
     }
   }
-
-  _allocator.destroy();
 }
 
 HttpClientTransactionFactory::~HttpClientTransactionFactory() {}

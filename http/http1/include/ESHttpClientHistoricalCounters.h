@@ -23,7 +23,7 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
    */
   HttpClientHistoricalCounters(ESB::UInt16 maxWindows,
                                ESB::UInt16 windowSizeSec,
-                               ESB::Allocator *allocator);
+                               ESB::Allocator &allocator);
 
   virtual ~HttpClientHistoricalCounters();
 

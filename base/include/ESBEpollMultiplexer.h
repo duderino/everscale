@@ -53,7 +53,8 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  explicit EpollMultiplexer(UInt32 maxSockets, Allocator &allocator = SystemAllocator::Instance());
+  explicit EpollMultiplexer(UInt32 maxSockets,
+                            Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -71,7 +72,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @return The multiplexer's name
    */
-  virtual const char *name() const;
+  virtual const char *name() const { return "multiplexer"; }
 
   /** Initialize the multiplexer
    *

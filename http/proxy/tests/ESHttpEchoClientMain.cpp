@@ -14,8 +14,8 @@
 #include <ESBError.h>
 #endif
 
-#ifndef ESB_PROCESS_LIMITS_H
-#include <ESBProcessLimits.h>
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
 #endif
 
 #ifndef ES_HTTP_STACK_H
@@ -222,8 +222,8 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
-      ESB::ProcessLimits::GetSocketHardMax());
+  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
+      ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
 
   ESB::SystemDnsClient dnsClient;
   HttpClientHistoricalCounters counters(1000, 30,
-                                        ESB::SystemAllocator::GetInstance());
+                                        ESB::SystemAllocator::Instance());
   HttpStack stack(&dnsClient, threads, &counters);
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
                                 connections * iterations, &stack);
@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
   }
 
   ESB::DiscardAllocator echoClientContextAllocator(
-      1024, ESB::SystemAllocator::GetInstance());
+      1024, 64, ESB::SystemAllocator::Instance());
 
   sleep(1);  // give the worker threads a chance to start - cleans up perf
              // testing numbers a bit
@@ -440,7 +440,6 @@ int main(int argc, char **argv) {
   stack.getClientCounters()->log(ESB::Logger::Instance(),
                                  ESB::Logger::Severity::Notice);
   stack.destroy();
-  echoClientContextAllocator.destroy();  // client context dtors not called.
 
   return ESB_SUCCESS;
 }

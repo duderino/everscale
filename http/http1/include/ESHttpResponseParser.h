@@ -23,7 +23,7 @@ class HttpResponseParser : public HttpMessageParser {
    * strings.
    */
   HttpResponseParser(ESB::Buffer *workingBuffer,
-                     ESB::DiscardAllocator *allocator);
+                     ESB::DiscardAllocator &allocator);
 
   virtual ~HttpResponseParser();
 

@@ -107,17 +107,17 @@ ESB::Error HttpUtil::DecodeEscape(ESB::Buffer *buffer, unsigned char *value) {
     return ESB_NULL_POINTER;
   }
 
-  if (3 > buffer->getReadable()) {
+  if (3 > buffer->readable()) {
     return ESB_AGAIN;
   }
 
-  unsigned char octet = buffer->getNext();
+  unsigned char octet = buffer->next();
 
   if ('%' != octet) {
     return ESB_ILLEGAL_ENCODING;
   }
 
-  octet = buffer->getNext();
+  octet = buffer->next();
 
   if (false == IsHex(octet)) {
     return ESB_ILLEGAL_ENCODING;
@@ -135,7 +135,7 @@ ESB::Error HttpUtil::DecodeEscape(ESB::Buffer *buffer, unsigned char *value) {
 
   assert(buffer->isReadable());
 
-  octet = buffer->getNext();
+  octet = buffer->next();
 
   if (false == IsHex(octet)) {
     return ESB_ILLEGAL_ENCODING;
@@ -157,7 +157,7 @@ ESB::Error HttpUtil::EncodeEscape(ESB::Buffer *buffer, unsigned char value) {
     return ESB_NULL_POINTER;
   }
 
-  if (3 > buffer->getWritable()) {
+  if (3 > buffer->writable()) {
     return ESB_AGAIN;
   }
 
@@ -229,7 +229,7 @@ ESB::Error HttpUtil::SkipLine(ESB::Buffer *buffer, int *bytesSkipped) {
   // However, we recommend that applications, when parsing such headers,
   // recognize a single LF as a line terminator and ignore the leading CR.
 
-  int position = buffer->getReadPosition();
+  int position = buffer->readPosition();
   bool foundCarriageReturn = false;
   unsigned char octet;
 
@@ -241,7 +241,7 @@ ESB::Error HttpUtil::SkipLine(ESB::Buffer *buffer, int *bytesSkipped) {
       return ESB_AGAIN;
     }
 
-    octet = buffer->getNext();
+    octet = buffer->next();
 
     switch (octet) {
       case '\r':
@@ -279,7 +279,7 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
     return ESB_OVERFLOW;
   }
 
-  unsigned int mark = buffer->getReadPosition();
+  unsigned int mark = buffer->readPosition();
 
   bool foundCRLF = false;
 
@@ -289,7 +289,7 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
       return ESB_AGAIN;
     }
 
-    unsigned char octet = buffer->getNext();
+    unsigned char octet = buffer->next();
 
     switch (octet) {
       case '\r':
@@ -297,7 +297,7 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
         if (foundCRLF) {
           // CRLF followed by something not ' ' or \t ==> end of line
 
-          buffer->setReadPosition(buffer->getReadPosition() - 1);
+          buffer->setReadPosition(buffer->readPosition() - 1);
 
           return ESB_SUCCESS;
         }
@@ -309,7 +309,7 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
         if (foundCRLF) {
           // CRLF followed by something not ' ' or \t ==> end of line
 
-          buffer->setReadPosition(buffer->getReadPosition() - 1);
+          buffer->setReadPosition(buffer->readPosition() - 1);
 
           return ESB_SUCCESS;
         }
@@ -327,7 +327,7 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
           foundCRLF = false;
         }
 
-        // mark = buffer->getReadPosition();
+        // mark = buffer->readPosition();
 
         break;
 
@@ -336,14 +336,14 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
         if (foundCRLF) {
           // CRLF followed by something not ' ' or \t ==> end of line
 
-          buffer->setReadPosition(buffer->getReadPosition() - 1);
+          buffer->setReadPosition(buffer->readPosition() - 1);
 
           return ESB_SUCCESS;
         }
 
         // We found field data
 
-        buffer->setReadPosition(buffer->getReadPosition() - 1);
+        buffer->setReadPosition(buffer->readPosition() - 1);
 
         return ESB_INPROGRESS;
     }
@@ -375,10 +375,10 @@ bool HttpUtil::IsLWS(unsigned char octet) {
 }
 
 bool HttpUtil::IsMatch(ESB::Buffer *buffer, const unsigned char *literal) {
-  unsigned int mark = buffer->getReadPosition();
+  unsigned int mark = buffer->readPosition();
 
   for (const unsigned char *p = literal; *p; ++p) {
-    if (*p != buffer->getNext()) {
+    if (*p != buffer->next()) {
       buffer->setReadPosition(mark);
 
       return false;
@@ -462,7 +462,7 @@ ESB::Error HttpUtil::FormatInteger(ESB::Buffer *buffer, ESB::UInt64 integer,
     ++length;
   }
 
-  if (length > buffer->getWritable()) {
+  if (length > buffer->writable()) {
     return ESB_AGAIN;
   }
 

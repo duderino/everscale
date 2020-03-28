@@ -66,7 +66,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    _currentHeader = (HttpHeader *)message->getHeaders()->getFirst();
+    _currentHeader = (HttpHeader *)message->getHeaders()->first();
 
     HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_START_LINE,
                          ES_FORMATTING_FIELD_NAME);
@@ -76,7 +76,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
     if (0 == _currentHeader) {
       assert(ES_FORMATTING_FIELD_NAME & _state);
 
-      if (2 > outputBuffer->getWritable()) {
+      if (2 > outputBuffer->writable()) {
         outputBuffer->writeReset();
         return ESB_AGAIN;
       }
@@ -145,7 +145,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
       HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_VALUE,
                            ES_FORMATTING_FIELD_NAME);
 
-      _currentHeader = (const HttpHeader *)_currentHeader->getNext();
+      _currentHeader = (const HttpHeader *)_currentHeader->next();
     }
   }
 
@@ -184,7 +184,7 @@ ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
   }
 
   if (clientMode) {
-    if (2 > outputBuffer->getWritable()) {
+    if (2 > outputBuffer->writable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -220,7 +220,7 @@ ESB::Error HttpMessageFormatter::formatFieldName(
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_NAME);
   }
 
-  if (2 > outputBuffer->getWritable()) {
+  if (2 > outputBuffer->writable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -277,7 +277,7 @@ ESB::Error HttpMessageFormatter::formatFieldValue(
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_VALUE);
   }
 
-  if (2 > outputBuffer->getWritable()) {
+  if (2 > outputBuffer->writable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -348,7 +348,7 @@ ESB::Error HttpMessageFormatter::endBody(ESB::Buffer *outputBuffer) {
     //                  CRLF
     // last-chunk     = 1*("0") [ chunk-extension ] CRLF
 
-    if (5 > outputBuffer->getWritable()) {
+    if (5 > outputBuffer->writable()) {
       return ESB_AGAIN;
     }
 
@@ -388,11 +388,11 @@ ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer,
   // + 2 for the CRLF in the chunk-size production + 2 for the CRLF after
   // the chunk data.
 
-  if (0 >= ((int)outputBuffer->getWritable()) - 12) {
+  if (0 >= ((int)outputBuffer->writable()) - 12) {
     return ESB_AGAIN;
   }
 
-  *availableSize = MIN(requestedSize, ((int)outputBuffer->getWritable()) - 12);
+  *availableSize = MIN(requestedSize, ((int)outputBuffer->writable()) - 12);
 
   assert(0 < *availableSize);
 
@@ -402,7 +402,7 @@ ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer,
     return HttpUtil::Rollback(outputBuffer, error);
   }
 
-  if (2 > outputBuffer->getWritable()) {
+  if (2 > outputBuffer->writable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -419,7 +419,7 @@ ESB::Error HttpMessageFormatter::endChunk(ESB::Buffer *outputBuffer) {
 
   assert(ES_FORMATTING_CHUNKED_BODY & _state);
 
-  if (2 > outputBuffer->getWritable()) {
+  if (2 > outputBuffer->writable()) {
     return ESB_AGAIN;
   }
 
@@ -436,12 +436,11 @@ ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer,
   assert(0 < requestedSize);
   assert(availableSize);
 
-  if (0 >= outputBuffer->getWritable()) {
+  if (0 >= outputBuffer->writable()) {
     return ESB_AGAIN;
   }
 
-  *availableSize =
-      MIN((unsigned int)requestedSize, outputBuffer->getWritable());
+  *availableSize = MIN((unsigned int)requestedSize, outputBuffer->writable());
 
   return ESB_SUCCESS;
 }

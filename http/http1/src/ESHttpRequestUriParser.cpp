@@ -27,7 +27,7 @@ namespace ES {
 #define ES_URI_SKIPPING_FWD_SLASHES (1 << 9)
 
 HttpRequestUriParser::HttpRequestUriParser(ESB::Buffer *workingBuffer,
-                                           ESB::DiscardAllocator *allocator)
+                                           ESB::DiscardAllocator &allocator)
     : _state(0x00), _workingBuffer(workingBuffer), _allocator(allocator) {}
 
 HttpRequestUriParser::~HttpRequestUriParser() {}
@@ -122,7 +122,7 @@ ESB::Error HttpRequestUriParser::parseAsterisk(ESB::Buffer *inputBuffer,
     return ESB_AGAIN;
   }
 
-  if ('*' != inputBuffer->getNext()) {
+  if ('*' != inputBuffer->next()) {
     return ES_HTTP_BAD_REQUEST_URI_ASTERISK;
   }
 
@@ -132,7 +132,7 @@ ESB::Error HttpRequestUriParser::parseAsterisk(ESB::Buffer *inputBuffer,
     return ESB_AGAIN;
   }
 
-  if (false == HttpUtil::IsSpace(inputBuffer->getNext())) {
+  if (false == HttpUtil::IsSpace(inputBuffer->next())) {
     return ES_HTTP_BAD_REQUEST_URI_ASTERISK;
   }
 
@@ -155,7 +155,7 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
 
   unsigned char octet;
 
-  if (0 == _workingBuffer->getWritePosition()) {
+  if (0 == _workingBuffer->writePosition()) {
     if (false == inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
@@ -164,7 +164,7 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if ('/' != octet) {
       return ES_HTTP_BAD_REQUEST_URI_ABS_PATH;
@@ -184,14 +184,14 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     /** DO NOT DECODE - a full parse of the absolute path is required to do this
      *  properly:
 
     if ('%' == octet)
     {
-        inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+        inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
         error = HttpUtil::DecodeEscape(inputBuffer, &octet);
 
@@ -289,14 +289,14 @@ ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     /* DO NOT DECODE - A full parse of the query string parameters is
      * required to do this properly:
 
     if ('%' == octet)
     {
-        inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+        inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
         error = HttpUtil::DecodeEscape(inputBuffer, &octet);
 
@@ -373,13 +373,13 @@ ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     /* DO NOT DECODE - interpretation of the fragment is up to the application
 
     if ('%' == octet)
     {
-        inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+        inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
         error = HttpUtil::DecodeEscape(inputBuffer, &octet);
 
@@ -432,7 +432,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
 
   unsigned char octet;
 
-  if (0 == _workingBuffer->getWritePosition()) {
+  if (0 == _workingBuffer->writePosition()) {
     if (false == inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
@@ -441,7 +441,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (false == HttpUtil::IsAlpha(octet)) {
       return ES_HTTP_BAD_REQUEST_URI_SCHEME;
@@ -459,7 +459,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsAlphaNum(octet)) {
       _workingBuffer->putNext(octet);
@@ -552,7 +552,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
 
   unsigned char octet;
 
-  if (0 == _workingBuffer->getWritePosition()) {
+  if (0 == _workingBuffer->writePosition()) {
     if (false == inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
@@ -561,7 +561,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (false == HttpUtil::IsAlphaNum(octet)) {
       return ES_HTTP_BAD_REQUEST_URI_HOST;
@@ -579,7 +579,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsAlphaNum(octet)) {
       _workingBuffer->putNext(octet);
@@ -636,7 +636,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
           return ESB_OUT_OF_MEMORY;
         }
 
-        inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+        inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
         inputBuffer->readMark();
         _workingBuffer->clear();
 
@@ -701,7 +701,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsDigit(octet)) {
       if (0 > requestUri->getPort()) {
@@ -741,7 +741,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
       _state &= ~ES_URI_PARSING_PORT;
       _state |= ES_URI_PARSING_ABS_PATH;
 
-      inputBuffer->setReadPosition(inputBuffer->getReadPosition() - 1);
+      inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
       inputBuffer->readMark();
       _workingBuffer->clear();
 
@@ -807,7 +807,7 @@ ESB::Error HttpRequestUriParser::parseNonHttpUri(ESB::Buffer *inputBuffer,
       return ESB_OVERFLOW;
     }
 
-    octet = inputBuffer->getNext();
+    octet = inputBuffer->next();
 
     if (HttpUtil::IsSpace(octet)) {
       requestUri->setOther(_workingBuffer->duplicate(_allocator));

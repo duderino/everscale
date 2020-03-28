@@ -14,8 +14,8 @@
 #include <ESBSystemDnsClient.h>
 #endif
 
-#ifndef ESB_PROCESS_LIMITS_H
-#include <ESBProcessLimits.h>
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_SIMPLE_COUNTERS_H
@@ -116,8 +116,8 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
-      ESB::ProcessLimits::GetSocketHardMax());
+  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
+      ESB::SystemConfig::Instance().socketHardMax());
 
   ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
 

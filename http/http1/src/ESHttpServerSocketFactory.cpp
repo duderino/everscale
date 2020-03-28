@@ -18,13 +18,17 @@
 #include <ESBSystemAllocator.h>
 #endif
 
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
+#endif
+
 namespace ES {
 
 HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters)
     : _counters(counters),
-      _unprotectedAllocator(ESB_WORD_ALIGN(sizeof(HttpServerSocket)) * 100,
-                            ESB::SystemAllocator::GetInstance()),
-      _allocator(&_unprotectedAllocator),
+      _unprotectedAllocator(ESB::SystemConfig::Instance().pageSize(),
+                            ESB::SystemConfig::Instance().cacheLineSize()),
+      _allocator(_unprotectedAllocator),
       _embeddedList(),
       _mutex(),
       _cleanupHandler(this) {}
@@ -38,14 +42,12 @@ void HttpServerSocketFactory::destroy() {
     socket->~HttpServerSocket();
     socket = (HttpServerSocket *)_embeddedList.removeFirst();
   }
-
-  _allocator.destroy();
 }
 
 HttpServerSocketFactory::~HttpServerSocketFactory() { destroy(); }
 
 HttpServerSocket *HttpServerSocketFactory::create(
-    HttpServerHandler *handler, ESB::TCPSocket::AcceptData *acceptData) {
+    HttpServerHandler *handler, ESB::TCPSocket::State &state) {
   HttpServerSocket *socket = 0;
 
   _mutex.writeAcquire();
@@ -60,7 +62,7 @@ HttpServerSocket *HttpServerSocketFactory::create(
     }
   }
 
-  socket->reset(handler, acceptData);
+  socket->reset(handler, state);
   return socket;
 }
 

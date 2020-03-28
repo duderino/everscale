@@ -78,8 +78,8 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
     ESB_LOG_DEBUG("Version: HTTP/%d.%d", response->getHttpVersion() / 100,
                   response->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)response->getHeaders()->getFirst();
-         header; header = (HttpHeader *)header->getNext()) {
+    for (HttpHeader *header = (HttpHeader *)response->getHeaders()->first();
+         header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->getFieldName()),
                     ESB_SAFE_STR(header->getFieldValue()));
     }
@@ -174,10 +174,11 @@ void HttpEchoClientHandler::endClientTransaction(
   transaction->setApplicationContext(0);
 
   char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-  transaction->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
+  transaction->getPeerAddress()->presentationAddress(dottedIP,
+                                                     sizeof(dottedIP));
 
   ESB::Error error = HttpEchoClientRequestBuilder(
-      dottedIP, transaction->getPeerAddress()->getPort(), _absPath, _method,
+      dottedIP, transaction->getPeerAddress()->port(), _absPath, _method,
       _contentType, newTransaction);
 
   if (ESB_SUCCESS != error) {

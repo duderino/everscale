@@ -83,7 +83,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleAccept(ESB::SocketMultiplexer &multiplexer);
 
   /** Client connected socket has connected to the peer endpoint.
    *
@@ -93,7 +93,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnectEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleConnect(ESB::SocketMultiplexer &multiplexer);
 
   /** Data is ready to be read.
    *
@@ -103,7 +103,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadableEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleReadable(ESB::SocketMultiplexer &multiplexer);
 
   /** There is free space in the outgoing socket buffer.
    *
@@ -113,7 +113,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritableEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleWritable(ESB::SocketMultiplexer &multiplexer);
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -126,8 +126,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode,
-                                ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleError(ESB::Error errorCode,
+                           ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection was closed.
    *
@@ -137,7 +137,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleRemoteClose(ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection has been idle for too long
    *
@@ -147,34 +147,34 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdleEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleIdle(ESB::SocketMultiplexer &multiplexer);
 
   /** The socket has been removed from the multiplexer
    *
    * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleRemove(ESB::SocketMultiplexer &multiplexer);
 
   /** Get the socket's socket descriptor.
    *
    *  @return the socket descriptor
    */
-  virtual SOCKET getSocketDescriptor() const;
+  virtual SOCKET socketDescriptor() const;
 
   /** Return an optional handler that can destroy the multiplexer.
    *
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual ESB::CleanupHandler *getCleanupHandler();
+  virtual ESB::CleanupHandler *cleanupHandler();
 
   /** Get the name of the multiplexer.  This name can be used in logging
    * messages, etc.
    *
    * @return The multiplexer's name
    */
-  virtual const char *getName() const;
+  virtual const char *name() const;
 
   /** Reset the server socket
    *
@@ -182,8 +182,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    *  when accepting a new connection.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error reset(HttpServerHandler *handler,
-                   ESB::TCPSocket::AcceptData *acceptData);
+  ESB::Error reset(HttpServerHandler *handler, ESB::TCPSocket::State &state);
 
   /** Placement new.
    *

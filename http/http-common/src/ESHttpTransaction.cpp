@@ -10,15 +10,16 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-namespace ES {
-
-#ifndef ES_HTTP_TRANSACTION_ALLOCATOR_CHUNK_SIZE
-#define ES_HTTP_TRANSACTION_ALLOCATOR_CHUNK_SIZE 2000
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
 #endif
 
+namespace ES {
+
 HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
-    : _allocator(ES_HTTP_TRANSACTION_ALLOCATOR_CHUNK_SIZE,
-                 ESB::SystemAllocator::GetInstance()),
+    : _allocator(ESB::SystemConfig::Instance().pageSize(),
+                 ESB::SystemConfig::Instance().cacheLineSize(),
+                 ESB::SystemAllocator::Instance()),
       _appContext(0),
       _cleanupHandler(cleanupHandler),
       _start(),
@@ -30,8 +31,9 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
 
 HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
                                  ESB::CleanupHandler *cleanupHandler)
-    : _allocator(ES_HTTP_TRANSACTION_ALLOCATOR_CHUNK_SIZE,
-                 ESB::SystemAllocator::GetInstance()),
+    : _allocator(ESB::SystemConfig::Instance().pageSize(),
+                 ESB::SystemConfig::Instance().cacheLineSize(),
+                 ESB::SystemAllocator::Instance()),
       _appContext(0),
       _cleanupHandler(cleanupHandler),
       _start(),
@@ -86,7 +88,7 @@ HttpHeader *HttpTransaction::createHeader(unsigned const char *name,
   return header;
 }
 
-ESB::CleanupHandler *HttpTransaction::getCleanupHandler() {
+ESB::CleanupHandler *HttpTransaction::cleanupHandler() {
   return _cleanupHandler;
 }
 

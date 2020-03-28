@@ -37,9 +37,9 @@ HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
     ESB::SocketMultiplexer &multiplexer, ESB::SocketAddress *address) {
   if (ESB_INFO_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    address->getIPAddress(dottedIP, sizeof(dottedIP));
+    address->presentationAddress(dottedIP, sizeof(dottedIP));
     ESB_LOG_INFO("Accepted new connection from %s:%u", dottedIP,
-                 address->getPort());
+                 address->port());
   }
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
@@ -52,18 +52,20 @@ HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
 
   if (ESB_DEBUG_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
+    transaction->getPeerAddress()->presentationAddress(dottedIP,
+                                                       sizeof(dottedIP));
     ESB_LOG_DEBUG("Begin new transaction with %s:%u", dottedIP,
-                  transaction->getPeerAddress()->getPort());
+                  transaction->getPeerAddress()->port());
   }
 
   HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
 
   if (!context && ESB_WARNING_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->getPeerAddress()->getIPAddress(dottedIP, sizeof(dottedIP));
+    transaction->getPeerAddress()->presentationAddress(dottedIP,
+                                                       sizeof(dottedIP));
     ESB_LOG_WARNING("Cannot allocate new transaction for %s:%u", dottedIP,
-                    transaction->getPeerAddress()->getPort());
+                    transaction->getPeerAddress()->port());
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
@@ -108,8 +110,8 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
     ESB_LOG_DEBUG("Version: HTTP/%d.%d", request->getHttpVersion() / 100,
                   request->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)request->getHeaders()->getFirst();
-         header; header = (HttpHeader *)header->getNext()) {
+    for (HttpHeader *header = (HttpHeader *)request->getHeaders()->first();
+         header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->getFieldName()),
                     ESB_SAFE_STR(header->getFieldValue()));
     }

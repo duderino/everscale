@@ -134,7 +134,7 @@ ESB::Error HttpRequestUriFormatter::formatAsterisk(
 
   assert(ES_URI_FORMATTING_ASTERISK & _state);
 
-  if (false == outputBuffer->getWritable()) {
+  if (false == outputBuffer->writable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 

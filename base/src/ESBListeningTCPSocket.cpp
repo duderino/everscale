@@ -93,7 +93,8 @@ Error ListeningTCPSocket::listen() {
     return ESB_INVALID_STATE;
   }
 
-  _listeningAddress.presentationAddress(_presentationAddress, sizeof(_presentationAddress));
+  _listeningAddress.presentationAddress(_presentationAddress,
+                                        sizeof(_presentationAddress));
 
 #ifdef HAVE_LISTEN
 

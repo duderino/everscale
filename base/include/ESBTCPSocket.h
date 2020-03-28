@@ -51,6 +51,8 @@ class TCPSocket {
 
     inline const SocketAddress &peerAddress() const { return _peerAddress; }
 
+    inline SocketAddress &peerAddress() { return _peerAddress; }
+
     inline void setIsBlocking(bool isBlocking) { _isBlocking = isBlocking; }
 
     inline void setSocketDescriptor(SOCKET sockFd) {

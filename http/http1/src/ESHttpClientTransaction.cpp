@@ -8,7 +8,7 @@ HttpClientTransaction::HttpClientTransaction(
     HttpClientHandler *clientHandler, ESB::CleanupHandler *cleanupHandler)
     : HttpTransaction(cleanupHandler),
       _clientHandler(clientHandler),
-      _parser(getWorkingBuffer(), &_allocator),
+      _parser(getWorkingBuffer(), _allocator),
       _formatter() {}
 
 HttpClientTransaction::HttpClientTransaction(
@@ -16,7 +16,7 @@ HttpClientTransaction::HttpClientTransaction(
     ESB::CleanupHandler *cleanupHandler)
     : HttpTransaction(peerAddress, cleanupHandler),
       _clientHandler(clientHandler),
-      _parser(getWorkingBuffer(), &_allocator),
+      _parser(getWorkingBuffer(), _allocator),
       _formatter() {}
 
 HttpClientTransaction::~HttpClientTransaction() {}

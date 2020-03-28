@@ -20,12 +20,10 @@ namespace ES {
 
 HttpListeningSocket::HttpListeningSocket(
     HttpServerHandler *handler, ESB::ListeningTCPSocket *socket,
-    ESB::SocketMultiplexerDispatcher *dispatcher,
     HttpServerSocketFactory *factory, ESB::CleanupHandler *thisCleanupHandler,
     HttpServerCounters *counters)
     : _handler(handler),
       _socket(socket),
-      _dispatcher(dispatcher),
       _thisCleanupHandler(thisCleanupHandler),
       _factory(factory),
       _counters(counters) {}
@@ -48,17 +46,15 @@ bool HttpListeningSocket::wantWrite() { return false; }
 
 bool HttpListeningSocket::isIdle() { return false; }
 
-bool HttpListeningSocket::handleAcceptEvent(
-    ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
   assert(_socket);
   assert(!_socket->isBlocking());
-  assert(_dispatcher);
 
-  ESB::TCPSocket::AcceptData acceptData;
+  ESB::TCPSocket::State state;
   ESB::Error error = ESB_SUCCESS;
 
   for (int i = 0; i < 10; ++i) {
-    error = _socket->accept(&acceptData);
+    error = _socket->accept(&state);
     if (ESB_INTR != error) {
       break;
     }
@@ -66,50 +62,50 @@ bool HttpListeningSocket::handleAcceptEvent(
 
   if (ESB_INTR == error) {
     ESB_LOG_DEBUG("listener:%d not ready to accept - too many interrupts",
-                  _socket->getSocketDescriptor());
+                  _socket->socketDescriptor());
     return true;
   }
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("listener:%d not ready to accept - thundering herd",
-                  _socket->getSocketDescriptor());
+                  _socket->socketDescriptor());
     return true;
   }
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "listener:%d error accepting new connection",
-                       _socket->getSocketDescriptor());
+                       _socket->socketDescriptor());
     return true;
   }
 
   _counters->getTotalConnections()->inc();
 
   HttpServerHandler::Result result =
-      _handler->acceptConnection(multiplexer, &acceptData._peerAddress);
+      _handler->acceptConnection(multiplexer, &state.peerAddress());
 
   if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
     ESB_LOG_DEBUG("listener:%d Handler rejected connection",
-                  _socket->getSocketDescriptor());
-    ESB::TCPSocket::Close(acceptData._sockFd);
+                  _socket->socketDescriptor());
+    ESB::TCPSocket::Close(state.socketDescriptor());
     return true;
   }
 
-  HttpServerSocket *serverSocket = _factory->create(_handler, &acceptData);
+  HttpServerSocket *serverSocket = _factory->create(_handler, state);
 
   if (!serverSocket) {
     ESB_LOG_CRITICAL("listener:%d cannot allocate new server socket",
-                     _socket->getSocketDescriptor());
-    ESB::TCPSocket::Close(acceptData._sockFd);
+                     _socket->socketDescriptor());
+    ESB::TCPSocket::Close(state.socketDescriptor());
     return true;
   }
 
-  error = _dispatcher->addMultiplexedSocket(serverSocket);
+  error = multiplexer.addMultiplexedSocket(serverSocket);
 
   if (ESB_SHUTDOWN == error) {
     ESB_LOG_WARNING(
         "listener:%d Dispatcher has been shutdown, closing newly "
         "accepted connection",
-        _socket->getSocketDescriptor());
+        _socket->socketDescriptor());
     _factory->release(serverSocket);
     return true;
   }
@@ -118,74 +114,70 @@ bool HttpListeningSocket::handleAcceptEvent(
     ESB_LOG_ERROR_ERRNO(error,
                         "listener:%d cannot add accepted connection to "
                         "dispatcher",
-                        _socket->getSocketDescriptor());
+                        _socket->socketDescriptor());
     _factory->release(serverSocket);
     return true;
   }
 
   if (ESB_INFO_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
-    acceptData._peerAddress.getIPAddress(buffer, sizeof(buffer));
+    state.peerAddress().presentationAddress(buffer, sizeof(buffer));
     ESB_LOG_INFO("listener:%d accepted new connection from %s",
-                 _socket->getSocketDescriptor(), buffer);
+                 _socket->socketDescriptor(), buffer);
   }
 
   return true;
 }
 
-bool HttpListeningSocket::handleConnectEvent(
-    ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleConnect(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle connect events",
-                _socket->getSocketDescriptor());
+                _socket->socketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleReadableEvent(
-    ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle readable events",
-                _socket->getSocketDescriptor());
+                _socket->socketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleWritableEvent(
-    ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle writable events",
-                _socket->getSocketDescriptor());
+                _socket->socketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleErrorEvent(
-    ESB::Error error, ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleError(ESB::Error error,
+                                      ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR_ERRNO(error, "listener:%d listening socket error",
-                      _socket->getSocketDescriptor());
+                      _socket->socketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleEndOfFileEvent(
+bool HttpListeningSocket::handleRemoteClose(
     ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle eof events",
-                _socket->getSocketDescriptor());
+                _socket->socketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleIdleEvent(ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleIdle(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("listener:%d Cannot handle idle events",
-                _socket->getSocketDescriptor());
+                _socket->socketDescriptor());
   return true;
 }
 
-bool HttpListeningSocket::handleRemoveEvent(
-    ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_INFO("listener:%d Removed from multiplexer",
-               _socket->getSocketDescriptor());
+               _socket->socketDescriptor());
   return true;  // call cleanup handler on us after this returns
 }
 
-SOCKET HttpListeningSocket::getSocketDescriptor() const {
-  return _socket ? _socket->getSocketDescriptor() : INVALID_SOCKET;
+SOCKET HttpListeningSocket::socketDescriptor() const {
+  return _socket ? _socket->socketDescriptor() : INVALID_SOCKET;
 }
 
-ESB::CleanupHandler *HttpListeningSocket::getCleanupHandler() {
+ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() {
   return _thisCleanupHandler;
 }
 

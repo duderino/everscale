@@ -6,7 +6,7 @@ namespace ES {
 
 HttpClientHistoricalCounters::HttpClientHistoricalCounters(
     ESB::UInt16 maxWindows, ESB::UInt16 windowSizeSec,
-    ESB::Allocator *allocator)
+    ESB::Allocator &allocator)
     : _successes("CLIENT TRANS SUCCESS", maxWindows, windowSizeSec, allocator),
       _failures("CLIENT TRANS FAILURE", maxWindows, windowSizeSec, allocator) {}
 

@@ -131,7 +131,8 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   int currentSocketCount = _currentSocketCount.inc();
 
   if (currentSocketCount > _maxSockets) {
-    ESB_LOG_ERROR("Cannot add socket %d: at limit of %d sockets", fd, _maxSockets);
+    ESB_LOG_ERROR("Cannot add socket %d: at limit of %d sockets", fd,
+                  _maxSockets);
     _currentSocketCount.dec();
     return ESB_OVERFLOW;
   }
@@ -407,7 +408,8 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           ESB_LOG_DEBUG("Accept event on listening socket %d", fd);
           keepInMultiplexer = socket->handleAccept(*this);
         } else {
-          ESB_LOG_WARNING("Unknown event on listening socket %d: %d", fd, _events[i].events);
+          ESB_LOG_WARNING("Unknown event on listening socket %d: %d", fd,
+                          _events[i].events);
         }
       }
 
@@ -452,7 +454,8 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           ESB_LOG_INFO("Connecting socket %d connected", fd);
           keepInMultiplexer = socket->handleConnect(*this);
         } else {
-          ESB_LOG_WARNING("Unknown event on connecting socket %d: %d", fd, _events[i].events);
+          ESB_LOG_WARNING("Unknown event on connecting socket %d: %d", fd,
+                          _events[i].events);
         }
       }
 

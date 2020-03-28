@@ -87,9 +87,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleAcceptEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleAccept(ESB::SocketMultiplexer &multiplexer);
 
   /** Client connected socket has connected to the peer endpoint.
    *
@@ -97,9 +97,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleConnectEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleConnect(ESB::SocketMultiplexer &multiplexer);
 
   /** Data is ready to be read.
    *
@@ -107,9 +107,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleReadableEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleReadable(ESB::SocketMultiplexer &multiplexer);
 
   /** There is free space in the outgoing socket buffer.
    *
@@ -117,9 +117,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleWritableEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleWritable(ESB::SocketMultiplexer &multiplexer);
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
@@ -129,11 +129,11 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor.
+   * @see handleRemove to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode,
-                                ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleError(ESB::Error errorCode,
+                           ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection was closed.
    *
@@ -141,9 +141,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleEndOfFileEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleRemoteClose(ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection has been idle for too long
    *
@@ -151,29 +151,29 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleIdleEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleIdle(ESB::SocketMultiplexer &multiplexer);
 
   /** The socket has been removed from the multiplexer
    *
    * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemoveEvent(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleRemove(ESB::SocketMultiplexer &multiplexer);
 
   /** Get the socket's socket descriptor.
    *
    *  @return the socket descriptor
    */
-  virtual SOCKET getSocketDescriptor() const;
+  virtual SOCKET socketDescriptor() const;
 
   /** Return an optional handler that can destroy the multiplexer.
    *
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual ESB::CleanupHandler *getCleanupHandler();
+  virtual ESB::CleanupHandler *cleanupHandler();
 
   /** Get the name of the multiplexer.  This name can be used in logging
    * messages, etc.
@@ -198,8 +198,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
 
   inline bool isConnected() { return _socket.isConnected(); }
 
-  inline const ESB::SocketAddress *getPeerAddress() const {
-    return &_socket.getPeerAddress();
+  inline const ESB::SocketAddress *peerAddress() const {
+    return &_socket.peerAddress();
   }
 
   /** Placement new.
@@ -208,8 +208,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, ESB::Allocator &allocator) {
+    return allocator.allocate(size);
   }
 
   static inline void SetReuseConnections(bool reuseConnections) {

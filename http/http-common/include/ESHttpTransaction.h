@@ -110,21 +110,11 @@ class HttpTransaction : public ESB::EmbeddedListElement {
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual ESB::CleanupHandler *getCleanupHandler();
+  virtual ESB::CleanupHandler *cleanupHandler();
 
   inline void setStartTime() { _start = ESB::Date::Now(); }
 
   inline const ESB::Date &getStartTime() const { return _start; }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
-  }
 
  protected:
   ESB::DiscardAllocator _allocator;

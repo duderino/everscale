@@ -46,12 +46,12 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESB_PROCESS_LIMITS_H
-#include <ESBProcessLimits.h>
-#endif
-
 #ifndef ESTF_ASSERT_H
 #include <ESTFAssert.h>
+#endif
+
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
 #endif
 
 #ifndef ESB_TIME_H
@@ -139,8 +139,8 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::ProcessLimits::SetSocketSoftMax(
-      ESB::ProcessLimits::GetSocketHardMax());
+  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
+      ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
   }
 
   HttpClientHistoricalCounters counters(maxWindows, windowSizeSec,
-                                        ESB::SystemAllocator::GetInstance());
+                                        ESB::SystemAllocator::Instance());
   HttpStack clientStack(&dnsClient, clientThreads, &counters);
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
                                       sizeof(body), connections * iterations,
@@ -195,7 +195,9 @@ int main(int argc, char **argv) {
 
   // Send traffic
 
-  ESB::DiscardAllocator allocator(4096, ESB::SystemAllocator::GetInstance());
+  ESB::DiscardAllocator allocator(ESB::SystemConfig::Instance().pageSize(),
+                                  ESB::SystemConfig::Instance().cacheLineSize(),
+                                  ESB::SystemAllocator::Instance());
   HttpEchoClientContext *context = 0;
   HttpClientTransaction *transaction = 0;
 
@@ -242,7 +244,6 @@ int main(int argc, char **argv) {
 
   clientStack.destroy();
   serverStack.destroy();
-  allocator.destroy();  // context destructors will not be called.
 
   ESB::Time::Instance().stop();
   error = ESB::Time::Instance().join();

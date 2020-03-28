@@ -49,7 +49,7 @@ class HttpHeader : public ESB::EmbeddedListElement {
    * @return A handler to destroy the element or NULL if the element should not
    * be destroyed.
    */
-  virtual ESB::CleanupHandler *getCleanupHandler();
+  virtual ESB::CleanupHandler *cleanupHandler();
 
   /** Placement new.
    *
@@ -57,8 +57,8 @@ class HttpHeader : public ESB::EmbeddedListElement {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
   /** Placement new.
@@ -67,7 +67,7 @@ class HttpHeader : public ESB::EmbeddedListElement {
    *  @param block The object's memory.
    *  @return the block
    */
-  inline void *operator new(size_t size, void *block) { return block; }
+  inline void *operator new(size_t size, void *block) noexcept { return block; }
 
  private:
   // Disabled

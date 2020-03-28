@@ -91,7 +91,7 @@ ESB::Error HttpResponseFormatter::formatStatusCode(
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_STATUS_CODE);
   }
 
-  if (4 > outputBuffer->getWritable()) {
+  if (4 > outputBuffer->writable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -138,7 +138,7 @@ ESB::Error HttpResponseFormatter::formatReasonPhrase(
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REASON_PHRASE);
   }
 
-  if (2 > outputBuffer->getWritable()) {
+  if (2 > outputBuffer->writable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
