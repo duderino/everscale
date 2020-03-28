@@ -39,6 +39,7 @@ class HttpResponse : public HttpMessage {
 
   int _statusCode;
   unsigned const char *_reasonPhrase;
+  char _pad[8];
 };
 
 }  // namespace ES

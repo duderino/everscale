@@ -94,6 +94,7 @@ class HttpHeader : public ESB::EmbeddedListElement {
 
   const unsigned char *_fieldName;
   const unsigned char *_fieldValue;
+  char _pad[24];
 };
 
 }  // namespace ES

@@ -23,3 +23,18 @@ target_include_directories(http-common PUBLIC
         )
 
 target_compile_options(http-common PUBLIC ${CPP_FLAGS})
+
+# Unit tests
+
+set(TEST_INCS
+        "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/tests"
+        "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../../unit-tf/include"
+        )
+
+set(TEST_LIBS -pthread unit-tf base http-common)
+
+add_gtest(http-common-alignment-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/AlignmentTest.cpp)
+

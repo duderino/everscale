@@ -124,14 +124,14 @@ class HttpRequestUri {
    *
    * @return The Request-URI's port number if it is set, -1 otherwise.
    */
-  inline ESB::UInt32 port() const { return _port; }
+  inline ESB::Int32 port() const { return _port; }
 
   /**
    * Set the Request-URI's port number
    *
    * @param port The port
    */
-  inline void setPort(ESB::UInt32 port) { _port = port; }
+  inline void setPort(ESB::Int32 port) { _port = port; }
 
   /**
    * Get the Request-URI's fragment (anchor)
@@ -212,9 +212,8 @@ class HttpRequestUri {
   void operator=(const HttpRequestUri &);
 
   UriType _type;
-  ESB::UInt32 _port;
+  ESB::Int32 _port;
   const unsigned char *_username;
-  const unsigned char *_password;
   const unsigned char *_host;
   const unsigned char *_absPath;
   const unsigned char *_query;

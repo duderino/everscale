@@ -11,37 +11,34 @@ namespace ES {
 HttpRequestUri::HttpRequestUri(UriType type)
     : _type(type),
       _port(-1),
-      _username(0),
-      _password(0),
-      _host(0),
-      _absPath(0),
-      _query(0),
-      _fragment(0),
-      _other(0) {}
+      _username(NULL),
+      _host(NULL),
+      _absPath(NULL),
+      _query(NULL),
+      _fragment(NULL),
+      _other(NULL) {}
 
 HttpRequestUri::HttpRequestUri()
     : _type(ES_URI_HTTP),
       _port(-1),
-      _username(0),
-      _password(0),
-      _host(0),
-      _absPath(0),
-      _query(0),
-      _fragment(0),
-      _other(0) {}
+      _username(NULL),
+      _host(NULL),
+      _absPath(NULL),
+      _query(NULL),
+      _fragment(NULL),
+      _other(NULL) {}
 
 HttpRequestUri::~HttpRequestUri() {}
 
 void HttpRequestUri::reset() {
   _type = ES_URI_HTTP;
   _port = -1;
-  _username = 0;
-  _password = 0;
-  _host = 0;
-  _absPath = 0;
-  _query = 0;
-  _fragment = 0;
-  _other = 0;
+  _username = NULL;
+  _host = NULL;
+  _absPath = NULL;
+  _query = NULL;
+  _fragment = NULL;
+  _other = NULL;
 }
 
 int HttpRequestUri::Compare(const HttpRequestUri *r1,
