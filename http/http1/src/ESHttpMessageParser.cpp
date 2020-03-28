@@ -193,11 +193,11 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
   unsigned char octet;
 
   while (true) {
-    if (false == inputBuffer->isReadable()) {
+    if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (false == _workingBuffer->isWritable()) {
+    if (!_workingBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -210,7 +210,7 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
         return ESB_OUT_OF_MEMORY;
       }
 
-      HttpHeader *header = new (_allocator) HttpHeader(fieldName, 0);
+      HttpHeader *header = new (_allocator) HttpHeader(fieldName);
 
       if (!header) {
         _allocator.deallocate(fieldName);  // no-op
@@ -220,7 +220,7 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
 
       // The next production - parseFieldValue - may fill in in the value
 
-      message->getHeaders()->addLast(header);
+      message->headers().addLast(header);
 
       return ESB_SUCCESS;
     }
@@ -282,14 +282,14 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
           // newline encountered - save field value
 
           {
-            unsigned char *fieldValue = _workingBuffer->duplicate(
-                _allocator, true);  // trims trailing whitespace
+            unsigned char *fieldValue =
+                _workingBuffer->duplicate(_allocator, true);
 
             if (!fieldValue) {
               return ESB_OUT_OF_MEMORY;
             }
 
-            HttpHeader *header = (HttpHeader *)message->getHeaders()->last();
+            HttpHeader *header = (HttpHeader *)message->headers().last();
 
             assert(header);
 
@@ -656,14 +656,14 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
   message->setReuseConnection(1.1 > message->getHttpVersion() ? false : true);
   message->setSend100Continue(false);
 
-  for (HttpHeader *header = (HttpHeader *)message->getHeaders()->first();
-       header; header = (HttpHeader *)header->next()) {
-    if (0 == strcasecmp((const char *)header->getFieldName(), "Expect")) {
-      if (0 == header->getFieldValue()) {
+  for (HttpHeader *header = (HttpHeader *)message->headers().first(); header;
+       header = (HttpHeader *)header->next()) {
+    if (0 == strcasecmp((const char *)header->fieldName(), "Expect")) {
+      if (0 == header->fieldValue()) {
         continue;
       }
 
-      if (0 == strncmp((const char *)header->getFieldValue(), "100-continue",
+      if (0 == strncmp((const char *)header->fieldValue(), "100-continue",
                        sizeof("100-continue") - 1)) {
         message->setSend100Continue(true);
       }
@@ -672,12 +672,12 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
     }
 
     if (1.1 <= message->getHttpVersion() &&
-        0 == strcasecmp((const char *)header->getFieldName(), "Connection")) {
-      if (0 == header->getFieldValue()) {
+        0 == strcasecmp((const char *)header->fieldName(), "Connection")) {
+      if (0 == header->fieldValue()) {
         continue;
       }
 
-      if (0 == strncmp((const char *)header->getFieldValue(), "close",
+      if (0 == strncmp((const char *)header->fieldValue(), "close",
                        sizeof("close") - 1)) {
         message->setReuseConnection(false);
       }
@@ -685,8 +685,7 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
       continue;
     }
 
-    if (0 ==
-        strcasecmp((const char *)header->getFieldName(), "Content-Length")) {
+    if (0 == strcasecmp((const char *)header->fieldName(), "Content-Length")) {
       // 3.If a Content-Length header field (section 14.13) is present, its
       // decimal value in OCTETs represents both the entity-length and the
       // transfer-length. The Content-Length header field MUST NOT be sent
@@ -695,11 +694,11 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
       // Transfer-Encoding header field and a Content-Length header field,
       // the latter MUST be ignored.
 
-      if (0 == header->getFieldValue()) {
+      if (0 == header->fieldValue()) {
         continue;
       }
 
-      error = HttpUtil::ParseInteger(header->getFieldValue(), &contentLength);
+      error = HttpUtil::ParseInteger(header->fieldValue(), &contentLength);
 
       if (ES_HTTP_BAD_INTEGER == error) {
         return ES_HTTP_BAD_CONTENT_LENGTH;
@@ -715,7 +714,7 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
     }
 
     if (0 ==
-        strcasecmp((const char *)header->getFieldName(), "Transfer-Encoding")) {
+        strcasecmp((const char *)header->fieldName(), "Transfer-Encoding")) {
       // 2.If a Transfer-Encoding header field (section 14.41) is present and
       // has any value other than "identity", then the transfer-length is
       // defined by use of the "chunked" transfer-coding (section 3.6),
@@ -725,11 +724,11 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
       // non-identity transfer-coding. If the message does include a non-
       // identity transfer-coding, the Content-Length MUST be ignored.
 
-      if (0 == header->getFieldValue()) {
+      if (0 == header->fieldValue()) {
         continue;
       }
 
-      if (0 != strncmp((const char *)header->getFieldValue(), "identity",
+      if (0 != strncmp((const char *)header->fieldValue(), "identity",
                        sizeof("identity") - 1)) {
         foundTransferEncodedChunked = true;
       }
@@ -737,7 +736,7 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
       continue;
     }
 
-    if (0 == strcasecmp((const char *)header->getFieldName(), "Content-Type")) {
+    if (0 == strcasecmp((const char *)header->fieldName(), "Content-Type")) {
       // 4.If the message uses the media type "multipart/byteranges", and the
       // transfer-length is not otherwise specified, then this self-
       // delimiting media type defines the transfer-length. This media type
@@ -746,11 +745,11 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
       // range specifiers from a 1.1 client implies that the client can parse
       // multipart/byteranges responses.
 
-      if (0 == header->getFieldValue()) {
+      if (0 == header->fieldValue()) {
         continue;
       }
 
-      if (0 == strncmp((const char *)header->getFieldValue(),
+      if (0 == strncmp((const char *)header->fieldValue(),
                        "multipart/byteranges",
                        sizeof("multipart/byteranges") - 1)) {
         foundMultipartByteRange = true;

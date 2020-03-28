@@ -152,7 +152,7 @@ class MapTest : public ESTF::Component {
 ESTF_OBJECT_PTR(MapTest, ESTF::Component)
 
 MapTest::StringComparator MapTest::_Comparator;
-const int MapTest::_Iterations = 2000;
+const int MapTest::_Iterations = 1000;
 const int MapTest::_Records = 1000;
 
 Mutex StlLock;

@@ -25,26 +25,22 @@ ESB::Error HttpEchoClientRequestBuilder(const char *host, int port,
 
   request->setMethod((const unsigned char *)method);
 
-  ESB::Error error = request->addHeader(
-      transaction->getAllocator(), (const unsigned char *)"Host",
-      (const unsigned char *)"%s:%d", host, port);
+  ESB::Error error = request->addHeader(transaction->getAllocator(), "Host",
+                                        "%s:%d", host, port);
 
   if (ESB_SUCCESS != error) {
     return error;
   }
 
   if (contentType) {
-    error = request->addHeader((const unsigned char *)"Content-Type",
-                               (const unsigned char *)contentType,
+    error = request->addHeader("Content-Type", contentType,
                                transaction->getAllocator());
-
     if (ESB_SUCCESS != error) {
       return error;
     }
   }
 
-  error = request->addHeader((const unsigned char *)"Transfer-Encoding",
-                             (const unsigned char *)"chunked",
+  error = request->addHeader("Transfer-Encoding", "chunked",
                              transaction->getAllocator());
 
   if (ESB_SUCCESS != error) {

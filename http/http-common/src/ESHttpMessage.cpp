@@ -16,15 +16,14 @@ HttpMessage::HttpMessage() : _flags(0x00), _version(110), _headers() {}
 
 HttpMessage::~HttpMessage() {}
 
-const HttpHeader *HttpMessage::getHeader(unsigned const char *fieldName) const {
+const HttpHeader *HttpMessage::findHeader(const char *fieldName) const {
   if (0 == fieldName) {
     return 0;
   }
 
   for (const HttpHeader *header = (const HttpHeader *)_headers.first(); header;
        header = (const HttpHeader *)header->next()) {
-    if (0 == strcasecmp((const char *)fieldName,
-                        (const char *)header->getFieldName())) {
+    if (0 == strcasecmp(fieldName, (const char *)header->fieldName())) {
       return header;
     }
   }
@@ -32,17 +31,16 @@ const HttpHeader *HttpMessage::getHeader(unsigned const char *fieldName) const {
   return 0;
 }
 
-ESB::Error HttpMessage::addHeader(unsigned const char *fieldName,
-                                  unsigned const char *fieldValue,
-                                  ESB::Allocator *allocator) {
-  if (!fieldName || !allocator) {
+ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue,
+                                  ESB::Allocator &allocator) {
+  if (!fieldName) {
     return ESB_NULL_POINTER;
   }
 
   int fieldNameLength = strlen((const char *)fieldName);
   int fieldValueLength = strlen((const char *)fieldValue);
 
-  unsigned char *block = (unsigned char *)allocator->allocate(
+  char *block = (char *)allocator.allocate(
       sizeof(HttpHeader) + fieldNameLength + fieldValueLength + 2);
 
   if (!block) {
@@ -65,20 +63,17 @@ ESB::Error HttpMessage::addHeader(unsigned const char *fieldName,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessage::addHeader(ESB::Allocator *allocator,
-                                  unsigned const char *fieldName,
-                                  unsigned const char *fieldValueFormat, ...) {
+ESB::Error HttpMessage::addHeader(ESB::Allocator &allocator,
+                                  const char *fieldName,
+                                  const char *fieldValueFormat, ...) {
   char buffer[1024];
-
   va_list vaList;
 
-  va_start(vaList, (const char *)fieldValueFormat);
-
-  vsnprintf(buffer, sizeof(buffer), (const char *)fieldValueFormat, vaList);
-
+  va_start(vaList, fieldValueFormat);
+  vsnprintf(buffer, sizeof(buffer), fieldValueFormat, vaList);
   va_end(vaList);
 
-  return addHeader(fieldName, (unsigned const char *)buffer, allocator);
+  return addHeader(fieldName, buffer, allocator);
 }
 
 }  // namespace ES

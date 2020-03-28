@@ -47,8 +47,7 @@ HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
 HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
     ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   assert(transaction);
-  ESB::Allocator *allocator = transaction->getAllocator();
-  assert(allocator);
+  ESB::Allocator &allocator = transaction->getAllocator();
 
   if (ESB_DEBUG_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
@@ -110,10 +109,10 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
     ESB_LOG_DEBUG("Version: HTTP/%d.%d", request->getHttpVersion() / 100,
                   request->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)request->getHeaders()->first();
-         header; header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->getFieldName()),
-                    ESB_SAFE_STR(header->getFieldValue()));
+    for (HttpHeader *header = (HttpHeader *)request->headers().first(); header;
+         header = (HttpHeader *)header->next()) {
+      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
+                    ESB_SAFE_STR(header->fieldValue()));
     }
   }
 
@@ -183,11 +182,10 @@ void HttpEchoServerHandler::endServerTransaction(
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->getApplicationContext();
   assert(context);
-  ESB::Allocator *allocator = transaction->getAllocator();
-  assert(allocator);
+  ESB::Allocator &allocator = transaction->getAllocator();
 
   context->~HttpEchoServerContext();
-  allocator->deallocate(context);
+  allocator.deallocate(context);
   transaction->setApplicationContext(0);
 
   switch (state) {

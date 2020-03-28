@@ -442,7 +442,7 @@ bool HttpServerSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
 
     // TODO - close connection if max requests sent on connection
 
-    if (_transaction.getRequest()->getReuseConnection()) {
+    if (_transaction.getRequest()->reuseConnection()) {
       _transaction.reset();
       _state = TRANSACTION_BEGIN;
       _bodyBytesWritten = 0;
@@ -631,11 +631,11 @@ ESB::Error HttpServerSocket::parseRequestHeaders(
                   _transaction.getRequest()->getHttpVersion() % 100 / 10);
 
     HttpHeader *header =
-        (HttpHeader *)_transaction.getRequest()->getHeaders()->first();
+        (HttpHeader *)_transaction.getRequest()->headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("socket:%d %s: %s", _socket.socketDescriptor(),
-                    ESB_SAFE_STR(header->getFieldName()),
-                    ESB_SAFE_STR(header->getFieldValue()));
+                    ESB_SAFE_STR(header->fieldName()),
+                    ESB_SAFE_STR(header->fieldValue()));
     }
   }
 
@@ -923,8 +923,7 @@ bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
   // TODO add date header and any other  headers like that
 
   ESB::Error error = _transaction.getResponse()->addHeader(
-      (const unsigned char *)"Transfer-Encoding",
-      (const unsigned char *)"chunked", _transaction.getAllocator());
+      "Transfer-Encoding", "chunked", _transaction.getAllocator());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "socket:%d cannot build response",
@@ -933,10 +932,9 @@ bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
   }
 
   if (110 <= _transaction.getRequest()->getHttpVersion() &&
-      !_transaction.getRequest()->getReuseConnection()) {
-    error = _transaction.getResponse()->addHeader(
-        (const unsigned char *)"Connection", (const unsigned char *)"close",
-        _transaction.getAllocator());
+      !_transaction.getRequest()->reuseConnection()) {
+    error = _transaction.getResponse()->addHeader("Connection", "close",
+                                                  _transaction.getAllocator());
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "socket:%d cannot build success response",
@@ -973,8 +971,7 @@ bool HttpServerSocket::sendInternalServerErrorResponse(
   _transaction.getResponse()->setHasBody(false);
 
   ESB::Error error = _transaction.getResponse()->addHeader(
-      (const unsigned char *)"Content-Length", (const unsigned char *)"0",
-      _transaction.getAllocator());
+      "Content-Length", "0", _transaction.getAllocator());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "socket:%d cannot create 500 response",
@@ -982,11 +979,10 @@ bool HttpServerSocket::sendInternalServerErrorResponse(
   }
 
   if (110 <= _transaction.getRequest()->getHttpVersion() &&
-      (!_transaction.getRequest()->getReuseConnection() ||
+      (!_transaction.getRequest()->reuseConnection() ||
        CloseAfterErrorResponse)) {
-    error = _transaction.getResponse()->addHeader(
-        (const unsigned char *)"Connection", (const unsigned char *)"close",
-        _transaction.getAllocator());
+    error = _transaction.getResponse()->addHeader("Connection", "close",
+                                                  _transaction.getAllocator());
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "socket:%d cannot create 500 response",

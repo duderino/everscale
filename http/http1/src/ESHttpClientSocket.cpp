@@ -244,11 +244,9 @@ bool HttpClientSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
   if (_state & TRANSACTION_BEGIN) {
     // TODO make connection reuse more configurable
     if (!HttpClientSocket::GetReuseConnections() &&
-        !_transaction->getRequest()->getHeader(
-            (const unsigned char *)"Connection")) {
+        !_transaction->getRequest()->findHeader("Connection")) {
       error = _transaction->getRequest()->addHeader(
-          (const unsigned char *)"Connection", (const unsigned char *)"close",
-          _transaction->getAllocator());
+          "Connection", "close", _transaction->getAllocator());
 
       if (ESB_SUCCESS != error) {
         ESB_LOG_ERROR_ERRNO(error,
@@ -480,11 +478,11 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
                                       ESB::Date::Now());
 
     if (GetReuseConnections()) {
-      const HttpHeader *header = _transaction->getResponse()->getHeader(
-          (unsigned const char *)"Connection");
+      const HttpHeader *header =
+          _transaction->getResponse()->findHeader("Connection");
 
-      if (header && header->getFieldValue() &&
-          !strcasecmp("close", (const char *)header->getFieldValue())) {
+      if (header && header->fieldValue() &&
+          !strcasecmp("close", (const char *)header->fieldValue())) {
         reuseConnection = false;
       } else {
         reuseConnection = true;
@@ -577,11 +575,11 @@ ESB::Error HttpClientSocket::parseResponseHeaders(
                   _transaction->getResponse()->getHttpVersion() % 100 / 10);
 
     HttpHeader *header =
-        (HttpHeader *)_transaction->getResponse()->getHeaders()->first();
+        (HttpHeader *)_transaction->getResponse()->headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("socket:%d %s: %s", _socket.socketDescriptor(),
-                    ESB_SAFE_STR(header->getFieldName()),
-                    ESB_SAFE_STR(header->getFieldValue()));
+                    ESB_SAFE_STR(header->fieldName()),
+                    ESB_SAFE_STR(header->fieldValue()));
     }
   }
 

@@ -78,10 +78,10 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
     ESB_LOG_DEBUG("Version: HTTP/%d.%d", response->getHttpVersion() / 100,
                   response->getHttpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)response->getHeaders()->first();
-         header; header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->getFieldName()),
-                    ESB_SAFE_STR(header->getFieldValue()));
+    for (HttpHeader *header = (HttpHeader *)response->headers().first(); header;
+         header = (HttpHeader *)header->next()) {
+      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
+                    ESB_SAFE_STR(header->fieldValue()));
     }
   }
 
@@ -122,8 +122,7 @@ void HttpEchoClientHandler::endClientTransaction(
   HttpEchoClientContext *context =
       (HttpEchoClientContext *)transaction->getApplicationContext();
   assert(context);
-  ESB::Allocator *allocator = transaction->getAllocator();
-  assert(allocator);
+  ESB::Allocator &allocator = transaction->getAllocator();
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
@@ -155,7 +154,7 @@ void HttpEchoClientHandler::endClientTransaction(
 
   if (0U == context->getRemainingIterations()) {
     context->~HttpEchoClientContext();
-    allocator->deallocate(context);
+    allocator.deallocate(context);
     transaction->setApplicationContext(0);
     return;
   }

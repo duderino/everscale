@@ -60,34 +60,6 @@ void HttpTransaction::reset() {
   _start = 0;
 }
 
-HttpHeader *HttpTransaction::createHeader(unsigned const char *name,
-                                          unsigned const char *value) {
-  unsigned char *fieldName = HttpUtil::Duplicate(&_allocator, name);
-
-  if (!fieldName) {
-    return 0;
-  }
-
-  unsigned char *fieldValue = HttpUtil::Duplicate(&_allocator, value);
-
-  if (!fieldValue) {
-    _allocator.deallocate(fieldName);
-
-    return 0;
-  }
-
-  HttpHeader *header = new (&_allocator) HttpHeader(fieldName, fieldValue);
-
-  if (!header) {
-    _allocator.deallocate(fieldName);
-    _allocator.deallocate(fieldValue);
-
-    return 0;
-  }
-
-  return header;
-}
-
 ESB::CleanupHandler *HttpTransaction::cleanupHandler() {
   return _cleanupHandler;
 }

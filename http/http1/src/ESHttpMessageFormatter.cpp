@@ -66,7 +66,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    _currentHeader = (HttpHeader *)message->getHeaders()->first();
+    _currentHeader = (HttpHeader *)message->headers().first();
 
     HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_START_LINE,
                          ES_FORMATTING_FIELD_NAME);
@@ -100,33 +100,33 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
     }
 
     if (ES_FORMATTING_FIELD_NAME & _state) {
-      assert(_currentHeader->getFieldName());
+      assert(_currentHeader->fieldName());
 
-      if (0 == _currentHeader->getFieldName()) {
+      if (0 == _currentHeader->fieldName()) {
         return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_NAME);
       }
 
-      error = formatFieldName(outputBuffer, _currentHeader->getFieldName());
+      error = formatFieldName(outputBuffer, _currentHeader->fieldName());
 
       if (ESB_SUCCESS != error) {
         return error;
       }
 
-      if (0 == strcasecmp((const char *)_currentHeader->getFieldName(),
+      if (0 == strcasecmp((const char *)_currentHeader->fieldName(),
                           "Content-Length")) {
         _state |= ES_FOUND_CONTENT_LENGTH_HEADER;
       }
 
-      if (0 == strcasecmp((const char *)_currentHeader->getFieldName(),
+      if (0 == strcasecmp((const char *)_currentHeader->fieldName(),
                           "Transfer-Encoding")) {
         // If a Transfer-Encoding header field (section 14.41) is present and
         // has any value other than "identity", then the transfer-length is
         // defined by use of the "chunked" transfer-coding (section 3.6),
         // unless the message is terminated by closing the connection.
 
-        if (0 == _currentHeader->getFieldValue() ||
-            0 != strncmp((const char *)_currentHeader->getFieldValue(),
-                         "identity", sizeof("identity") - 1)) {
+        if (0 == _currentHeader->fieldValue() ||
+            0 != strncmp((const char *)_currentHeader->fieldValue(), "identity",
+                         sizeof("identity") - 1)) {
           _state |= ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER;
         }
       }
@@ -136,7 +136,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
     }
 
     if (ES_FORMATTING_FIELD_VALUE & _state) {
-      error = formatFieldValue(outputBuffer, _currentHeader->getFieldValue());
+      error = formatFieldValue(outputBuffer, _currentHeader->fieldValue());
 
       if (ESB_SUCCESS != error) {
         return error;
@@ -207,8 +207,8 @@ ESB::Error HttpMessageFormatter::formatFieldName(
 
   assert(ES_FORMATTING_FIELD_NAME & _state);
 
-  for (const unsigned char *p = fieldName; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+  for (const unsigned char *p = (const unsigned char *)fieldName; *p; ++p) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -241,15 +241,15 @@ ESB::Error HttpMessageFormatter::formatFieldValue(
 
   bool lastIsSpace = true;
 
-  for (const unsigned char *p = fieldValue; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+  for (const unsigned char *p = (const unsigned char *)fieldValue; *p; ++p) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
     if (HttpUtil::IsLWS(*p)) {
       // Replace any line continuations, etc. with a single ' '
 
-      if (false == lastIsSpace) {
+      if (!lastIsSpace) {
         outputBuffer->putNext(' ');
         lastIsSpace = true;
       }

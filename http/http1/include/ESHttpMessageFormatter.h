@@ -109,6 +109,11 @@ class HttpMessageFormatter {
   void operator=(const HttpMessageFormatter &formatter);
 
   // field-name     = token
+  inline ESB::Error formatFieldName(ESB::Buffer *outputBuffer,
+                                    const char *fieldName) {
+    return formatFieldName(outputBuffer, (const unsigned char *)fieldName);
+  }
+
   ESB::Error formatFieldName(ESB::Buffer *outputBuffer,
                              const unsigned char *fieldName);
 
@@ -116,6 +121,11 @@ class HttpMessageFormatter {
   // field-content  = <the OCTETs making up the field-value
   //                 and consisting of either *TEXT or combinations
   //                 of token, separators, and quoted-string>
+  inline ESB::Error formatFieldValue(ESB::Buffer *outputBuffer,
+                                     const char *fieldValue) {
+    return formatFieldValue(outputBuffer, (const unsigned char *)fieldValue);
+  }
+
   ESB::Error formatFieldValue(ESB::Buffer *outputBuffer,
                               const unsigned char *fieldValue);
 

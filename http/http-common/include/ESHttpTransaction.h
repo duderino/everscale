@@ -76,10 +76,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
     return HttpUtil::Duplicate(&_allocator, value);
   }
 
-  HttpHeader *createHeader(unsigned const char *name,
-                           unsigned const char *value);
-
-  inline ESB::Allocator *getAllocator() { return &_allocator; }
+  inline ESB::Allocator &getAllocator() { return _allocator; }
 
   inline const HttpRequest *getRequest() const { return &_request; }
 

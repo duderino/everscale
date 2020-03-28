@@ -24,19 +24,18 @@ class HttpMessage {
 
   virtual ~HttpMessage();
 
-  inline ESB::EmbeddedList *getHeaders() { return &_headers; }
+  inline ESB::EmbeddedList &headers() { return _headers; }
 
-  inline const ESB::EmbeddedList *getHeaders() const { return &_headers; }
+  inline const ESB::EmbeddedList &headers() const { return _headers; }
 
-  const HttpHeader *getHeader(unsigned const char *fieldName) const;
+  const HttpHeader *findHeader(const char *fieldName) const;
 
-  ESB::Error addHeader(unsigned const char *fieldName,
-                       unsigned const char *fieldValue,
-                       ESB::Allocator *allocator);
+  ESB::Error addHeader(const char *fieldName, const char *fieldValue,
+                       ESB::Allocator &allocator);
 
-  ESB::Error addHeader(ESB::Allocator *allocator,
-                       unsigned const char *fieldName,
-                       unsigned const char *fieldValueFormat, ...);
+  ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName,
+                       const char *fieldValueFormat, ...)
+      __attribute__((format(printf, 4, 5)));
 
   /**
    * Get the HTTP version.
@@ -75,7 +74,7 @@ class HttpMessage {
     }
   }
 
-  inline bool getReuseConnection() const {
+  inline bool reuseConnection() const {
     return _flags & ES_HTTP_MESSAGE_REUSE_CONNECTION;
   }
 
@@ -87,7 +86,7 @@ class HttpMessage {
     }
   }
 
-  inline bool getSend100Continue() {
+  inline bool send100Continue() {
     return _flags & ES_HTTP_MESSAGE_SEND_100_CONTINUE;
   }
 

@@ -82,13 +82,13 @@ ESB::Error HttpRequest::parsePeerAddress(unsigned char *hostname, int size,
     return ESB_SUCCESS;
   }
 
-  const HttpHeader *header = getHeader((const unsigned char *)"Host");
+  const HttpHeader *header = findHeader("Host");
 
-  if (0 == header || 0 == header->getFieldValue()) {
+  if (!header || !header->fieldValue()) {
     return ESB_INVALID_ARGUMENT;
   }
 
-  const unsigned char *p = header->getFieldValue();
+  const unsigned char *p = header->fieldValue();
   const unsigned char *q = p;
 
   while (*p && ':' != *p) {

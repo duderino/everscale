@@ -25,7 +25,7 @@ HttpServerSimpleCounters::~HttpServerSimpleCounters() {}
 
 void HttpServerSimpleCounters::log(ESB::Logger &logger,
                                    ESB::Logger::Severity severity) const {
-  _successfulTransactions.log(logger, severity);
+  /*_successfulTransactions.log(logger, severity);
   _requestHeaderErrors.log(logger, severity);
   _requestHeaderFailures.log(logger, severity);
   _requestHeaderTimeouts.log(logger, severity);
@@ -37,7 +37,7 @@ void HttpServerSimpleCounters::log(ESB::Logger &logger,
   _responseHeaderTimeouts.log(logger, severity);
   _responseBodyErrors.log(logger, severity);
   _responseBodyFailures.log(logger, severity);
-  _responseHeaderTimeouts.log(logger, severity);
+  _responseHeaderTimeouts.log(logger, severity);*/
   ESB_LOG(logger, severity, "SERVER CONNECTION ACCEPTS: %d",
           _totalConnections.get());
   _averageTransactionsPerConnection.log(logger, severity,

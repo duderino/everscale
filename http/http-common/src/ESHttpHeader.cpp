@@ -4,6 +4,11 @@
 
 namespace ES {
 
+HttpHeader::HttpHeader(const char *fieldName, const char *fieldValue)
+    : ESB::EmbeddedListElement(),
+      _fieldName((const unsigned char *)fieldName),
+      _fieldValue((const unsigned char *)fieldValue) {}
+
 HttpHeader::HttpHeader(const unsigned char *fieldName,
                        const unsigned char *fieldValue)
     : ESB::EmbeddedListElement(),
@@ -12,5 +17,6 @@ HttpHeader::HttpHeader(const unsigned char *fieldName,
 
 HttpHeader::~HttpHeader() {}
 
-ESB::CleanupHandler *HttpHeader::cleanupHandler() { return 0; }
+ESB::CleanupHandler *HttpHeader::cleanupHandler() { return NULL; }
+
 }  // namespace ES
