@@ -40,9 +40,9 @@ class HttpRequestParser : public HttpMessageParser {
  protected:
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
   virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer,
-                                    HttpMessage *message);
+                                    HttpMessage &message);
 
-  virtual bool isBodyNotAllowed(HttpMessage *message);
+  virtual bool isBodyNotAllowed(HttpMessage &message);
 
  private:
   // Disabled
@@ -59,7 +59,7 @@ class HttpRequestParser : public HttpMessageParser {
   //                       | "CONNECT"                ; Section 9.9
   //                       | extension-method
   // extension-method = token
-  ESB::Error parseMethod(ESB::Buffer *inputBuffer, HttpRequest *request);
+  ESB::Error parseMethod(ESB::Buffer *inputBuffer, HttpRequest &request);
 
   int _requestState;
   HttpRequestUriParser _requestUriParser;

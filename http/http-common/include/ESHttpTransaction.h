@@ -58,16 +58,12 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   virtual ~HttpTransaction();
 
-  inline const ESB::SocketAddress *getPeerAddress() const {
-    return &_peerAddress;
-  }
+  inline const ESB::SocketAddress &peerAddress() const { return _peerAddress; }
 
-  inline ESB::SocketAddress *getPeerAddress() { return &_peerAddress; }
+  inline ESB::SocketAddress &peerAddress() { return _peerAddress; }
 
-  inline void setPeerAddress(const ESB::SocketAddress *peerAddress) {
-    if (peerAddress) {
-      _peerAddress = *peerAddress;
-    }
+  inline void setPeerAddress(const ESB::SocketAddress &peerAddress) {
+    _peerAddress = peerAddress;
   }
 
   virtual void reset();
@@ -76,23 +72,21 @@ class HttpTransaction : public ESB::EmbeddedListElement {
     return HttpUtil::Duplicate(&_allocator, value);
   }
 
-  inline ESB::Allocator &getAllocator() { return _allocator; }
+  inline ESB::Allocator &allocator() { return _allocator; }
 
-  inline const HttpRequest *getRequest() const { return &_request; }
+  inline const HttpRequest &request() const { return _request; }
 
-  inline HttpRequest *getRequest() { return &_request; }
+  inline HttpRequest &request() { return _request; }
 
-  inline const HttpResponse *getResponse() const { return &_response; }
+  inline const HttpResponse &response() const { return _response; }
 
-  inline HttpResponse *getResponse() { return &_response; }
+  inline HttpResponse &response() { return _response; }
 
-  inline void setApplicationContext(void *appContext) {
-    _appContext = appContext;
-  }
+  inline void setContext(void *appContext) { _appContext = appContext; }
 
-  inline void *getApplicationContext() { return _appContext; }
+  inline void *context() { return _appContext; }
 
-  inline const void *getApplicationContext() const { return _appContext; }
+  inline const void *context() const { return _appContext; }
 
   inline ESB::Buffer *getIOBuffer() { return &_ioBuffer; }
 
@@ -111,7 +105,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   inline void setStartTime() { _start = ESB::Date::Now(); }
 
-  inline const ESB::Date &getStartTime() const { return _start; }
+  inline const ESB::Date &startTime() const { return _start; }
 
  protected:
   ESB::DiscardAllocator _allocator;

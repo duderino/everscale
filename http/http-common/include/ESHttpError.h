@@ -23,7 +23,7 @@ namespace ES {
 #define ES_HTTP_PARSER_JAMMED -117
 #define ES_HTTP_FORMATTER_JAMMED -118
 
-inline bool HttpIsHttpError(int error) {
+inline bool IsHttpError(int error) {
   return error <= ES_HTTP_BAD_CRLF && error >= ES_HTTP_FORMATTER_JAMMED;
 }
 

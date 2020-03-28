@@ -57,7 +57,7 @@ HttpClientSocket::HttpClientSocket(HttpConnectionPool *pool,
       _transaction(transaction),
       _counters(counters),
       _cleanupHandler(cleanupHandler),
-      _socket(*transaction->getPeerAddress(), false) {}
+      _socket(transaction->peerAddress(), false) {}
 
 HttpClientSocket::~HttpClientSocket() {}
 
@@ -196,7 +196,7 @@ bool HttpClientSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
         return false;  // remove from multiplexer
       }
 
-      if (false == _transaction->getResponse()->hasBody()) {
+      if (false == _transaction->response().hasBody()) {
         unsigned char byte = 0;
 
         if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
@@ -218,7 +218,7 @@ bool HttpClientSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
     }
 
     assert(PARSING_BODY & _state);
-    assert(_transaction->getResponse()->hasBody());
+    assert(_transaction->response().hasBody());
 
     error = parseResponseBody(multiplexer);
 
@@ -244,9 +244,9 @@ bool HttpClientSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
   if (_state & TRANSACTION_BEGIN) {
     // TODO make connection reuse more configurable
     if (!HttpClientSocket::GetReuseConnections() &&
-        !_transaction->getRequest()->findHeader("Connection")) {
-      error = _transaction->getRequest()->addHeader(
-          "Connection", "close", _transaction->getAllocator());
+        !_transaction->request().findHeader("Connection")) {
+      error = _transaction->request().addHeader("Connection", "close",
+                                                _transaction->allocator());
 
       if (ESB_SUCCESS != error) {
         ESB_LOG_ERROR_ERRNO(error,
@@ -304,7 +304,7 @@ bool HttpClientSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
 
       _state &= ~FLUSHING_HEADERS;
 
-      if (_transaction->getRequest()->hasBody()) {
+      if (_transaction->request().hasBody()) {
         _state |= FORMATTING_BODY;
 
         if (YieldAfterFormattingHeaders) {
@@ -432,54 +432,54 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   bool reuseConnection = false;
 
   if (_state & TRANSACTION_BEGIN) {
-    _counters->getFailures()->record(_transaction->getStartTime(),
+    _counters->getFailures()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
         multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
-    _counters->getFailures()->record(_transaction->getStartTime(),
+    _counters->getFailures()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
         multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
-    _counters->getFailures()->record(_transaction->getStartTime(),
+    _counters->getFailures()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
         multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
-    _counters->getFailures()->record(_transaction->getStartTime(),
+    _counters->getFailures()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
         multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
-    _counters->getFailures()->record(_transaction->getStartTime(),
+    _counters->getFailures()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
         multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
-    _counters->getFailures()->record(_transaction->getStartTime(),
+    _counters->getFailures()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
     _transaction->getHandler()->endClientTransaction(
         multiplexer, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
-    _counters->getSuccesses()->record(_transaction->getStartTime(),
+    _counters->getSuccesses()->record(_transaction->startTime(),
                                       ESB::Date::Now());
 
     if (GetReuseConnections()) {
       const HttpHeader *header =
-          _transaction->getResponse()->findHeader("Connection");
+          _transaction->response().findHeader("Connection");
 
       if (header && header->fieldValue() &&
           !strcasecmp("close", (const char *)header->fieldValue())) {
@@ -541,7 +541,7 @@ const char *HttpClientSocket::getName() const { return "HttpClientSocket"; }
 ESB::Error HttpClientSocket::parseResponseHeaders(
     ESB::SocketMultiplexer &multiplexer) {
   ESB::Error error = _transaction->getParser()->parseHeaders(
-      _transaction->getIOBuffer(), _transaction->getResponse());
+      _transaction->getIOBuffer(), _transaction->response());
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d need more header data from stream",
@@ -567,15 +567,15 @@ ESB::Error HttpClientSocket::parseResponseHeaders(
   if (ESB_DEBUG_LOGGABLE) {
     ESB_LOG_DEBUG("socket:%d headers parsed", _socket.socketDescriptor());
     ESB_LOG_DEBUG("socket:%d StatusCode: %d", _socket.socketDescriptor(),
-                  _transaction->getResponse()->getStatusCode());
+                  _transaction->response().statusCode());
     ESB_LOG_DEBUG("socket:%d ReasonPhrase: %s", _socket.socketDescriptor(),
-                  ESB_SAFE_STR(_transaction->getResponse()->getReasonPhrase()));
+                  ESB_SAFE_STR(_transaction->response().reasonPhrase()));
     ESB_LOG_DEBUG("socket:%d Version: HTTP/%d.%d", _socket.socketDescriptor(),
-                  _transaction->getResponse()->getHttpVersion() / 100,
-                  _transaction->getResponse()->getHttpVersion() % 100 / 10);
+                  _transaction->response().httpVersion() / 100,
+                  _transaction->response().httpVersion() % 100 / 10);
 
     HttpHeader *header =
-        (HttpHeader *)_transaction->getResponse()->headers().first();
+        (HttpHeader *)_transaction->response().headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("socket:%d %s: %s", _socket.socketDescriptor(),
                     ESB_SAFE_STR(header->fieldName()),
@@ -669,7 +669,7 @@ ESB::Error HttpClientSocket::parseResponseBody(
 ESB::Error HttpClientSocket::formatRequestHeaders(
     ESB::SocketMultiplexer &multiplexer) {
   ESB::Error error = _transaction->getFormatter()->formatHeaders(
-      _transaction->getIOBuffer(), _transaction->getRequest());
+      _transaction->getIOBuffer(), _transaction->request());
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d partially formatted response headers",

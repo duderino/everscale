@@ -234,7 +234,7 @@ ESB::Error HttpStack::executeClientTransaction(
   ESB::UInt16 port = 0;
   bool isSecure = false;
 
-  ESB::Error error = transaction->getRequest()->parsePeerAddress(
+  ESB::Error error = transaction->request().parsePeerAddress(
       hostname, sizeof(hostname), &port, &isSecure);
 
   if (ESB_SUCCESS != error) {
@@ -242,11 +242,11 @@ ESB::Error HttpStack::executeClientTransaction(
     return error;
   }
 
-  error = _dnsClient->resolve(transaction->getPeerAddress(), hostname, port,
-                              isSecure);
+  error =
+      _dnsClient->resolve(transaction->peerAddress(), hostname, port, isSecure);
 
   if (ESB_SUCCESS != error) {
-    _clientCounters->getFailures()->record(transaction->getStartTime(),
+    _clientCounters->getFailures()->record(transaction->startTime(),
                                            ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RESOLVE);
@@ -256,7 +256,7 @@ ESB::Error HttpStack::executeClientTransaction(
   HttpClientSocket *socket = _clientSocketFactory.create(this, transaction);
 
   if (!socket) {
-    _clientCounters->getFailures()->record(transaction->getStartTime(),
+    _clientCounters->getFailures()->record(transaction->startTime(),
                                            ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -268,7 +268,7 @@ ESB::Error HttpStack::executeClientTransaction(
     error = socket->connect();
 
     if (ESB_SUCCESS != error) {
-      _clientCounters->getFailures()->record(transaction->getStartTime(),
+      _clientCounters->getFailures()->record(transaction->startTime(),
                                              ESB::Date::Now());
       ESB_LOG_WARNING_ERRNO(error, "Cannot connect to %s:%d", hostname, port);
       // transaction->getHandler()->end(transaction,
@@ -296,7 +296,7 @@ ESB::Error HttpStack::executeClientTransaction(
   if (!multiplexer) {
     ESB_LOG_CRITICAL(
         "Cannot add client socket to multiplexer, no multiplexers");
-    _clientCounters->getFailures()->record(transaction->getStartTime(),
+    _clientCounters->getFailures()->record(transaction->startTime(),
                                            ESB::Date::Now());
     socket->close();
     _clientSocketFactory.release(socket);
@@ -306,7 +306,7 @@ ESB::Error HttpStack::executeClientTransaction(
   error = multiplexer->addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    _clientCounters->getFailures()->record(transaction->getStartTime(),
+    _clientCounters->getFailures()->record(transaction->startTime(),
                                            ESB::Date::Now());
     socket->close();
     // transaction->getHandler()->end(transaction,

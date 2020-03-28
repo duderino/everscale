@@ -14,10 +14,10 @@ SystemDnsClient::SystemDnsClient() : DnsClient() {}
 
 SystemDnsClient::~SystemDnsClient() {}
 
-Error SystemDnsClient::resolve(SocketAddress *address,
+Error SystemDnsClient::resolve(SocketAddress &address,
                                const unsigned char *hostname, UInt16 port,
                                bool isSecure) {
-  if (0 == hostname || 0 == address) {
+  if (0 == hostname) {
     return ESB_NULL_POINTER;
   }
 
@@ -66,14 +66,14 @@ Error SystemDnsClient::resolve(SocketAddress *address,
     }
   }
 
-  memset(address->primitiveAddress(), 0, sizeof(SocketAddress::Address));
+  memset(address.primitiveAddress(), 0, sizeof(SocketAddress::Address));
 
-  memcpy(&address->primitiveAddress()->sin_addr, hostEntry.h_addr_list[0],
-         sizeof(address->primitiveAddress()->sin_addr));
-  address->primitiveAddress()->sin_family = AF_INET;
-  address->primitiveAddress()->sin_port = htons(port);
+  memcpy(&address.primitiveAddress()->sin_addr, hostEntry.h_addr_list[0],
+         sizeof(address.primitiveAddress()->sin_addr));
+  address.primitiveAddress()->sin_family = AF_INET;
+  address.primitiveAddress()->sin_port = htons(port);
 
-  address->setType(isSecure ? SocketAddress::TLS : SocketAddress::TCP);
+  address.setType(isSecure ? SocketAddress::TLS : SocketAddress::TCP);
 
   return ESB_SUCCESS;
 }

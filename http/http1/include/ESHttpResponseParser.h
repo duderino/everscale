@@ -35,9 +35,9 @@ class HttpResponseParser : public HttpMessageParser {
  protected:
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
   virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer,
-                                    HttpMessage *message);
+                                    HttpMessage &message);
 
-  virtual bool isBodyNotAllowed(HttpMessage *message);
+  virtual bool isBodyNotAllowed(HttpMessage &message);
 
  private:
   // Disabled
@@ -45,11 +45,11 @@ class HttpResponseParser : public HttpMessageParser {
   void operator=(const HttpResponseParser &parser);
 
   // Status-Code    = 3DIGIT
-  ESB::Error parseStatusCode(ESB::Buffer *inputBuffer, HttpResponse *response);
+  ESB::Error parseStatusCode(ESB::Buffer *inputBuffer, HttpResponse &response);
 
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
   ESB::Error parseReasonPhrase(ESB::Buffer *inputBuffer,
-                               HttpResponse *response);
+                               HttpResponse &response);
 
   int _responseState;
 };

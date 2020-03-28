@@ -58,7 +58,7 @@ class HttpMessageParser {
    * @return ESB_SUCCESS if successful, ESB_AGAIN if more data needs to be read,
    *  another error code otherwise.
    */
-  ESB::Error parseHeaders(ESB::Buffer *inputBuffer, HttpMessage *message);
+  ESB::Error parseHeaders(ESB::Buffer *inputBuffer, HttpMessage &message);
 
   /**
    * Parse the body.  Caller should keep calling this mehtod on a given input
@@ -88,12 +88,12 @@ class HttpMessageParser {
 
  protected:
   virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer,
-                                    HttpMessage *message) = 0;
+                                    HttpMessage &message) = 0;
 
-  virtual bool isBodyNotAllowed(HttpMessage *message) = 0;
+  virtual bool isBodyNotAllowed(HttpMessage &message) = 0;
 
   // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
-  ESB::Error parseVersion(ESB::Buffer *inputBuffer, HttpMessage *message,
+  ESB::Error parseVersion(ESB::Buffer *inputBuffer, HttpMessage &message,
                           bool clientMode);
 
   ESB::Buffer *_workingBuffer;
@@ -107,13 +107,13 @@ class HttpMessageParser {
   void operator=(const HttpMessageParser &parser);
 
   // field-name     = token
-  ESB::Error parseFieldName(ESB::Buffer *inputBuffer, HttpMessage *message);
+  ESB::Error parseFieldName(ESB::Buffer *inputBuffer, HttpMessage &message);
 
   // field-value    = *( field-content | LWS )
   // field-content  = <the OCTETs making up the field-value
   //                 and consisting of either *TEXT or combinations
   //                 of token, separators, and quoted-string>
-  ESB::Error parseFieldValue(ESB::Buffer *inputBuffer, HttpMessage *message);
+  ESB::Error parseFieldValue(ESB::Buffer *inputBuffer, HttpMessage &message);
 
   // Chunked-Body   = *chunk
   //                  last-chunk
@@ -144,7 +144,7 @@ class HttpMessageParser {
   ESB::Error parseUnencodedBody(ESB::Buffer *inputBuffer, int *startingPosition,
                                 int *chunkSize);
 
-  ESB::Error postParse(HttpMessage *message);
+  ESB::Error postParse(HttpMessage &message);
 };
 
 }  // namespace ES

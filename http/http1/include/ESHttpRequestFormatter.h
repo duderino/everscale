@@ -38,7 +38,7 @@ class HttpRequestFormatter : public HttpMessageFormatter {
  protected:
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
   virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer,
-                                     const HttpMessage *message);
+                                     const HttpMessage &message);
 
  private:
   // Disabled
@@ -56,7 +56,7 @@ class HttpRequestFormatter : public HttpMessageFormatter {
   //                       | extension-method
   // extension-method = token
   ESB::Error formatMethod(ESB::Buffer *outputBuffer,
-                          const HttpRequest *request);
+                          const HttpRequest &request);
 
   int _requestState;
   HttpRequestUriFormatter _requestUriFormatter;

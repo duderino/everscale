@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
     transaction = clientStack.createClientTransaction(&clientHandler);
     assert(transaction);
 
-    transaction->setApplicationContext(context);
+    transaction->setContext(context);
 
     // Build the request
 

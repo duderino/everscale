@@ -30,7 +30,7 @@ void HttpRequestFormatter::reset() {
 }
 
 ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
-                                                 const HttpMessage *message) {
+                                                 const HttpMessage &message) {
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
 
   if (ES_FORMAT_COMPLETE & _requestState) {
@@ -41,7 +41,7 @@ ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
     HttpUtil::Start(&_requestState, outputBuffer, ES_FORMATTING_METHOD);
   }
 
-  HttpRequest *request = (HttpRequest *)message;
+  HttpRequest &request = (HttpRequest &)message;
 
   ESB::Error error = ESB_SUCCESS;
 
@@ -57,7 +57,7 @@ ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
   }
 
   if (ES_FORMATTING_REQUEST_URI & _requestState) {
-    error = _requestUriFormatter.format(outputBuffer, request->getRequestUri());
+    error = _requestUriFormatter.format(outputBuffer, request.requestUri());
 
     if (ESB_SUCCESS != error) {
       return error;
@@ -82,7 +82,7 @@ ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
 }
 
 ESB::Error HttpRequestFormatter::formatMethod(ESB::Buffer *outputBuffer,
-                                              const HttpRequest *request) {
+                                              const HttpRequest &request) {
   // Method                = "OPTIONS"                ; Section 9.2
   //                       | "GET"                    ; Section 9.3
   //                       | "HEAD"                   ; Section 9.4
@@ -96,12 +96,12 @@ ESB::Error HttpRequestFormatter::formatMethod(ESB::Buffer *outputBuffer,
 
   assert(ES_FORMATTING_METHOD & _requestState);
 
-  if (0 == request->getMethod() || 0 == request->getMethod()[0]) {
+  if (0 == request.method() || 0 == request.method()[0]) {
     return ES_HTTP_BAD_REQUEST_METHOD;
   }
 
-  for (const unsigned char *p = request->getMethod(); *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+  for (const unsigned char *p = request.method(); *p; ++p) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -113,7 +113,7 @@ ESB::Error HttpRequestFormatter::formatMethod(ESB::Buffer *outputBuffer,
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_METHOD);
   }
 
-  if (false == outputBuffer->isWritable()) {
+  if (!outputBuffer->isWritable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 

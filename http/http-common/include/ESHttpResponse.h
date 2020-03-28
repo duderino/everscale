@@ -20,13 +20,17 @@ class HttpResponse : public HttpMessage {
 
   inline void setStatusCode(int statusCode) { _statusCode = statusCode; }
 
-  inline int getStatusCode() const { return _statusCode; }
+  inline int statusCode() const { return _statusCode; }
 
   inline void setReasonPhrase(const unsigned char *reasonPhrase) {
     _reasonPhrase = reasonPhrase;
   }
 
-  inline const unsigned char *getReasonPhrase() const { return _reasonPhrase; }
+  inline void setReasonPhrase(const char *reasonPhrase) {
+    _reasonPhrase = (const unsigned char *)reasonPhrase;
+  }
+
+  inline const unsigned char *reasonPhrase() const { return _reasonPhrase; }
 
  private:
   // Disabled

@@ -44,7 +44,7 @@ class HttpRequestUriFormatter {
    * space, another error code otherwise.
    */
   ESB::Error format(ESB::Buffer *outputBuffer,
-                    const HttpRequestUri *requestUri);
+                    const HttpRequestUri &requestUri);
 
  private:
   // Disabled
@@ -53,28 +53,28 @@ class HttpRequestUriFormatter {
 
   // "*"
   ESB::Error formatAsterisk(ESB::Buffer *outputBuffer,
-                            const HttpRequestUri *requestUri);
+                            const HttpRequestUri &requestUri);
 
   // abs_path      = "/"  path_segments
   // path_segments = segment *( "/" segment )
   // segment       = *pchar *( ";" param )
   // param         = *pchar
   ESB::Error formatAbsPath(ESB::Buffer *outputBuffer,
-                           const HttpRequestUri *requestUri);
+                           const HttpRequestUri &requestUri);
 
   // query         = *uric
   ESB::Error formatQuery(ESB::Buffer *outputBuffer,
-                         const HttpRequestUri *requestUri);
+                         const HttpRequestUri &requestUri);
 
   // fragment     = *uric
   ESB::Error formatFragment(ESB::Buffer *outputBuffer,
-                            const HttpRequestUri *requestUri);
+                            const HttpRequestUri &requestUri);
 
   // http_URL       = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // scheme        = alpha *( alpha | digit | "+" | "-" | "." )
   ESB::Error formatScheme(ESB::Buffer *outputBuffer,
-                          const HttpRequestUri *requestUri);
+                          const HttpRequestUri &requestUri);
 
   // host          = hostname | IPv4address
   // hostname      = *( domainlabel "." ) toplabel [ "." ]
@@ -82,11 +82,11 @@ class HttpRequestUriFormatter {
   // toplabel      = alpha | alpha *( alphanum | "-" ) alphanum
   // IPv4address   = 1*digit "." 1*digit "." 1*digit "." 1*digit
   ESB::Error formatHost(ESB::Buffer *outputBuffer,
-                        const HttpRequestUri *requestUri);
+                        const HttpRequestUri &requestUri);
 
   // port          = *digit
   ESB::Error formatPort(ESB::Buffer *outputBuffer,
-                        const HttpRequestUri *requestUri);
+                        const HttpRequestUri &requestUri);
 
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // hier_part     = ( net_path | abs_path ) [ "?" query ]
@@ -96,7 +96,7 @@ class HttpRequestUriFormatter {
   // uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" |
   // "+" | "$" | ","
   ESB::Error formatNonHttpUri(ESB::Buffer *outputBuffer,
-                              const HttpRequestUri *requestUri);
+                              const HttpRequestUri &requestUri);
 
   int _state;
 };

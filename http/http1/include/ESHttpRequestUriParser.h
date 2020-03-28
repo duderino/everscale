@@ -59,7 +59,7 @@ class HttpRequestUriParser {
    * @return ESB_SUCCESS if successful, ESB_AGAIN if more data needs to be read,
    *  another error code otherwise.
    */
-  ESB::Error parse(ESB::Buffer *inputBuffer, HttpRequestUri *requestUri);
+  ESB::Error parse(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
  private:
   // Disabled
@@ -68,34 +68,34 @@ class HttpRequestUriParser {
 
   // "*"
   ESB::Error parseAsterisk(ESB::Buffer *inputBuffer,
-                           HttpRequestUri *requestUri);
+                           HttpRequestUri &requestUri);
 
   // abs_path      = "/"  path_segments
   // path_segments = segment *( "/" segment )
   // segment       = *pchar *( ";" param )
   // param         = *pchar
-  ESB::Error parseAbsPath(ESB::Buffer *inputBuffer, HttpRequestUri *requestUri);
+  ESB::Error parseAbsPath(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // query         = *uric
-  ESB::Error parseQuery(ESB::Buffer *inputBuffer, HttpRequestUri *requestUri);
+  ESB::Error parseQuery(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // scheme        = alpha *( alpha | digit | "+" | "-" | "." )
-  ESB::Error parseScheme(ESB::Buffer *inputBuffer, HttpRequestUri *requestUri);
+  ESB::Error parseScheme(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // host          = hostname | IPv4address
   // hostname      = *( domainlabel "." ) toplabel [ "." ]
   // domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
   // toplabel      = alpha | alpha *( alphanum | "-" ) alphanum
   // IPv4address   = 1*digit "." 1*digit "." 1*digit "." 1*digit
-  ESB::Error parseHost(ESB::Buffer *inputBuffer, HttpRequestUri *requestUri);
+  ESB::Error parseHost(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // port          = *digit
-  ESB::Error parsePort(ESB::Buffer *inputBuffer, HttpRequestUri *requestUri);
+  ESB::Error parsePort(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // fragment      = *uric
   ESB::Error parseFragment(ESB::Buffer *inputBuffer,
-                           HttpRequestUri *requestUri);
+                           HttpRequestUri &requestUri);
 
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // hier_part     = ( net_path | abs_path ) [ "?" query ]
@@ -105,10 +105,10 @@ class HttpRequestUriParser {
   // uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" |
   // "+" | "$" | ","
   ESB::Error parseNonHttpUri(ESB::Buffer *inputBuffer,
-                             HttpRequestUri *requestUri);
+                             HttpRequestUri &requestUri);
 
   ESB::Error skipForwardSlashes(ESB::Buffer *inputBuffer,
-                                HttpRequestUri *requestUri);
+                                HttpRequestUri &requestUri);
 
   int _state;
   ESB::Buffer *_workingBuffer;

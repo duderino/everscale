@@ -22,13 +22,16 @@ class HttpRequest : public HttpMessage {
 
   void reset();
 
-  inline const unsigned char *getMethod() const { return _method; }
+  inline const unsigned char *method() const { return _method; }
 
   inline void setMethod(const unsigned char *method) { _method = method; }
+  inline void setMethod(const char *method) {
+    _method = (const unsigned char *)method;
+  }
 
-  inline HttpRequestUri *getRequestUri() { return &_requestUri; }
+  inline HttpRequestUri &requestUri() { return _requestUri; }
 
-  inline const HttpRequestUri *getRequestUri() const { return &_requestUri; }
+  inline const HttpRequestUri &requestUri() const { return _requestUri; }
 
   /**
    * Parse the request uri and any Host header to determine the (unresolved)

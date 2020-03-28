@@ -36,7 +36,7 @@ int HttpEchoClientHandler::reserveRequestChunk(
   assert(transaction);
 
   HttpEchoClientContext *context =
-      (HttpEchoClientContext *)transaction->getApplicationContext();
+      (HttpEchoClientContext *)transaction->context();
 
   assert(context);
 
@@ -51,7 +51,7 @@ void HttpEchoClientHandler::fillRequestChunk(
   assert(0 < chunkSize);
 
   HttpEchoClientContext *context =
-      (HttpEchoClientContext *)transaction->getApplicationContext();
+      (HttpEchoClientContext *)transaction->context();
 
   assert(context);
 
@@ -67,18 +67,16 @@ void HttpEchoClientHandler::fillRequestChunk(
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
     ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   assert(transaction);
-  HttpResponse *response = transaction->getResponse();
-  assert(response);
+  HttpResponse &response = transaction->response();
 
   if (ESB_DEBUG_LOGGABLE) {
     ESB_LOG_DEBUG("Response headers parsed");
-    ESB_LOG_DEBUG("StatusCode: %d", response->getStatusCode());
-    ESB_LOG_DEBUG("ReasonPhrase: %s",
-                  ESB_SAFE_STR(response->getReasonPhrase()));
-    ESB_LOG_DEBUG("Version: HTTP/%d.%d", response->getHttpVersion() / 100,
-                  response->getHttpVersion() % 100 / 10);
+    ESB_LOG_DEBUG("StatusCode: %d", response.statusCode());
+    ESB_LOG_DEBUG("ReasonPhrase: %s", ESB_SAFE_STR(response.reasonPhrase()));
+    ESB_LOG_DEBUG("Version: HTTP/%d.%d", response.httpVersion() / 100,
+                  response.httpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)response->headers().first(); header;
+    for (HttpHeader *header = (HttpHeader *)response.headers().first(); header;
          header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
                     ESB_SAFE_STR(header->fieldValue()));
@@ -120,9 +118,9 @@ void HttpEchoClientHandler::endClientTransaction(
 
   assert(transaction);
   HttpEchoClientContext *context =
-      (HttpEchoClientContext *)transaction->getApplicationContext();
+      (HttpEchoClientContext *)transaction->context();
   assert(context);
-  ESB::Allocator &allocator = transaction->getAllocator();
+  ESB::Allocator &allocator = transaction->allocator();
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
@@ -155,7 +153,7 @@ void HttpEchoClientHandler::endClientTransaction(
   if (0U == context->getRemainingIterations()) {
     context->~HttpEchoClientContext();
     allocator.deallocate(context);
-    transaction->setApplicationContext(0);
+    transaction->setContext(0);
     return;
   }
 
@@ -169,15 +167,14 @@ void HttpEchoClientHandler::endClientTransaction(
   context->setRemainingIterations(context->getRemainingIterations() - 1);
   context->setBytesSent(0U);
 
-  newTransaction->setApplicationContext(context);
-  transaction->setApplicationContext(0);
+  newTransaction->setContext(context);
+  transaction->setContext(0);
 
   char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-  transaction->getPeerAddress()->presentationAddress(dottedIP,
-                                                     sizeof(dottedIP));
+  transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
 
   ESB::Error error = HttpEchoClientRequestBuilder(
-      dottedIP, transaction->getPeerAddress()->port(), _absPath, _method,
+      dottedIP, transaction->peerAddress().port(), _absPath, _method,
       _contentType, newTransaction);
 
   if (ESB_SUCCESS != error) {

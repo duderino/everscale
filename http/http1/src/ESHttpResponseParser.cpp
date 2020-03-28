@@ -30,7 +30,7 @@ void HttpResponseParser::reset() {
 }
 
 ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
-                                              HttpMessage *message) {
+                                              HttpMessage &message) {
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
 
   if (ES_PARSE_COMPLETE & _responseState) {
@@ -44,7 +44,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
     _workingBuffer->clear();
   }
 
-  HttpResponse *response = (HttpResponse *)message;
+  HttpResponse &response = (HttpResponse &)message;
 
   ESB::Error error = ESB_SUCCESS;
 
@@ -96,7 +96,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
-                                               HttpResponse *response) {
+                                               HttpResponse &response) {
   // Status-Code    = 3DIGIT
 
   assert(ES_PARSING_STATUS_CODE & _responseState);
@@ -120,7 +120,7 @@ ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
 
     octet = inputBuffer->next();
 
-    if (false == HttpUtil::IsDigit(octet)) {
+    if (!HttpUtil::IsDigit(octet)) {
       return ES_HTTP_BAD_STATUS_CODE;
     }
 
@@ -129,17 +129,17 @@ ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
 
   assert(inputBuffer->isReadable());
 
-  if (false == HttpUtil::IsSpace(inputBuffer->next())) {
+  if (!HttpUtil::IsSpace(inputBuffer->next())) {
     return ES_HTTP_BAD_STATUS_CODE;
   }
 
-  response->setStatusCode(statusCode);
+  response.setStatusCode(statusCode);
 
   return ESB_SUCCESS;
 }
 
 ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
-                                                 HttpResponse *response) {
+                                                 HttpResponse &response) {
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
 
   assert(ES_PARSING_REASON_PHRASE & _responseState);
@@ -148,11 +148,11 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
   unsigned char octet;
 
   while (true) {
-    if (false == inputBuffer->isReadable()) {
+    if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (false == _workingBuffer->isWritable()) {
+    if (!_workingBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -176,7 +176,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
               return ESB_OUT_OF_MEMORY;
             }
 
-            response->setReasonPhrase(reasonPhrase);
+            response.setReasonPhrase(reasonPhrase);
           }
 
           return ESB_SUCCESS;
@@ -209,7 +209,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
   }
 }
 
-bool HttpResponseParser::isBodyNotAllowed(HttpMessage *message) {
+bool HttpResponseParser::isBodyNotAllowed(HttpMessage &message) {
   // For response messages, whether or not a message-body is included with
   // a message is dependent on both the request method and the response
   // status code (section 6.1.1). All responses to the HEAD request method
@@ -219,9 +219,9 @@ bool HttpResponseParser::isBodyNotAllowed(HttpMessage *message) {
   // MUST NOT include a message-body. All other responses do include a
   // message-body, although it MAY be of zero length
 
-  HttpResponse *response = (HttpResponse *)message;
+  HttpResponse &response = (HttpResponse &)message;
 
-  switch (response->getStatusCode()) {
+  switch (response.statusCode()) {
     case 204:
     case 304:
 
@@ -229,7 +229,7 @@ bool HttpResponseParser::isBodyNotAllowed(HttpMessage *message) {
 
     default:
 
-      return 200 <= response->getStatusCode();
+      return 200 <= response.statusCode();
   }
 }
 

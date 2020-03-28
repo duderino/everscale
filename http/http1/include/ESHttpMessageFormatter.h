@@ -47,7 +47,7 @@ class HttpMessageFormatter {
    * space, another error code otherwise.
    */
   ESB::Error formatHeaders(ESB::Buffer *outputBuffer,
-                           const HttpMessage *message);
+                           const HttpMessage &message);
 
   /**
    * Format a HTTP body in one or more blocks.  If a Transfer-Encoding 'chunked'
@@ -97,11 +97,11 @@ class HttpMessageFormatter {
 
  protected:
   virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer,
-                                     const HttpMessage *message) = 0;
+                                     const HttpMessage &message) = 0;
 
   // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
   ESB::Error formatVersion(ESB::Buffer *outputBuffer,
-                           const HttpMessage *message, bool clientMode);
+                           const HttpMessage &message, bool clientMode);
 
  private:
   // Disabled

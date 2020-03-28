@@ -16,32 +16,30 @@ ESB::Error HttpEchoClientRequestBuilder(const char *host, int port,
     return ESB_INVALID_ARGUMENT;
   }
 
-  HttpRequest *request = transaction->getRequest();
-  HttpRequestUri *requestUri = request->getRequestUri();
+  HttpRequest &request = transaction->request();
+  HttpRequestUri &requestUri = request.requestUri();
 
-  requestUri->setType(HttpRequestUri::ES_URI_HTTP);
+  requestUri.setType(HttpRequestUri::ES_URI_HTTP);
+  requestUri.setAbsPath(absPath);
+  request.setMethod(method);
 
-  requestUri->setAbsPath((const unsigned char *)absPath);
-
-  request->setMethod((const unsigned char *)method);
-
-  ESB::Error error = request->addHeader(transaction->getAllocator(), "Host",
-                                        "%s:%d", host, port);
+  ESB::Error error =
+      request.addHeader(transaction->allocator(), "Host", "%s:%d", host, port);
 
   if (ESB_SUCCESS != error) {
     return error;
   }
 
   if (contentType) {
-    error = request->addHeader("Content-Type", contentType,
-                               transaction->getAllocator());
+    error = request.addHeader("Content-Type", contentType,
+                              transaction->allocator());
     if (ESB_SUCCESS != error) {
       return error;
     }
   }
 
-  error = request->addHeader("Transfer-Encoding", "chunked",
-                             transaction->getAllocator());
+  error = request.addHeader("Transfer-Encoding", "chunked",
+                            transaction->allocator());
 
   if (ESB_SUCCESS != error) {
     return error;

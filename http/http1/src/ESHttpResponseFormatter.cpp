@@ -28,7 +28,7 @@ void HttpResponseFormatter::reset() {
 }
 
 ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
-                                                  const HttpMessage *message) {
+                                                  const HttpMessage &message) {
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
 
   if (ES_FORMAT_COMPLETE & _responseState) {
@@ -39,7 +39,7 @@ ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
     HttpUtil::Start(&_responseState, outputBuffer, ES_FORMATTING_VERSION);
   }
 
-  HttpResponse *response = (HttpResponse *)message;
+  HttpResponse &response = (HttpResponse &)message;
 
   ESB::Error error = ESB_SUCCESS;
 
@@ -82,12 +82,12 @@ ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
 }
 
 ESB::Error HttpResponseFormatter::formatStatusCode(
-    ESB::Buffer *outputBuffer, const HttpResponse *response) {
+    ESB::Buffer *outputBuffer, const HttpResponse &response) {
   // Status-Code    = 3DIGIT
 
   assert(ES_FORMATTING_STATUS_CODE & _responseState);
 
-  if (100 > response->getStatusCode() || 999 < response->getStatusCode()) {
+  if (100 > response.statusCode() || 999 < response.statusCode()) {
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_STATUS_CODE);
   }
 
@@ -96,13 +96,13 @@ ESB::Error HttpResponseFormatter::formatStatusCode(
   }
 
   ESB::Error error =
-      HttpUtil::FormatInteger(outputBuffer, response->getStatusCode(), 10);
+      HttpUtil::FormatInteger(outputBuffer, response.statusCode(), 10);
 
   if (ESB_SUCCESS != error) {
     return HttpUtil::Rollback(outputBuffer, error);
   }
 
-  if (false == outputBuffer->isWritable()) {
+  if (!outputBuffer->isWritable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -112,17 +112,17 @@ ESB::Error HttpResponseFormatter::formatStatusCode(
 }
 
 ESB::Error HttpResponseFormatter::formatReasonPhrase(
-    ESB::Buffer *outputBuffer, const HttpResponse *response) {
+    ESB::Buffer *outputBuffer, const HttpResponse &response) {
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
 
   assert(ES_FORMATTING_REASON_PHRASE & _responseState);
 
-  if (0 == response->getReasonPhrase() || 0 == response->getReasonPhrase()[0]) {
+  if (0 == response.reasonPhrase() || 0 == response.reasonPhrase()[0]) {
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REASON_PHRASE);
   }
 
-  for (const unsigned char *p = response->getReasonPhrase(); *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+  for (const unsigned char *p = response.reasonPhrase(); *p; ++p) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 

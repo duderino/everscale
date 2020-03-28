@@ -147,10 +147,10 @@ bool ParseRequest(const char *inputFileName) {
     if (Debug) {
       fprintf(stderr, "headers parsed for file %s\n", inputFileName);
 
-      fprintf(stderr, "Method: %s\n", request.getMethod());
+      fprintf(stderr, "Method: %s\n", request.method());
       fprintf(stderr, "RequestUri\n");
 
-      switch (request.getRequestUri()->getType()) {
+      switch (request.requestUri()->type()) {
         case HttpRequestUri::ES_URI_ASTERISK:
 
           fprintf(stderr, "  Asterisk\n");
@@ -159,38 +159,36 @@ bool ParseRequest(const char *inputFileName) {
         case HttpRequestUri::ES_URI_HTTP:
         case HttpRequestUri::ES_URI_HTTPS:
 
-          fprintf(
-              stderr, "  Scheme: %s\n",
-              HttpRequestUri::ES_URI_HTTP == request.getRequestUri()->getType()
-                  ? "http"
-                  : "https");
+          fprintf(stderr, "  Scheme: %s\n",
+                  HttpRequestUri::ES_URI_HTTP == request.requestUri()->type()
+                      ? "http"
+                      : "https");
           fprintf(stderr, "  Host: %s\n",
-                  0 == request.getRequestUri()->getHost()
+                  0 == request.requestUri()->host()
                       ? "none"
-                      : (const char *)request.getRequestUri()->getHost());
-          fprintf(stderr, "  Port: %d\n", request.getRequestUri()->getPort());
-          fprintf(stderr, "  AbsPath: %s\n",
-                  request.getRequestUri()->getAbsPath());
+                      : (const char *)request.requestUri()->host());
+          fprintf(stderr, "  Port: %d\n", request.requestUri()->port());
+          fprintf(stderr, "  AbsPath: %s\n", request.requestUri()->absPath());
           fprintf(stderr, "  Query: %s\n",
-                  0 == request.getRequestUri()->getQuery()
+                  0 == request.requestUri()->query()
                       ? "none"
-                      : (const char *)request.getRequestUri()->getQuery());
+                      : (const char *)request.requestUri()->query());
           fprintf(stderr, "  Fragment: %s\n",
-                  0 == request.getRequestUri()->getFragment()
+                  0 == request.requestUri()->fragment()
                       ? "none"
-                      : (const char *)request.getRequestUri()->getFragment());
+                      : (const char *)request.requestUri()->fragment());
 
           break;
 
         case HttpRequestUri::ES_URI_OTHER:
 
-          fprintf(stderr, "  Other: %s\n", request.getRequestUri()->getOther());
+          fprintf(stderr, "  Other: %s\n", request.requestUri()->other());
 
           break;
       }
 
-      fprintf(stderr, "Version: HTTP/%d.%d\n", request.getHttpVersion() / 100,
-              request.getHttpVersion() % 100 / 10);
+      fprintf(stderr, "Version: HTTP/%d.%d\n", request.httpVersion() / 100,
+              request.httpVersion() % 100 / 10);
 
       fprintf(stderr, "Headers\n");
 
@@ -643,10 +641,10 @@ bool ParseResponse(const char *inputFileName) {
     if (Debug) {
       fprintf(stderr, "headers parsed for file %s\n", inputFileName);
 
-      fprintf(stderr, "StatusCode: %d\n", response.getStatusCode());
-      fprintf(stderr, "ReasonPhrase: %s\n", response.getReasonPhrase());
-      fprintf(stderr, "Version: HTTP/%d.%d\n", response.getHttpVersion() / 100,
-              response.getHttpVersion() % 100 / 10);
+      fprintf(stderr, "StatusCode: %d\n", response.statusCode());
+      fprintf(stderr, "ReasonPhrase: %s\n", response.reasonPhrase());
+      fprintf(stderr, "Version: HTTP/%d.%d\n", response.httpVersion() / 100,
+              response.httpVersion() % 100 / 10);
 
       fprintf(stderr, "Headers\n");
 

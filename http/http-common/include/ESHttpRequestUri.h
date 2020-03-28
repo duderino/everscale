@@ -1,6 +1,10 @@
 #ifndef ES_HTTP_REQUEST_URI_H
 #define ES_HTTP_REQUEST_URI_H
 
+#ifndef ESB_TYPES_H
+#include <ESBTypes.h>
+#endif
+
 namespace ES {
 
 /**
@@ -31,7 +35,7 @@ class HttpRequestUri {
    *
    * @return The Request-URI's type
    */
-  inline UriType getType() const { return _type; }
+  inline UriType type() const { return _type; }
 
   /**
    * Set the Request-URI's type
@@ -47,7 +51,7 @@ class HttpRequestUri {
    *
    * @return The Request-URI's abs-path or NULL if not set
    */
-  inline const unsigned char *getAbsPath() const { return _absPath; }
+  inline const unsigned char *absPath() const { return _absPath; }
 
   /**
    * Set the Request-URI's abs-path.  Caller controls the memory.
@@ -57,13 +61,22 @@ class HttpRequestUri {
   inline void setAbsPath(const unsigned char *absPath) { _absPath = absPath; }
 
   /**
+   * Set the Request-URI's abs-path.  Caller controls the memory.
+   *
+   * @param absPath The Request-URI's abs-path
+   */
+  inline void setAbsPath(const char *absPath) {
+    _absPath = (const unsigned char *)absPath;
+  }
+
+  /**
    * Get the Request-URI's query string if set.  Example:
    * <p/>The "id=70029023&trkid=134852" in
    * "http://www.foo.com/bar/baz?id=70029023&trkid=134852"
    *
    * @return the Request-URI's query string. or NULL if not set
    */
-  inline const unsigned char *getQuery() const { return _query; }
+  inline const unsigned char *query() const { return _query; }
 
   /**
    * Set the Request-URI's query string.  Caller controls memory.
@@ -73,13 +86,22 @@ class HttpRequestUri {
   inline void setQuery(const unsigned char *query) { _query = query; }
 
   /**
+   * Set the Request-URI's query string.  Caller controls memory.
+   *
+   * @param query The Request-URI's query string
+   */
+  inline void setQuery(const char *query) {
+    _query = (const unsigned char *)query;
+  }
+
+  /**
    * Get the Request-URI's host.
    * Example:
    * <p/>The "www.foo.com" in "https://www.foo.com:443/bar/baz"
    *
    * @return The Request-URI's host or NULL if not set.
    */
-  inline const unsigned char *getHost() const { return _host; }
+  inline const unsigned char *host() const { return _host; }
 
   /**
    * Set the Request-URI's host.  Caller controls memory.
@@ -89,27 +111,34 @@ class HttpRequestUri {
   inline void setHost(const unsigned char *host) { _host = host; }
 
   /**
+   * Set the Request-URI's host.  Caller controls memory.
+   *
+   * @param host The Request-URI's host
+   */
+  inline void setHost(const char *host) { _host = (const unsigned char *)host; }
+
+  /**
    * Get the Request-URI's port number if it is set.
    * Example:
    * <p/>The "443" in "https://www.foo.com:443/bar/baz"
    *
    * @return The Request-URI's port number if it is set, -1 otherwise.
    */
-  inline int getPort() const { return _port; }
+  inline ESB::UInt32 port() const { return _port; }
 
   /**
    * Set the Request-URI's port number
    *
    * @param port The port
    */
-  inline void setPort(int port) { _port = port; }
+  inline void setPort(ESB::UInt32 port) { _port = port; }
 
   /**
    * Get the Request-URI's fragment (anchor)
    *
    * @return The Request-URI's fragement if set, NULL otherwise.
    */
-  inline const unsigned char *getFragment() const { return _fragment; }
+  inline const unsigned char *fragment() const { return _fragment; }
 
   /**
    * Set the Request-URI's fragment (anchor)
@@ -121,11 +150,20 @@ class HttpRequestUri {
   }
 
   /**
+   * Set the Request-URI's fragment (anchor)
+   *
+   * @param fragment The Request-URI's fragement.  Caller controls memory.
+   */
+  inline void setFragment(const char *fragment) {
+    _fragment = (const unsigned char *)fragment;
+  }
+
+  /**
    * Get the raw form of a non-http, non-https uri.
    *
    * @return The raw Request-URI
    */
-  inline const unsigned char *getOther() const { return _other; }
+  inline const unsigned char *other() const { return _other; }
 
   /**
    * Set the raw form of a non-http, non-https uri.
@@ -174,7 +212,7 @@ class HttpRequestUri {
   void operator=(const HttpRequestUri &);
 
   UriType _type;
-  int _port;
+  ESB::UInt32 _port;
   const unsigned char *_username;
   const unsigned char *_password;
   const unsigned char *_host;

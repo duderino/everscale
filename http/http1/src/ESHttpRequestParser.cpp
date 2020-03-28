@@ -33,7 +33,7 @@ void HttpRequestParser::reset() {
 }
 
 ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
-                                             HttpMessage *message) {
+                                             HttpMessage &message) {
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
 
   if (ES_PARSE_COMPLETE & _requestState) {
@@ -47,7 +47,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
     _workingBuffer->clear();
   }
 
-  HttpRequest *request = (HttpRequest *)message;
+  HttpRequest &request = (HttpRequest &)message;
 
   ESB::Error error = ESB_SUCCESS;
 
@@ -66,7 +66,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
   }
 
   if (ES_PARSING_REQUEST_URI & _requestState) {
-    error = _requestUriParser.parse(inputBuffer, request->getRequestUri());
+    error = _requestUriParser.parse(inputBuffer, request.requestUri());
 
     if (ESB_SUCCESS != error) {
       return error;
@@ -99,7 +99,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer,
-                                          HttpRequest *request) {
+                                          HttpRequest &request) {
   // Method                = "OPTIONS"                ; Section 9.2
   //                       | "GET"                    ; Section 9.3
   //                       | "HEAD"                   ; Section 9.4
@@ -116,20 +116,20 @@ ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer,
   unsigned char octet;
 
   while (true) {
-    if (false == inputBuffer->isReadable()) {
+    if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (false == _workingBuffer->isWritable()) {
+    if (!_workingBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
     octet = inputBuffer->next();
 
     if (HttpUtil::IsSpace(octet)) {
-      request->setMethod(_workingBuffer->duplicate(_allocator));
+      request.setMethod(_workingBuffer->duplicate(_allocator));
 
-      return 0 == request->getMethod() ? ESB_OUT_OF_MEMORY : ESB_SUCCESS;
+      return 0 == request.method() ? ESB_OUT_OF_MEMORY : ESB_SUCCESS;
     }
 
     if (HttpUtil::IsToken(octet)) {
@@ -141,7 +141,7 @@ ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer,
   }
 }
 
-bool HttpRequestParser::isBodyNotAllowed(HttpMessage *message) {
+bool HttpRequestParser::isBodyNotAllowed(HttpMessage &message) {
   // A message-body MUST NOT be included in
   // a request if the specification of the request method (section 5.1.1)
   // does not allow sending an entity-body in requests. A server SHOULD
@@ -149,10 +149,10 @@ bool HttpRequestParser::isBodyNotAllowed(HttpMessage *message) {
   // does not include defined semantics for an entity-body, then the
   // message-body SHOULD be ignored when handling the request.
 
-  HttpRequest *request = (HttpRequest *)message;
+  HttpRequest &request = (HttpRequest &)message;
 
-  if (0 == strcasecmp("GET", (const char *)request->getMethod()) ||
-      0 == strcasecmp("DELETE", (const char *)request->getMethod())) {
+  if (0 == strcasecmp("GET", (const char *)request.method()) ||
+      0 == strcasecmp("DELETE", (const char *)request.method())) {
     return true;
   }
 

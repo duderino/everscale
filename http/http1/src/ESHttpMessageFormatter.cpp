@@ -39,7 +39,7 @@ void HttpMessageFormatter::reset() {
 }
 
 ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
-                                               const HttpMessage *message) {
+                                               const HttpMessage &message) {
   // generic-message = start-line
   //                   *(message-header CRLF)
   //                   CRLF
@@ -50,7 +50,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
   }
 
   if (0x00 == _state) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return ESB_AGAIN;
     }
 
@@ -66,7 +66,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    _currentHeader = (HttpHeader *)message->headers().first();
+    _currentHeader = (HttpHeader *)message.headers().first();
 
     HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_START_LINE,
                          ES_FORMATTING_FIELD_NAME);
@@ -153,12 +153,12 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
 }
 
 ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
-                                               const HttpMessage *message,
+                                               const HttpMessage &message,
                                                bool clientMode) {
   // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
   if (clientMode) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -167,16 +167,16 @@ ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
 
   const unsigned char *version = 0;
 
-  if (110 == message->getHttpVersion()) {
+  if (110 == message.httpVersion()) {
     version = (const unsigned char *)"HTTP/1.1";
-  } else if (100 == message->getHttpVersion()) {
+  } else if (100 == message.httpVersion()) {
     version = (const unsigned char *)"HTTP/1.0";
   } else {
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_VERSION);
   }
 
   for (const unsigned char *p = version; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -191,7 +191,7 @@ ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
     outputBuffer->putNext('\r');
     outputBuffer->putNext('\n');
   } else {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 

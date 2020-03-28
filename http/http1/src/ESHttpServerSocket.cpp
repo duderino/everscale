@@ -124,7 +124,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
     // If we send a response before fully reading the request, we can't reuse
     // the socket
     _state |= CLOSE_AFTER_RESPONSE_SENT;
-    _transaction.setPeerAddress(&_socket.peerAddress());
+    _transaction.setPeerAddress(_socket.peerAddress());
 
     switch (_handler->beginServerTransaction(multiplexer, &_transaction)) {
       case HttpServerHandler::ES_HTTP_SERVER_HANDLER_CLOSE:
@@ -189,7 +189,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
       // If we send a response before fully reading the request, we can't reuse
       // the socket
       _state |= CLOSE_AFTER_RESPONSE_SENT;
-      _transaction.setPeerAddress(&_socket.peerAddress());
+      _transaction.setPeerAddress(_socket.peerAddress());
 
       switch (_handler->beginServerTransaction(multiplexer, &_transaction)) {
         case HttpServerHandler::ES_HTTP_SERVER_HANDLER_CLOSE:
@@ -214,14 +214,14 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
       }
 
       if (ESB_SUCCESS != error) {
-        if (HttpIsHttpError(error)) {
+        if (IsHttpError(error)) {
           return sendBadRequestResponse(multiplexer);
         } else {
           return sendInternalServerErrorResponse(multiplexer);
         }
       }
 
-      if (!_transaction.getRequest()->hasBody()) {
+      if (!_transaction.request().hasBody()) {
         _state &= ~CLOSE_AFTER_RESPONSE_SENT;
       }
 
@@ -239,7 +239,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
           break;
       }
 
-      if (!_transaction.getRequest()->hasBody()) {
+      if (!_transaction.request().hasBody()) {
         unsigned char byte = 0;
 
         switch (_handler->receiveRequestBody(multiplexer, &_transaction, &byte,
@@ -258,7 +258,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
     }
 
     if (PARSING_BODY & _state) {
-      assert(_transaction.getRequest()->hasBody());
+      assert(_transaction.request().hasBody());
       error = parseRequestBody(multiplexer);
 
       if (ESB_AGAIN == error) {
@@ -270,7 +270,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
       }
 
       if (ESB_SUCCESS != error) {
-        if (HttpIsHttpError(error)) {
+        if (IsHttpError(error)) {
           return sendBadRequestResponse(multiplexer);
         } else {
           return sendInternalServerErrorResponse(multiplexer);
@@ -292,7 +292,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
     }
 
     assert(SKIPPING_TRAILER & _state);
-    assert(_transaction.getRequest()->hasBody());
+    assert(_transaction.request().hasBody());
     error = skipTrailer(multiplexer);
 
     if (ESB_AGAIN == error) {
@@ -363,7 +363,7 @@ bool HttpServerSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
 
       _state &= ~FLUSHING_HEADERS;
 
-      if (_transaction.getResponse()->hasBody()) {
+      if (_transaction.response().hasBody()) {
         _state |= FORMATTING_BODY;
         if (YieldAfterFormattingHeaders) {
           return true;  // keep in multiplexer; but move on to the next
@@ -436,13 +436,13 @@ bool HttpServerSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
     }
 
     if (CloseAfterErrorResponse &&
-        300 <= _transaction.getResponse()->getStatusCode()) {
+        300 <= _transaction.response().statusCode()) {
       return false;  // remove from multiplexer
     }
 
     // TODO - close connection if max requests sent on connection
 
-    if (_transaction.getRequest()->reuseConnection()) {
+    if (_transaction.request().reuseConnection()) {
       _transaction.reset();
       _state = TRANSACTION_BEGIN;
       _bodyBytesWritten = 0;
@@ -560,7 +560,7 @@ const char *HttpServerSocket::name() const { return "HttpServerSocket"; }
 ESB::Error HttpServerSocket::parseRequestHeaders(
     ESB::SocketMultiplexer &multiplexer) {
   ESB::Error error = _transaction.getParser()->parseHeaders(
-      _transaction.getIOBuffer(), _transaction.getRequest());
+      _transaction.getIOBuffer(), _transaction.request());
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d need more header data from stream",
@@ -584,54 +584,46 @@ ESB::Error HttpServerSocket::parseRequestHeaders(
   if (ESB_DEBUG_LOGGABLE) {
     ESB_LOG_DEBUG("socket:%d headers parsed", _socket.socketDescriptor());
     ESB_LOG_DEBUG("socket:%d Method: %s", _socket.socketDescriptor(),
-                  _transaction.getRequest()->getMethod());
+                  _transaction.request().method());
 
-    switch (_transaction.getRequest()->getRequestUri()->getType()) {
+    switch (_transaction.request().requestUri().type()) {
       case HttpRequestUri::ES_URI_ASTERISK:
         ESB_LOG_DEBUG("socket:%d Asterisk Request-URI",
                       _socket.socketDescriptor());
         break;
       case HttpRequestUri::ES_URI_HTTP:
       case HttpRequestUri::ES_URI_HTTPS:
-        ESB_LOG_DEBUG(
-            "socket:%d Scheme: %s", _socket.socketDescriptor(),
-            HttpRequestUri::ES_URI_HTTP ==
-                    _transaction.getRequest()->getRequestUri()->getType()
-                ? "http"
-                : "https");
-        ESB_LOG_DEBUG(
-            "socket:%d Host: %s", _socket.socketDescriptor(),
-            ESB_SAFE_STR(
-                _transaction.getRequest()->getRequestUri()->getHost()));
+        ESB_LOG_DEBUG("socket:%d Scheme: %s", _socket.socketDescriptor(),
+                      HttpRequestUri::ES_URI_HTTP ==
+                              _transaction.request().requestUri().type()
+                          ? "http"
+                          : "https");
+        ESB_LOG_DEBUG("socket:%d Host: %s", _socket.socketDescriptor(),
+                      ESB_SAFE_STR(_transaction.request().requestUri().host()));
         ESB_LOG_DEBUG("socket:%d Port: %d", _socket.socketDescriptor(),
-                      _transaction.getRequest()->getRequestUri()->getPort());
+                      _transaction.request().requestUri().port());
         ESB_LOG_DEBUG(
             "socket:%d AbsPath: %s", _socket.socketDescriptor(),
-            ESB_SAFE_STR(
-                _transaction.getRequest()->getRequestUri()->getAbsPath()));
+            ESB_SAFE_STR(_transaction.request().requestUri().absPath()));
         ESB_LOG_DEBUG(
             "socket:%d Query: %s", _socket.socketDescriptor(),
-            ESB_SAFE_STR(
-                _transaction.getRequest()->getRequestUri()->getQuery()));
+            ESB_SAFE_STR(_transaction.request().requestUri().query()));
         ESB_LOG_DEBUG(
             "socket:%d Fragment: %s", _socket.socketDescriptor(),
-            ESB_SAFE_STR(
-                _transaction.getRequest()->getRequestUri()->getFragment()));
+            ESB_SAFE_STR(_transaction.request().requestUri().fragment()));
         break;
       case HttpRequestUri::ES_URI_OTHER:
         ESB_LOG_DEBUG(
             "socket:%d Other: %s", _socket.socketDescriptor(),
-            ESB_SAFE_STR(
-                _transaction.getRequest()->getRequestUri()->getOther()));
+            ESB_SAFE_STR(_transaction.request().requestUri().other()));
         break;
     }
 
     ESB_LOG_DEBUG("socket:%d Version: HTTP/%d.%d", _socket.socketDescriptor(),
-                  _transaction.getRequest()->getHttpVersion() / 100,
-                  _transaction.getRequest()->getHttpVersion() % 100 / 10);
+                  _transaction.request().httpVersion() / 100,
+                  _transaction.request().httpVersion() % 100 / 10);
 
-    HttpHeader *header =
-        (HttpHeader *)_transaction.getRequest()->headers().first();
+    HttpHeader *header = (HttpHeader *)_transaction.request().headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("socket:%d %s: %s", _socket.socketDescriptor(),
                     ESB_SAFE_STR(header->fieldName()),
@@ -756,7 +748,7 @@ ESB::Error HttpServerSocket::skipTrailer(ESB::SocketMultiplexer &multiplexer) {
 ESB::Error HttpServerSocket::formatResponseHeaders(
     ESB::SocketMultiplexer &multiplexer) {
   ESB::Error error = _transaction.getFormatter()->formatHeaders(
-      _transaction.getIOBuffer(), _transaction.getResponse());
+      _transaction.getIOBuffer(), _transaction.response());
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d partially formatted response headers",
@@ -910,7 +902,7 @@ ESB::Error HttpServerSocket::flushBuffer(ESB::SocketMultiplexer &multiplexer) {
 }
 
 bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
-  if (0 == _transaction.getResponse()->getStatusCode()) {
+  if (0 == _transaction.response().statusCode()) {
     ESB_LOG_INFO(
         "socket:%d server handler failed to build response, "
         "sending 500 Internal Server Error",
@@ -922,8 +914,8 @@ bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
   // response object
   // TODO add date header and any other  headers like that
 
-  ESB::Error error = _transaction.getResponse()->addHeader(
-      "Transfer-Encoding", "chunked", _transaction.getAllocator());
+  ESB::Error error = _transaction.response().addHeader(
+      "Transfer-Encoding", "chunked", _transaction.allocator());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "socket:%d cannot build response",
@@ -931,10 +923,10 @@ bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
     return sendInternalServerErrorResponse(multiplexer);
   }
 
-  if (110 <= _transaction.getRequest()->getHttpVersion() &&
-      !_transaction.getRequest()->reuseConnection()) {
-    error = _transaction.getResponse()->addHeader("Connection", "close",
-                                                  _transaction.getAllocator());
+  if (110 <= _transaction.request().httpVersion() &&
+      !_transaction.request().reuseConnection()) {
+    error = _transaction.response().addHeader("Connection", "close",
+                                              _transaction.allocator());
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "socket:%d cannot build success response",
@@ -944,8 +936,8 @@ bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
   }
 
   ESB_LOG_DEBUG("socket:%d sending response: %d %s", _socket.socketDescriptor(),
-                _transaction.getResponse()->getStatusCode(),
-                _transaction.getResponse()->getReasonPhrase());
+                _transaction.response().statusCode(),
+                _transaction.response().reasonPhrase());
   _state &= ~(TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY);
   _state |= FORMATTING_HEADERS;
   return YieldAfterParsingRequest ? true : handleWritable(multiplexer);
@@ -953,10 +945,9 @@ bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {
 
 bool HttpServerSocket::sendBadRequestResponse(
     ESB::SocketMultiplexer &multiplexer) {
-  _transaction.getResponse()->setStatusCode(400);
-  _transaction.getResponse()->setReasonPhrase(
-      (const unsigned char *)"Bad Request");
-  _transaction.getResponse()->setHasBody(false);
+  _transaction.response().setStatusCode(400);
+  _transaction.response().setReasonPhrase("Bad Request");
+  _transaction.response().setHasBody(false);
   return sendResponse(multiplexer);
 }
 
@@ -965,24 +956,22 @@ bool HttpServerSocket::sendInternalServerErrorResponse(
   // TODO reserve a static read-only internal server error response for out of
   // memory conditions.
 
-  _transaction.getResponse()->setStatusCode(500);
-  _transaction.getResponse()->setReasonPhrase(
-      (const unsigned char *)"Internal Server Error");
-  _transaction.getResponse()->setHasBody(false);
+  _transaction.response().setStatusCode(500);
+  _transaction.response().setReasonPhrase("Internal Server Error");
+  _transaction.response().setHasBody(false);
 
-  ESB::Error error = _transaction.getResponse()->addHeader(
-      "Content-Length", "0", _transaction.getAllocator());
+  ESB::Error error = _transaction.response().addHeader(
+      "Content-Length", "0", _transaction.allocator());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "socket:%d cannot create 500 response",
                        _socket.socketDescriptor());
   }
 
-  if (110 <= _transaction.getRequest()->getHttpVersion() &&
-      (!_transaction.getRequest()->reuseConnection() ||
-       CloseAfterErrorResponse)) {
-    error = _transaction.getResponse()->addHeader("Connection", "close",
-                                                  _transaction.getAllocator());
+  if (110 <= _transaction.request().httpVersion() &&
+      (!_transaction.request().reuseConnection() || CloseAfterErrorResponse)) {
+    error = _transaction.response().addHeader("Connection", "close",
+                                              _transaction.allocator());
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "socket:%d cannot create 500 response",
@@ -994,8 +983,8 @@ bool HttpServerSocket::sendInternalServerErrorResponse(
   _state |= FORMATTING_HEADERS;
 
   ESB_LOG_DEBUG("socket:%d sending response: %d %s", _socket.socketDescriptor(),
-                _transaction.getResponse()->getStatusCode(),
-                _transaction.getResponse()->getReasonPhrase());
+                _transaction.response().statusCode(),
+                _transaction.response().reasonPhrase());
   return handleWritable(multiplexer);
 }
 

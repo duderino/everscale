@@ -379,7 +379,7 @@ int main(int argc, char **argv) {
       return -3;
     }
 
-    transaction->setApplicationContext(context);
+    transaction->setContext(context);
 
     // Build the request
 

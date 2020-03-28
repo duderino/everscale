@@ -42,7 +42,7 @@ class HttpMessage {
    *
    * @return The HTTP version.  110 is HTTP/1.1, 100 is HTTP/1.0, etc.
    */
-  inline int getHttpVersion() const { return _version; }
+  inline int httpVersion() const { return _version; }
 
   /**
    * Set the HTTP version.

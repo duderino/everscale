@@ -34,7 +34,7 @@ class HttpResponseFormatter : public HttpMessageFormatter {
  protected:
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
   virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer,
-                                     const HttpMessage *message);
+                                     const HttpMessage &message);
 
  private:
   // Disabled
@@ -43,11 +43,11 @@ class HttpResponseFormatter : public HttpMessageFormatter {
 
   // Status-Code    = 3DIGIT
   ESB::Error formatStatusCode(ESB::Buffer *outputBuffer,
-                              const HttpResponse *response);
+                              const HttpResponse &response);
 
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
   ESB::Error formatReasonPhrase(ESB::Buffer *outputBuffer,
-                                const HttpResponse *response);
+                                const HttpResponse &response);
 
   int _responseState;
 };

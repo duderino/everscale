@@ -47,7 +47,7 @@ void HttpMessageParser::reset() {
 }
 
 ESB::Error HttpMessageParser::parseHeaders(ESB::Buffer *inputBuffer,
-                                           HttpMessage *message) {
+                                           HttpMessage &message) {
   // Request       = Request-Line              ; Section 5.1
   //                *(( general-header        ; Section 4.5
   //                 | message-header         ; Section 5.3
@@ -66,7 +66,7 @@ ESB::Error HttpMessageParser::parseHeaders(ESB::Buffer *inputBuffer,
     // message and receives a CRLF first, it should ignore the CRLF.
 
     while (true) {
-      if (false == inputBuffer->isReadable()) {
+      if (!inputBuffer->isReadable()) {
         return ESB_AGAIN;
       }
 
@@ -185,7 +185,7 @@ ESB::Error HttpMessageParser::parseHeaders(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
-                                             HttpMessage *message) {
+                                             HttpMessage &message) {
   // field-name     = token
 
   assert(ES_PARSING_FIELD_NAME & _state);
@@ -220,7 +220,7 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
 
       // The next production - parseFieldValue - may fill in in the value
 
-      message->headers().addLast(header);
+      message.headers().addLast(header);
 
       return ESB_SUCCESS;
     }
@@ -235,7 +235,7 @@ ESB::Error HttpMessageParser::parseFieldName(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
-                                              HttpMessage *message) {
+                                              HttpMessage &message) {
   // field-value    = *( field-content | LWS )
   // field-content  = <the OCTETs making up the field-value
   //                 and consisting of either *TEXT or combinations
@@ -252,11 +252,11 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
   unsigned char octet;
 
   while (true) {
-    if (false == inputBuffer->isReadable()) {
+    if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (false == _workingBuffer->isWritable()) {
+    if (!_workingBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -289,7 +289,7 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
               return ESB_OUT_OF_MEMORY;
             }
 
-            HttpHeader *header = (HttpHeader *)message->headers().last();
+            HttpHeader *header = (HttpHeader *)message.headers().last();
 
             assert(header);
 
@@ -644,7 +644,7 @@ ESB::Error HttpMessageParser::parseMultipartBody(ESB::Buffer *inputBuffer,
   return ESB_OPERATION_NOT_SUPPORTED;
 }
 
-ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
+ESB::Error HttpMessageParser::postParse(HttpMessage &message) {
   assert(ES_HEADER_PARSE_COMPLETE & _state);
 
   ESB::UInt64 contentLength = 0;
@@ -653,10 +653,10 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
   bool foundTransferEncodedChunked = false;
   ESB::Error error = ESB_SUCCESS;
 
-  message->setReuseConnection(1.1 > message->getHttpVersion() ? false : true);
-  message->setSend100Continue(false);
+  message.setReuseConnection(1.1 <= message.httpVersion());
+  message.setSend100Continue(false);
 
-  for (HttpHeader *header = (HttpHeader *)message->headers().first(); header;
+  for (HttpHeader *header = (HttpHeader *)message.headers().first(); header;
        header = (HttpHeader *)header->next()) {
     if (0 == strcasecmp((const char *)header->fieldName(), "Expect")) {
       if (0 == header->fieldValue()) {
@@ -665,13 +665,13 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
 
       if (0 == strncmp((const char *)header->fieldValue(), "100-continue",
                        sizeof("100-continue") - 1)) {
-        message->setSend100Continue(true);
+        message.setSend100Continue(true);
       }
 
       continue;
     }
 
-    if (1.1 <= message->getHttpVersion() &&
+    if (1.1 <= message.httpVersion() &&
         0 == strcasecmp((const char *)header->fieldName(), "Connection")) {
       if (0 == header->fieldValue()) {
         continue;
@@ -679,7 +679,7 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
 
       if (0 == strncmp((const char *)header->fieldValue(), "close",
                        sizeof("close") - 1)) {
-        message->setReuseConnection(false);
+        message.setReuseConnection(false);
       }
 
       continue;
@@ -767,17 +767,17 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
     _bodyBytesRemaining = 0;
     _state |= ES_PARSING_CHUNKED_BODY | ES_PARSING_CHUNK_SIZE;
 
-    message->setHasBody(true);
+    message.setHasBody(true);
   } else if (foundContentLength) {
     _bodyBytesRemaining = contentLength;
     _state |= ES_PARSING_UNENCODED_BODY;
 
-    message->setHasBody(0 < contentLength);
+    message.setHasBody(0 < contentLength);
   } else if (foundMultipartByteRange) {
     _bodyBytesRemaining = 0;
     _state |= ES_PARSING_MULTIPART_BODY;
 
-    message->setHasBody(false);
+    message.setHasBody(false);
 
     // TODO - support multipart byte range  bodies
     return ES_HTTP_MULTIPART_NOT_SUPPORTED;
@@ -794,21 +794,21 @@ ESB::Error HttpMessageParser::postParse(HttpMessage *message) {
     _bodyBytesRemaining = 0;
     _state |= ES_PARSING_UNENCODED_BODY;
 
-    message->setHasBody(false);
+    message.setHasBody(false);
   } else {
     // Just read as much as we can until the socket is closed.
     _bodyBytesRemaining = ESB_UINT64_MAX;
     _state |= ES_PARSING_BODY_UNTIL_CLOSE;
 
-    message->setHasBody(true);
-    message->setReuseConnection(false);
+    message.setHasBody(true);
+    message.setReuseConnection(false);
   }
 
   return ESB_SUCCESS;
 }
 
 ESB::Error HttpMessageParser::parseVersion(ESB::Buffer *inputBuffer,
-                                           HttpMessage *message,
+                                           HttpMessage &message,
                                            bool clientMode) {
   // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
@@ -845,7 +845,7 @@ ESB::Error HttpMessageParser::parseVersion(ESB::Buffer *inputBuffer,
   }
 
   if (clientMode) {
-    if (false == HttpUtil::IsSpace(inputBuffer->next())) {
+    if (!HttpUtil::IsSpace(inputBuffer->next())) {
       return ES_HTTP_BAD_REQUEST_VERSION;
     }
   } else {
@@ -868,7 +868,7 @@ ESB::Error HttpMessageParser::parseVersion(ESB::Buffer *inputBuffer,
     }
   }
 
-  message->setHttpVersion(version);
+  message.setHttpVersion(version);
 
   return ESB_SUCCESS;
 }

@@ -47,69 +47,65 @@ HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
 HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
     ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   assert(transaction);
-  ESB::Allocator &allocator = transaction->getAllocator();
+  ESB::Allocator &allocator = transaction->allocator();
 
   if (ESB_DEBUG_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->getPeerAddress()->presentationAddress(dottedIP,
-                                                       sizeof(dottedIP));
+    transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
     ESB_LOG_DEBUG("Begin new transaction with %s:%u", dottedIP,
-                  transaction->getPeerAddress()->port());
+                  transaction->peerAddress().port());
   }
 
   HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
 
   if (!context && ESB_WARNING_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->getPeerAddress()->presentationAddress(dottedIP,
-                                                       sizeof(dottedIP));
+    transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
     ESB_LOG_WARNING("Cannot allocate new transaction for %s:%u", dottedIP,
-                    transaction->getPeerAddress()->port());
+                    transaction->peerAddress().port());
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
-  assert(!transaction->getApplicationContext());
-  transaction->setApplicationContext(context);
+  assert(!transaction->context());
+  transaction->setContext(context);
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
     ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   assert(transaction);
-  HttpRequest *request = transaction->getRequest();
-  assert(request);
-  HttpRequestUri *requestUri = request->getRequestUri();
-  assert(requestUri);
+  HttpRequest &request = transaction->request();
+  HttpRequestUri &requestUri = request.requestUri();
 
   if (ESB_DEBUG_LOGGABLE) {
     ESB_LOG_DEBUG("Received request headers");
-    ESB_LOG_DEBUG("Method: %s", transaction->getRequest()->getMethod());
+    ESB_LOG_DEBUG("Method: %s", transaction->request().method());
 
-    switch (transaction->getRequest()->getRequestUri()->getType()) {
+    switch (transaction->request().requestUri().type()) {
       case HttpRequestUri::ES_URI_ASTERISK:
         ESB_LOG_DEBUG("Asterisk Request-URI");
         break;
       case HttpRequestUri::ES_URI_HTTP:
       case HttpRequestUri::ES_URI_HTTPS:
         ESB_LOG_DEBUG("Scheme: %s",
-                      HttpRequestUri::ES_URI_HTTP == requestUri->getType()
+                      HttpRequestUri::ES_URI_HTTP == requestUri.type()
                           ? "http"
                           : "https");
-        ESB_LOG_DEBUG("Host: %s", ESB_SAFE_STR(requestUri->getHost()));
-        ESB_LOG_DEBUG("Port: %d", requestUri->getPort());
-        ESB_LOG_DEBUG("AbsPath: %s", ESB_SAFE_STR(requestUri->getAbsPath()));
-        ESB_LOG_DEBUG("Query: %s", ESB_SAFE_STR(requestUri->getQuery()));
-        ESB_LOG_DEBUG("Fragment: %s", ESB_SAFE_STR(requestUri->getFragment()));
+        ESB_LOG_DEBUG("Host: %s", ESB_SAFE_STR(requestUri.host()));
+        ESB_LOG_DEBUG("Port: %d", requestUri.port());
+        ESB_LOG_DEBUG("AbsPath: %s", ESB_SAFE_STR(requestUri.absPath()));
+        ESB_LOG_DEBUG("Query: %s", ESB_SAFE_STR(requestUri.query()));
+        ESB_LOG_DEBUG("Fragment: %s", ESB_SAFE_STR(requestUri.fragment()));
         break;
       case HttpRequestUri::ES_URI_OTHER:
-        ESB_LOG_DEBUG("Other: %s", ESB_SAFE_STR(requestUri->getOther()));
+        ESB_LOG_DEBUG("Other: %s", ESB_SAFE_STR(requestUri.other()));
         break;
     }
 
-    ESB_LOG_DEBUG("Version: HTTP/%d.%d", request->getHttpVersion() / 100,
-                  request->getHttpVersion() % 100 / 10);
+    ESB_LOG_DEBUG("Version: HTTP/%d.%d", request.httpVersion() / 100,
+                  request.httpVersion() % 100 / 10);
 
-    for (HttpHeader *header = (HttpHeader *)request->headers().first(); header;
+    for (HttpHeader *header = (HttpHeader *)request.headers().first(); header;
          header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
                     ESB_SAFE_STR(header->fieldValue()));
@@ -125,14 +121,12 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
   assert(transaction);
   assert(chunk);
 
-  HttpResponse *response = transaction->getResponse();
-
-  assert(response);
+  HttpResponse &response = transaction->response();
 
   if (0U == chunkSize) {
     ESB_LOG_DEBUG("Request body finished");
-    response->setStatusCode(200);
-    response->setReasonPhrase((const unsigned char *)"OK");
+    response.setStatusCode(200);
+    response.setReasonPhrase("OK");
     return ES_HTTP_SERVER_HANDLER_SEND_RESPONSE;
   }
 
@@ -151,7 +145,7 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
 int HttpEchoServerHandler::reserveResponseChunk(
     ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
   HttpEchoServerContext *context =
-      (HttpEchoServerContext *)transaction->getApplicationContext();
+      (HttpEchoServerContext *)transaction->context();
   assert(context);
   return BodySize - context->getBytesSent();
 }
@@ -163,7 +157,7 @@ void HttpEchoServerHandler::fillResponseChunk(
   assert(chunk);
   assert(0 < chunkSize);
   HttpEchoServerContext *context =
-      (HttpEchoServerContext *)transaction->getApplicationContext();
+      (HttpEchoServerContext *)transaction->context();
   assert(context);
 
   unsigned int totalBytesRemaining = BodySize - context->getBytesSent();
@@ -180,13 +174,13 @@ void HttpEchoServerHandler::endServerTransaction(
     HttpServerHandler::State state) {
   assert(transaction);
   HttpEchoServerContext *context =
-      (HttpEchoServerContext *)transaction->getApplicationContext();
+      (HttpEchoServerContext *)transaction->context();
   assert(context);
-  ESB::Allocator &allocator = transaction->getAllocator();
+  ESB::Allocator &allocator = transaction->allocator();
 
   context->~HttpEchoServerContext();
   allocator.deallocate(context);
-  transaction->setApplicationContext(0);
+  transaction->setContext(0);
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:

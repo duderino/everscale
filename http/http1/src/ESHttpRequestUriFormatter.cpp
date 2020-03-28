@@ -29,7 +29,7 @@ HttpRequestUriFormatter::~HttpRequestUriFormatter() {}
 void HttpRequestUriFormatter::reset() { _state = 0x00; }
 
 ESB::Error HttpRequestUriFormatter::format(ESB::Buffer *outputBuffer,
-                                           const HttpRequestUri *requestUri) {
+                                           const HttpRequestUri &requestUri) {
   // Request-URI   = "*" | absoluteURI | abs_path [ "?" query ] | authority
 
   if (ES_URI_FORMAT_COMPLETE & _state) {
@@ -37,11 +37,11 @@ ESB::Error HttpRequestUriFormatter::format(ESB::Buffer *outputBuffer,
   }
 
   if (0x00 == _state) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return ESB_AGAIN;
     }
 
-    switch (requestUri->getType()) {
+    switch (requestUri.type()) {
       case HttpRequestUri::ES_URI_ASTERISK:
 
         HttpUtil::Start(&_state, outputBuffer, ES_URI_FORMATTING_ASTERISK);
@@ -51,7 +51,7 @@ ESB::Error HttpRequestUriFormatter::format(ESB::Buffer *outputBuffer,
       case HttpRequestUri::ES_URI_HTTP:
       case HttpRequestUri::ES_URI_HTTPS:
 
-        if (requestUri->getHost() && 0 != requestUri->getHost()[0]) {
+        if (requestUri.host() && 0 != requestUri.host()[0]) {
           HttpUtil::Start(&_state, outputBuffer, ES_URI_FORMATTING_SCHEME);
         } else {
           HttpUtil::Start(&_state, outputBuffer, ES_URI_FORMATTING_ABS_PATH);
@@ -129,12 +129,12 @@ ESB::Error HttpRequestUriFormatter::format(ESB::Buffer *outputBuffer,
 }
 
 ESB::Error HttpRequestUriFormatter::formatAsterisk(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // "*"
 
   assert(ES_URI_FORMATTING_ASTERISK & _state);
 
-  if (false == outputBuffer->writable()) {
+  if (outputBuffer->writable() == 0) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -145,7 +145,7 @@ ESB::Error HttpRequestUriFormatter::formatAsterisk(
 }
 
 ESB::Error HttpRequestUriFormatter::formatAbsPath(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // abs_path      = "/"  path_segments
   // path_segments = segment *( "/" segment )
   // segment       = *pchar *( ";" param )
@@ -153,12 +153,11 @@ ESB::Error HttpRequestUriFormatter::formatAbsPath(
 
   assert(ES_URI_FORMATTING_ABS_PATH & _state);
 
-  const unsigned char *p = 0 == requestUri->getAbsPath()
-                               ? (const unsigned char *)"/"
-                               : requestUri->getAbsPath();
+  const unsigned char *p =
+      requestUri.absPath() ? requestUri.absPath() : (const unsigned char *)"/";
 
   if ('/' != *p) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -168,7 +167,7 @@ ESB::Error HttpRequestUriFormatter::formatAbsPath(
   ESB::Error error;
 
   for (; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -194,19 +193,19 @@ ESB::Error HttpRequestUriFormatter::formatAbsPath(
 }
 
 ESB::Error HttpRequestUriFormatter::formatQuery(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // query         = *uric
 
   assert(ES_URI_FORMATTING_QUERY & _state);
 
-  const unsigned char *p = requestUri->getQuery();
+  const unsigned char *p = requestUri.query();
 
   if (!p || 0 == *p) {
     return HttpUtil::Transition(&_state, outputBuffer, ES_URI_FORMATTING_QUERY,
                                 ES_URI_FORMATTING_FRAGMENT);
   }
 
-  if (false == outputBuffer->isWritable()) {
+  if (!outputBuffer->isWritable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -215,7 +214,7 @@ ESB::Error HttpRequestUriFormatter::formatQuery(
   ESB::Error error;
 
   for (; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -236,12 +235,12 @@ ESB::Error HttpRequestUriFormatter::formatQuery(
 }
 
 ESB::Error HttpRequestUriFormatter::formatFragment(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // fragment         = *uric
 
   assert(ES_URI_FORMATTING_FRAGMENT & _state);
 
-  const unsigned char *p = requestUri->getFragment();
+  const unsigned char *p = requestUri.fragment();
 
   if (!p || 0 == *p) {
     return HttpUtil::Transition(&_state, outputBuffer,
@@ -249,7 +248,7 @@ ESB::Error HttpRequestUriFormatter::formatFragment(
                                 ES_URI_FORMAT_COMPLETE);
   }
 
-  if (false == outputBuffer->isWritable()) {
+  if (!outputBuffer->isWritable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -258,7 +257,7 @@ ESB::Error HttpRequestUriFormatter::formatFragment(
   ESB::Error error;
 
   for (; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -279,17 +278,17 @@ ESB::Error HttpRequestUriFormatter::formatFragment(
 }
 
 ESB::Error HttpRequestUriFormatter::formatScheme(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // http_URL       = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // scheme        = alpha *( alpha | digit | "+" | "-" | "." )
 
   assert(ES_URI_FORMATTING_SCHEME & _state);
-  assert(HttpRequestUri::ES_URI_ASTERISK != requestUri->getType());
+  assert(HttpRequestUri::ES_URI_ASTERISK != requestUri.type());
 
   const char *p = 0;
 
-  switch (requestUri->getType()) {
+  switch (requestUri.type()) {
     case HttpRequestUri::ES_URI_ASTERISK:
 
       return HttpUtil::Rollback(outputBuffer, ESB_INVALID_STATE);
@@ -318,7 +317,7 @@ ESB::Error HttpRequestUriFormatter::formatScheme(
   }
 
   for (; *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -330,7 +329,7 @@ ESB::Error HttpRequestUriFormatter::formatScheme(
 }
 
 ESB::Error HttpRequestUriFormatter::formatHost(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // host          = hostname | IPv4address
   // hostname      = *( domainlabel "." ) toplabel [ "." ]
   // domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
@@ -338,13 +337,13 @@ ESB::Error HttpRequestUriFormatter::formatHost(
   // IPv4address   = 1*digit "." 1*digit "." 1*digit "." 1*digit
 
   assert(ES_URI_FORMATTING_HOST & _state);
-  assert(requestUri->getHost());
-  assert(0 != requestUri->getHost()[0]);
-  assert(HttpRequestUri::ES_URI_HTTP == requestUri->getType() ||
-         HttpRequestUri::ES_URI_HTTPS == requestUri->getType());
+  assert(requestUri.host());
+  assert(0 != requestUri.host()[0]);
+  assert(HttpRequestUri::ES_URI_HTTP == requestUri.type() ||
+         HttpRequestUri::ES_URI_HTTPS == requestUri.type());
 
-  for (const unsigned char *p = requestUri->getHost(); *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+  for (const unsigned char *p = requestUri.host(); *p; ++p) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 
@@ -356,19 +355,19 @@ ESB::Error HttpRequestUriFormatter::formatHost(
 }
 
 ESB::Error HttpRequestUriFormatter::formatPort(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // port          = *digit
 
   assert(ES_URI_FORMATTING_PORT & _state);
-  assert(requestUri->getHost());
-  assert(0 != requestUri->getHost()[0]);
-  assert(65536 > requestUri->getPort());
-  assert(HttpRequestUri::ES_URI_HTTP == requestUri->getType() ||
-         HttpRequestUri::ES_URI_HTTPS == requestUri->getType());
+  assert(requestUri.host());
+  assert(0 != requestUri.host()[0]);
+  assert(65536 > requestUri.port());
+  assert(HttpRequestUri::ES_URI_HTTP == requestUri.type() ||
+         HttpRequestUri::ES_URI_HTTPS == requestUri.type());
 
-  int port = requestUri->getPort();
+  ESB::UInt32 port = requestUri.port();
 
-  switch (requestUri->getType()) {
+  switch (requestUri.type()) {
     case HttpRequestUri::ES_URI_HTTP:
 
       if (0 > port || 80 == port) {
@@ -394,13 +393,13 @@ ESB::Error HttpRequestUriFormatter::formatPort(
       return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_URI_PORT);
   }
 
-  assert(0 <= requestUri->getPort());
+  assert(0 <= requestUri.port());
 
   if (65536 <= port) {
     return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_URI_PORT);
   }
 
-  if (false == outputBuffer->isWritable()) {
+  if (!outputBuffer->isWritable()) {
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
@@ -417,7 +416,7 @@ ESB::Error HttpRequestUriFormatter::formatPort(
 }
 
 ESB::Error HttpRequestUriFormatter::formatNonHttpUri(
-    ESB::Buffer *outputBuffer, const HttpRequestUri *requestUri) {
+    ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri) {
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // hier_part     = ( net_path | abs_path ) [ "?" query ]
   // net_path      = "//" authority [ abs_path ]
@@ -427,14 +426,14 @@ ESB::Error HttpRequestUriFormatter::formatNonHttpUri(
   // "+" | "$" | ","
 
   assert(ES_URI_FORMATTING_NON_HTTP_URI & _state);
-  assert(HttpRequestUri::ES_URI_OTHER == requestUri->getType());
+  assert(HttpRequestUri::ES_URI_OTHER == requestUri.type());
 
-  if (0 == requestUri->getOther() || 0 == requestUri->getOther()[0]) {
+  if (0 == requestUri.other() || 0 == requestUri.other()[0]) {
     return HttpUtil::Rollback(outputBuffer, ESB_INVALID_ARGUMENT);
   }
 
-  for (const unsigned char *p = requestUri->getOther(); *p; ++p) {
-    if (false == outputBuffer->isWritable()) {
+  for (const unsigned char *p = requestUri.other(); *p; ++p) {
+    if (!outputBuffer->isWritable()) {
       return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
     }
 

@@ -118,7 +118,7 @@ HttpClientSocket *HttpClientSocketFactory::create(
   {
     ESB::WriteScopeLock scopeLock(_mutex);
     ESB::EmbeddedList *list =
-        (ESB::EmbeddedList *)_map.find(transaction->getPeerAddress());
+        (ESB::EmbeddedList *)_map.find(&transaction->peerAddress());
 
     if (list) {
       socket = (HttpClientSocket *)list->removeLast();
@@ -126,10 +126,10 @@ HttpClientSocket *HttpClientSocketFactory::create(
       if (socket) {
         if (ESB_DEBUG_LOGGABLE) {
           char buffer[ESB_IPV6_PRESENTATION_SIZE];
-          transaction->getPeerAddress()->presentationAddress(buffer,
-                                                             sizeof(buffer));
+          transaction->peerAddress().presentationAddress(buffer,
+                                                         sizeof(buffer));
           ESB_LOG_DEBUG("Reusing connection for '%s:%d'", buffer,
-                        transaction->getPeerAddress()->port());
+                        transaction->peerAddress().port());
         }
 
         assert(socket->isConnected());
@@ -140,10 +140,9 @@ HttpClientSocket *HttpClientSocketFactory::create(
 
     if (ESB_DEBUG_LOGGABLE) {
       char buffer[ESB_IPV6_PRESENTATION_SIZE];
-      transaction->getPeerAddress()->presentationAddress(buffer,
-                                                         sizeof(buffer));
+      transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
       ESB_LOG_DEBUG("Creating new connection for '%s:%d'", buffer,
-                    transaction->getPeerAddress()->port());
+                    transaction->peerAddress().port());
     }
 
     // Try to reuse the memory of a dead socket
@@ -163,9 +162,9 @@ HttpClientSocket *HttpClientSocketFactory::create(
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->getPeerAddress()->presentationAddress(buffer, sizeof(buffer));
+    transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
     ESB_LOG_CRITICAL("Cannot allocate new connection for '%s:%d'", buffer,
-                     transaction->getPeerAddress()->port());
+                     transaction->peerAddress().port());
   }
 
   return socket;

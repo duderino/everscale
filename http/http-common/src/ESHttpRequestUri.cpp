@@ -46,35 +46,34 @@ void HttpRequestUri::reset() {
 
 int HttpRequestUri::Compare(const HttpRequestUri *r1,
                             const HttpRequestUri *r2) {
-  if (ES_URI_ASTERISK == r1->getType() && ES_URI_ASTERISK == r2->getType()) {
+  if (ES_URI_ASTERISK == r1->type() && ES_URI_ASTERISK == r2->type()) {
     return 0;
   }
 
-  if (ES_URI_OTHER == r1->getType() && ES_URI_OTHER == r2->getType()) {
-    return strcmp((const char *)r1->getOther(), (const char *)r2->getOther());
+  if (ES_URI_OTHER == r1->type() && ES_URI_OTHER == r2->type()) {
+    return strcmp((const char *)r1->other(), (const char *)r2->other());
   }
 
   int result = 0;
 
   // Comparisons of scheme names MUST be case-insensitive
-  if (r1->getType() != r2->getType()) {
-    return ES_URI_HTTP == r1->getType() ? 1 : -1;
+  if (r1->type() != r2->type()) {
+    return ES_URI_HTTP == r1->type() ? 1 : -1;
   }
 
   // todo add username, password, and anchor to comparison
 
   // Comparisons of host names MUST be case-insensitive
-  if (r1->getHost() != r2->getHost()) {
-    if (0 == r1->getHost()) {
+  if (r1->host() != r2->host()) {
+    if (0 == r1->host()) {
       return -1;
     }
 
-    if (0 == r2->getHost()) {
+    if (0 == r2->host()) {
       return 1;
     }
 
-    result =
-        strcasecmp((const char *)r1->getHost(), (const char *)r2->getHost());
+    result = strcasecmp((const char *)r1->host(), (const char *)r2->host());
 
     if (0 != result) {
       return result;
@@ -84,10 +83,10 @@ int HttpRequestUri::Compare(const HttpRequestUri *r1,
   // A port that is empty or not given is equivalent to the default port for
   // that URI-reference;
 
-  int port1 = 0 <= r1->getPort() ? r1->getPort()
-                                 : (ES_URI_HTTP == r1->getType() ? 80 : 443);
-  int port2 = 0 <= r2->getPort() ? r2->getPort()
-                                 : (ES_URI_HTTP == r2->getType() ? 80 : 443);
+  int port1 =
+      0 <= r1->port() ? r1->port() : (ES_URI_HTTP == r1->type() ? 80 : 443);
+  int port2 =
+      0 <= r2->port() ? r2->port() : (ES_URI_HTTP == r2->type() ? 80 : 443);
 
   if (0 != port1 - port2) {
     return port1 - port2;
@@ -95,10 +94,8 @@ int HttpRequestUri::Compare(const HttpRequestUri *r1,
 
   // An empty abs_path is equivalent to an abs_path of "/".
 
-  const char *absPath1 =
-      0 == r1->getAbsPath() ? "/" : (const char *)r1->getAbsPath();
-  const char *absPath2 =
-      0 == r2->getAbsPath() ? "/" : (const char *)r2->getAbsPath();
+  const char *absPath1 = 0 == r1->absPath() ? "/" : (const char *)r1->absPath();
+  const char *absPath2 = 0 == r2->absPath() ? "/" : (const char *)r2->absPath();
 
   if (absPath1 != absPath2) {
     result = strcmp(absPath1, absPath2);
@@ -108,16 +105,16 @@ int HttpRequestUri::Compare(const HttpRequestUri *r1,
     }
   }
 
-  if (r1->getQuery() != r2->getQuery()) {
-    if (0 == r1->getQuery()) {
+  if (r1->query() != r2->query()) {
+    if (0 == r1->query()) {
       return -1;
     }
 
-    if (0 == r2->getQuery()) {
+    if (0 == r2->query()) {
       return 1;
     }
 
-    result = strcmp((const char *)r1->getQuery(), (const char *)r2->getQuery());
+    result = strcmp((const char *)r1->query(), (const char *)r2->query());
 
     if (0 != result) {
       return result;

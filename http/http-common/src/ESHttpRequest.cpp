@@ -61,22 +61,22 @@ ESB::Error HttpRequest::parsePeerAddress(unsigned char *hostname, int size,
    *   exact resource is being requested.
    */
 
-  *isSecure = HttpRequestUri::ES_URI_HTTPS == _requestUri.getType();
+  *isSecure = HttpRequestUri::ES_URI_HTTPS == _requestUri.type();
 
-  if (_requestUri.getHost()) {
-    int n = strlen((const char *)_requestUri.getHost());
+  if (_requestUri.host()) {
+    int n = strlen((const char *)_requestUri.host());
 
     if (n >= size) {
       return ESB_OVERFLOW;
     }
 
-    memcpy(hostname, _requestUri.getHost(), n);
+    memcpy(hostname, _requestUri.host(), n);
     hostname[n] = 0;
 
-    if (0 >= _requestUri.getPort()) {
+    if (0 >= _requestUri.port()) {
       *port = *isSecure ? 443 : 80;
     } else {
-      *port = _requestUri.getPort();
+      *port = _requestUri.port();
     }
 
     return ESB_SUCCESS;
