@@ -28,22 +28,24 @@ BufferPool::~BufferPool() {
 }
 
 Buffer *BufferPool::acquireBuffer() {
-  WriteScopeLock scopeLock(_lock);
+  {
+    WriteScopeLock scopeLock(_lock);
 
-  Buffer *buffer = (Buffer *)_embeddedList.removeLast();
+    Buffer *buffer = (Buffer *) _embeddedList.removeLast();
 
-  if (buffer) {
-    --_listSize;
-    return buffer;
+    if (buffer) {
+      --_listSize;
+      return buffer;
+    }
   }
 
   return Buffer::Create(_allocator, _bufferSize);
 }
 
 void BufferPool::releaseBuffer(Buffer *buffer) {
-  WriteScopeLock scopeLock(_lock);
-
+  _lock.writeAcquire();
   if (0 < _maxBuffers && _listSize >= _maxBuffers) {
+    _lock.writeRelease();
     buffer->~Buffer();
     _allocator.deallocate(buffer);
     return;
@@ -52,6 +54,7 @@ void BufferPool::releaseBuffer(Buffer *buffer) {
   buffer->clear();
   _embeddedList.addLast(buffer);
   ++_listSize;
+  _lock.writeRelease();
 }
 
 }  // namespace ESB
