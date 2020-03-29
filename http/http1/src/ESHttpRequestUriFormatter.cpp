@@ -365,7 +365,7 @@ ESB::Error HttpRequestUriFormatter::formatPort(
   assert(HttpRequestUri::ES_URI_HTTP == requestUri.type() ||
          HttpRequestUri::ES_URI_HTTPS == requestUri.type());
 
-  ESB::UInt32 port = requestUri.port();
+  ESB::Int32 port = requestUri.port();
 
   switch (requestUri.type()) {
     case HttpRequestUri::ES_URI_HTTP:

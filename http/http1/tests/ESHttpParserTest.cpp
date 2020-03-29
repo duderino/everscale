@@ -33,7 +33,7 @@
 namespace ES {
 
 static const int Debug = 9;
-static ESB::Rand Random;
+static ESB::Rand Random(42);
 static unsigned char InputBufferStorage[4096];
 static unsigned char OutputBufferStorage[4096];
 static unsigned char WorkingBufferStorage[4096];
@@ -98,7 +98,7 @@ bool ParseRequest(const char *inputFileName) {
   //
 
   while (true) {
-    error = RequestParser.parseHeaders(&InputBuffer, &request);
+    error = RequestParser.parseHeaders(&InputBuffer, request);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)
@@ -150,7 +150,7 @@ bool ParseRequest(const char *inputFileName) {
       fprintf(stderr, "Method: %s\n", request.method());
       fprintf(stderr, "RequestUri\n");
 
-      switch (request.requestUri()->type()) {
+      switch (request.requestUri().type()) {
         case HttpRequestUri::ES_URI_ASTERISK:
 
           fprintf(stderr, "  Asterisk\n");
@@ -160,29 +160,29 @@ bool ParseRequest(const char *inputFileName) {
         case HttpRequestUri::ES_URI_HTTPS:
 
           fprintf(stderr, "  Scheme: %s\n",
-                  HttpRequestUri::ES_URI_HTTP == request.requestUri()->type()
+                  HttpRequestUri::ES_URI_HTTP == request.requestUri().type()
                       ? "http"
                       : "https");
           fprintf(stderr, "  Host: %s\n",
-                  0 == request.requestUri()->host()
+                  0 == request.requestUri().host()
                       ? "none"
-                      : (const char *)request.requestUri()->host());
-          fprintf(stderr, "  Port: %d\n", request.requestUri()->port());
-          fprintf(stderr, "  AbsPath: %s\n", request.requestUri()->absPath());
+                      : (const char *)request.requestUri().host());
+          fprintf(stderr, "  Port: %d\n", request.requestUri().port());
+          fprintf(stderr, "  AbsPath: %s\n", request.requestUri().absPath());
           fprintf(stderr, "  Query: %s\n",
-                  0 == request.requestUri()->query()
+                  0 == request.requestUri().query()
                       ? "none"
-                      : (const char *)request.requestUri()->query());
+                      : (const char *)request.requestUri().query());
           fprintf(stderr, "  Fragment: %s\n",
-                  0 == request.requestUri()->fragment()
+                  0 == request.requestUri().fragment()
                       ? "none"
-                      : (const char *)request.requestUri()->fragment());
+                      : (const char *)request.requestUri().fragment());
 
           break;
 
         case HttpRequestUri::ES_URI_OTHER:
 
-          fprintf(stderr, "  Other: %s\n", request.requestUri()->other());
+          fprintf(stderr, "  Other: %s\n", request.requestUri().other());
 
           break;
       }
@@ -192,7 +192,7 @@ bool ParseRequest(const char *inputFileName) {
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (HttpHeader *)request.headers()->first(); header;
+      for (header = (HttpHeader *)request.headers().first(); header;
            header = (HttpHeader *)header->next()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
                 0 == header->fieldValue() ? "null"
@@ -208,7 +208,7 @@ bool ParseRequest(const char *inputFileName) {
   //
 
   while (true) {
-    error = RequestFormatter.formatHeaders(&OutputBuffer, &request);
+    error = RequestFormatter.formatHeaders(&OutputBuffer, request);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)
@@ -592,7 +592,7 @@ bool ParseResponse(const char *inputFileName) {
   //
 
   while (true) {
-    error = ResponseParser.parseHeaders(&InputBuffer, &response);
+    error = ResponseParser.parseHeaders(&InputBuffer, response);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)
@@ -648,7 +648,7 @@ bool ParseResponse(const char *inputFileName) {
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (HttpHeader *)response.headers()->first(); header;
+      for (header = (HttpHeader *)response.headers().first(); header;
            header = (HttpHeader *)header->next()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
                 0 == header->fieldValue() ? "null"
@@ -664,7 +664,7 @@ bool ParseResponse(const char *inputFileName) {
   //
 
   while (true) {
-    error = ResponseFormatter.formatHeaders(&OutputBuffer, &response);
+    error = ResponseFormatter.formatHeaders(&OutputBuffer, response);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)

@@ -97,10 +97,16 @@ Error DiscardAllocator::reset() {
   Chunk *next = NULL;
   _head = NULL;
 
-  while (current) {
+  while (current && current->_next) {
     next = current->_next;
     _source.deallocate(current);
     current = next;
+  }
+
+  _head = current;
+
+  if (_head) {
+    _head->_idx = 0;
   }
 
   return ESB_SUCCESS;

@@ -19,3 +19,11 @@ TEST(SystemConfig, Sockets) {
   EXPECT_EQ(error, ESB_SUCCESS);
   EXPECT_EQ(hardLimit, SystemConfig::Instance().socketSoftMax());
 }
+
+TEST(SystemConfig, PageSize) {
+  EXPECT_EQ(ESB_PAGE_SIZE, SystemConfig::Instance().pageSize());
+}
+
+TEST(SystemConfig, CacheLineSize) {
+  EXPECT_EQ(ESB_CACHE_LINE_SIZE, SystemConfig::Instance().cacheLineSize());
+}

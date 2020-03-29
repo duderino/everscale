@@ -53,7 +53,7 @@ class HttpRequest : public HttpMessage {
   void operator=(const HttpRequest &);
 
   unsigned const char *_method;
-  char _pad[12];
+  char _pad[16];
   HttpRequestUri _requestUri;
 };
 

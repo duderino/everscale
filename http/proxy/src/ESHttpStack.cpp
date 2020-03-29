@@ -191,6 +191,11 @@ void HttpStack::destroy() {
 
   _state.set(ES_HTTP_STACK_IS_DESTROYED);
 
+  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
+       it = it.next()) {
+    ESB::SocketMultiplexer *multiplexer = (ESB::SocketMultiplexer *)it.value();
+    multiplexer->destroy();
+  }
   _clientSocketFactory.destroy();
   _clientTransactionFactory.destroy();
   _serverSocketFactory.destroy();

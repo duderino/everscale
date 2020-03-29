@@ -1,3 +1,18 @@
+get buffer reference out of HTTPMessage.   Put it directly in HTTP request and response and let them pass it down to the parsers.  Or just put it in the parsers.  And make sure the parsers have initialization checks for it.
+
+swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
+
+buffer rework:
+ - http client and http server sockets should each have their own iobuffer (for http/1.1 the same iobuffer can be used for both requests and responses), but should be bufferless between transactions on the socket.
+ - parse buffers should be stored in the transaction and can be shared by request and response parsers since those too are not concurrently active
+ - connection pool can just store inactive client sockets, assuming their footprint can be kept small.
+ 
+ - tldr - all buffers could live in server and client transactions!  both server and client sockets store ptrs to their active transaction.
+ - sever socket factory
+ - client socket factory
+ - server transaction factory:  embeds buffers
+ - client transaction factory:  embeds buffers
+
 Should placement new automatically set cleanup handler... put cleanup handler in ESB::Object
 
 consider creating page allocator using mmap and using this in ESHttpMultiplexerImpl
