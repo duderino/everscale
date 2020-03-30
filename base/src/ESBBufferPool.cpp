@@ -31,7 +31,7 @@ Buffer *BufferPool::acquireBuffer() {
   {
     WriteScopeLock scopeLock(_lock);
 
-    Buffer *buffer = (Buffer *) _embeddedList.removeLast();
+    Buffer *buffer = (Buffer *)_embeddedList.removeLast();
 
     if (buffer) {
       --_listSize;

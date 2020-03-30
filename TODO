@@ -1,3 +1,17 @@
+rework interface to create new client trans - make it run entirely in the multiplexer thread.
+  callback interface has to create client transaction and exec it inside multiplexer thread.
+  stack will pick the lease loaded multiplexer thread and exec it there.  need shared queue ...
+  and need event fd to break out of loop.  do locking first, then do this.
+  client multiplexers take an EventSocket similar to server multiplexers listening socket.
+  push into queue, then write to EventSocket.
+does epoll multiplexer really need internal locking
+add global connection pool to client socket factory
+why do both client socket factory and client transaction factory both need a ref to client handler?A
+
+put presentation address+port in all TCP sockets
+and use in http socket log messages (client, sever, listener)
+
+
 get buffer reference out of HTTPMessage.   Put it directly in HTTP request and response and let them pass it down to the parsers.  Or just put it in the parsers.  And make sure the parsers have initialization checks for it.
 
 swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy

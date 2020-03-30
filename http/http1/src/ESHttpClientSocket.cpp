@@ -47,13 +47,13 @@ static bool FlushRequestHeaders = false;
 
 bool HttpClientSocket::_ReuseConnections = true;
 
-HttpClientSocket::HttpClientSocket(HttpConnectionPool *pool,
+HttpClientSocket::HttpClientSocket(HttpClientSocket::RetryHandler &retryHandler,
                                    HttpClientTransaction *transaction,
                                    HttpClientCounters *counters,
                                    ESB::CleanupHandler *cleanupHandler)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
-      _pool(pool),
+      _retryHandler(retryHandler),
       _transaction(transaction),
       _counters(counters),
       _cleanupHandler(cleanupHandler),
@@ -61,7 +61,7 @@ HttpClientSocket::HttpClientSocket(HttpConnectionPool *pool,
 
 HttpClientSocket::~HttpClientSocket() {}
 
-ESB::Error HttpClientSocket::reset(bool reused, HttpConnectionPool *pool,
+ESB::Error HttpClientSocket::reset(bool reused,
                                    HttpClientTransaction *transaction) {
   if (!transaction) {
     return ESB_NULL_POINTER;
@@ -78,7 +78,6 @@ ESB::Error HttpClientSocket::reset(bool reused, HttpConnectionPool *pool,
   }
 
   _bodyBytesWritten = 0;
-  _pool = pool;
   _transaction = transaction;
 
   return ESB_SUCCESS;
@@ -403,7 +402,7 @@ bool HttpClientSocket::handleRemoteClose(ESB::SocketMultiplexer &multiplexer) {
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleIdle(ESB::SocketMultiplexer &multiplexerg) {
+bool HttpClientSocket::handleIdle(ESB::SocketMultiplexer &multiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
   if (ESB_INFO_LOGGABLE) {
@@ -497,8 +496,7 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   } else if (_state & RETRY_STALE_CONNECTION) {
     ESB_LOG_DEBUG("socket:%d connection stale, retrying transaction",
                   _socket.socketDescriptor());
-
-    ESB::Error error = _pool->executeClientTransaction(_transaction);
+    ESB::Error error = _retryHandler.retry(_transaction);
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "socket:%d Cannot retry transaction: %s",
@@ -514,15 +512,18 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   }
 
   if (0x00 == (_state & RETRY_STALE_CONNECTION)) {
-    _pool->destroyClientTransaction(_transaction);
+    assert(_transaction->cleanupHandler());
+    if (_transaction->cleanupHandler()) {
+      _transaction->cleanupHandler()->destroy(_transaction);
+      _transaction = NULL;
+    }
   }
 
-  if (false == reuseConnection) {
+  if (!reuseConnection) {
     _socket.close();
   }
 
-  _transaction = 0;
-  _pool = 0;
+  _transaction = NULL;
   _state = HAS_BEEN_REMOVED;
 
   return true;  // call cleanup handler on us after this returns

@@ -29,13 +29,23 @@ namespace ES {
  */
 class HttpClientSocket : public ESB::MultiplexedSocket {
  public:
+  /**
+   * If a HttpClientSocket fails before sending the transaction, it can use
+   * this to retry the transaction on a different socket.
+   */
+  class RetryHandler {
+   public:
+    virtual ESB::Error retry(HttpClientTransaction *transaction) = 0;
+  };
+
   /** Constructor
    *
    * @param transaction The client transaction object.  Many client transactions
    *  can be carried across the same http client socket with connection reuse.
    * @param cleanupHandler An object that can be used to destroy this one
    */
-  HttpClientSocket(HttpConnectionPool *pool, HttpClientTransaction *transaction,
+  HttpClientSocket(RetryHandler &retryHandler,
+                   HttpClientTransaction *transaction,
                    HttpClientCounters *counters,
                    ESB::CleanupHandler *cleanupHandler);
 
@@ -189,8 +199,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    *  can be carried across the same http client socket with connection reuse.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error reset(bool reused, HttpConnectionPool *pool,
-                   HttpClientTransaction *transaction);
+  ESB::Error reset(bool reused, HttpClientTransaction *transaction);
 
   inline void close() { _socket.close(); }
 
@@ -208,7 +217,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) {
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
     return allocator.allocate(size);
   }
 
@@ -231,7 +240,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
 
   int _state;
   int _bodyBytesWritten;
-  HttpConnectionPool *_pool;
+  RetryHandler &_retryHandler;
   HttpClientTransaction *_transaction;
   HttpClientCounters *_counters;
   ESB::CleanupHandler *_cleanupHandler;

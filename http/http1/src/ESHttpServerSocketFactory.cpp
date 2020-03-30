@@ -2,67 +2,39 @@
 #include <ESHttpServerSocketFactory.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESB_FIXED_ALLOCATOR_H
-#include <ESBFixedAllocator.h>
-#endif
-
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESB_SYSTEM_CONFIG_H
-#include <ESBSystemConfig.h>
-#endif
-
 namespace ES {
 
-HttpServerSocketFactory::HttpServerSocketFactory(HttpServerCounters *counters)
-    : _counters(counters),
-      _unprotectedAllocator(ESB::SystemConfig::Instance().pageSize(),
-                            ESB::SystemConfig::Instance().cacheLineSize()),
-      _allocator(_unprotectedAllocator),
-      _embeddedList(),
-      _mutex(),
-      _cleanupHandler(this) {}
+HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
+                                                 HttpServerCounters &counters,
+                                                 ESB::Allocator &allocator)
+    : _handler(handler),
+      _counters(counters),
+      _allocator(allocator),
+      _sockets(),
+      _cleanupHandler(*this) {}
 
-ESB::Error HttpServerSocketFactory::initialize() { return ESB_SUCCESS; }
-
-void HttpServerSocketFactory::destroy() {
-  HttpServerSocket *socket = (HttpServerSocket *)_embeddedList.removeFirst();
+HttpServerSocketFactory::~HttpServerSocketFactory() {
+  HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   while (socket) {
     socket->~HttpServerSocket();
-    socket = (HttpServerSocket *)_embeddedList.removeFirst();
+    socket = (HttpServerSocket *)_sockets.removeFirst();
   }
 }
 
-HttpServerSocketFactory::~HttpServerSocketFactory() { destroy(); }
-
 HttpServerSocket *HttpServerSocketFactory::create(
-    HttpServerHandler *handler, ESB::TCPSocket::State &state) {
-  HttpServerSocket *socket = 0;
-
-  _mutex.writeAcquire();
-  socket = (HttpServerSocket *)_embeddedList.removeFirst();
-  _mutex.writeRelease();
+    ESB::TCPSocket::State &state) {
+  HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   if (!socket) {
-    socket = new (&_allocator)
-        HttpServerSocket(handler, &_cleanupHandler, _counters);
+    socket = new (_allocator)
+        HttpServerSocket(&_handler, &_cleanupHandler, &_counters);
     if (!socket) {
-      return 0;
+      return NULL;
     }
   }
 
-  socket->reset(handler, state);
+  socket->reset(&_handler, state);
   return socket;
 }
 
@@ -71,19 +43,17 @@ void HttpServerSocketFactory::release(HttpServerSocket *socket) {
     return;
   }
 
-  _mutex.writeAcquire();
-  _embeddedList.addFirst(socket);
-  _mutex.writeRelease();
+  _sockets.addFirst(socket);
 }
 
 HttpServerSocketFactory::CleanupHandler::CleanupHandler(
-    HttpServerSocketFactory *factory)
+    HttpServerSocketFactory &factory)
     : ESB::CleanupHandler(), _factory(factory) {}
 
 HttpServerSocketFactory::CleanupHandler::~CleanupHandler() {}
 
 void HttpServerSocketFactory::CleanupHandler::destroy(ESB::Object *object) {
-  _factory->release((HttpServerSocket *)object);
+  _factory.release((HttpServerSocket *)object);
 }
 
 }  // namespace ES

@@ -518,7 +518,7 @@ int EpollMultiplexer::currentSockets() const {
 int EpollMultiplexer::maximumSockets() const { return _maxSockets; }
 
 bool EpollMultiplexer::isRunning() const {
-  return _isRunning ? _isRunning->get() : false;
+  return _isRunning && _isRunning->get();
 }
 
 Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {

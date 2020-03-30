@@ -18,15 +18,13 @@ namespace ES {
 
 HttpEchoClientHandler::HttpEchoClientHandler(
     const char *absPath, const char *method, const char *contentType,
-    const unsigned char *body, int bodySize, int totalTransactions,
-    HttpConnectionPool *pool)
+    const unsigned char *body, int bodySize, int totalTransactions)
     : _absPath(absPath),
       _method(method),
       _contentType(contentType),
       _body(body),
       _bodySize(bodySize),
       _totalTransactions(totalTransactions),
-      _pool(pool),
       _completedTransactions() {}
 
 HttpEchoClientHandler::~HttpEchoClientHandler() {}

@@ -9,14 +9,6 @@
 #include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ESB_MUTEX_H
-#include <ESBMutex.h>
-#endif
-
-#ifndef ESB_DISCARD_ALLOCATOR_H
-#include <ESBDiscardAllocator.h>
-#endif
-
 #ifndef ES_HTTP_SERVER_COUNTERS_H
 #include <ESHttpServerCounters.h>
 #endif
@@ -25,26 +17,19 @@
 #include <ESHttpServerHandler.h>
 #endif
 
-#ifndef ESB_SHARED_ALLOCATOR_H
-#include <ESBSharedAllocator.h>
-#endif
-
 namespace ES {
 
 /** A factory that creates and reuses HttpServerSockets
  */
 class HttpServerSocketFactory {
  public:
-  HttpServerSocketFactory(HttpServerCounters *counters);
+  HttpServerSocketFactory(HttpServerHandler &handler,
+                          HttpServerCounters &counters,
+                          ESB::Allocator &allocator);
 
   virtual ~HttpServerSocketFactory();
 
-  ESB::Error initialize();
-
-  void destroy();
-
-  HttpServerSocket *create(HttpServerHandler *handler,
-                           ESB::TCPSocket::State &state);
+  HttpServerSocket *create(ESB::TCPSocket::State &state);
 
   void release(HttpServerSocket *socket);
 
@@ -67,7 +52,7 @@ class HttpServerSocketFactory {
    public:
     /** Constructor
      */
-    CleanupHandler(HttpServerSocketFactory *factory);
+    CleanupHandler(HttpServerSocketFactory &factory);
 
     /** Destructor
      */
@@ -84,14 +69,13 @@ class HttpServerSocketFactory {
     CleanupHandler(const CleanupHandler &);
     void operator=(const CleanupHandler &);
 
-    HttpServerSocketFactory *_factory;
+    HttpServerSocketFactory &_factory;
   };
 
-  HttpServerCounters *_counters;
-  ESB::DiscardAllocator _unprotectedAllocator;
-  ESB::SharedAllocator _allocator;
-  ESB::EmbeddedList _embeddedList;
-  ESB::Mutex _mutex;
+  HttpServerHandler &_handler;
+  HttpServerCounters &_counters;
+  ESB::Allocator &_allocator;
+  ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
 };
 

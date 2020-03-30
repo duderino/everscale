@@ -5,74 +5,66 @@
 #include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ESB_MUTEX_H
-#include <ESBMutex.h>
-#endif
-
-#ifndef ESB_DISCARD_ALLOCATOR_H
-#include <ESBDiscardAllocator.h>
-#endif
-
-#ifndef ESB_CLEANUP_HANDLER_H
-#include <ESBCleanupHandler.h>
-#endif
-
-#ifndef ESB_SOCKET_ADDRESS_H
-#include <ESBSocketAddress.h>
-#endif
-
 #ifndef ESB_MAP_H
 #include <ESBMap.h>
-#endif
-
-#ifndef ES_HTTP_CLIENT_SOCKET_H
-#include <ESHttpClientSocket.h>
-#endif
-
-#ifndef ESB_PERFORMANCE_COUNTER_H
-#include <ESBPerformanceCounter.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_TRANSACTION_H
 #include <ESHttpClientTransaction.h>
 #endif
 
-#ifndef ES_HTTP_CONNECTION_POOL_H
-#include <ESHttpConnectionPool.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_COUNTERS_H
 #include <ESHttpClientCounters.h>
 #endif
 
-#ifndef ESB_SHARED_ALLOCATOR_H
-#include <ESBSharedAllocator.h>
+#ifndef ES_HTTP_CLIENT_SOCKET_H
+#include <ESHttpClientSocket.h>
+#endif
+
+#ifndef ESB_SYSTEM_DNS_CLIENT_H
+#include <ESBSystemDnsClient.h>
+#endif
+
+#ifndef ESB_SOCKET_MULTIPLEXER_H
+#include <ESBSocketMultiplexer.h>
 #endif
 
 namespace ES {
 
 /** A factory that creates and reuses HttpClientSockets
  */
-class HttpClientSocketFactory {
+class HttpClientSocketFactory : public HttpClientSocket::RetryHandler {
  public:
   /** Constructor
    *
-   * @param logger A logger
    */
-  HttpClientSocketFactory(HttpClientCounters *clientCounters);
+  HttpClientSocketFactory(ESB::SocketMultiplexer &multiplexer,
+                          HttpClientHandler &handler,
+                          HttpClientCounters &counters,
+                          ESB::Allocator &allocator);
 
   /** Destructor.
    */
   virtual ~HttpClientSocketFactory();
 
-  ESB::Error initialize();
+  HttpClientSocket *create(HttpClientTransaction *transaction);
 
-  void destroy();
-
-  HttpClientSocket *create(HttpConnectionPool *pool,
-                           HttpClientTransaction *transaction);
+  /**
+   * Execute the client transaction.  If this method returns ESB_SUCCESS, then
+   * the transaction will be cleaned up automatically after it finishes.  If
+   * this method returns anything else then the caller should clean it up with
+   * destroyClientTransaction
+   *
+   * @param transaction The transaction
+   * @return ESB_SUCCESS if the transaction was successfully started, another
+   * error code otherwise.  If error, cleanup the transaction with the
+   * destroyClientTransaction method.
+   */
+  ESB::Error executeClientTransaction(HttpClientTransaction *transaction);
 
   void release(HttpClientSocket *socket);
+
+  virtual ESB::Error retry(HttpClientTransaction *transaction);
 
  private:
   // Disabled
@@ -83,7 +75,7 @@ class HttpClientSocketFactory {
    public:
     /** Constructor
      */
-    CleanupHandler(HttpClientSocketFactory *factory);
+    CleanupHandler(HttpClientSocketFactory &factory);
 
     /** Destructor
      */
@@ -100,16 +92,17 @@ class HttpClientSocketFactory {
     CleanupHandler(const CleanupHandler &);
     void operator=(const CleanupHandler &);
 
-    HttpClientSocketFactory *_factory;
+    HttpClientSocketFactory &_factory;
   };
 
-  HttpClientCounters *_clientCounters;
-  ESB::DiscardAllocator _unprotectedAllocator;
-  ESB::SharedAllocator _allocator;
+  ESB::SocketMultiplexer &_multiplexer;
+  HttpClientHandler &_handler;
+  HttpClientCounters &_counters;
+  ESB::Allocator &_allocator;
   ESB::Map _map;
-  ESB::EmbeddedList _embeddedList;
-  ESB::Mutex _mutex;
+  ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
+  ESB::SystemDnsClient _dnsClient;
 };
 
 }  // namespace ES

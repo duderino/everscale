@@ -1,9 +1,13 @@
-#ifndef ESB_SIMPLE_FILE_LOGGER_H
-#include <ESBSimpleFileLogger.h>
+#ifndef ES_HTTP_SERVER_H
+#include <ESHttpServer.h>
 #endif
 
-#ifndef ES_HTTP_STACK_H
-#include <ESHttpStack.h>
+#ifndef ES_HTTP_CLIENT_H
+#include <ESHttpClient.h>
+#endif
+
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
 #endif
 
 #ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
@@ -18,36 +22,12 @@
 #include <ESHttpEchoClientHandler.h>
 #endif
 
-#ifndef ESB_SYSTEM_DNS_CLIENT_H
-#include <ESBSystemDnsClient.h>
-#endif
-
-#ifndef ES_HTTP_CLIENT_SIMPLE_COUNTERS_H
-#include <ESHttpClientSimpleCounters.h>
-#endif
-
-#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
-#include <ESHttpServerSimpleCounters.h>
-#endif
-
 #ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
 #include <ESHttpEchoClientRequestBuilder.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
-#include <ESHttpClientHistoricalCounters.h>
-#endif
-
-#ifndef ESB_DISCARD_ALLOCATOR_H
-#include <ESBDiscardAllocator.h>
-#endif
-
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESTF_ASSERT_H
-#include <ESTFAssert.h>
 #endif
 
 #ifndef ESB_SYSTEM_CONFIG_H
@@ -58,14 +38,17 @@
 #include <ESBTime.h>
 #endif
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#ifndef ESTF_ASSERT_H
+#include <ESTFAssert.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 using namespace ES;
 
@@ -150,28 +133,20 @@ int main(int argc, char **argv) {
   // Init
 
   HttpEchoServerHandler serverHandler;
-  ESB::SystemDnsClient dnsClient;
-  HttpClientSimpleCounters clientCounters;
-  HttpServerSimpleCounters serverCounters;
+  HttpServer server(serverThreads, port, serverHandler);
 
-  HttpStack serverStack(&serverHandler, &dnsClient, port, serverThreads,
-                        &clientCounters, &serverCounters);
-
-  error = serverStack.initialize();
+  error = server.initialize();
 
   if (ESB_SUCCESS != error) {
     return -1;
   }
 
-  HttpClientHistoricalCounters counters(maxWindows, windowSizeSec,
-                                        ESB::SystemAllocator::Instance());
-  HttpStack clientStack(&dnsClient, clientThreads, &counters);
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
-                                      sizeof(body), connections * iterations,
-                                      &clientStack);
+                                      sizeof(body), connections * iterations);
   HttpClientSocket::SetReuseConnections(reuseConnections);
+  HttpClient client(clientThreads, connections, TODO, clientHandler);
 
-  error = clientStack.initialize();
+  error = client.initialize();
 
   if (ESB_SUCCESS != error) {
     return -2;
@@ -179,19 +154,17 @@ int main(int argc, char **argv) {
 
   // Start
 
-  error = serverStack.start();
+  error = server.start();
 
   if (ESB_SUCCESS != error) {
     return -3;
   }
 
-  error = clientStack.start();
+  error = client.start();
 
   if (ESB_SUCCESS != error) {
     return -4;
   }
-
-  sleep(1);  // give the worker threads a chance to start
 
   // Send traffic
 
@@ -206,7 +179,7 @@ int main(int argc, char **argv) {
     context = new (&allocator) HttpEchoClientContext(iterations - 1);
     assert(context);
 
-    transaction = clientStack.createClientTransaction(&clientHandler);
+    transaction = client.createClientTransaction(&clientHandler);
     assert(transaction);
 
     transaction->setContext(context);
@@ -220,7 +193,7 @@ int main(int argc, char **argv) {
     // Send the request (asynch) - the context will resubmit the request for
     // <iteration> - 1 iterations.
 
-    error = clientStack.executeClientTransaction(transaction);
+    error = client.executeClientTransaction(transaction);
     assert(ESB_SUCCESS == error);
   }
 
@@ -230,20 +203,19 @@ int main(int argc, char **argv) {
 
   // Stop
 
-  error = clientStack.stop();
+  error = client.stop();
   assert(ESB_SUCCESS == error);
-  error = serverStack.stop();
+  error = server.stop();
   assert(ESB_SUCCESS == error);
 
   // TODO assert on counters here
-  clientStack.getClientCounters()->log(ESB::Logger::Instance(),
-                                       ESB::Logger::Severity::Notice);
-  serverCounters.log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  client.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
 
   // Destroy
 
-  clientStack.destroy();
-  serverStack.destroy();
+  client.destroy();
+  server.destroy();
 
   ESB::Time::Instance().stop();
   error = ESB::Time::Instance().join();

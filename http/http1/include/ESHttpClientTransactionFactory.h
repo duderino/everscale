@@ -35,15 +35,12 @@ namespace ES {
  */
 class HttpClientTransactionFactory {
  public:
-  HttpClientTransactionFactory();
+  HttpClientTransactionFactory(HttpClientHandler &clientHandler,
+                               ESB::Allocator &allocator);
 
   virtual ~HttpClientTransactionFactory();
 
-  ESB::Error initialize();
-
-  void destroy();
-
-  HttpClientTransaction *create(HttpClientHandler *clientHandler);
+  HttpClientTransaction *create();
 
   void release(HttpClientTransaction *transaction);
 
@@ -53,8 +50,8 @@ class HttpClientTransactionFactory {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -66,7 +63,7 @@ class HttpClientTransactionFactory {
    public:
     /** Constructor
      */
-    CleanupHandler(HttpClientTransactionFactory *factory);
+    CleanupHandler(HttpClientTransactionFactory &factory);
 
     /** Destructor
      */
@@ -83,14 +80,12 @@ class HttpClientTransactionFactory {
     CleanupHandler(const CleanupHandler &);
     void operator=(const CleanupHandler &);
 
-    HttpClientTransactionFactory *_factory;
+    HttpClientTransactionFactory &_factory;
   };
 
-  ESB::Logger *_logger;
-  ESB::DiscardAllocator _unprotectedAllocator;
-  ESB::SharedAllocator _allocator;
+  HttpClientHandler &_clientHandler;
+  ESB::Allocator &_allocator;
   ESB::EmbeddedList _embeddedList;
-  ESB::Mutex _mutex;
   CleanupHandler _cleanupHandler;
 };
 

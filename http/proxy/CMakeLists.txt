@@ -2,9 +2,25 @@ cmake_minimum_required(VERSION 3.5)
 project(http_stack VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-        src/ESHttpStack.cpp
+        src/ESHttpServer.cpp
+        src/ESHttpClient.cpp
+        src/ESHttpMultiplexer.cpp
+        src/ESHttpClientMultiplexer.cpp
+        src/ESHttpServerMultiplexer.cpp
         )
 
+#set(EXTRAS)
+#add_library(extras STATIC ${EXTRAS})
+#target_include_directories(extras PRIVATE
+#        "${PROJECT_SOURCE_DIR}/src"
+#        "${PROJECT_SOURCE_DIR}/../../base/include"
+#        "${PROJECT_SOURCE_DIR}/../http-common/include"
+#        "${PROJECT_SOURCE_DIR}/../http1/include"
+#        )
+#target_include_directories(extras PUBLIC
+#        "${PROJECT_SOURCE_DIR}/include"
+#        )
+#target_compile_options(extras PUBLIC ${CPP_FLAGS})
 #src/ESHttpProxyHandler.cpp
 #src/ESHttpProxyContext.cpp
 

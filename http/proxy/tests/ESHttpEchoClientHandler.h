@@ -23,8 +23,7 @@ class HttpEchoClientHandler : public HttpClientHandler {
  public:
   HttpEchoClientHandler(const char *absPath, const char *method,
                         const char *contentType, const unsigned char *body,
-                        int bodySize, int totalTransactions,
-                        HttpConnectionPool *pool);
+                        int bodySize, int totalTransactions);
 
   virtual ~HttpEchoClientHandler();
 
@@ -115,7 +114,6 @@ class HttpEchoClientHandler : public HttpClientHandler {
   const unsigned char *_body;
   const int _bodySize;
   int _totalTransactions;
-  HttpConnectionPool *_pool;
   ESB::SharedInt _completedTransactions;
 };
 

@@ -70,6 +70,13 @@ class HttpClientTransaction : public HttpTransaction {
   HttpRequestFormatter _formatter;
 };
 
+/** TODO replace with something more generic */
+class HttpSeedTransactionHandler {
+ public:
+  virtual ESB::Error modifyTransaction(
+      HttpClientTransaction *clientTransaction) = 0;
+};
+
 }  // namespace ES
 
 #endif

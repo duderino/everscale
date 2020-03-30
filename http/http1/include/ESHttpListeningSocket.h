@@ -40,15 +40,13 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
    * @param socket A fully initialized (after bind() and listen()) listening
    * socket to accept new requests from.
    * @param allocator An allocator that will allocate new HttpServerSockets
-   * @param thisCleanupHandler A cleanup handler for this object
    * @param socketCleanupHandler A cleanup handler for all HttpServerSockets
    * created by this object.
    */
-  HttpListeningSocket(HttpServerHandler *handler,
-                      ESB::ListeningTCPSocket *socket,
-                      HttpServerSocketFactory *factory,
-                      ESB::CleanupHandler *thisCleanupHandler,
-                      HttpServerCounters *counters);
+  HttpListeningSocket(HttpServerHandler &handler,
+                      ESB::ListeningTCPSocket &socket,
+                      HttpServerSocketFactory &factory,
+                      HttpServerCounters &counters);
 
   /** Destructor.
    */
@@ -208,11 +206,10 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   HttpListeningSocket(const HttpListeningSocket &);
   HttpListeningSocket &operator=(const HttpListeningSocket &);
 
-  HttpServerHandler *_handler;
-  ESB::ListeningTCPSocket *_socket;
-  ESB::CleanupHandler *_thisCleanupHandler;
-  HttpServerSocketFactory *_factory;
-  HttpServerCounters *_counters;
+  HttpServerHandler &_handler;
+  ESB::ListeningTCPSocket &_socket;
+  HttpServerSocketFactory &_factory;
+  HttpServerCounters &_counters;
 };
 
 }  // namespace ES

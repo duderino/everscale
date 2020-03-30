@@ -71,94 +71,82 @@ int AddressComparator::compare(const void *first, const void *second) const {
 static AddressComparator AddressComparator;
 
 HttpClientSocketFactory::HttpClientSocketFactory(
-    HttpClientCounters *clientCounters)
-    : _clientCounters(clientCounters),
-      _unprotectedAllocator(ESB::SystemConfig::Instance().pageSize(),
-                            ESB::SystemConfig::Instance().cacheLineSize()),
-      _allocator(_unprotectedAllocator),
-      _map(AddressComparator),
-      _embeddedList(),
-      _mutex(),
-      _cleanupHandler(this) {}
+    ESB::SocketMultiplexer &multiplexer, HttpClientHandler &handler,
+    HttpClientCounters &counters, ESB::Allocator &allocator)
+    : _multiplexer(multiplexer),
+      _handler(handler),
+      _counters(counters),
+      _allocator(allocator),
+      _map(AddressComparator),  // TODO replace with connection pool
+      _cleanupHandler(*this),
+      _dnsClient() {}
 
-ESB::Error HttpClientSocketFactory::initialize() { return ESB_SUCCESS; }
-
-void HttpClientSocketFactory::destroy() {
-  HttpClientSocket *socket = (HttpClientSocket *)_embeddedList.removeFirst();
+HttpClientSocketFactory::~HttpClientSocketFactory() {
+  HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
 
   while (socket) {
     socket->~HttpClientSocket();
-    socket = (HttpClientSocket *)_embeddedList.removeFirst();
+    socket = (HttpClientSocket *)_sockets.removeFirst();
   }
 
-  ESB::SocketAddress *address = 0;
+  ESB::SocketAddress *address = NULL;
 
-  for (ESB::MapIterator iterator = _map.minimumIterator();
-       false == iterator.isNull(); iterator = iterator.next()) {
+  for (ESB::MapIterator iterator = _map.minimumIterator(); !iterator.isNull();
+       iterator = iterator.next()) {
     address = (ESB::SocketAddress *)iterator.key();
-
     assert(address);
-
     address->~SocketAddress();
-
     socket = (HttpClientSocket *)iterator.value();
-
     assert(socket);
-
     socket->~HttpClientSocket();
   }
 }
 
-HttpClientSocketFactory::~HttpClientSocketFactory() {}
-
 HttpClientSocket *HttpClientSocketFactory::create(
-    HttpConnectionPool *pool, HttpClientTransaction *transaction) {
-  HttpClientSocket *socket = 0;
+    HttpClientTransaction *transaction) {
+  if (!transaction) {
+    return NULL;
+  }
 
-  {
-    ESB::WriteScopeLock scopeLock(_mutex);
-    ESB::EmbeddedList *list =
-        (ESB::EmbeddedList *)_map.find(&transaction->peerAddress());
+  HttpClientSocket *socket = NULL;
+  ESB::EmbeddedList *list =
+      (ESB::EmbeddedList *)_map.find(&transaction->peerAddress());
 
-    if (list) {
-      socket = (HttpClientSocket *)list->removeLast();
-
-      if (socket) {
-        if (ESB_DEBUG_LOGGABLE) {
-          char buffer[ESB_IPV6_PRESENTATION_SIZE];
-          transaction->peerAddress().presentationAddress(buffer,
-                                                         sizeof(buffer));
-          ESB_LOG_DEBUG("Reusing connection for '%s:%d'", buffer,
-                        transaction->peerAddress().port());
-        }
-
-        assert(socket->isConnected());
-        socket->reset(true, pool, transaction);
-        return socket;
-      }
-    }
-
-    if (ESB_DEBUG_LOGGABLE) {
-      char buffer[ESB_IPV6_PRESENTATION_SIZE];
-      transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-      ESB_LOG_DEBUG("Creating new connection for '%s:%d'", buffer,
-                    transaction->peerAddress().port());
-    }
-
-    // Try to reuse the memory of a dead socket
-    socket = (HttpClientSocket *)_embeddedList.removeLast();
+  if (list) {
+    socket = (HttpClientSocket *)list->removeLast();
 
     if (socket) {
-      assert(false == socket->isConnected());
-      socket->reset(false, pool, transaction);
+      if (ESB_DEBUG_LOGGABLE) {
+        char buffer[ESB_IPV6_PRESENTATION_SIZE];
+        transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
+        ESB_LOG_DEBUG("Reusing connection for '%s:%d'", buffer,
+                      transaction->peerAddress().port());
+      }
 
+      assert(socket->isConnected());
+      socket->reset(true, transaction);
       return socket;
     }
   }
 
-  // Failing all else, allocate a new socket
+  if (ESB_DEBUG_LOGGABLE) {
+    char buffer[ESB_IPV6_PRESENTATION_SIZE];
+    transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
+    ESB_LOG_DEBUG("Creating new connection for '%s:%d'", buffer,
+                  transaction->peerAddress().port());
+  }
+
+  // Try to reuse the memory of a dead socket
+  socket = (HttpClientSocket *)_sockets.removeLast();
+
+  if (socket) {
+    assert(!socket->isConnected());
+    socket->reset(false, transaction);
+    return socket;
+  }
+
   socket = new (_allocator)
-      HttpClientSocket(pool, transaction, _clientCounters, &_cleanupHandler);
+      HttpClientSocket(*this, transaction, &_counters, &_cleanupHandler);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
@@ -175,9 +163,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     return;
   }
 
-  ESB::WriteScopeLock scopeLock(_mutex);
-
-  if (false == socket->isConnected()) {
+  if (!socket->isConnected()) {
     if (ESB_DEBUG_LOGGABLE) {
       char buffer[ESB_IPV6_PRESENTATION_SIZE];
       socket->peerAddress()->presentationAddress(buffer, sizeof(buffer));
@@ -186,7 +172,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     }
 
     socket->close();  // idempotent, just to be safe
-    _embeddedList.addLast(socket);
+    _sockets.addLast(socket);
     return;
   }
 
@@ -217,7 +203,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     }
 
     socket->close();
-    _embeddedList.addLast(socket);
+    _sockets.addLast(socket);
     return;
   }
 
@@ -232,7 +218,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     }
 
     socket->close();
-    _embeddedList.addLast(socket);
+    _sockets.addLast(socket);
     return;
   }
 
@@ -250,18 +236,97 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     }
 
     socket->close();
-    _embeddedList.addLast(socket);
+    _sockets.addLast(socket);
   }
 }
 
+ESB::Error HttpClientSocketFactory::executeClientTransaction(
+    HttpClientTransaction *transaction) {
+  // don't uncomment the end handler callbacks until after the processing goes
+  // asynch
+  assert(transaction);
+  if (!transaction) {
+    return ESB_NULL_POINTER;
+  }
+
+  transaction->setStartTime();
+
+  // TODO Make resolver async
+  unsigned char hostname[1024];
+  hostname[0] = 0;
+  ESB::UInt16 port = 0;
+  bool isSecure = false;
+
+  ESB::Error error = transaction->request().parsePeerAddress(
+      hostname, sizeof(hostname), &port, &isSecure);
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG("Cannot extract hostname from request");
+    return error;
+  }
+
+  error =
+      _dnsClient.resolve(transaction->peerAddress(), hostname, port, isSecure);
+
+  if (ESB_SUCCESS != error) {
+    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    // transaction->getHandler()->end(transaction,
+    //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RESOLVE);
+    return error;
+  }
+
+  HttpClientSocket *socket = create(transaction);
+
+  if (!socket) {
+    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    // transaction->getHandler()->end(transaction,
+    //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+    ESB_LOG_CRITICAL("Cannot allocate new client socket");
+    return 0;
+  }
+
+  if (!socket->isConnected()) {
+    error = socket->connect();
+
+    if (ESB_SUCCESS != error) {
+      _counters.getFailures()->record(transaction->startTime(),
+                                      ESB::Date::Now());
+      ESB_LOG_WARNING_ERRNO(error, "Cannot connect to %s:%d", hostname, port);
+      // transaction->getHandler()->end(transaction,
+      //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+      socket->close();
+      release(socket);
+      return error;
+    }
+  }
+
+  error = _multiplexer.addMultiplexedSocket(socket);
+
+  if (ESB_SUCCESS != error) {
+    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    socket->close();
+    // transaction->getHandler()->end(transaction,
+    //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add client socket to multiplexer");
+    release(socket);
+    return error;
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpClientSocketFactory::retry(HttpClientTransaction *transaction) {
+  return executeClientTransaction(transaction);
+}
+
 HttpClientSocketFactory::CleanupHandler::CleanupHandler(
-    HttpClientSocketFactory *factory)
+    HttpClientSocketFactory &factory)
     : ESB::CleanupHandler(), _factory(factory) {}
 
 HttpClientSocketFactory::CleanupHandler::~CleanupHandler() {}
 
 void HttpClientSocketFactory::CleanupHandler::destroy(ESB::Object *object) {
-  _factory->release((HttpClientSocket *)object);
+  _factory.release((HttpClientSocket *)object);
 }
 
 }  // namespace ES
