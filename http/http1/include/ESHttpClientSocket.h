@@ -29,22 +29,13 @@ namespace ES {
  */
 class HttpClientSocket : public ESB::MultiplexedSocket {
  public:
-  /**
-   * If a HttpClientSocket fails before sending the transaction, it can use
-   * this to retry the transaction on a different socket.
-   */
-  class RetryHandler {
-   public:
-    virtual ESB::Error retry(HttpClientTransaction *transaction) = 0;
-  };
-
   /** Constructor
    *
    * @param transaction The client transaction object.  Many client transactions
    *  can be carried across the same http client socket with connection reuse.
    * @param cleanupHandler An object that can be used to destroy this one
    */
-  HttpClientSocket(RetryHandler &retryHandler,
+  HttpClientSocket(HttpClientHandler &handler, HttpClientStack &stack,
                    HttpClientTransaction *transaction,
                    HttpClientCounters *counters,
                    ESB::CleanupHandler *cleanupHandler);
@@ -240,7 +231,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
 
   int _state;
   int _bodyBytesWritten;
-  RetryHandler &_retryHandler;
+  HttpClientStack &_stack;
+  HttpClientHandler &_handler;
   HttpClientTransaction *_transaction;
   HttpClientCounters *_counters;
   ESB::CleanupHandler *_cleanupHandler;

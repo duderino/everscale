@@ -45,10 +45,34 @@ class HttpClientMultiplexer : public HttpMultiplexer {
   HttpClientMultiplexer(const HttpClientMultiplexer &);
   void operator=(const HttpClientMultiplexer &);
 
+  class HttpClientStackImpl : public HttpClientStack {
+   public:
+    HttpClientStackImpl(ESB::EpollMultiplexer &multiplexer,
+                        HttpClientSocketFactory &clientSocketFactory,
+                        HttpClientTransactionFactory &clientTransactionFactory);
+    virtual ~HttpClientStackImpl();
+
+    virtual HttpClientTransaction *createTransaction();
+    virtual bool isRunning();
+    virtual ESB::Error executeClientTransaction(
+        HttpClientTransaction *transaction);
+    virtual void destroyTransaction(HttpClientTransaction *transaction);
+
+   private:
+    // Disabled
+    HttpClientStackImpl(const HttpClientStackImpl &);
+    HttpClientStackImpl &operator=(const HttpClientStackImpl &);
+
+    ESB::EpollMultiplexer &_multiplexer;
+    HttpClientSocketFactory &_clientSocketFactory;
+    HttpClientTransactionFactory &_clientTransactionFactory;
+  };
+
   ESB::UInt32 _connections;
   HttpSeedTransactionHandler &_seedTransactionHandler;
   HttpClientSocketFactory _clientSocketFactory;
   HttpClientTransactionFactory _clientTransactionFactory;
+  HttpClientStackImpl _clientStack;
 };
 
 }  // namespace ES

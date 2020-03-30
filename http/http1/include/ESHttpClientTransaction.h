@@ -5,10 +5,6 @@
 #include <ESHttpTransaction.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_HANDLER_H
-#include <ESHttpClientHandler.h>
-#endif
-
 #ifndef ES_HTTP_REQUEST_FORMATTER_H
 #include <ESHttpRequestFormatter.h>
 #endif
@@ -21,24 +17,14 @@ namespace ES {
 
 class HttpClientTransaction : public HttpTransaction {
  public:
-  HttpClientTransaction(HttpClientHandler *clientHandler,
-                        ESB::CleanupHandler *cleanupHandler);
+  HttpClientTransaction(ESB::CleanupHandler *cleanupHandler);
 
-  HttpClientTransaction(HttpClientHandler *clientHandler,
-                        ESB::SocketAddress *peerAddress,
+  HttpClientTransaction(ESB::SocketAddress *peerAddress,
                         ESB::CleanupHandler *cleanupHandler);
 
   virtual ~HttpClientTransaction();
 
   virtual void reset();
-
-  inline void setHandler(HttpClientHandler *clientHandler) {
-    _clientHandler = clientHandler;
-  }
-
-  inline const HttpClientHandler *getHandler() const { return _clientHandler; }
-
-  inline HttpClientHandler *getHandler() { return _clientHandler; }
 
   inline HttpResponseParser *getParser() { return &_parser; }
 
@@ -56,8 +42,8 @@ class HttpClientTransaction : public HttpTransaction {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -65,7 +51,6 @@ class HttpClientTransaction : public HttpTransaction {
   HttpClientTransaction(const HttpClientTransaction &transaction);
   void operator=(const HttpClientTransaction &transaction);
 
-  HttpClientHandler *_clientHandler;
   HttpResponseParser _parser;
   HttpRequestFormatter _formatter;
 };

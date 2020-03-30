@@ -1,15 +1,42 @@
 #ifndef ES_HTTP_CLIENT_HANDLER_H
 #define ES_HTTP_CLIENT_HANDLER_H
 
-#ifndef ES_HTTP_TRANSACTION_H
-#include <ESHttpTransaction.h>
-#endif
-
-#ifndef ESB_SOCKET_MULTIPLEXER_H
-#include <ESBSocketMultiplexer.h>
+#ifndef ES_HTTP_CLIENT_TRANSACTION_H
+#include <ESHttpClientTransaction.h>
 #endif
 
 namespace ES {
+
+class HttpClientStack {
+ public:
+  HttpClientStack();
+  virtual ~HttpClientStack();
+
+  virtual HttpClientTransaction *createTransaction() = 0;
+
+  virtual bool isRunning() = 0;
+
+  /**
+   * Execute the client transaction.  If this method returns ESB_SUCCESS, then
+   * the transaction will be cleaned up automatically after it finishes.  If
+   * this method returns anything else then the caller should clean it up with
+   * destroyClientTransaction
+   *
+   * @param transaction The transaction
+   * @return ESB_SUCCESS if the transaction was successfully started, another
+   * error code otherwise.  If error, cleanup the transaction with the
+   * destroyTransaction function.
+   */
+  virtual ESB::Error executeClientTransaction(
+      HttpClientTransaction *transaction) = 0;
+
+  virtual void destroyTransaction(HttpClientTransaction *transaction) = 0;
+
+ private:
+  // Disabled
+  HttpClientStack(const HttpClientStack &);
+  HttpClientStack &operator=(const HttpClientStack &);
+};
 
 class HttpClientHandler {
  public:
@@ -56,8 +83,8 @@ class HttpClientHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveRequestChunk(ESB::SocketMultiplexer &multiplexer,
-                                  HttpTransaction *transaction) = 0;
+  virtual int reserveRequestChunk(HttpClientStack &stack,
+                                  HttpClientTransaction *transaction) = 0;
 
   /**
    * Fill a request body chunk with data.
@@ -68,8 +95,8 @@ class HttpClientHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
    */
-  virtual void fillRequestChunk(ESB::SocketMultiplexer &multiplexer,
-                                HttpTransaction *transaction,
+  virtual void fillRequestChunk(HttpClientStack &stack,
+                                HttpClientTransaction *transaction,
                                 unsigned char *chunk,
                                 unsigned int chunkSize) = 0;
 
@@ -80,8 +107,8 @@ class HttpClientHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveResponseHeaders(ESB::SocketMultiplexer &multiplexer,
-                                        HttpTransaction *transaction) = 0;
+  virtual Result receiveResponseHeaders(HttpClientStack &stack,
+                                        HttpClientTransaction *transaction) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -96,8 +123,8 @@ class HttpClientHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveResponseBody(ESB::SocketMultiplexer &multiplexer,
-                                     HttpTransaction *transaction,
+  virtual Result receiveResponseBody(HttpClientStack &stack,
+                                     HttpClientTransaction *transaction,
                                      unsigned const char *chunk,
                                      unsigned int chunkSize) = 0;
 
@@ -112,8 +139,8 @@ class HttpClientHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endClientTransaction(ESB::SocketMultiplexer &multiplexer,
-                                    HttpTransaction *transaction,
+  virtual void endClientTransaction(HttpClientStack &stack,
+                                    HttpClientTransaction *transaction,
                                     State state) = 0;
 
  private:

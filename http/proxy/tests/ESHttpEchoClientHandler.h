@@ -44,8 +44,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveRequestChunk(ESB::SocketMultiplexer &multiplexer,
-                                  HttpTransaction *transaction);
+  virtual int reserveRequestChunk(HttpClientStack &stack,
+                                  HttpClientTransaction *transaction);
 
   /**
    * Fill a request body chunk with data.
@@ -56,8 +56,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
    */
-  virtual void fillRequestChunk(ESB::SocketMultiplexer &multiplexer,
-                                HttpTransaction *transaction,
+  virtual void fillRequestChunk(HttpClientStack &stack,
+                                HttpClientTransaction *transaction,
                                 unsigned char *chunk, unsigned int chunkSize);
 
   /**
@@ -67,8 +67,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveResponseHeaders(ESB::SocketMultiplexer &multiplexer,
-                                        HttpTransaction *transaction);
+  virtual Result receiveResponseHeaders(HttpClientStack &stack,
+                                        HttpClientTransaction *transaction);
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -83,8 +83,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveResponseBody(ESB::SocketMultiplexer &multiplexer,
-                                     HttpTransaction *transaction,
+  virtual Result receiveResponseBody(HttpClientStack &stack,
+                                     HttpClientTransaction *transaction,
                                      unsigned const char *chunk,
                                      unsigned int chunkSize);
 
@@ -96,8 +96,9 @@ class HttpEchoClientHandler : public HttpClientHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void endClientTransaction(ESB::SocketMultiplexer &multiplexer,
-                                    HttpTransaction *transaction, State state);
+  virtual void endClientTransaction(HttpClientStack &stack,
+                                    HttpClientTransaction *transaction,
+                                    State state);
 
   inline bool isFinished() const {
     return _totalTransactions <= _completedTransactions.get();

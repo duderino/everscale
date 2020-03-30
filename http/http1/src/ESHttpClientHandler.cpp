@@ -3,6 +3,8 @@
 #endif
 
 namespace ES {
+HttpClientStack::HttpClientStack() {}
+HttpClientStack::~HttpClientStack() {}
 HttpClientHandler::HttpClientHandler() {}
 HttpClientHandler::~HttpClientHandler() {}
 }  // namespace ES

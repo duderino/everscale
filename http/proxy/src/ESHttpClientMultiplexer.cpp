@@ -11,10 +11,13 @@ HttpClientMultiplexer::HttpClientMultiplexer(
     : HttpMultiplexer(maxSockets, allocator),
       _connections(connections),
       _seedTransactionHandler(seedTransactionHandler),
-      // TODO why pass client handler to both factories????
       _clientSocketFactory(*this, clientHandler, clientCounters,
                            _factoryAllocator),
-      _clientTransactionFactory(clientHandler, _factoryAllocator) {}
+      _clientTransactionFactory(_factoryAllocator),
+      _clientStack(_epollMultiplexer, _clientSocketFactory,
+                   _clientTransactionFactory) {
+  _clientSocketFactory.setClientStack(_clientStack);
+}
 
 HttpClientMultiplexer::~HttpClientMultiplexer() {}
 
@@ -56,5 +59,34 @@ const char *HttpClientMultiplexer::name() const {
 }
 
 ESB::CleanupHandler *HttpClientMultiplexer::cleanupHandler() { return NULL; }
+
+bool HttpClientMultiplexer::HttpClientStackImpl::isRunning() {
+  return _multiplexer.isRunning();
+}
+
+HttpClientTransaction *
+HttpClientMultiplexer::HttpClientStackImpl::createTransaction() {
+  return _clientTransactionFactory.create();
+}
+
+ESB::Error HttpClientMultiplexer::HttpClientStackImpl::executeClientTransaction(
+    HttpClientTransaction *transaction) {
+  return _clientSocketFactory.executeClientTransaction(transaction);
+}
+
+void HttpClientMultiplexer::HttpClientStackImpl::destroyTransaction(
+    HttpClientTransaction *transaction) {
+  return _clientTransactionFactory.release(transaction);
+}
+
+HttpClientMultiplexer::HttpClientStackImpl::HttpClientStackImpl(
+    ESB::EpollMultiplexer &multiplexer,
+    HttpClientSocketFactory &clientSocketFactory,
+    HttpClientTransactionFactory &clientTransactionFactory)
+    : _multiplexer(multiplexer),
+      _clientSocketFactory(clientSocketFactory),
+      _clientTransactionFactory(clientTransactionFactory) {}
+
+HttpClientMultiplexer::HttpClientStackImpl::~HttpClientStackImpl() {}
 
 }  // namespace ES

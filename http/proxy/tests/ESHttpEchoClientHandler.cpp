@@ -30,7 +30,7 @@ HttpEchoClientHandler::HttpEchoClientHandler(
 HttpEchoClientHandler::~HttpEchoClientHandler() {}
 
 int HttpEchoClientHandler::reserveRequestChunk(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
+    HttpClientStack &stack, HttpClientTransaction *transaction) {
   assert(transaction);
 
   HttpEchoClientContext *context =
@@ -41,9 +41,10 @@ int HttpEchoClientHandler::reserveRequestChunk(
   return _bodySize - context->getBytesSent();
 }
 
-void HttpEchoClientHandler::fillRequestChunk(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
-    unsigned char *chunk, unsigned int chunkSize) {
+void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
+                                             HttpClientTransaction *transaction,
+                                             unsigned char *chunk,
+                                             unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
   assert(0 < chunkSize);
@@ -63,7 +64,7 @@ void HttpEchoClientHandler::fillRequestChunk(
 }
 
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
+    HttpClientStack &stack, HttpClientTransaction *transaction) {
   assert(transaction);
   HttpResponse &response = transaction->response();
 
@@ -85,7 +86,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
 }
 
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    HttpClientStack &stack, HttpClientTransaction *transaction,
     unsigned const char *chunk, unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
@@ -108,8 +109,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
 }
 
 void HttpEchoClientHandler::endClientTransaction(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
-    State state) {
+    HttpClientStack &stack, HttpClientTransaction *transaction, State state) {
   if (_totalTransactions == _completedTransactions.inc()) {
     ESB_LOG_NOTICE("All transactions completed");
   }
@@ -155,7 +155,7 @@ void HttpEchoClientHandler::endClientTransaction(
     return;
   }
 
-  HttpClientTransaction *newTransaction = _pool->createClientTransaction(this);
+  HttpClientTransaction *newTransaction = stack.createTransaction();
 
   if (!newTransaction) {
     ESB_LOG_WARNING("Cannot create new transaction: bad alloc");
@@ -176,15 +176,15 @@ void HttpEchoClientHandler::endClientTransaction(
       _contentType, newTransaction);
 
   if (ESB_SUCCESS != error) {
-    _pool->destroyClientTransaction(newTransaction);
+    stack.destroyTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "cannot build request");
     return;
   }
 
-  error = _pool->executeClientTransaction(newTransaction);
+  error = stack.executeClientTransaction(newTransaction);
 
   if (ESB_SUCCESS != error) {
-    _pool->destroyClientTransaction(newTransaction);
+    stack.destroyTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "cannot execute transaction");
     return;
   }

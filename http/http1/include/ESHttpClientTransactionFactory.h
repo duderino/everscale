@@ -35,8 +35,7 @@ namespace ES {
  */
 class HttpClientTransactionFactory {
  public:
-  HttpClientTransactionFactory(HttpClientHandler &clientHandler,
-                               ESB::Allocator &allocator);
+  HttpClientTransactionFactory(ESB::Allocator &allocator);
 
   virtual ~HttpClientTransactionFactory();
 
@@ -83,7 +82,6 @@ class HttpClientTransactionFactory {
     HttpClientTransactionFactory &_factory;
   };
 
-  HttpClientHandler &_clientHandler;
   ESB::Allocator &_allocator;
   ESB::EmbeddedList _embeddedList;
   CleanupHandler _cleanupHandler;

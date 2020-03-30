@@ -33,7 +33,7 @@ namespace ES {
 
 /** A factory that creates and reuses HttpClientSockets
  */
-class HttpClientSocketFactory : public HttpClientSocket::RetryHandler {
+class HttpClientSocketFactory {
  public:
   /** Constructor
    *
@@ -42,6 +42,10 @@ class HttpClientSocketFactory : public HttpClientSocket::RetryHandler {
                           HttpClientHandler &handler,
                           HttpClientCounters &counters,
                           ESB::Allocator &allocator);
+  /** Must be called after constructor */
+  inline void setClientStack(HttpClientStack &clientStack) {
+    _clientStack = &clientStack;
+  }
 
   /** Destructor.
    */
@@ -63,8 +67,6 @@ class HttpClientSocketFactory : public HttpClientSocket::RetryHandler {
   ESB::Error executeClientTransaction(HttpClientTransaction *transaction);
 
   void release(HttpClientSocket *socket);
-
-  virtual ESB::Error retry(HttpClientTransaction *transaction);
 
  private:
   // Disabled
@@ -95,6 +97,7 @@ class HttpClientSocketFactory : public HttpClientSocket::RetryHandler {
     HttpClientSocketFactory &_factory;
   };
 
+  HttpClientStack *_clientStack;
   ESB::SocketMultiplexer &_multiplexer;
   HttpClientHandler &_handler;
   HttpClientCounters &_counters;

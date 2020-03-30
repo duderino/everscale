@@ -50,6 +50,52 @@
 #include <signal.h>
 #endif
 
+namespace ES {
+class SeedTransactions : public HttpSeedTransactionHandler {
+ public:
+  SeedTransactions(ESB::Allocator &allocator, ESB::UInt32 iterations,
+                   ESB::Int32 port, const char *host, const char *absPath,
+                   const char *method, const char *contentType)
+      : _allocator(allocator),
+        _iterations(iterations),
+        _port(port),
+        _host(host),
+        _absPath(absPath),
+        _method(method),
+        _contentType(contentType) {}
+  virtual ~SeedTransactions() {}
+
+  virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
+    // Create the request context
+    HttpEchoClientContext *context =
+        new (&_allocator) HttpEchoClientContext(_iterations - 1);
+    assert(context);
+
+    transaction->setContext(context);
+
+    // Build the request
+
+    ESB::Error error = HttpEchoClientRequestBuilder(
+        _host, _port, _absPath, _method, _contentType, transaction);
+    assert(ESB_SUCCESS == error);
+    return error;
+  }
+
+ private:
+  // Disabled
+  SeedTransactions(const SeedTransactions &);
+  SeedTransactions &operator=(const SeedTransactions &);
+
+  ESB::Allocator &_allocator;
+  const ESB::UInt32 _iterations;
+  const ESB::Int32 _port;
+  const char *_host;
+  const char *_absPath;
+  const char *_method;
+  const char *_contentType;
+};
+}  // namespace ES
+
 using namespace ES;
 
 int main(int argc, char **argv) {
@@ -64,8 +110,6 @@ int main(int argc, char **argv) {
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
-  const ESB::UInt16 maxWindows = 1000;
-  const ESB::UInt16 windowSizeSec = 1;
   unsigned char body[1024];
 
   memset(body, 42, sizeof(body));
@@ -144,7 +188,10 @@ int main(int argc, char **argv) {
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
                                       sizeof(body), connections * iterations);
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  HttpClient client(clientThreads, connections, TODO, clientHandler);
+  ESB::DiscardAllocator allocator(ESB::SystemConfig::Instance().pageSize());
+  SeedTransactions seed(allocator, iterations, port, host, absPath, method,
+                        contentType);
+  HttpClient client(clientThreads, connections, seed, clientHandler);
 
   error = client.initialize();
 
@@ -164,37 +211,6 @@ int main(int argc, char **argv) {
 
   if (ESB_SUCCESS != error) {
     return -4;
-  }
-
-  // Send traffic
-
-  ESB::DiscardAllocator allocator(ESB::SystemConfig::Instance().pageSize(),
-                                  ESB::SystemConfig::Instance().cacheLineSize(),
-                                  ESB::SystemAllocator::Instance());
-  HttpEchoClientContext *context = 0;
-  HttpClientTransaction *transaction = 0;
-
-  for (unsigned int i = 0; i < connections; ++i) {
-    // Create the request context and transaction
-    context = new (&allocator) HttpEchoClientContext(iterations - 1);
-    assert(context);
-
-    transaction = client.createClientTransaction(&clientHandler);
-    assert(transaction);
-
-    transaction->setContext(context);
-
-    // Build the request
-
-    error = HttpEchoClientRequestBuilder(host, port, absPath, method,
-                                         contentType, transaction);
-    assert(ESB_SUCCESS == error);
-
-    // Send the request (asynch) - the context will resubmit the request for
-    // <iteration> - 1 iterations.
-
-    error = client.executeClientTransaction(transaction);
-    assert(ESB_SUCCESS == error);
   }
 
   while (!clientHandler.isFinished()) {

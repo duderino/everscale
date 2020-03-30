@@ -104,7 +104,7 @@ HttpClientSocketFactory::~HttpClientSocketFactory() {
 
 HttpClientSocket *HttpClientSocketFactory::create(
     HttpClientTransaction *transaction) {
-  if (!transaction) {
+  if (!transaction || !_clientStack) {
     return NULL;
   }
 
@@ -145,8 +145,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
     return socket;
   }
 
-  socket = new (_allocator)
-      HttpClientSocket(*this, transaction, &_counters, &_cleanupHandler);
+  socket = new (_allocator) HttpClientSocket(
+      _handler, *_clientStack, transaction, &_counters, &_cleanupHandler);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
@@ -313,10 +313,6 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
   }
 
   return ESB_SUCCESS;
-}
-
-ESB::Error HttpClientSocketFactory::retry(HttpClientTransaction *transaction) {
-  return executeClientTransaction(transaction);
 }
 
 HttpClientSocketFactory::CleanupHandler::CleanupHandler(

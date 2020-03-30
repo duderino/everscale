@@ -5,11 +5,8 @@
 namespace ES {
 
 HttpClientTransactionFactory::HttpClientTransactionFactory(
-    HttpClientHandler &clientHandler, ESB::Allocator &allocator)
-    : _clientHandler(clientHandler),
-      _allocator(allocator),
-      _embeddedList(),
-      _cleanupHandler(*this) {}
+    ESB::Allocator &allocator)
+    : _allocator(allocator), _embeddedList(), _cleanupHandler(*this) {}
 
 HttpClientTransactionFactory::~HttpClientTransactionFactory() {
   HttpClientTransaction *transaction =
@@ -26,15 +23,12 @@ HttpClientTransaction *HttpClientTransactionFactory::create() {
       (HttpClientTransaction *)_embeddedList.removeLast();
 
   if (!transaction) {
-    transaction = new (&_allocator)
-        HttpClientTransaction(&_clientHandler, &_cleanupHandler);
+    transaction = new (_allocator) HttpClientTransaction(&_cleanupHandler);
 
     if (!transaction) {
       return 0;
     }
   }
-
-  transaction->setHandler(&_clientHandler);
 
   return transaction;
 }
