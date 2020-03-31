@@ -7,9 +7,9 @@
 
 namespace ES {
 
-class HttpEchoClientContext {
+class HttpEchoClientContext : public ESB::Object {
  public:
-  HttpEchoClientContext(unsigned int remainingIterations);
+  HttpEchoClientContext(unsigned int remainingIterations, ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpEchoClientContext();
 
@@ -23,14 +23,18 @@ class HttpEchoClientContext {
     _iterations = iterations;
   }
 
+  inline ESB::CleanupHandler &cleanupHandler() const {
+    return _cleanupHandler;
+  }
+
   /** Placement new.
    *
    *  @param size The size of the object.
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
+    return allocator.allocate(size);
   }
 
  private:
@@ -40,6 +44,7 @@ class HttpEchoClientContext {
 
   unsigned int _bytesSent;
   unsigned int _iterations;
+  ESB::CleanupHandler &_cleanupHandler;
 };
 
 }  // namespace ES

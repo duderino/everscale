@@ -50,6 +50,10 @@
 #include <signal.h>
 #endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 namespace ES {
 class SeedTransactions : public HttpSeedTransactionHandler {
  public:
@@ -68,7 +72,7 @@ class SeedTransactions : public HttpSeedTransactionHandler {
   virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
     // Create the request context
     HttpEchoClientContext *context =
-        new (&_allocator) HttpEchoClientContext(_iterations - 1);
+        new (_allocator) HttpEchoClientContext(_iterations - 1, _allocator.cleanupHandler());
     assert(context);
 
     transaction->setContext(context);
@@ -138,12 +142,12 @@ int main(int argc, char **argv) {
 
         case 'c':
 
-          connections = (unsigned int)atoi(optarg);
+          connections = (unsigned int) atoi(optarg);
           break;
 
         case 'i':
 
-          iterations = (unsigned int)atoi(optarg);
+          iterations = (unsigned int) atoi(optarg);
           break;
 
         case 'r':
@@ -156,7 +160,7 @@ int main(int argc, char **argv) {
 
   ESB::Time::Instance().start();
   ESB::SimpleFileLogger logger(stdout);
-  logger.setSeverity((ESB::Logger::Severity)logLevel);
+  logger.setSeverity((ESB::Logger::Severity) logLevel);
   ESB::Logger::SetInstance(&logger);
 
   signal(SIGHUP, SIG_IGN);
@@ -188,9 +192,8 @@ int main(int argc, char **argv) {
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
                                       sizeof(body), connections * iterations);
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  ESB::DiscardAllocator allocator(ESB::SystemConfig::Instance().pageSize());
-  SeedTransactions seed(allocator, iterations, port, host, absPath, method,
-                        contentType);
+  //ESB::DiscardAllocator allocator(ESB::SystemConfig::Instance().pageSize());
+  SeedTransactions seed(ESB::SystemAllocator::Instance(), iterations, port, host, absPath, method, contentType);
   HttpClient client(clientThreads, connections, seed, clientHandler);
 
   error = client.initialize();

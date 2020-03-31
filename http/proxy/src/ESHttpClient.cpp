@@ -98,8 +98,9 @@ void HttpClient::destroy() {
 
   for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
        it = it.next()) {
-    ESB::SocketMultiplexer *multiplexer = (ESB::SocketMultiplexer *)it.value();
-    multiplexer->destroy();
+    HttpClientMultiplexer *multiplexer = (HttpClientMultiplexer *)it.value();
+    multiplexer->~HttpClientMultiplexer();
+    _allocator.deallocate(multiplexer);
   }
 
   _multiplexers.clear();

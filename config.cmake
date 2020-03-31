@@ -217,6 +217,10 @@ check_struct_has_member("struct rlimit" rlim_max "sys/resource.h" HAVE_STRUCT_RL
 check_symbol_exists(getrlimit "sys/resource.h" HAVE_GETRLIMIT)
 check_symbol_exists(setrlimit "sys/resource.h" HAVE_SETRLIMIT)
 
+check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
+
+check_include_file("fcntl.h" HAVE_FCNTL_H)
+
 check_include_file_cxx("atomic" HAVE_ATOMIC_H)
 check_cxx_source_compiles("#include <atomic>
 int main () {

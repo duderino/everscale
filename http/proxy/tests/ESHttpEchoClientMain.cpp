@@ -2,24 +2,16 @@
 #include <ESBSimpleFileLogger.h>
 #endif
 
-#ifndef ESB_DISCARD_ALLOCATOR_H
-#include <ESBDiscardAllocator.h>
-#endif
-
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
 #endif
 
 #ifndef ESB_SYSTEM_CONFIG_H
 #include <ESBSystemConfig.h>
 #endif
 
-#ifndef ES_HTTP_STACK_H
-#include <ESHttpStack.h>
+#ifndef ES_HTTP_CLIENT_H
+#include <ESHttpClient.h>
 #endif
 
 #ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
@@ -30,30 +22,87 @@
 #include <ESHttpEchoClientHandler.h>
 #endif
 
-#ifndef ESB_SYSTEM_DNS_CLIENT_H
-#include <ESBSystemDnsClient.h>
-#endif
-
 #ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
 #include <ESHttpEchoClientRequestBuilder.h>
-#endif
-
-#ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
-#include <ESHttpClientHistoricalCounters.h>
 #endif
 
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
+
+namespace ES {
+class SeedTransactions : public HttpSeedTransactionHandler {
+ public:
+  SeedTransactions(ESB::Allocator &allocator, ESB::UInt32 iterations,
+                   ESB::Int32 port, const char *host, const char *absPath,
+                   const char *method, const char *contentType)
+      : _allocator(allocator),
+        _iterations(iterations),
+        _port(port),
+        _host(host),
+        _absPath(absPath),
+        _method(method),
+        _contentType(contentType) {}
+  virtual ~SeedTransactions() {}
+
+  virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
+    // Create the request context
+    HttpEchoClientContext *context =
+        new (_allocator) HttpEchoClientContext(_iterations - 1, _allocator.cleanupHandler());
+    assert(context);
+
+    transaction->setContext(context);
+
+    // Build the request
+
+    ESB::Error error = HttpEchoClientRequestBuilder(
+        _host, _port, _absPath, _method, _contentType, transaction);
+    assert(ESB_SUCCESS == error);
+    return error;
+  }
+
+ private:
+  // Disabled
+  SeedTransactions(const SeedTransactions &);
+  SeedTransactions &operator=(const SeedTransactions &);
+
+  ESB::Allocator &_allocator;
+  const ESB::UInt32 _iterations;
+  const ESB::Int32 _port;
+  const char *_host;
+  const char *_absPath;
+  const char *_method;
+  const char *_contentType;
+};
+}  // namespace ES
 
 using namespace ES;
 
@@ -302,17 +351,17 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  ESB::SystemDnsClient dnsClient;
   HttpClientHistoricalCounters counters(1000, 30,
                                         ESB::SystemAllocator::Instance());
-  HttpStack stack(&dnsClient, threads, &counters);
+  SeedTransactions seed(ESB::SystemAllocator::Instance(), iterations, port, host, absPath, method, contentType);
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
-                                connections * iterations, &stack);
+                                connections * iterations);
+  HttpClient client(threads, connections, seed, handler);
 
   // TODO - make configuration stack-specific and increase options richness
   HttpClientSocket::SetReuseConnections(reuseConnections);
 
-  error = stack.initialize();
+  error = client.initialize();
 
   if (ESB_SUCCESS != error) {
     if (body) {
@@ -323,7 +372,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  error = stack.start();
+  error = client.start();
 
   if (ESB_SUCCESS != error) {
     if (body) {
@@ -334,99 +383,11 @@ int main(int argc, char **argv) {
     return -2;
   }
 
-  ESB::DiscardAllocator echoClientContextAllocator(
-      1024, 64, ESB::SystemAllocator::Instance());
-
-  sleep(1);  // give the worker threads a chance to start - cleans up perf
-             // testing numbers a bit
-
-  // Create <connections> distinct client connections which each submit
-  // <iterations> SOAP requests
-
-  HttpEchoClientContext *context = 0;
-  HttpClientTransaction *transaction = 0;
-
-  for (int i = 0; i < connections; ++i) {
-    // Create the request context and transaction
-
-    context =
-        new (&echoClientContextAllocator) HttpEchoClientContext(iterations - 1);
-
-    if (0 == context) {
-      ESB_LOG_ERROR("[main] cannot create new client context");
-
-      if (body) {
-        free(body);
-        body = 0;
-      }
-
-      return -3;
-    }
-
-    transaction = stack.createClientTransaction(&handler);
-
-    if (0 == transaction) {
-      context->~HttpEchoClientContext();
-      echoClientContextAllocator.deallocate(context);
-
-      ESB_LOG_ERROR("[main] cannot create new client transaction");
-
-      if (body) {
-        free(body);
-        body = 0;
-      }
-
-      return -3;
-    }
-
-    transaction->setContext(context);
-
-    // Build the request
-
-    error = HttpEchoClientRequestBuilder(host, port, absPath, method,
-                                         contentType, transaction);
-
-    if (ESB_SUCCESS != error) {
-      context->~HttpEchoClientContext();
-      echoClientContextAllocator.deallocate(context);
-      stack.destroyClientTransaction(transaction);
-
-      ESB_LOG_ERROR_ERRNO(error, "[main] cannot build request");
-
-      if (body) {
-        free(body);
-        body = 0;
-      }
-
-      return -4;
-    }
-
-    // Send the request (asynch) - the context will resubmit the request for
-    // <iteration> - 1 iterations.
-
-    error = stack.executeClientTransaction(transaction);
-
-    if (ESB_SUCCESS != error) {
-      context->~HttpEchoClientContext();
-      echoClientContextAllocator.deallocate(context);
-      stack.destroyClientTransaction(transaction);
-
-      ESB_LOG_ERROR_ERRNO(error, "[main] Cannot execute client transaction");
-
-      if (body) {
-        free(body);
-        body = 0;
-      }
-
-      return error;
-    }
+  while (IsRunning && !handler.isFinished()) {
+    sleep(1);
   }
 
-  while (IsRunning && false == handler.isFinished()) {
-    sleep(5);
-  }
-
-  error = stack.stop();
+  error = client.stop();
 
   if (body) {
     free(body);
@@ -437,9 +398,8 @@ int main(int argc, char **argv) {
     return -3;
   }
 
-  stack.getClientCounters()->log(ESB::Logger::Instance(),
-                                 ESB::Logger::Severity::Notice);
-  stack.destroy();
+  client.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  client.destroy();
 
   return ESB_SUCCESS;
 }

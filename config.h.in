@@ -207,6 +207,10 @@
 #cmakedefine HAVE_ATOMIC_H @HAVE_ATOMIC_H@
 #cmakedefine HAVE_ATOMIC_T @HAVE_ATOMIC_T@
 
+#cmakedefine HAVE_SYS_STAT_H @HAVE_SYS_STAT_H@
+
+#cmakedefine HAVE_FCNTL_H @HAVE_FCNTL_H@
+
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #endif

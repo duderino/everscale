@@ -118,7 +118,6 @@ void HttpEchoClientHandler::endClientTransaction(
   HttpEchoClientContext *context =
       (HttpEchoClientContext *)transaction->context();
   assert(context);
-  ESB::Allocator &allocator = transaction->allocator();
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
@@ -149,8 +148,8 @@ void HttpEchoClientHandler::endClientTransaction(
   }
 
   if (0U == context->getRemainingIterations()) {
-    context->~HttpEchoClientContext();
-    allocator.deallocate(context);
+    ESB::CleanupHandler &cleanupHandler = context->cleanupHandler();
+    cleanupHandler.destroy(context);
     transaction->setContext(0);
     return;
   }

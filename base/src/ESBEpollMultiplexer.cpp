@@ -84,6 +84,10 @@ EpollMultiplexer::~EpollMultiplexer() {
     close(_epollDescriptor);
     _epollDescriptor = INVALID_SOCKET;
   }
+  if (_events) {
+    _allocator.deallocate(_events);
+    _events = NULL;
+  }
 }
 
 CleanupHandler *EpollMultiplexer::cleanupHandler() { return 0; }
@@ -252,7 +256,6 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket,
 
   if (socket->handleRemove(*this)) {
     CleanupHandler *cleanupHandler = socket->cleanupHandler();
-    assert(cleanupHandler);
     if (cleanupHandler) {
       cleanupHandler->destroy(socket);
     }

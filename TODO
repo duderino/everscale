@@ -1,82 +1,43 @@
-rework interface to create new client trans - make it run entirely in the multiplexer thread.
-  callback interface has to create client transaction and exec it inside multiplexer thread.
-  stack will pick the lease loaded multiplexer thread and exec it there.  need shared queue ...
-  and need event fd to break out of loop.  do locking first, then do this.
-  client multiplexers take an EventSocket similar to server multiplexers listening socket.
-  push into queue, then write to EventSocket.
-does epoll multiplexer really need internal locking
-add global connection pool to client socket factory
-why do both client socket factory and client transaction factory both need a ref to client handler?A
-
-put presentation address+port in all TCP sockets
-and use in http socket log messages (client, sever, listener)
-
-
-get buffer reference out of HTTPMessage.   Put it directly in HTTP request and response and let them pass it down to the parsers.  Or just put it in the parsers.  And make sure the parsers have initialization checks for it.
-
-swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
-
-buffer rework:
- - http client and http server sockets should each have their own iobuffer (for http/1.1 the same iobuffer can be used for both requests and responses), but should be bufferless between transactions on the socket.
- - parse buffers should be stored in the transaction and can be shared by request and response parsers since those too are not concurrently active
- - connection pool can just store inactive client sockets, assuming their footprint can be kept small.
- 
- - tldr - all buffers could live in server and client transactions!  both server and client sockets store ptrs to their active transaction.
- - sever socket factory
- - client socket factory
- - server transaction factory:  embeds buffers
- - client transaction factory:  embeds buffers
-
-Should placement new automatically set cleanup handler... put cleanup handler in ESB::Object
-
-consider creating page allocator using mmap and using this in ESHttpMultiplexerImpl
-Move state from sockets to transactions
-use nullptr.  If not define, define nullptr to 0.
-
-add noexcept to all uses of placement new
-use allocator cleanup handlers in embedded list test and more widely
-is there a way to ensure that server transactions always live longer than their associated client transactions?
-log statements that pretty print peer address
-pause/resume for http server sockets
-pause/resume for http client sockets
-pause/resome for http listening sockets (overloaded use case)
-http client socket should store HttpServerTransaction _transaction
-make http client socket reuse server socket's discard allocator, when there is a server socket
-let http client sockets resume http server sockets and vice versa
-
-discard allocators should round up to nearest page size
-
-           #include <unistd.h>
-           long sz = sysconf(_SC_PAGESIZE);
+* replace client stack seed callback with function to exec arbitrary stuff on multiplexer thread.  Use EventSocket and SharedQueue for the impl.
+* remove internal locking from EpollMultiplexer
+* add global connection pool to client socket factory.  if it doesn't degrade perf keep it
+* create an option to disable all allocators - just forward to the source allocator unless you are system.  Then see if there are memory leaks and measure perf difference.  also measure perf difference vs. tcmalloc
+* put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
+* http server and client sockets should have 2 io buffers (send and receive).  make sure they can tolerate data from the next transaction
+* parse buffers should be stored in the transaction and can be shared by request and response parsers since those too are not concurrently active
+* make http server sockets bufferless and transactionless when they are waiting for the next transaction - buffer pools
+* Should placement new automatically set cleanup handler... put cleanup handler in ESB::Object
+* consider creating page allocator using mmap and using this in ESHttpMultiplexerImpl
+* for h2, move parsing and formatting state from sockets to transactions
+* add noexcept to all uses of placement new
+* use allocator cleanup handlers in embedded list test and more widely
+* add log statements to http server+client+listener sockets that pretty print peer/listener address
+* pause/resume for http server sockets
+* pause/resume for http client sockets
+* pause/resome for http listening sockets (overloaded use case)
+* proxy handler that implements both server and client handlers and uses pause/resume appropriately.  initially copy data from server recv to client send buffers and from client recv to server send buffers.
+* route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
+* reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
 
 multiplex socket
  - SO_REUSE_PORT
- - consider not exposing isRunning to impls... they should be returning asap anyways
- - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers
+ - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers?  woudl ahve to ensure that no more than num max fds will be used in a multiplexer - don't accept new connections unless you have 2 fd free (1 fd for server connection, 1 fd for client connection)
 http stack test
- - acquire proxy test:  proxy callbacks + route API
  - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
- - make sure failover allocators are sufficiently tested or remove them
- - flakey http1 parser test
  - bind to ephemeral port in stack unit tests
- - why was std::bad_alloc thrown by http client/server test?  verify -fno-exceptions.  check leaks
  - pin threads / fe-be connection alignment
 proxy main
- - start as root, bind to ports, drop privs
+ - start as root, bind to ports/call initialize(), drop privs, call start()
  - load shedding
  - support PAUSE returns from HttpServerHandler::acceptConnection
  - readiness and liveness check support - e2e vs local options
  - plugin api
-multiplexer dispatcher
- - helpful or harmful?  better to allow unbalance and just let each multipler add whatever it accepts?
- - dispatch to multiplexer with silo affinity/be-fe connection alignment?
 allocators
  - add ctrs for discard allocator to track extra large chunk allocations
  - add counters to track stranded memory in discard allocators
  - replace all allocators with system allocator and compare with and without libtcmalloc
 containers
- - fix multimap or replace with stl
- - lockless datastructures - list.  hashmap.
+ - lockless datastructures - linked list and hash table.
 sockets
  - ipv6 support
  - tls support via boringssl
@@ -86,6 +47,7 @@ cmake
  - doxygen
  - code coverage
  - addr space randomization
+ - more *san (undefined behavior detector, etc)
 docs
  - fix license - 3 levels of derivation
 async dns client
@@ -106,7 +68,7 @@ http stuff
  - h2 support
  - perfect forward secrecy
  - sni-based cert serving
- - tls staples
+ - ocsp staples
  - support 100 Continue
  - support max requests per connection
  - support receiving half closed from client while still sending outstanding response

@@ -2,8 +2,8 @@
 #include <ESBSimpleFileLogger.h>
 #endif
 
-#ifndef ES_HTTP_STACK_H
-#include <ESHttpStack.h>
+#ifndef ES_HTTP_SERVER_H
+#include <ESHttpServer.h>
 #endif
 
 #ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
@@ -18,21 +18,23 @@
 #include <ESBSystemConfig.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_SIMPLE_COUNTERS_H
-#include <ESHttpClientSimpleCounters.h>
-#endif
-
-#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
-#include <ESHttpServerSimpleCounters.h>
-#endif
 
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
 
-#include <signal.h>
-#include <stdlib.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 using namespace ES;
 
@@ -122,19 +124,15 @@ int main(int argc, char **argv) {
   ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
 
   HttpEchoServerHandler handler;
-  ESB::SystemDnsClient dnsClient;
-  HttpClientSimpleCounters clientCounters;
-  HttpServerSimpleCounters serverCounters;
-  HttpStack stack(&handler, &dnsClient, port, threads, &clientCounters,
-                  &serverCounters);
+  HttpServer server(threads, port, handler);
 
-  error = stack.initialize();
+  error = server.initialize();
 
   if (ESB_SUCCESS != error) {
     return -1;
   }
 
-  error = stack.start();
+  error = server.start();
 
   if (ESB_SUCCESS != error) {
     return -2;
@@ -144,14 +142,14 @@ int main(int argc, char **argv) {
     sleep(1);
   }
 
-  error = stack.stop();
+  error = server.stop();
 
   if (ESB_SUCCESS != error) {
     return -3;
   }
 
-  serverCounters.log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
-  stack.destroy();
+  server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  server.destroy();
 
   return 0;
 }

@@ -3,8 +3,9 @@
 #endif
 
 namespace ES {
-HttpEchoClientContext::HttpEchoClientContext(unsigned int remainingIterations)
-    : _bytesSent(0U), _iterations(remainingIterations) {}
+HttpEchoClientContext::HttpEchoClientContext(unsigned int remainingIterations, ESB::CleanupHandler &cleanupHandler)
+    : _bytesSent(0U), _iterations(remainingIterations), _cleanupHandler(cleanupHandler) {}
 
 HttpEchoClientContext::~HttpEchoClientContext() {}
+
 }  // namespace ES

@@ -20,7 +20,11 @@ HttpServer::HttpServer(ESB::UInt32 threads, ESB::UInt16 port,
       _listeningSocket(port, ESB_UINT16_MAX, false),
       _serverCounters() {}
 
-HttpServer::~HttpServer() {}
+HttpServer::~HttpServer() {
+  if (!(_state.get() & ES_HTTP_SERVER_IS_DESTROYED)) {
+    destroy();
+  }
+}
 
 ESB::Error HttpServer::initialize() {
   assert(ES_HTTP_SERVER_IS_DESTROYED == _state.get());
@@ -113,8 +117,9 @@ void HttpServer::destroy() {
 
   for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
        it = it.next()) {
-    ESB::SocketMultiplexer *multiplexer = (ESB::SocketMultiplexer *)it.value();
-    multiplexer->destroy();
+    HttpServerMultiplexer *multiplexer = (HttpServerMultiplexer *)it.value();
+    multiplexer->~HttpServerMultiplexer();
+    _allocator.deallocate(multiplexer);
   }
 
   _multiplexers.clear();
