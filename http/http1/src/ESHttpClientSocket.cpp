@@ -428,8 +428,6 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
                  _socket.peerAddress().port());
   }
 
-  this must call the dtor on the transactoin and the transaction dtor should call the cleanup handler on any context object.  make the context object an ESB::Object instead of void *
-  
   bool reuseConnection = false;
 
   if (_state & TRANSACTION_BEGIN) {

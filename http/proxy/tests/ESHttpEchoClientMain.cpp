@@ -75,8 +75,8 @@ class SeedTransactions : public HttpSeedTransactionHandler {
 
   virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
     // Create the request context
-    HttpEchoClientContext *context =
-        new (_allocator) HttpEchoClientContext(_iterations - 1, _allocator.cleanupHandler());
+    HttpEchoClientContext *context = new (_allocator)
+        HttpEchoClientContext(_iterations - 1, _allocator.cleanupHandler());
     assert(context);
 
     transaction->setContext(context);
@@ -353,7 +353,8 @@ int main(int argc, char **argv) {
 
   HttpClientHistoricalCounters counters(1000, 30,
                                         ESB::SystemAllocator::Instance());
-  SeedTransactions seed(ESB::SystemAllocator::Instance(), iterations, port, host, absPath, method, contentType);
+  SeedTransactions seed(ESB::SystemAllocator::Instance(), iterations, port,
+                        host, absPath, method, contentType);
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
                                 connections * iterations);
   HttpClient client(threads, connections, seed, handler);

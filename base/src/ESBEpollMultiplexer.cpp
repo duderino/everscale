@@ -68,22 +68,24 @@ namespace ESB {
 #define MIN_MAX_SOCKETS 1
 #define IDLE_CHECK_SEC 30
 
-EpollMultiplexer::EpollMultiplexer(UInt32 maxSockets, Allocator &allocator)
+EpollMultiplexer::EpollMultiplexer(UInt32 maxSockets, Allocator &allocator,
+                                   Lockable &lock)
     : SocketMultiplexer(),
       _epollDescriptor(INVALID_SOCKET),
       _maxSockets(maxSockets < MIN_MAX_SOCKETS ? MIN_MAX_SOCKETS : maxSockets),
       _lastIdleCheckSec(0),
       _events(NULL),
       _allocator(allocator),
+      _lock(lock),
       _currentSocketCount(),
-      _currentSocketList(),
-      _lock() {}
+      _currentSocketList() {}
 
 EpollMultiplexer::~EpollMultiplexer() {
   if (INVALID_SOCKET != _epollDescriptor) {
     close(_epollDescriptor);
     _epollDescriptor = INVALID_SOCKET;
   }
+
   if (_events) {
     _allocator.deallocate(_events);
     _events = NULL;

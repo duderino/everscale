@@ -61,9 +61,9 @@ void TimeSeries::record(const Date &start, const Date &stop) {
       counter = (SimplePerformanceCounter *)_list.removeFirst();
       assert(counter);
       // reuse the oldest counter's memory for the new counter.
+      counter->~SimplePerformanceCounter();
       counter = new (counter)
           SimplePerformanceCounter(_name, windowStart, windowStop);
-      counter->~SimplePerformanceCounter();
     } else {
       counter = new (_allocator)
           SimplePerformanceCounter(_name, windowStart, windowStop);

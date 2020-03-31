@@ -9,10 +9,6 @@
 #include <ESBSharedCounter.h>
 #endif
 
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
 #endif
@@ -21,12 +17,8 @@
 #include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ESB_MUTEX_H
-#include <ESBMutex.h>
-#endif
-
-#ifndef ESB_SHARED_INT_H
-#include <ESBSharedCounter.h>
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
 #endif
 
 #ifdef HAVE_TIME_H
@@ -53,8 +45,9 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  explicit EpollMultiplexer(UInt32 maxSockets,
-                            Allocator &allocator = SystemAllocator::Instance());
+  EpollMultiplexer(UInt32 maxSockets,
+                   Allocator &allocator = SystemAllocator::Instance(),
+                   Lockable &lock = NullLock::Instance());
 
   /** Destructor.
    */
@@ -168,9 +161,9 @@ class EpollMultiplexer : public SocketMultiplexer {
 #endif
   ESB::SharedInt *_isRunning;
   Allocator &_allocator;
+  ESB::Lockable &_lock;
   SharedInt _currentSocketCount;
   EmbeddedList _currentSocketList;
-  Mutex _lock;
 };
 
 }  // namespace ESB

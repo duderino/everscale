@@ -18,11 +18,9 @@
 #include <ESBSystemConfig.h>
 #endif
 
-
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
-
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

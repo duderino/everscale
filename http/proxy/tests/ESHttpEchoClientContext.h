@@ -9,7 +9,8 @@ namespace ES {
 
 class HttpEchoClientContext : public ESB::Object {
  public:
-  HttpEchoClientContext(unsigned int remainingIterations, ESB::CleanupHandler &cleanupHandler);
+  HttpEchoClientContext(unsigned int remainingIterations,
+                        ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpEchoClientContext();
 
@@ -23,9 +24,7 @@ class HttpEchoClientContext : public ESB::Object {
     _iterations = iterations;
   }
 
-  inline ESB::CleanupHandler &cleanupHandler() const {
-    return _cleanupHandler;
-  }
+  inline ESB::CleanupHandler &cleanupHandler() const { return _cleanupHandler; }
 
   /** Placement new.
    *
