@@ -73,13 +73,6 @@ ESB::Error HttpServer::start() {
       return ESB_OUT_OF_MEMORY;
     }
 
-    error = multiplexer->initialize();
-
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize multiplexer");
-      return error;
-    }
-
     error = _threadPool.execute(multiplexer);
 
     if (ESB_SUCCESS != error) {

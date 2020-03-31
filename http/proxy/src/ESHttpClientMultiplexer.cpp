@@ -21,10 +21,6 @@ HttpClientMultiplexer::HttpClientMultiplexer(
 
 HttpClientMultiplexer::~HttpClientMultiplexer() {}
 
-ESB::Error HttpClientMultiplexer::initialize() {
-  return _epollMultiplexer.initialize();
-}
-
 bool HttpClientMultiplexer::run(ESB::SharedInt *isRunning) {
   // TODO replace this loop with ESB::EventSocket and ESB::SharedQueue dispatch.
   for (ESB::UInt32 i = 0; i < _connections; ++i) {
@@ -51,8 +47,6 @@ bool HttpClientMultiplexer::run(ESB::SharedInt *isRunning) {
 
   return _epollMultiplexer.run(isRunning);
 }
-
-void HttpClientMultiplexer::destroy() { _epollMultiplexer.destroy(); }
 
 const char *HttpClientMultiplexer::name() const {
   return _epollMultiplexer.name();

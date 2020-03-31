@@ -37,17 +37,6 @@ class SocketMultiplexer : public Command {
    */
   virtual ~SocketMultiplexer();
 
-  /** Initialize the multiplexer
-   *
-   * @return ESB_SUCCESS if successful, another error code otherwise
-   */
-  virtual Error initialize() = 0;
-
-  /** Destroy the multiplexer
-   *
-   */
-  virtual void destroy() = 0;
-
   /** Add a new multiplexed socket to the socket multiplexer
    *
    * @param multiplexedSocket The multiplexed socket to add

@@ -67,17 +67,6 @@ class EpollMultiplexer : public SocketMultiplexer {
    */
   virtual const char *name() const { return "multiplexer"; }
 
-  /** Initialize the multiplexer
-   *
-   * @return ESB_SUCCESS if successful, another error code otherwise
-   */
-  virtual Error initialize();
-
-  /** Destroy the multiplexer
-   *
-   */
-  virtual void destroy();
-
   /** Add a new multiplexed socket to the socket multiplexer
    *
    * @param socket The multiplexed socket
@@ -125,6 +114,17 @@ class EpollMultiplexer : public SocketMultiplexer {
   //  Disabled
   EpollMultiplexer(const EpollMultiplexer &);
   EpollMultiplexer &operator=(const EpollMultiplexer &);
+
+  /** Initialize the multiplexer
+   *
+   * @return ESB_SUCCESS if successful, another error code otherwise
+   */
+  Error initialize();
+
+  /** Destroy the multiplexer
+   *
+   */
+  void destroy();
 
   /** Keep socket in epoll and socket list, but possibly change the readiness
    *  events of interest.  This does not modify the _currentSocketCount.

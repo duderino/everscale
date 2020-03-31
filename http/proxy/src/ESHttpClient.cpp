@@ -44,21 +44,18 @@ ESB::Error HttpClient::start() {
   ESB_LOG_NOTICE("Maximum sockets %u", maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
+    ESB::UInt32 connections = _connections / _threads;
+    if (i + 1 == _threads) {
+      connections += _connections % _threads;
+    }
     ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpClientMultiplexer(_connections, _seedTransactionHandler, maxSockets,
+        HttpClientMultiplexer(connections, _seedTransactionHandler, maxSockets,
                               _clientHandler, _clientCounters, _allocator);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
                              "Cannot initialize multiplexer");
       return ESB_OUT_OF_MEMORY;
-    }
-
-    error = multiplexer->initialize();
-
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot initialize multiplexer");
-      return error;
     }
 
     error = _threadPool.execute(multiplexer);

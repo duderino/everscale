@@ -13,11 +13,7 @@ HttpServerMultiplexer::HttpServerMultiplexer(
       _listeningSocket(serverHandler, listeningSocket, _serverSocketFactory,
                        serverCounters) {}
 
-HttpServerMultiplexer::~HttpServerMultiplexer() { destroy(); }
-
-ESB::Error HttpServerMultiplexer::initialize() {
-  return _epollMultiplexer.initialize();
-}
+HttpServerMultiplexer::~HttpServerMultiplexer() {}
 
 bool HttpServerMultiplexer::run(ESB::SharedInt *isRunning) {
   ESB::Error error = addMultiplexedSocket(&_listeningSocket);
@@ -29,8 +25,6 @@ bool HttpServerMultiplexer::run(ESB::SharedInt *isRunning) {
 
   return _epollMultiplexer.run(isRunning);
 }
-
-void HttpServerMultiplexer::destroy() { _epollMultiplexer.destroy(); }
 
 const char *HttpServerMultiplexer::name() const {
   return _epollMultiplexer.name();

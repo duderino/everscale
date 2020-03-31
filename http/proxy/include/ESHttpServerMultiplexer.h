@@ -52,8 +52,6 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   virtual const char *name() const;
   virtual bool run(ESB::SharedInt *isRunning);
   virtual ESB::CleanupHandler *cleanupHandler();
-  virtual ESB::Error initialize();
-  virtual void destroy();
 
  private:
   // disabled
