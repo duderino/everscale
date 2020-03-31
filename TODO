@@ -1,62 +1,90 @@
-* replace client stack seed callback with function to exec arbitrary stuff on multiplexer thread.  Use EventSocket and SharedQueue for the impl.
-* remove internal locking from EpollMultiplexer
-* add global connection pool to client socket factory.  if it doesn't degrade perf keep it
-* create an option to disable all allocators - just forward to the source allocator unless you are system.  Then see if there are memory leaks and measure perf difference.  also measure perf difference vs. tcmalloc
-* put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
-* http server and client sockets should have 2 io buffers (send and receive).  make sure they can tolerate data from the next transaction
-* parse buffers should be stored in the transaction and can be shared by request and response parsers since those too are not concurrently active
-* make http server sockets bufferless and transactionless when they are waiting for the next transaction - buffer pools
-* Should placement new automatically set cleanup handler... put cleanup handler in ESB::Object
-* consider creating page allocator using mmap and using this in ESHttpMultiplexerImpl
-* for h2, move parsing and formatting state from sockets to transactions
-* add noexcept to all uses of placement new
-* use allocator cleanup handlers in embedded list test and more widely
-* add log statements to http server+client+listener sockets that pretty print peer/listener address
-* pause/resume for http server sockets
-* pause/resume for http client sockets
-* pause/resome for http listening sockets (overloaded use case)
-* proxy handler that implements both server and client handlers and uses pause/resume appropriately.  initially copy data from server recv to client send buffers and from client recv to server send buffers.
-* route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
-* reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
+buffer rework:
+ - io buffers belong to sockets.  try moving them to sockets and keep if performance doesn't degrade
+ - anticipating h2, move parsing and formatting state from sockets to transactions
+ - every socket needs 2 io buffers, one for send one for recv... unless it can be guaranteed that they only read data from the current transaction
+ - unless it can be guaranteed that every transaction is either parsing or formatting but never both, give transactions two parse buffers too.
+ - make http server sockets bufferless and transactionless when they are waiting for the next transaction.  if all buffers in transaction objects, use server transaction pool and perhaps a dedicated discard allocator.  Else use buffer pools.
 
+code health:
+ - add noexcept to all uses of placement new
+ - use allocator cleanup handlers in embedded list test and more widely
+ - use references instead of pointers when they shouldn't be NULL
+
+connection pool rework:
+ - create connection pool class of client sockets to client socket factory.
+ - create option of global or per-silo connection pool and set default to better performing option.
+
+client stack rework:
+ - replace client stack seed callback with function to exec arbitrary stuff on multiplexer thread.  Use EventSocket and SharedQueue for the impl.
+http logging should show peer/self addresses:
+ - put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
+ - add log statements to http server+client+listener sockets that pretty print peer/listener address
+
+proxy impl:
+ - pause/resume for http server sockets
+ - pause/resume for http client sockets
+ - proxy handler that implements both server and client handlers and uses pause/resume appropriately.  initially copy data from server recv to client send buffers and from client recv to server send buffers.
+ - route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
+ - reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
+
+router:
+ - create async router infra.  How can the async response be relayed?  callback function?
+ - server trans routing:  resolve to VIP/hostname.  Use right after HTTP request headers have been received in ESHttpServerSocket.
+ - client trans routing:  resolve to destination address.   Use in ESHttpClientSocketFactory::ExecuteClientTransaction()
+ - make VIP/hostname first class member of transaction.  only routers can set it.  a naive router could set it to the host:port from the request URI
+ - create simple DNS based async router impl.  Threadpool + synchronous DNS system resolver + local TTL and LRU-based cache.
+
+load shedding:
+ - pause/resome for http listening sockets (overloaded use case).  support PAUSE returns from HttpServerHandler::acceptConnection
 multiplex socket
  - SO_REUSE_PORT
  - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers?  woudl ahve to ensure that no more than num max fds will be used in a multiplexer - don't accept new connections unless you have 2 fd free (1 fd for server connection, 1 fd for client connection)
+
 http stack test
  - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
  - bind to ephemeral port in stack unit tests
- - pin threads / fe-be connection alignment
-proxy main
+ - pin threads / fe-be connection alignment / packet steering
+
+server:
  - start as root, bind to ports/call initialize(), drop privs, call start()
- - load shedding
- - support PAUSE returns from HttpServerHandler::acceptConnection
  - readiness and liveness check support - e2e vs local options
  - plugin api
-allocators
+
+allocators:
  - add ctrs for discard allocator to track extra large chunk allocations
  - add counters to track stranded memory in discard allocators
- - replace all allocators with system allocator and compare with and without libtcmalloc
-containers
- - lockless datastructures - linked list and hash table.
-sockets
+ - create an option to disable all allocators - just forward to the source allocator unless you are system.  Then see if there are memory leaks and measure perf difference.  also measure perf difference vs. tcmalloc
+ - Should placement new automatically set cleanup handler if object has one?  Put cleanup handler in ESB::Object?
+ - consider creating page allocator using mmap and using this for http buffers
+
+containers:
+ - lockless linked list
+ - lockless hash table which uses lockless linked lists
+
+sockets:
  - ipv6 support
  - tls support via boringssl
  - ktls sockmap and splice
-cmake
+
+cmake:
  - finish todos in config.cmake - a few adhoc test programs
  - doxygen
  - code coverage
  - addr space randomization
  - more *san (undefined behavior detector, etc)
-docs
+
+docs:
  - fix license - 3 levels of derivation
-async dns client
+
+async dns client:
  - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
  - common caching code.  intial async impl can use threadpool and gethostbyname
-tcp stuff
+
+tcp proxy stuff:
  - make sure full duplex
  - track bps
  - turn into a unit test over loopback/same proc
+
 http stuff
  - idle timeout
  - max requests per connection option (1 disables keepalives)
@@ -69,14 +97,16 @@ http stuff
  - perfect forward secrecy
  - sni-based cert serving
  - ocsp staples
- - support 100 Continue
+ - support 100 Continue - server side already supported?  client side - do after connection reuse?
  - support max requests per connection
  - support receiving half closed from client while still sending outstanding response
  - make all the unsigned chars in HttpMessage, HttpRequest, and HttpReponse chars?  UTF-8 only in encoded form?
+
 URL 
- - canonicalization / encode and decode per chromium RFC
- - username and pass
- - fully parse query string
+ - canonicalization / encode and decode per RFC.  either recursively/fully decode or don't decode multiply encoded sequences.  if decode, must handle utf-8 encoding
+ - username and pass.  explicitly drop it.
+ - fully but lazily parse query string - if requested parse into a list of key value pairs.
+
 bootstrap config
  - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
  - xds agent could just regenerate this, serializing updates and using atomic moves
@@ -84,6 +114,7 @@ bootstrap config
  - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid filling disk
 xds support
  - protobuf stubs
+
 logging
  - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
 perf counters
