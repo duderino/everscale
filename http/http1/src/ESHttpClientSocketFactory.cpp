@@ -79,7 +79,12 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _allocator(allocator),
       _map(AddressComparator),  // TODO replace with connection pool
       _cleanupHandler(*this),
-      _dnsClient() {}
+      _dnsClient(),
+      _ioBufferPoolAllocator(ESB::SystemConfig::Instance().pageSize() * 1000,
+                             ESB::SystemConfig::Instance().cacheLineSize()),
+      _ioBufferPool(ESB::SystemConfig::Instance().pageSize() -
+                    ESB_ALIGN(ESB::SystemConfig::Instance().cacheLineSize(),
+                              sizeof(ESB::Buffer))) {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
   HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
@@ -145,13 +150,14 @@ HttpClientSocket *HttpClientSocketFactory::create(
     return socket;
   }
 
-  socket = new (_allocator) HttpClientSocket(
-      _handler, *_clientStack, transaction, &_counters, &_cleanupHandler);
+  socket = new (_allocator)
+      HttpClientSocket(_handler, *_clientStack, transaction, &_counters,
+                       &_cleanupHandler, _ioBufferPool);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
-    char buffer[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-    ESB_LOG_CRITICAL("Cannot allocate new connection for '%s:%d'", buffer,
+    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
+    transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
+    ESB_LOG_CRITICAL("Cannot allocate new connection for '%s:%d'", dottedIP,
                      transaction->peerAddress().port());
   }
 

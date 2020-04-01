@@ -29,6 +29,10 @@
 #include <ESBSocketMultiplexer.h>
 #endif
 
+#ifndef ESB_BUFFER_POOL_H
+#include <ESBBufferPool.h>
+#endif
+
 namespace ES {
 
 /** A factory that creates and reuses HttpClientSockets
@@ -106,6 +110,8 @@ class HttpClientSocketFactory {
   ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
   ESB::SystemDnsClient _dnsClient;
+  ESB::DiscardAllocator _ioBufferPoolAllocator;
+  ESB::BufferPool _ioBufferPool;
 };
 
 }  // namespace ES
