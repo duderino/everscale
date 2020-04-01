@@ -217,6 +217,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
   HttpServerCounters *_counters;
   HttpServerTransaction _transaction;
   ESB::ConnectedTCPSocket _socket;
+  ESB::Buffer _buffer;
+  unsigned char _bufferStorage[ESB_PAGE_SIZE];
 };
 
 }  // namespace ES

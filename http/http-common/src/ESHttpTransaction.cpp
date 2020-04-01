@@ -26,7 +26,6 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
       _peerAddress(),
       _request(),
       _response(),
-      _ioBuffer(_ioBufferStorage, sizeof(_ioBufferStorage)),
       _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
 
 HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
@@ -40,7 +39,6 @@ HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
       _peerAddress(*peerAddress),
       _request(),
       _response(),
-      _ioBuffer(_ioBufferStorage, sizeof(_ioBufferStorage)),
       _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
 
 HttpTransaction::~HttpTransaction() {}

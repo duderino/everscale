@@ -39,10 +39,6 @@
 
 namespace ES {
 
-#ifndef ES_HTTP_IO_BUFFER_SIZE
-#define ES_HTTP_IO_BUFFER_SIZE 4096
-#endif
-
 #ifndef ES_HTTP_WORKING_BUFFER_SIZE
 #define ES_HTTP_WORKING_BUFFER_SIZE 2048
 #endif
@@ -88,10 +84,6 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   inline const void *context() const { return _appContext; }
 
-  inline ESB::Buffer *getIOBuffer() { return &_ioBuffer; }
-
-  inline const ESB::Buffer *getIOBuffer() const { return &_ioBuffer; }
-
   inline ESB::Buffer *getWorkingBuffer() { return &_workingBuffer; }
 
   inline const ESB::Buffer *getWorkingBuffer() const { return &_workingBuffer; }
@@ -121,9 +113,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
   ESB::SocketAddress _peerAddress;
   HttpRequest _request;
   HttpResponse _response;
-  ESB::Buffer _ioBuffer;
   ESB::Buffer _workingBuffer;
-  unsigned char _ioBufferStorage[ES_HTTP_IO_BUFFER_SIZE];
   unsigned char _workingBufferStorage[ES_HTTP_WORKING_BUFFER_SIZE];
 };
 

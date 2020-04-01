@@ -54,7 +54,8 @@ HttpServerSocket::HttpServerSocket(HttpServerHandler *handler,
       _handler(handler),
       _counters(counters),
       _transaction(),
-      _socket() {}
+      _socket(),
+      _buffer(_bufferStorage, sizeof(_bufferStorage)) {}
 
 HttpServerSocket::~HttpServerSocket() {}
 
@@ -145,17 +146,17 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
   ESB::Error error = ESB_SUCCESS;
 
   while (multiplexer.isRunning()) {
-    if (!_transaction.getIOBuffer()->isWritable()) {
+    if (!_buffer.isWritable()) {
       ESB_LOG_DEBUG("socket:%d compacting input buffer",
                     _socket.socketDescriptor());
-      if (!_transaction.getIOBuffer()->compact()) {
+      if (!_buffer.compact()) {
         ESB_LOG_INFO("socket:%d parser jammed", _socket.socketDescriptor());
         return sendBadRequestResponse(multiplexer);
       }
     }
 
-    assert(_transaction.getIOBuffer()->isWritable());
-    result = _socket.receive(_transaction.getIOBuffer());
+    assert(_buffer.isWritable());
+    result = _socket.receive(&_buffer);
 
     if (!multiplexer.isRunning()) {
       break;
@@ -559,13 +560,13 @@ const char *HttpServerSocket::name() const { return "HttpServerSocket"; }
 
 ESB::Error HttpServerSocket::parseRequestHeaders(
     ESB::SocketMultiplexer &multiplexer) {
-  ESB::Error error = _transaction.getParser()->parseHeaders(
-      _transaction.getIOBuffer(), _transaction.request());
+  ESB::Error error =
+      _transaction.getParser()->parseHeaders(&_buffer, _transaction.request());
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d need more header data from stream",
                   _socket.socketDescriptor());
-    if (!_transaction.getIOBuffer()->compact()) {
+    if (!_buffer.compact()) {
       ESB_LOG_INFO("socket:%d cannot parse headers: parser jammed",
                    _socket.socketDescriptor());
       return ESB_OVERFLOW;  // remove from multiplexer
@@ -641,15 +642,15 @@ ESB::Error HttpServerSocket::parseRequestBody(
 
   while (multiplexer.isRunning()) {
     ESB::Error error = _transaction.getParser()->parseBody(
-        _transaction.getIOBuffer(), &startingPosition, &chunkSize);
+        &_buffer, &startingPosition, &chunkSize);
 
     if (ESB_AGAIN == error) {
       ESB_LOG_DEBUG("socket:%d need more body data from stream",
                     _socket.socketDescriptor());
-      if (!_transaction.getIOBuffer()->isWritable()) {
+      if (!_buffer.isWritable()) {
         ESB_LOG_DEBUG("socket:%d compacting input buffer",
                       _socket.socketDescriptor());
-        if (!_transaction.getIOBuffer()->compact()) {
+        if (!_buffer.compact()) {
           ESB_LOG_INFO("socket:%d cannot parse body: parser jammed",
                        _socket.socketDescriptor());
           return ESB_OVERFLOW;  // remove from multiplexer
@@ -686,7 +687,7 @@ ESB::Error HttpServerSocket::parseRequestBody(
 
     if (ESB_DEBUG_LOGGABLE) {
       char buffer[4096];
-      memcpy(buffer, _transaction.getIOBuffer()->buffer() + startingPosition,
+      memcpy(buffer, _buffer.buffer() + startingPosition,
              chunkSize > (int)sizeof(buffer) ? sizeof(buffer) : chunkSize);
       buffer[chunkSize > (int)sizeof(buffer) ? sizeof(buffer) : chunkSize] = 0;
       ESB_LOG_DEBUG("socket:%d read chunk: %s", _socket.socketDescriptor(),
@@ -694,8 +695,8 @@ ESB::Error HttpServerSocket::parseRequestBody(
     }
 
     HttpServerHandler::Result result = _handler->receiveRequestBody(
-        multiplexer, &_transaction,
-        _transaction.getIOBuffer()->buffer() + startingPosition, chunkSize);
+        multiplexer, &_transaction, _buffer.buffer() + startingPosition,
+        chunkSize);
 
     switch (result) {
       case HttpServerHandler::ES_HTTP_SERVER_HANDLER_CLOSE:
@@ -726,8 +727,7 @@ ESB::Error HttpServerSocket::parseRequestBody(
 ESB::Error HttpServerSocket::skipTrailer(ESB::SocketMultiplexer &multiplexer) {
   assert(_state & SKIPPING_TRAILER);
 
-  ESB::Error error =
-      _transaction.getParser()->skipTrailer(_transaction.getIOBuffer());
+  ESB::Error error = _transaction.getParser()->skipTrailer(&_buffer);
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d need more data from stream to skip trailer",
@@ -748,7 +748,7 @@ ESB::Error HttpServerSocket::skipTrailer(ESB::SocketMultiplexer &multiplexer) {
 ESB::Error HttpServerSocket::formatResponseHeaders(
     ESB::SocketMultiplexer &multiplexer) {
   ESB::Error error = _transaction.getFormatter()->formatHeaders(
-      _transaction.getIOBuffer(), _transaction.response());
+      &_buffer, _transaction.response());
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d partially formatted response headers",
@@ -797,8 +797,8 @@ ESB::Error HttpServerSocket::formatResponseBody(
       break;  // format last chunk
     }
 
-    error = _transaction.getFormatter()->beginBlock(
-        _transaction.getIOBuffer(), requestedSize, &availableSize);
+    error = _transaction.getFormatter()->beginBlock(&_buffer, requestedSize,
+                                                    &availableSize);
 
     if (ESB_AGAIN == error) {
       ESB_LOG_DEBUG("socket:%d partially formatted response body",
@@ -819,18 +819,16 @@ ESB::Error HttpServerSocket::formatResponseBody(
     // write the body data
 
     _handler->fillResponseChunk(multiplexer, &_transaction,
-                                _transaction.getIOBuffer()->buffer() +
-                                    _transaction.getIOBuffer()->writePosition(),
+                                _buffer.buffer() + _buffer.writePosition(),
                                 availableSize);
-    _transaction.getIOBuffer()->setWritePosition(
-        _transaction.getIOBuffer()->writePosition() + availableSize);
+    _buffer.setWritePosition(_buffer.writePosition() + availableSize);
     _bodyBytesWritten += availableSize;
 
     ESB_LOG_DEBUG("socket:%d formatted chunk of size %d",
                   _socket.socketDescriptor(), availableSize);
 
     // beginBlock reserves space for this operation
-    error = _transaction.getFormatter()->endBlock(_transaction.getIOBuffer());
+    error = _transaction.getFormatter()->endBlock(&_buffer);
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "socket:%d cannot format end block",
@@ -849,7 +847,7 @@ ESB::Error HttpServerSocket::formatResponseBody(
 
   // format last chunk
 
-  error = _transaction.getFormatter()->endBody(_transaction.getIOBuffer());
+  error = _transaction.getFormatter()->endBody(&_buffer);
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("socket:%d insufficient space in socket buffer to end body",
@@ -874,13 +872,13 @@ ESB::Error HttpServerSocket::formatResponseBody(
 ESB::Error HttpServerSocket::flushBuffer(ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_DEBUG("socket:%d flushing output buffer", _socket.socketDescriptor());
 
-  if (!_transaction.getIOBuffer()->isReadable()) {
+  if (!_buffer.isReadable()) {
     ESB_LOG_INFO("socket:%d formatter jammed", _socket.socketDescriptor());
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
-  while (multiplexer.isRunning() && _transaction.getIOBuffer()->isReadable()) {
-    ESB::SSize bytesSent = _socket.send(_transaction.getIOBuffer());
+  while (multiplexer.isRunning() && _buffer.isReadable()) {
+    ESB::SSize bytesSent = _socket.send(&_buffer);
 
     if (0 > bytesSent) {
       if (ESB_AGAIN == bytesSent) {
@@ -898,7 +896,7 @@ ESB::Error HttpServerSocket::flushBuffer(ESB::SocketMultiplexer &multiplexer) {
                   _socket.socketDescriptor(), bytesSent);
   }
 
-  return _transaction.getIOBuffer()->isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;
+  return _buffer.isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;
 }
 
 bool HttpServerSocket::sendResponse(ESB::SocketMultiplexer &multiplexer) {

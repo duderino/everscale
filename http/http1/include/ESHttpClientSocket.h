@@ -237,6 +237,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
   HttpClientCounters *_counters;
   ESB::CleanupHandler *_cleanupHandler;
   ESB::ConnectedTCPSocket _socket;
+  ESB::Buffer _buffer;
+  unsigned char _bufferStorage[ESB_PAGE_SIZE];
   static bool _ReuseConnections;
 };
 
