@@ -65,8 +65,8 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
       _socket(transaction->peerAddress(), false) {}
 
 HttpClientSocket::~HttpClientSocket() {
-  if (_buffer && _buffer->cleanupHandler()) {
-    _buffer->cleanupHandler()->destroy(_buffer);
+  if (_buffer) {
+    _bufferPool.releaseBuffer(_buffer);
     _buffer = NULL;
   }
 }

@@ -2,6 +2,10 @@
 #include <ESHttpServerSocketFactory.h>
 #endif
 
+#ifndef ESB_SYSTEM_CONFIG_H
+#include <ESBSystemConfig.h>
+#endif
+
 namespace ES {
 
 HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
@@ -11,7 +15,11 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
       _counters(counters),
       _allocator(allocator),
       _sockets(),
-      _cleanupHandler(*this) {}
+      _cleanupHandler(*this),
+      _ioBufferPoolAllocator(ESB::SystemConfig::Instance().pageSize() * 1000,
+                             ESB::SystemConfig::Instance().cacheLineSize()),
+      _ioBufferPool(ESB::SystemConfig::Instance().pageSize() -
+                    ESB_BUFFER_OVERHEAD) {}
 
 HttpServerSocketFactory::~HttpServerSocketFactory() {
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
@@ -27,8 +35,8 @@ HttpServerSocket *HttpServerSocketFactory::create(
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   if (!socket) {
-    socket = new (_allocator)
-        HttpServerSocket(&_handler, &_cleanupHandler, &_counters);
+    socket = new (_allocator) HttpServerSocket(&_handler, &_cleanupHandler,
+                                               &_counters, _ioBufferPool);
     if (!socket) {
       return NULL;
     }

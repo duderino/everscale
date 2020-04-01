@@ -2,30 +2,6 @@
 #include <ESHttpClientSocketFactory.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESB_FIXED_ALLOCATOR_H
-#include <ESBFixedAllocator.h>
-#endif
-
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESB_NULL_LOCK_H
-#include <ESBNullLock.h>
-#endif
-
-#ifndef ESB_WRITE_SCOPE_LOCK_H
-#include <ESBWriteScopeLock.h>
-#endif
-
 #ifndef ESB_SYSTEM_CONFIG_H
 #include <ESBSystemConfig.h>
 #endif
@@ -83,8 +59,7 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _ioBufferPoolAllocator(ESB::SystemConfig::Instance().pageSize() * 1000,
                              ESB::SystemConfig::Instance().cacheLineSize()),
       _ioBufferPool(ESB::SystemConfig::Instance().pageSize() -
-                    ESB_ALIGN(ESB::SystemConfig::Instance().cacheLineSize(),
-                              sizeof(ESB::Buffer))) {}
+                    ESB_BUFFER_OVERHEAD) {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
   HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();

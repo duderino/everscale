@@ -17,6 +17,10 @@
 #include <ESHttpServerHandler.h>
 #endif
 
+#ifndef ESB_BUFFER_POOL_H
+#include <ESBBufferPool.h>
+#endif
+
 namespace ES {
 
 /** A factory that creates and reuses HttpServerSockets
@@ -77,6 +81,8 @@ class HttpServerSocketFactory {
   ESB::Allocator &_allocator;
   ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
+  ESB::DiscardAllocator _ioBufferPoolAllocator;
+  ESB::BufferPool _ioBufferPool;
 };
 
 }  // namespace ES

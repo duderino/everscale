@@ -17,6 +17,10 @@
 #include <ESHttpServerCounters.h>
 #endif
 
+#ifndef ESB_BUFFER_POOL_H
+#include <ESBBufferPool.h>
+#endif
+
 namespace ES {
 
 /** A socket that receives and echoes back HTTP requests
@@ -31,7 +35,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
    */
   HttpServerSocket(HttpServerHandler *handler,
                    ESB::CleanupHandler *cleanupHandler,
-                   HttpServerCounters *counters);
+                   HttpServerCounters *counters, ESB::BufferPool &bufferPool);
 
   /** Destructor.
    */
@@ -215,10 +219,10 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
   ESB::CleanupHandler *_cleanupHandler;
   HttpServerHandler *_handler;
   HttpServerCounters *_counters;
+  ESB::BufferPool &_bufferPool;
+  ESB::Buffer *_buffer;
   HttpServerTransaction _transaction;
   ESB::ConnectedTCPSocket _socket;
-  ESB::Buffer _buffer;
-  unsigned char _bufferStorage[ESB_PAGE_SIZE];
 };
 
 }  // namespace ES
