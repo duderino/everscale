@@ -1,6 +1,8 @@
 jblatt@ubuntu-dev:~/src/duderino/everscale$ ./http/proxy/http-client-server-test -c 500 -i 5000 -r 1
 
-# resuls vs 03-31-20.txt also show a mild improvement from increasing the io buffer size from 4k to 32k.  increasing buffer size from 32k to 64k didn't yield further improvements
+# resuls vs 03-30-20.txt had a mild degredation from moving buffers to sockets and allocating from buffer pools,
+# but the degredation was offset by increasing io buffer size from 4k to 32k.  Increasing beyond 32k didn't yield
+# an improvement, but that could simply reflect the traffic pattern.
 
 CLIENT TRANS SUCCESS: QPS=9578.00, N=9578, LATENCY MSEC MEAN=4.88, VAR=112.14, MIN=0.58, MAX=88.72
 CLIENT TRANS SUCCESS: QPS=167497.00, N=167497, LATENCY MSEC MEAN=2.98, VAR=1.24, MIN=0.37, MAX=13.82
@@ -24,7 +26,7 @@ SERVER AVG TRANS PER CONNECTION: N=503, MEAN=4970.18, VAR=219572.59, MIN=4517.00
 
 jblatt@ubuntu-dev:~/src/duderino/everscale$ ./http/proxy/http-client-server-test -c 500 -i 5000 -r 0
 
-# resuls vs 03-31-20.txt also show similar improvements.
+# resuls vs 03-30-20.txt is similar to the connection reuse experiment.
 
 CLIENT TRANS SUCCESS: QPS=47959.00, N=47959, LATENCY MSEC MEAN=10.45, VAR=3.68, MIN=3.78, MAX=19.62
 CLIENT TRANS SUCCESS: QPS=47423.00, N=47423, LATENCY MSEC MEAN=10.53, VAR=2.44, MIN=4.21, MAX=18.02
