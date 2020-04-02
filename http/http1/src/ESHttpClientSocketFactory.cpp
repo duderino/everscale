@@ -6,6 +6,10 @@
 #include <ESBSystemConfig.h>
 #endif
 
+#ifndef ES_HTTP_CONFIG_H
+#include <ESHttpConfig.h>
+#endif
+
 namespace ES {
 
 class AddressComparator : public ESB::Comparator {
@@ -56,9 +60,9 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _map(AddressComparator),  // TODO replace with connection pool
       _cleanupHandler(*this),
       _dnsClient(),
-      _ioBufferPoolAllocator(ESB::SystemConfig::Instance().pageSize() * 1000,
+      _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
                              ESB::SystemConfig::Instance().cacheLineSize()),
-      _ioBufferPool(ESB::SystemConfig::Instance().pageSize() -
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize() -
                     ESB_BUFFER_OVERHEAD) {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {

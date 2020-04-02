@@ -1,0 +1,2656 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="902" onload="init(evt)" viewBox="0 0 1200 902" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+	}
+
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom();
+			zoom(target);
+		}
+		else if (e.target.id == "unzoom") unzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+	}, false)
+
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+		return;
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		// Fit in full text width
+		if (/^ *$/.test(txt) || t.getSubStringLength(0, txt.length) < w)
+			return;
+
+		for (var x = txt.length - 2; x > 0; x--) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom() {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			update_text(el[i]);
+		}
+		search();
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) {
+				currentSearchTerm = term;
+				search();
+			}
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (currentSearchTerm === null) return;
+		var term = currentSearchTerm;
+
+		var re = new RegExp(term, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="902.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Flame Graph</text>
+<text id="details" x="10.00" y="885" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="885" > </text>
+<g id="frames">
+<g >
+<title>ES::HttpUtil::IsMatch (10 samples, 0.15%)</title><rect x="927.0" y="693" width="1.8" height="15.0" fill="rgb(247,102,44)" rx="2" ry="2" />
+<text  x="930.01" y="703.5" ></text>
+</g>
+<g >
+<title>epoll_ctl (601 samples, 9.02%)</title><rect x="1082.1" y="757" width="106.5" height="15.0" fill="rgb(239,112,18)" rx="2" ry="2" />
+<text  x="1085.15" y="767.5" >epoll_ctl</text>
+</g>
+<g >
+<title>ES::HttpClientSocket::wantConnect (1 samples, 0.02%)</title><rect x="881.3" y="757" width="0.2" height="15.0" fill="rgb(218,223,22)" rx="2" ry="2" />
+<text  x="884.32" y="767.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::destroy (1 samples, 0.02%)</title><rect x="985.3" y="757" width="0.2" height="15.0" fill="rgb(220,158,30)" rx="2" ry="2" />
+<text  x="988.28" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.7" y="757" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.73" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,136 samples, 17.05%)</title><rect x="579.0" y="389" width="201.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="582.01" y="399.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpClientTransactionFactory::create (1 samples, 0.02%)</title><rect x="1056.6" y="709" width="0.2" height="15.0" fill="rgb(254,68,53)" rx="2" ry="2" />
+<text  x="1059.65" y="719.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock (6 samples, 0.09%)</title><rect x="1067.6" y="693" width="1.1" height="15.0" fill="rgb(224,97,9)" rx="2" ry="2" />
+<text  x="1070.63" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessage::findHeader (1 samples, 0.02%)</title><rect x="1000.5" y="693" width="0.2" height="15.0" fill="rgb(239,205,26)" rx="2" ry="2" />
+<text  x="1003.51" y="703.5" ></text>
+</g>
+<g >
+<title>vfprintf (7 samples, 0.11%)</title><rect x="14.1" y="789" width="1.2" height="15.0" fill="rgb(217,173,32)" rx="2" ry="2" />
+<text  x="17.07" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseVersion (2 samples, 0.03%)</title><rect x="826.4" y="709" width="0.4" height="15.0" fill="rgb(236,139,46)" rx="2" ry="2" />
+<text  x="829.42" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="945.6" y="693" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="948.61" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (3 samples, 0.05%)</title><rect x="844.5" y="741" width="0.5" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="847.48" y="751.5" ></text>
+</g>
+<g >
+<title>__strchrnul_avx2 (2 samples, 0.03%)</title><rect x="104.2" y="789" width="0.4" height="15.0" fill="rgb(230,93,44)" rx="2" ry="2" />
+<text  x="107.22" y="799.5" ></text>
+</g>
+<g >
+<title>[[vdso]] (6 samples, 0.09%)</title><rect x="1002.5" y="661" width="1.0" height="15.0" fill="rgb(225,147,28)" rx="2" ry="2" />
+<text  x="1005.45" y="671.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (3 samples, 0.05%)</title><rect x="929.3" y="693" width="0.5" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="932.31" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,201 samples, 18.02%)</title><rect x="567.5" y="421" width="212.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="570.50" y="431.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpClientSocket::flushBuffer (21 samples, 0.32%)</title><rect x="847.7" y="741" width="3.7" height="15.0" fill="rgb(241,158,22)" rx="2" ry="2" />
+<text  x="850.67" y="751.5" ></text>
+</g>
+<g >
+<title>_itoa_word (10 samples, 0.15%)</title><rect x="108.1" y="789" width="1.8" height="15.0" fill="rgb(206,217,31)" rx="2" ry="2" />
+<text  x="111.11" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="1068.9" y="677" width="0.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.87" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (4 samples, 0.06%)</title><rect x="18.1" y="757" width="0.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.15" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="533" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="543.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,293 samples, 19.41%)</title><rect x="551.2" y="453" width="229.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="554.21" y="463.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::SocketAddress::operator= (3 samples, 0.05%)</title><rect x="1080.2" y="757" width="0.5" height="15.0" fill="rgb(243,229,53)" rx="2" ry="2" />
+<text  x="1083.20" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerTransaction::reset (1 samples, 0.02%)</title><rect x="982.8" y="757" width="0.2" height="15.0" fill="rgb(251,105,45)" rx="2" ry="2" />
+<text  x="985.80" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseVersion (2 samples, 0.03%)</title><rect x="924.2" y="693" width="0.3" height="15.0" fill="rgb(236,139,46)" rx="2" ry="2" />
+<text  x="927.18" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseFormatter::reset (1 samples, 0.02%)</title><rect x="883.6" y="757" width="0.2" height="15.0" fill="rgb(239,33,8)" rx="2" ry="2" />
+<text  x="886.62" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="969.5" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="972.51" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="118.9" y="773" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="121.91" y="783.5" ></text>
+</g>
+<g >
+<title>ESB::Map::find (13 samples, 0.20%)</title><rect x="15.5" y="805" width="2.3" height="15.0" fill="rgb(251,70,6)" rx="2" ry="2" />
+<text  x="18.49" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="19.0" y="757" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="22.03" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (39 samples, 0.59%)</title><rect x="773.3" y="149" width="6.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="776.29" y="159.5" ></text>
+</g>
+<g >
+<title>ESB::Date::Now (6 samples, 0.09%)</title><rect x="1002.5" y="693" width="1.0" height="15.0" fill="rgb(221,175,43)" rx="2" ry="2" />
+<text  x="1005.45" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponse::reset (1 samples, 0.02%)</title><rect x="991.3" y="693" width="0.2" height="15.0" fill="rgb(223,195,3)" rx="2" ry="2" />
+<text  x="994.30" y="703.5" ></text>
+</g>
+<g >
+<title>__xstat64 (449 samples, 6.74%)</title><rect x="22.6" y="789" width="79.5" height="15.0" fill="rgb(250,76,3)" rx="2" ry="2" />
+<text  x="25.57" y="799.5" >__xstat64</text>
+</g>
+<g >
+<title>__pthread_mutex_lock (6 samples, 0.09%)</title><rect x="1069.2" y="709" width="1.1" height="15.0" fill="rgb(216,165,51)" rx="2" ry="2" />
+<text  x="1072.22" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (471 samples, 7.07%)</title><rect x="246.6" y="709" width="83.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="249.60" y="719.5" >[[kernel...</text>
+</g>
+<g >
+<title>ESB::SocketAddress::operator= (2 samples, 0.03%)</title><rect x="993.4" y="693" width="0.4" height="15.0" fill="rgb(243,229,53)" rx="2" ry="2" />
+<text  x="996.42" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestUri::reset (1 samples, 0.02%)</title><rect x="991.1" y="693" width="0.2" height="15.0" fill="rgb(207,122,2)" rx="2" ry="2" />
+<text  x="994.12" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.0" y="85" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.02" y="95.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (3 samples, 0.05%)</title><rect x="780.2" y="789" width="0.5" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.20" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="945.6" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="948.61" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="120.3" y="725" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.33" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatHeaders (105 samples, 1.58%)</title><rect x="856.0" y="725" width="18.6" height="15.0" fill="rgb(216,152,24)" rx="2" ry="2" />
+<text  x="858.99" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,431 samples, 21.48%)</title><rect x="526.8" y="533" width="253.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="529.77" y="543.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::ConnectedTCPSocket::send (1 samples, 0.02%)</title><rect x="848.9" y="725" width="0.2" height="15.0" fill="rgb(218,181,14)" rx="2" ry="2" />
+<text  x="851.91" y="735.5" ></text>
+</g>
+<g >
+<title>[[vdso]] (4 samples, 0.06%)</title><rect x="1065.5" y="693" width="0.7" height="15.0" fill="rgb(225,147,28)" rx="2" ry="2" />
+<text  x="1068.50" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::beginServerTransaction (37 samples, 0.56%)</title><rect x="886.3" y="741" width="6.5" height="15.0" fill="rgb(233,224,6)" rx="2" ry="2" />
+<text  x="889.28" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::updateMultiplexedSocket (10 samples, 0.15%)</title><rect x="1075.9" y="757" width="1.8" height="15.0" fill="rgb(206,58,44)" rx="2" ry="2" />
+<text  x="1078.95" y="767.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (8 samples, 0.12%)</title><rect x="909.1" y="693" width="1.4" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="912.12" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::reset (3 samples, 0.05%)</title><rect x="992.4" y="677" width="0.5" height="15.0" fill="rgb(235,212,17)" rx="2" ry="2" />
+<text  x="995.36" y="687.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (1 samples, 0.02%)</title><rect x="949.3" y="741" width="0.2" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="952.32" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (53 samples, 0.80%)</title><rect x="770.8" y="165" width="9.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="773.81" y="175.5" ></text>
+</g>
+<g >
+<title>_IO_vsnprintf (8 samples, 0.12%)</title><rect x="13.9" y="805" width="1.4" height="15.0" fill="rgb(253,9,38)" rx="2" ry="2" />
+<text  x="16.90" y="815.5" ></text>
+</g>
+<g >
+<title>__strchrnul_avx2 (9 samples, 0.14%)</title><rect x="106.5" y="789" width="1.6" height="15.0" fill="rgb(230,93,44)" rx="2" ry="2" />
+<text  x="109.52" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (133 samples, 2.00%)</title><rect x="78.5" y="629" width="23.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="81.54" y="639.5" >[..</text>
+</g>
+<g >
+<title>__strcasecmp_avx (7 samples, 0.11%)</title><rect x="937.8" y="725" width="1.3" height="15.0" fill="rgb(226,101,37)" rx="2" ry="2" />
+<text  x="940.81" y="735.5" ></text>
+</g>
+<g >
+<title>_IO_default_xsputn (11 samples, 0.17%)</title><rect x="175.6" y="821" width="1.9" height="15.0" fill="rgb(208,216,11)" rx="2" ry="2" />
+<text  x="178.59" y="831.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (769 samples, 11.54%)</title><rect x="644.0" y="229" width="136.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="647.01" y="239.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="693" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocketFactory::release (8 samples, 0.12%)</title><rect x="1073.6" y="741" width="1.5" height="15.0" fill="rgb(215,71,53)" rx="2" ry="2" />
+<text  x="1076.65" y="751.5" ></text>
+</g>
+<g >
+<title>_itoa_word (1 samples, 0.02%)</title><rect x="13.9" y="789" width="0.2" height="15.0" fill="rgb(206,217,31)" rx="2" ry="2" />
+<text  x="16.90" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerContext::~HttpEchoServerContext (3 samples, 0.05%)</title><rect x="953.0" y="741" width="0.6" height="15.0" fill="rgb(207,211,30)" rx="2" ry="2" />
+<text  x="956.04" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::reset (1 samples, 0.02%)</title><rect x="990.9" y="693" width="0.2" height="15.0" fill="rgb(251,221,50)" rx="2" ry="2" />
+<text  x="993.94" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::reset (3 samples, 0.05%)</title><rect x="975.4" y="709" width="0.5" height="15.0" fill="rgb(235,212,17)" rx="2" ry="2" />
+<text  x="978.36" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (187 samples, 2.81%)</title><rect x="1022.5" y="661" width="33.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1025.47" y="671.5" >[[..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (4 samples, 0.06%)</title><rect x="101.4" y="581" width="0.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="104.38" y="591.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseVersion (1 samples, 0.02%)</title><rect x="920.3" y="709" width="0.2" height="15.0" fill="rgb(236,139,46)" rx="2" ry="2" />
+<text  x="923.28" y="719.5" ></text>
+</g>
+<g >
+<title>_IO_vsprintf (1 samples, 0.02%)</title><rect x="177.5" y="821" width="0.2" height="15.0" fill="rgb(243,155,27)" rx="2" ry="2" />
+<text  x="180.53" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::FormatInteger (21 samples, 0.32%)</title><rect x="10.0" y="821" width="3.7" height="15.0" fill="rgb(252,154,8)" rx="2" ry="2" />
+<text  x="13.00" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseVersion (2 samples, 0.03%)</title><rect x="827.5" y="693" width="0.3" height="15.0" fill="rgb(236,139,46)" rx="2" ry="2" />
+<text  x="830.48" y="703.5" ></text>
+</g>
+<g >
+<title>__pthread_enable_asynccancel (3 samples, 0.05%)</title><rect x="957.6" y="725" width="0.6" height="15.0" fill="rgb(223,189,20)" rx="2" ry="2" />
+<text  x="960.65" y="735.5" ></text>
+</g>
+<g >
+<title>__GI___inet_aton (1 samples, 0.02%)</title><rect x="179.3" y="821" width="0.2" height="15.0" fill="rgb(210,197,54)" rx="2" ry="2" />
+<text  x="182.31" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipLWS (3 samples, 0.05%)</title><rect x="835.3" y="709" width="0.5" height="15.0" fill="rgb(209,167,9)" rx="2" ry="2" />
+<text  x="838.27" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseFieldValue (16 samples, 0.24%)</title><rect x="823.6" y="709" width="2.8" height="15.0" fill="rgb(223,174,40)" rx="2" ry="2" />
+<text  x="826.59" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (6 samples, 0.09%)</title><rect x="918.0" y="677" width="1.0" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="920.98" y="687.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoClientRequestBuilder (32 samples, 0.48%)</title><rect x="1056.8" y="709" width="5.7" height="15.0" fill="rgb(231,5,19)" rx="2" ry="2" />
+<text  x="1059.82" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::addLast (2 samples, 0.03%)</title><rect x="1063.7" y="709" width="0.4" height="15.0" fill="rgb(235,106,15)" rx="2" ry="2" />
+<text  x="1066.73" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessage::addHeader (7 samples, 0.11%)</title><rect x="978.5" y="741" width="1.3" height="15.0" fill="rgb(250,91,23)" rx="2" ry="2" />
+<text  x="981.55" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::LastError (1 samples, 0.02%)</title><rect x="1077.7" y="757" width="0.2" height="15.0" fill="rgb(213,54,29)" rx="2" ry="2" />
+<text  x="1080.72" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,644 samples, 24.67%)</title><rect x="489.0" y="613" width="291.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="492.05" y="623.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (392 samples, 5.88%)</title><rect x="1119.2" y="725" width="69.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1122.16" y="735.5" >[[kerne..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (254 samples, 3.81%)</title><rect x="130.2" y="757" width="45.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="133.25" y="767.5" >[[ke..</text>
+</g>
+<g >
+<title>ESB::Buffer::compact (2 samples, 0.03%)</title><rect x="956.9" y="709" width="0.4" height="15.0" fill="rgb(224,160,51)" rx="2" ry="2" />
+<text  x="959.94" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::postParse (6 samples, 0.09%)</title><rect x="936.0" y="725" width="1.1" height="15.0" fill="rgb(242,110,2)" rx="2" ry="2" />
+<text  x="939.04" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,111 samples, 31.68%)</title><rect x="406.3" y="677" width="373.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="409.34" y="687.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpRequest::parsePeerAddress (9 samples, 0.14%)</title><rect x="1000.7" y="693" width="1.6" height="15.0" fill="rgb(215,228,42)" rx="2" ry="2" />
+<text  x="1003.68" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="118.9" y="725" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="121.91" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::socketDescriptor (2 samples, 0.03%)</title><rect x="981.9" y="757" width="0.4" height="15.0" fill="rgb(251,21,25)" rx="2" ry="2" />
+<text  x="984.91" y="767.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::isRunning (5 samples, 0.08%)</title><rect x="985.5" y="757" width="0.8" height="15.0" fill="rgb(211,194,13)" rx="2" ry="2" />
+<text  x="988.45" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::handleReadable (1 samples, 0.02%)</title><rect x="789.4" y="773" width="0.2" height="15.0" fill="rgb(226,215,38)" rx="2" ry="2" />
+<text  x="792.41" y="783.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (13 samples, 0.20%)</title><rect x="1053.3" y="533" width="2.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1056.28" y="543.5" ></text>
+</g>
+<g >
+<title>ES::HttpMultiplexer::addMultiplexedSocket (1 samples, 0.02%)</title><rect x="1063.6" y="709" width="0.1" height="15.0" fill="rgb(253,97,22)" rx="2" ry="2" />
+<text  x="1066.55" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.7" y="805" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.73" y="815.5" ></text>
+</g>
+<g >
+<title>_IO_default_xsputn (7 samples, 0.11%)</title><rect x="105.3" y="789" width="1.2" height="15.0" fill="rgb(208,216,11)" rx="2" ry="2" />
+<text  x="108.28" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::receiveRequestHeaders (5 samples, 0.08%)</title><rect x="882.7" y="757" width="0.9" height="15.0" fill="rgb(253,72,1)" rx="2" ry="2" />
+<text  x="885.74" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="517" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="527.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::removeMultiplexedSocket (1 samples, 0.02%)</title><rect x="985.3" y="741" width="0.2" height="15.0" fill="rgb(213,116,48)" rx="2" ry="2" />
+<text  x="988.28" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (1 samples, 0.02%)</title><rect x="819.2" y="725" width="0.1" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="822.16" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1069.0" y="597" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1072.04" y="607.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (2 samples, 0.03%)</title><rect x="980.0" y="741" width="0.3" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="982.96" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::parseResponseHeaders (120 samples, 1.80%)</title><rect x="819.3" y="741" width="21.3" height="15.0" fill="rgb(222,64,36)" rx="2" ry="2" />
+<text  x="822.34" y="751.5" >E..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (140 samples, 2.10%)</title><rect x="1163.8" y="677" width="24.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1166.79" y="687.5" >[..</text>
+</g>
+<g >
+<title>ES::HttpMessageParser::reset (3 samples, 0.05%)</title><rect x="974.1" y="725" width="0.5" height="15.0" fill="rgb(251,221,50)" rx="2" ry="2" />
+<text  x="977.12" y="735.5" ></text>
+</g>
+<g >
+<title>__lll_unlock_wake (2 samples, 0.03%)</title><rect x="1068.9" y="709" width="0.3" height="15.0" fill="rgb(234,210,1)" rx="2" ry="2" />
+<text  x="1071.87" y="719.5" ></text>
+</g>
+<g >
+<title>_IO_old_init (4 samples, 0.06%)</title><rect x="103.0" y="805" width="0.7" height="15.0" fill="rgb(235,169,10)" rx="2" ry="2" />
+<text  x="105.98" y="815.5" ></text>
+</g>
+<g >
+<title>__lll_lock_wait_private (6 samples, 0.09%)</title><rect x="17.8" y="789" width="1.1" height="15.0" fill="rgb(252,171,28)" rx="2" ry="2" />
+<text  x="20.79" y="799.5" ></text>
+</g>
+<g >
+<title>inet_ntop (5 samples, 0.08%)</title><rect x="1072.8" y="725" width="0.8" height="15.0" fill="rgb(233,85,15)" rx="2" ry="2" />
+<text  x="1075.76" y="735.5" ></text>
+</g>
+<g >
+<title>http-client-ser (6,663 samples, 100.00%)</title><rect x="10.0" y="837" width="1180.0" height="15.0" fill="rgb(229,132,20)" rx="2" ry="2" />
+<text  x="13.00" y="847.5" >http-client-ser</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="948.4" y="709" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="951.44" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,269 samples, 34.05%)</title><rect x="378.4" y="741" width="401.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="381.36" y="751.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpServerSocket::socketDescriptor (16 samples, 0.24%)</title><rect x="791.5" y="773" width="2.9" height="15.0" fill="rgb(251,21,25)" rx="2" ry="2" />
+<text  x="794.53" y="783.5" ></text>
+</g>
+<g >
+<title>epoll_ctl@plt (1 samples, 0.02%)</title><rect x="1188.6" y="757" width="0.2" height="15.0" fill="rgb(238,181,52)" rx="2" ry="2" />
+<text  x="1191.58" y="767.5" ></text>
+</g>
+<g >
+<title>ESB::SocketAddress::operator= (4 samples, 0.06%)</title><rect x="976.4" y="725" width="0.7" height="15.0" fill="rgb(243,229,53)" rx="2" ry="2" />
+<text  x="979.42" y="735.5" ></text>
+</g>
+<g >
+<title>epoll_wait (290 samples, 4.35%)</title><rect x="123.9" y="805" width="51.3" height="15.0" fill="rgb(242,33,10)" rx="2" ry="2" />
+<text  x="126.87" y="815.5" >epoll..</text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (2 samples, 0.03%)</title><rect x="822.5" y="693" width="0.4" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="825.52" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (336 samples, 5.04%)</title><rect x="42.6" y="741" width="59.5" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="45.59" y="751.5" >[[kern..</text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (2 samples, 0.03%)</title><rect x="822.9" y="693" width="0.3" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="825.88" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipSpaces (1 samples, 0.02%)</title><rect x="834.9" y="693" width="0.2" height="15.0" fill="rgb(225,222,45)" rx="2" ry="2" />
+<text  x="837.92" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::SystemDnsClient::resolve (3 samples, 0.05%)</title><rect x="1007.1" y="693" width="0.5" height="15.0" fill="rgb(210,174,44)" rx="2" ry="2" />
+<text  x="1010.06" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::run (2,227 samples, 33.42%)</title><rect x="794.4" y="773" width="394.4" height="15.0" fill="rgb(208,185,13)" rx="2" ry="2" />
+<text  x="797.36" y="783.5" >ESB::EpollMultiplexer::run</text>
+</g>
+<g >
+<title>ESB::TimeSeries::record (23 samples, 0.35%)</title><rect x="1066.7" y="725" width="4.1" height="15.0" fill="rgb(252,148,50)" rx="2" ry="2" />
+<text  x="1069.74" y="735.5" ></text>
+</g>
+<g >
+<title>__resolv_context_put (1 samples, 0.02%)</title><rect x="786.6" y="821" width="0.1" height="15.0" fill="rgb(254,48,2)" rx="2" ry="2" />
+<text  x="789.57" y="831.5" ></text>
+</g>
+<g >
+<title>vfprintf (1 samples, 0.02%)</title><rect x="175.4" y="805" width="0.2" height="15.0" fill="rgb(217,173,32)" rx="2" ry="2" />
+<text  x="178.41" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1068.7" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.69" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (92 samples, 1.38%)</title><rect x="313.7" y="629" width="16.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="316.72" y="639.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_l_avx (10 samples, 0.15%)</title><rect x="837.8" y="725" width="1.7" height="15.0" fill="rgb(247,111,9)" rx="2" ry="2" />
+<text  x="840.75" y="735.5" ></text>
+</g>
+<g >
+<title>__resolv_conf_get_current (5 samples, 0.08%)</title><rect x="20.8" y="789" width="0.9" height="15.0" fill="rgb(254,190,45)" rx="2" ry="2" />
+<text  x="23.80" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (527 samples, 7.91%)</title><rect x="236.7" y="773" width="93.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="239.68" y="783.5" >[[kernel.ka..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (295 samples, 4.43%)</title><rect x="1136.3" y="709" width="52.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1139.34" y="719.5" >[[ker..</text>
+</g>
+<g >
+<title>ES::HttpClientSocket::socketDescriptor (1 samples, 0.02%)</title><rect x="881.1" y="757" width="0.2" height="15.0" fill="rgb(211,66,12)" rx="2" ry="2" />
+<text  x="884.14" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseParser::reset (1 samples, 0.02%)</title><rect x="991.5" y="693" width="0.2" height="15.0" fill="rgb(238,104,1)" rx="2" ry="2" />
+<text  x="994.47" y="703.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_l_avx (5 samples, 0.08%)</title><rect x="972.2" y="725" width="0.9" height="15.0" fill="rgb(247,111,9)" rx="2" ry="2" />
+<text  x="975.17" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (868 samples, 13.03%)</title><rect x="626.5" y="245" width="153.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="629.48" y="255.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.0" y="53" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.02" y="63.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::receiveRequestBody (2 samples, 0.03%)</title><rect x="892.8" y="741" width="0.4" height="15.0" fill="rgb(230,66,13)" rx="2" ry="2" />
+<text  x="895.83" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (4 samples, 0.06%)</title><rect x="120.5" y="693" width="0.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.51" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::FormatInteger (4 samples, 0.06%)</title><rect x="959.4" y="725" width="0.7" height="15.0" fill="rgb(252,154,8)" rx="2" ry="2" />
+<text  x="962.42" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.6" y="757" width="0.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.55" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoClientHandler::receiveResponseHeaders (1 samples, 0.02%)</title><rect x="840.6" y="741" width="0.2" height="15.0" fill="rgb(207,61,9)" rx="2" ry="2" />
+<text  x="843.59" y="751.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_l_avx (38 samples, 0.57%)</title><rect x="939.1" y="725" width="6.7" height="15.0" fill="rgb(247,111,9)" rx="2" ry="2" />
+<text  x="942.05" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::isRunning (3 samples, 0.05%)</title><rect x="844.0" y="741" width="0.5" height="15.0" fill="rgb(211,194,13)" rx="2" ry="2" />
+<text  x="846.95" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::ThreadPoolWorker::run (2,262 samples, 33.95%)</title><rect x="789.4" y="789" width="400.6" height="15.0" fill="rgb(220,41,25)" rx="2" ry="2" />
+<text  x="792.41" y="799.5" >ESB::ThreadPoolWorker::run</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (520 samples, 7.80%)</title><rect x="237.9" y="757" width="92.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="240.92" y="767.5" >[[kernel.ka..</text>
+</g>
+<g >
+<title>ESB::ConnectedTCPSocket::isConnected (1 samples, 0.02%)</title><rect x="1002.3" y="693" width="0.2" height="15.0" fill="rgb(252,52,42)" rx="2" ry="2" />
+<text  x="1005.28" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::isRunning (2 samples, 0.03%)</title><rect x="880.4" y="741" width="0.4" height="15.0" fill="rgb(211,194,13)" rx="2" ry="2" />
+<text  x="883.43" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestUriFormatter::formatQuery (1 samples, 0.02%)</title><rect x="874.1" y="677" width="0.1" height="15.0" fill="rgb(229,172,26)" rx="2" ry="2" />
+<text  x="877.06" y="687.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (7 samples, 0.11%)</title><rect x="907.9" y="693" width="1.2" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="910.88" y="703.5" ></text>
+</g>
+<g >
+<title>__close (1 samples, 0.02%)</title><rect x="985.3" y="693" width="0.2" height="15.0" fill="rgb(214,41,5)" rx="2" ry="2" />
+<text  x="988.28" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::reset (1 samples, 0.02%)</title><rect x="992.9" y="693" width="0.2" height="15.0" fill="rgb(235,212,17)" rx="2" ry="2" />
+<text  x="995.89" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="120.3" y="741" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.33" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.6" y="709" width="0.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.55" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::addLast (4 samples, 0.06%)</title><rect x="835.8" y="709" width="0.7" height="15.0" fill="rgb(235,106,15)" rx="2" ry="2" />
+<text  x="838.81" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (296 samples, 4.44%)</title><rect x="277.6" y="677" width="52.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="280.59" y="687.5" >[[ker..</text>
+</g>
+<g >
+<title>ES::HttpServerSocket::skipTrailer (6 samples, 0.09%)</title><rect x="947.6" y="741" width="1.0" height="15.0" fill="rgb(245,95,3)" rx="2" ry="2" />
+<text  x="950.55" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::reset (2 samples, 0.03%)</title><rect x="955.0" y="741" width="0.3" height="15.0" fill="rgb(234,114,15)" rx="2" ry="2" />
+<text  x="957.99" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (311 samples, 4.67%)</title><rect x="47.0" y="677" width="55.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="50.01" y="687.5" >[[ker..</text>
+</g>
+<g >
+<title>ES::HttpMessage::addHeader (11 samples, 0.17%)</title><rect x="1057.7" y="693" width="2.0" height="15.0" fill="rgb(250,91,23)" rx="2" ry="2" />
+<text  x="1060.71" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::formatResponseBody (25 samples, 0.38%)</title><rect x="958.2" y="741" width="4.4" height="15.0" fill="rgb(230,13,12)" rx="2" ry="2" />
+<text  x="961.18" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (135 samples, 2.03%)</title><rect x="1031.7" y="629" width="23.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1034.67" y="639.5" >[..</text>
+</g>
+<g >
+<title>__resolv_conf_put (4 samples, 0.06%)</title><rect x="785.7" y="821" width="0.7" height="15.0" fill="rgb(251,107,30)" rx="2" ry="2" />
+<text  x="788.69" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipSpaces (1 samples, 0.02%)</title><rect x="898.7" y="725" width="0.2" height="15.0" fill="rgb(225,222,45)" rx="2" ry="2" />
+<text  x="901.67" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::updateMultiplexedSocket (2 samples, 0.03%)</title><rect x="1188.8" y="773" width="0.3" height="15.0" fill="rgb(206,58,44)" rx="2" ry="2" />
+<text  x="1191.76" y="783.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (2 samples, 0.03%)</title><rect x="926.7" y="661" width="0.3" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="929.66" y="671.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="1068.9" y="629" width="0.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.87" y="639.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (1 samples, 0.02%)</title><rect x="822.7" y="677" width="0.2" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="825.70" y="687.5" ></text>
+</g>
+<g >
+<title>__resolv_conf_get (9 samples, 0.14%)</title><rect x="19.2" y="789" width="1.6" height="15.0" fill="rgb(243,5,45)" rx="2" ry="2" />
+<text  x="22.21" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (47 samples, 0.71%)</title><rect x="166.9" y="645" width="8.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="169.91" y="655.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (4 samples, 0.06%)</title><rect x="120.5" y="677" width="0.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.51" y="687.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::endServerTransaction (1 samples, 0.02%)</title><rect x="882.6" y="757" width="0.1" height="15.0" fill="rgb(222,55,2)" rx="2" ry="2" />
+<text  x="885.56" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (158 samples, 2.37%)</title><rect x="302.0" y="645" width="28.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="305.03" y="655.5" >[..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="948.4" y="693" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="951.44" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (3 samples, 0.05%)</title><rect x="834.0" y="677" width="0.6" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="837.03" y="687.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::compact (1 samples, 0.02%)</title><rect x="956.4" y="725" width="0.2" height="15.0" fill="rgb(224,160,51)" rx="2" ry="2" />
+<text  x="959.41" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (9 samples, 0.14%)</title><rect x="1058.1" y="677" width="1.6" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="1061.06" y="687.5" ></text>
+</g>
+<g >
+<title>__resolv_context_get (1 samples, 0.02%)</title><rect x="786.4" y="821" width="0.2" height="15.0" fill="rgb(237,33,6)" rx="2" ry="2" />
+<text  x="789.40" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::handleWritable (1 samples, 0.02%)</title><rect x="789.6" y="773" width="0.2" height="15.0" fill="rgb(252,23,47)" rx="2" ry="2" />
+<text  x="792.58" y="783.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (4 samples, 0.06%)</title><rect x="1006.2" y="693" width="0.7" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="1009.17" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,362 samples, 35.45%)</title><rect x="361.9" y="805" width="418.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="364.89" y="815.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>start_thread (2,262 samples, 33.95%)</title><rect x="789.4" y="821" width="400.6" height="15.0" fill="rgb(249,143,9)" rx="2" ry="2" />
+<text  x="792.41" y="831.5" >start_thread</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (253 samples, 3.80%)</title><rect x="130.4" y="725" width="44.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="133.43" y="735.5" >[[ke..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1068.7" y="693" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.69" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (182 samples, 2.73%)</title><rect x="143.0" y="677" width="32.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="146.00" y="687.5" >[[..</text>
+</g>
+<g >
+<title>epoll_ctl (256 samples, 3.84%)</title><rect x="1010.2" y="693" width="45.4" height="15.0" fill="rgb(239,112,18)" rx="2" ry="2" />
+<text  x="1013.25" y="703.5" >epol..</text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (6 samples, 0.09%)</title><rect x="908.1" y="677" width="1.0" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="911.06" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,359 samples, 20.40%)</title><rect x="539.5" y="501" width="240.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="542.52" y="511.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipLine (3 samples, 0.05%)</title><rect x="947.9" y="725" width="0.5" height="15.0" fill="rgb(211,202,31)" rx="2" ry="2" />
+<text  x="950.91" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientTransactionFactory::CleanupHandler::destroy (18 samples, 0.27%)</title><rect x="990.8" y="725" width="3.2" height="15.0" fill="rgb(233,190,45)" rx="2" ry="2" />
+<text  x="993.77" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::ConnectedTCPSocket::receive (12 samples, 0.18%)</title><rect x="841.8" y="741" width="2.2" height="15.0" fill="rgb(223,55,18)" rx="2" ry="2" />
+<text  x="844.83" y="751.5" ></text>
+</g>
+<g >
+<title>__lll_unlock_wake_private (2 samples, 0.03%)</title><rect x="18.9" y="789" width="0.3" height="15.0" fill="rgb(213,221,3)" rx="2" ry="2" />
+<text  x="21.85" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::endBlock (1 samples, 0.02%)</title><rect x="879.7" y="741" width="0.2" height="15.0" fill="rgb(242,183,35)" rx="2" ry="2" />
+<text  x="882.73" y="751.5" ></text>
+</g>
+<g >
+<title>__lll_lock_wait_private (3 samples, 0.05%)</title><rect x="780.2" y="821" width="0.5" height="15.0" fill="rgb(252,171,28)" rx="2" ry="2" />
+<text  x="783.20" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseParser::parseStartLine (47 samples, 0.71%)</title><rect x="826.8" y="709" width="8.3" height="15.0" fill="rgb(231,186,23)" rx="2" ry="2" />
+<text  x="829.77" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (100 samples, 1.50%)</title><rect x="1037.9" y="613" width="17.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1040.87" y="623.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestFormatter::formatStartLine (9 samples, 0.14%)</title><rect x="872.6" y="709" width="1.6" height="15.0" fill="rgb(205,140,48)" rx="2" ry="2" />
+<text  x="875.64" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="118.9" y="741" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="121.91" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="19.0" y="741" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="22.03" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientTransaction::reset (2 samples, 0.03%)</title><rect x="990.4" y="725" width="0.4" height="15.0" fill="rgb(211,170,42)" rx="2" ry="2" />
+<text  x="993.41" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipLWS (14 samples, 0.21%)</title><rect x="932.5" y="709" width="2.5" height="15.0" fill="rgb(209,167,9)" rx="2" ry="2" />
+<text  x="935.50" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::postParse (3 samples, 0.05%)</title><rect x="836.5" y="725" width="0.5" height="15.0" fill="rgb(242,110,2)" rx="2" ry="2" />
+<text  x="839.51" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1055.4" y="501" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1058.41" y="511.5" ></text>
+</g>
+<g >
+<title>__resolv_context_get (6 samples, 0.09%)</title><rect x="1008.7" y="693" width="1.0" height="15.0" fill="rgb(237,33,6)" rx="2" ry="2" />
+<text  x="1011.65" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseFieldName (43 samples, 0.65%)</title><rect x="903.6" y="709" width="7.6" height="15.0" fill="rgb(214,152,5)" rx="2" ry="2" />
+<text  x="906.63" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (27 samples, 0.41%)</title><rect x="1050.8" y="565" width="4.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1053.80" y="575.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::addLast (1 samples, 0.02%)</title><rect x="979.8" y="741" width="0.2" height="15.0" fill="rgb(235,106,15)" rx="2" ry="2" />
+<text  x="982.79" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (3 samples, 0.05%)</title><rect x="1189.1" y="773" width="0.5" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="1192.11" y="783.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="118.9" y="757" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="121.91" y="767.5" ></text>
+</g>
+<g >
+<title>ESB::Map::find (1 samples, 0.02%)</title><rect x="13.7" y="821" width="0.2" height="15.0" fill="rgb(251,70,6)" rx="2" ry="2" />
+<text  x="16.72" y="831.5" ></text>
+</g>
+<g >
+<title>__pthread_enable_asynccancel (4 samples, 0.06%)</title><rect x="850.7" y="725" width="0.7" height="15.0" fill="rgb(223,189,20)" rx="2" ry="2" />
+<text  x="853.68" y="735.5" ></text>
+</g>
+<g >
+<title>__pthread_enable_asynccancel (9 samples, 0.14%)</title><rect x="950.2" y="741" width="1.6" height="15.0" fill="rgb(223,189,20)" rx="2" ry="2" />
+<text  x="953.21" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseParser::parseStartLine (1 samples, 0.02%)</title><rect x="837.0" y="725" width="0.2" height="15.0" fill="rgb(231,186,23)" rx="2" ry="2" />
+<text  x="840.04" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,322 samples, 19.84%)</title><rect x="546.1" y="469" width="234.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="549.07" y="479.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::receiveRequestHeaders (2 samples, 0.03%)</title><rect x="893.2" y="741" width="0.3" height="15.0" fill="rgb(253,72,1)" rx="2" ry="2" />
+<text  x="896.18" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1069.0" y="581" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1072.04" y="591.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,236 samples, 18.55%)</title><rect x="561.3" y="437" width="218.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="564.30" y="447.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="919.2" y="661" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="922.22" y="671.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="687.5" ></text>
+</g>
+<g >
+<title>__strlen_avx2 (1 samples, 0.02%)</title><rect x="1065.1" y="709" width="0.2" height="15.0" fill="rgb(231,161,37)" rx="2" ry="2" />
+<text  x="1068.15" y="719.5" ></text>
+</g>
+<g >
+<title>__lll_lock_wait (1 samples, 0.02%)</title><rect x="1068.7" y="709" width="0.2" height="15.0" fill="rgb(219,93,38)" rx="2" ry="2" />
+<text  x="1071.69" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::sendResponse (19 samples, 0.29%)</title><rect x="978.5" y="757" width="3.4" height="15.0" fill="rgb(252,99,35)" rx="2" ry="2" />
+<text  x="981.55" y="767.5" ></text>
+</g>
+<g >
+<title>__strncmp_sse42 (3 samples, 0.05%)</title><rect x="973.1" y="725" width="0.5" height="15.0" fill="rgb(220,228,3)" rx="2" ry="2" />
+<text  x="976.06" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::isRunning (2 samples, 0.03%)</title><rect x="977.3" y="741" width="0.4" height="15.0" fill="rgb(211,194,13)" rx="2" ry="2" />
+<text  x="980.31" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::endServerTransaction (2 samples, 0.03%)</title><rect x="953.6" y="741" width="0.3" height="15.0" fill="rgb(222,55,2)" rx="2" ry="2" />
+<text  x="956.57" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (376 samples, 5.64%)</title><rect x="35.5" y="757" width="66.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="38.50" y="767.5" >[[kerne..</text>
+</g>
+<g >
+<title>ES::HttpRequestParser::parseStartLine (60 samples, 0.90%)</title><rect x="920.5" y="709" width="10.6" height="15.0" fill="rgb(241,16,17)" rx="2" ry="2" />
+<text  x="923.46" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseFieldName (12 samples, 0.18%)</title><rect x="821.5" y="709" width="2.1" height="15.0" fill="rgb(214,152,5)" rx="2" ry="2" />
+<text  x="824.46" y="719.5" ></text>
+</g>
+<g >
+<title>__GI_____strtoull_l_internal (9 samples, 0.14%)</title><rect x="177.7" y="821" width="1.6" height="15.0" fill="rgb(207,121,31)" rx="2" ry="2" />
+<text  x="180.71" y="831.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (3 samples, 0.05%)</title><rect x="18.3" y="741" width="0.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.32" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoClientHandler::endClientTransaction (1 samples, 0.02%)</title><rect x="1075.2" y="741" width="0.2" height="15.0" fill="rgb(218,134,7)" rx="2" ry="2" />
+<text  x="1078.24" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="175.1" y="629" width="0.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="178.05" y="639.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,581 samples, 23.73%)</title><rect x="500.2" y="597" width="280.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="503.21" y="607.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[vdso]] (1 samples, 0.02%)</title><rect x="1007.6" y="693" width="0.2" height="15.0" fill="rgb(225,147,28)" rx="2" ry="2" />
+<text  x="1010.59" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::wantRead (2 samples, 0.03%)</title><rect x="790.8" y="773" width="0.4" height="15.0" fill="rgb(206,208,47)" rx="2" ry="2" />
+<text  x="793.82" y="783.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="118.9" y="789" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="121.91" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (3 samples, 0.05%)</title><rect x="780.2" y="805" width="0.5" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.20" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (194 samples, 2.91%)</title><rect x="67.7" y="645" width="34.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="70.73" y="655.5" >[[..</text>
+</g>
+<g >
+<title>__strlen_avx2 (2 samples, 0.03%)</title><rect x="16.4" y="773" width="0.3" height="15.0" fill="rgb(231,161,37)" rx="2" ry="2" />
+<text  x="19.38" y="783.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::addMultiplexedSocket (7 samples, 0.11%)</title><rect x="1004.9" y="693" width="1.3" height="15.0" fill="rgb(230,118,15)" rx="2" ry="2" />
+<text  x="1007.93" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::Map::find (7 samples, 0.11%)</title><rect x="1073.8" y="725" width="1.3" height="15.0" fill="rgb(251,70,6)" rx="2" ry="2" />
+<text  x="1076.82" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (621 samples, 9.32%)</title><rect x="220.0" y="805" width="110.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="223.04" y="815.5" >[[kernel.kall..</text>
+</g>
+<g >
+<title>ES::HttpClientSocketFactory::create (11 samples, 0.17%)</title><rect x="998.6" y="693" width="1.9" height="15.0" fill="rgb(234,202,42)" rx="2" ry="2" />
+<text  x="1001.56" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedListElement::EmbeddedListElement (2 samples, 0.03%)</title><rect x="823.2" y="693" width="0.4" height="15.0" fill="rgb(239,6,24)" rx="2" ry="2" />
+<text  x="826.23" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::wantWrite (1 samples, 0.02%)</title><rect x="982.6" y="757" width="0.2" height="15.0" fill="rgb(226,202,23)" rx="2" ry="2" />
+<text  x="985.62" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::handleWritable (1 samples, 0.02%)</title><rect x="791.4" y="773" width="0.1" height="15.0" fill="rgb(233,107,47)" rx="2" ry="2" />
+<text  x="794.35" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseHeaders (2 samples, 0.03%)</title><rect x="893.9" y="741" width="0.3" height="15.0" fill="rgb(241,106,19)" rx="2" ry="2" />
+<text  x="896.89" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::receiveRequestBody (2 samples, 0.03%)</title><rect x="895.7" y="725" width="0.3" height="15.0" fill="rgb(230,66,13)" rx="2" ry="2" />
+<text  x="898.66" y="735.5" ></text>
+</g>
+<g >
+<title>vfprintf (5 samples, 0.08%)</title><rect x="16.9" y="773" width="0.9" height="15.0" fill="rgb(217,173,32)" rx="2" ry="2" />
+<text  x="19.91" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::handleReadable (192 samples, 2.88%)</title><rect x="813.0" y="757" width="34.0" height="15.0" fill="rgb(226,215,38)" rx="2" ry="2" />
+<text  x="815.96" y="767.5" >ES..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (392 samples, 5.88%)</title><rect x="1119.2" y="741" width="69.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1122.16" y="751.5" >[[kerne..</text>
+</g>
+<g >
+<title>[unknown] (904 samples, 13.57%)</title><rect x="15.5" y="821" width="160.1" height="15.0" fill="rgb(254,180,27)" rx="2" ry="2" />
+<text  x="18.49" y="831.5" >[unknown]</text>
+</g>
+<g >
+<title>__strcasecmp_l_avx (2 samples, 0.03%)</title><rect x="1071.3" y="725" width="0.4" height="15.0" fill="rgb(247,111,9)" rx="2" ry="2" />
+<text  x="1074.34" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (202 samples, 3.03%)</title><rect x="294.2" y="661" width="35.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="297.24" y="671.5" >[[k..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,075 samples, 16.13%)</title><rect x="589.8" y="309" width="190.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="592.82" y="319.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.7" y="789" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.73" y="799.5" ></text>
+</g>
+<g >
+<title>__libc_recv (2 samples, 0.03%)</title><rect x="845.5" y="741" width="0.4" height="15.0" fill="rgb(218,73,21)" rx="2" ry="2" />
+<text  x="848.55" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="501" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="511.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseFieldValue (51 samples, 0.77%)</title><rect x="911.2" y="709" width="9.1" height="15.0" fill="rgb(223,174,40)" rx="2" ry="2" />
+<text  x="914.25" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (222 samples, 3.33%)</title><rect x="135.9" y="693" width="39.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="138.92" y="703.5" >[[k..</text>
+</g>
+<g >
+<title>[[vdso]] (8 samples, 0.12%)</title><rect x="1080.7" y="757" width="1.4" height="15.0" fill="rgb(225,147,28)" rx="2" ry="2" />
+<text  x="1083.73" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,033 samples, 15.50%)</title><rect x="597.3" y="277" width="182.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="600.25" y="287.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::Date::operator-= (2 samples, 0.03%)</title><rect x="1066.9" y="709" width="0.4" height="15.0" fill="rgb(233,126,1)" rx="2" ry="2" />
+<text  x="1069.92" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="120.3" y="709" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.33" y="719.5" ></text>
+</g>
+<g >
+<title>__strncmp_sse42 (1 samples, 0.02%)</title><rect x="876.5" y="725" width="0.2" height="15.0" fill="rgb(220,228,3)" rx="2" ry="2" />
+<text  x="879.54" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseHeaders (94 samples, 1.41%)</title><rect x="819.9" y="725" width="16.6" height="15.0" fill="rgb(241,106,19)" rx="2" ry="2" />
+<text  x="822.87" y="735.5" ></text>
+</g>
+<g >
+<title>__resolv_context_get (4 samples, 0.06%)</title><rect x="21.9" y="789" width="0.7" height="15.0" fill="rgb(237,33,6)" rx="2" ry="2" />
+<text  x="24.87" y="799.5" ></text>
+</g>
+<g >
+<title>_IO_vsnprintf (11 samples, 0.17%)</title><rect x="15.8" y="789" width="2.0" height="15.0" fill="rgb(253,9,38)" rx="2" ry="2" />
+<text  x="18.84" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipLine (4 samples, 0.06%)</title><rect x="818.3" y="725" width="0.7" height="15.0" fill="rgb(211,202,31)" rx="2" ry="2" />
+<text  x="821.27" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::addLast (5 samples, 0.08%)</title><rect x="1003.5" y="693" width="0.9" height="15.0" fill="rgb(235,106,15)" rx="2" ry="2" />
+<text  x="1006.52" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (3 samples, 0.05%)</title><rect x="926.5" y="677" width="0.5" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="929.48" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (95 samples, 1.43%)</title><rect x="85.3" y="613" width="16.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="88.27" y="623.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatFieldValue (1 samples, 0.02%)</title><rect x="963.5" y="725" width="0.2" height="15.0" fill="rgb(206,143,51)" rx="2" ry="2" />
+<text  x="966.49" y="735.5" ></text>
+</g>
+<g >
+<title>_IO_vsnprintf (3 samples, 0.05%)</title><rect x="1059.8" y="693" width="0.6" height="15.0" fill="rgb(253,9,38)" rx="2" ry="2" />
+<text  x="1062.83" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::SimplePerformanceCounter::record (1 samples, 0.02%)</title><rect x="1066.4" y="725" width="0.2" height="15.0" fill="rgb(206,19,39)" rx="2" ry="2" />
+<text  x="1069.39" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (6 samples, 0.09%)</title><rect x="918.0" y="693" width="1.0" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="920.98" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::TimeSeries::record (1 samples, 0.02%)</title><rect x="1075.8" y="741" width="0.1" height="15.0" fill="rgb(252,148,50)" rx="2" ry="2" />
+<text  x="1078.77" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="565" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="575.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (589 samples, 8.84%)</title><rect x="675.9" y="197" width="104.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="678.89" y="207.5" >[[kernel.kal..</text>
+</g>
+<g >
+<title>__libc_send (2 samples, 0.03%)</title><rect x="957.3" y="725" width="0.3" height="15.0" fill="rgb(246,6,27)" rx="2" ry="2" />
+<text  x="960.29" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,129 samples, 16.94%)</title><rect x="580.3" y="373" width="199.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="583.25" y="383.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (2 samples, 0.03%)</title><rect x="977.7" y="741" width="0.3" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="980.66" y="751.5" ></text>
+</g>
+<g >
+<title>_IO_vsprintf (2 samples, 0.03%)</title><rect x="1070.8" y="725" width="0.4" height="15.0" fill="rgb(243,155,27)" rx="2" ry="2" />
+<text  x="1073.81" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseFormatter::formatStartLine (2 samples, 0.03%)</title><rect x="969.7" y="709" width="0.3" height="15.0" fill="rgb(212,183,35)" rx="2" ry="2" />
+<text  x="972.69" y="719.5" ></text>
+</g>
+<g >
+<title>__GI___inet_aton (8 samples, 0.12%)</title><rect x="116.8" y="805" width="1.4" height="15.0" fill="rgb(210,197,54)" rx="2" ry="2" />
+<text  x="119.79" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.0" y="37" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.02" y="47.5" ></text>
+</g>
+<g >
+<title>__strcpy_sse2_unaligned (1 samples, 0.02%)</title><rect x="786.7" y="821" width="0.2" height="15.0" fill="rgb(232,116,13)" rx="2" ry="2" />
+<text  x="789.75" y="831.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="645" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="655.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::formatRequestHeaders (120 samples, 1.80%)</title><rect x="855.5" y="741" width="21.2" height="15.0" fill="rgb(218,2,23)" rx="2" ry="2" />
+<text  x="858.46" y="751.5" >E..</text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::reserveResponseChunk (2 samples, 0.03%)</title><rect x="953.9" y="741" width="0.4" height="15.0" fill="rgb(213,183,21)" rx="2" ry="2" />
+<text  x="956.93" y="751.5" ></text>
+</g>
+<g >
+<title>[unknown] (476 samples, 7.14%)</title><rect x="17.8" y="805" width="84.3" height="15.0" fill="rgb(254,180,27)" rx="2" ry="2" />
+<text  x="20.79" y="815.5" >[unknown]</text>
+</g>
+<g >
+<title>ES::HttpUtil::FormatInteger (8 samples, 0.12%)</title><rect x="851.9" y="725" width="1.4" height="15.0" fill="rgb(252,154,8)" rx="2" ry="2" />
+<text  x="854.92" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::endBody (1 samples, 0.02%)</title><rect x="954.5" y="741" width="0.1" height="15.0" fill="rgb(232,210,10)" rx="2" ry="2" />
+<text  x="957.46" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.0" y="101" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.02" y="111.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (12 samples, 0.18%)</title><rect x="853.3" y="725" width="2.2" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="856.34" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::SocketAddress::SocketAddress (2 samples, 0.03%)</title><rect x="976.1" y="725" width="0.3" height="15.0" fill="rgb(253,38,18)" rx="2" ry="2" />
+<text  x="979.07" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,027 samples, 30.42%)</title><rect x="421.2" y="661" width="359.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="424.22" y="671.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpTransaction::reset (7 samples, 0.11%)</title><rect x="991.7" y="693" width="1.2" height="15.0" fill="rgb(232,35,0)" rx="2" ry="2" />
+<text  x="994.65" y="703.5" ></text>
+</g>
+<g >
+<title>[libc-2.27.so] (1 samples, 0.02%)</title><rect x="15.3" y="821" width="0.2" height="15.0" fill="rgb(221,52,28)" rx="2" ry="2" />
+<text  x="18.31" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseChunkedBody (11 samples, 0.17%)</title><rect x="896.0" y="725" width="2.0" height="15.0" fill="rgb(231,136,3)" rx="2" ry="2" />
+<text  x="899.02" y="735.5" ></text>
+</g>
+<g >
+<title>__strlen_avx2 (9 samples, 0.14%)</title><rect x="980.3" y="741" width="1.6" height="15.0" fill="rgb(231,161,37)" rx="2" ry="2" />
+<text  x="983.32" y="751.5" ></text>
+</g>
+<g >
+<title>__resolv_conf_put (1 samples, 0.02%)</title><rect x="21.7" y="789" width="0.2" height="15.0" fill="rgb(251,107,30)" rx="2" ry="2" />
+<text  x="24.69" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (79 samples, 1.19%)</title><rect x="1041.6" y="597" width="14.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1044.59" y="607.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="469" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="479.5" ></text>
+</g>
+<g >
+<title>__GI_____strtoull_l_internal (3 samples, 0.05%)</title><rect x="116.3" y="805" width="0.5" height="15.0" fill="rgb(207,121,31)" rx="2" ry="2" />
+<text  x="119.26" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,156 samples, 17.35%)</title><rect x="575.5" y="405" width="204.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="578.47" y="415.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="120.3" y="789" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.33" y="799.5" ></text>
+</g>
+<g >
+<title>__strchrnul_avx2 (3 samples, 0.05%)</title><rect x="15.8" y="773" width="0.6" height="15.0" fill="rgb(230,93,44)" rx="2" ry="2" />
+<text  x="18.84" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatHeaders (2 samples, 0.03%)</title><rect x="954.6" y="741" width="0.4" height="15.0" fill="rgb(216,152,24)" rx="2" ry="2" />
+<text  x="957.64" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (621 samples, 9.32%)</title><rect x="220.0" y="789" width="110.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="223.04" y="799.5" >[[kernel.kall..</text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (2 samples, 0.03%)</title><rect x="880.8" y="741" width="0.3" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="883.79" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::reset (1 samples, 0.02%)</title><rect x="993.8" y="709" width="0.2" height="15.0" fill="rgb(234,114,15)" rx="2" ry="2" />
+<text  x="996.78" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="1068.9" y="693" width="0.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.87" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="629" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="639.5" ></text>
+</g>
+<g >
+<title>epoll_ctl@plt (1 samples, 0.02%)</title><rect x="1055.6" y="693" width="0.2" height="15.0" fill="rgb(238,181,52)" rx="2" ry="2" />
+<text  x="1058.58" y="703.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_l_avx (5 samples, 0.08%)</title><rect x="1001.4" y="677" width="0.9" height="15.0" fill="rgb(247,111,9)" rx="2" ry="2" />
+<text  x="1004.39" y="687.5" ></text>
+</g>
+<g >
+<title>_IO_str_init_static_internal (1 samples, 0.02%)</title><rect x="15.7" y="789" width="0.1" height="15.0" fill="rgb(208,134,31)" rx="2" ry="2" />
+<text  x="18.67" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="969.5" y="661" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="972.51" y="671.5" ></text>
+</g>
+<g >
+<title>ESB::Mutex::writeRelease (1 samples, 0.02%)</title><rect x="1066.2" y="725" width="0.2" height="15.0" fill="rgb(245,75,21)" rx="2" ry="2" />
+<text  x="1069.21" y="735.5" ></text>
+</g>
+<g >
+<title>[[vdso]] (6 samples, 0.09%)</title><rect x="1002.5" y="677" width="1.0" height="15.0" fill="rgb(225,147,28)" rx="2" ry="2" />
+<text  x="1005.45" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="919.2" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="922.22" y="687.5" ></text>
+</g>
+<g >
+<title>__libc_recv (850 samples, 12.76%)</title><rect x="179.5" y="821" width="150.5" height="15.0" fill="rgb(218,73,21)" rx="2" ry="2" />
+<text  x="182.48" y="831.5" >__libc_recv</text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseHeaders (5 samples, 0.08%)</title><rect x="840.9" y="741" width="0.9" height="15.0" fill="rgb(241,106,19)" rx="2" ry="2" />
+<text  x="843.94" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::SimplePerformanceCounter::record (8 samples, 0.12%)</title><rect x="1067.3" y="709" width="1.4" height="15.0" fill="rgb(206,19,39)" rx="2" ry="2" />
+<text  x="1070.27" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (37 samples, 0.56%)</title><rect x="1182.0" y="645" width="6.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1185.03" y="655.5" ></text>
+</g>
+<g >
+<title>ESB::ConnectedTCPSocket::receive (1 samples, 0.02%)</title><rect x="948.6" y="741" width="0.2" height="15.0" fill="rgb(223,55,18)" rx="2" ry="2" />
+<text  x="951.62" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedListElement::EmbeddedListElement (3 samples, 0.05%)</title><rect x="910.5" y="693" width="0.6" height="15.0" fill="rgb(239,6,24)" rx="2" ry="2" />
+<text  x="913.54" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::clear (1 samples, 0.02%)</title><rect x="975.9" y="709" width="0.2" height="15.0" fill="rgb(253,118,48)" rx="2" ry="2" />
+<text  x="978.89" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,259 samples, 33.90%)</title><rect x="380.1" y="725" width="400.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="383.13" y="735.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseBody (1 samples, 0.02%)</title><rect x="840.8" y="741" width="0.1" height="15.0" fill="rgb(251,174,29)" rx="2" ry="2" />
+<text  x="843.76" y="751.5" ></text>
+</g>
+<g >
+<title>__lll_unlock_wake_private (10 samples, 0.15%)</title><rect x="119.4" y="805" width="1.8" height="15.0" fill="rgb(213,221,3)" rx="2" ry="2" />
+<text  x="122.45" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (21 samples, 0.32%)</title><rect x="776.5" y="133" width="3.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="779.48" y="143.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,236 samples, 33.56%)</title><rect x="384.2" y="709" width="396.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="387.21" y="719.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>__memset_avx2_unaligned_erms (3 samples, 0.05%)</title><rect x="780.9" y="821" width="0.5" height="15.0" fill="rgb(248,36,12)" rx="2" ry="2" />
+<text  x="783.90" y="831.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_avx (3 samples, 0.05%)</title><rect x="837.2" y="725" width="0.6" height="15.0" fill="rgb(226,101,37)" rx="2" ry="2" />
+<text  x="840.22" y="735.5" ></text>
+</g>
+<g >
+<title>_IO_default_xsputn (1 samples, 0.02%)</title><rect x="13.7" y="789" width="0.2" height="15.0" fill="rgb(208,216,11)" rx="2" ry="2" />
+<text  x="16.72" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpHeader::HttpHeader (2 samples, 0.03%)</title><rect x="1057.4" y="693" width="0.3" height="15.0" fill="rgb(236,191,2)" rx="2" ry="2" />
+<text  x="1060.35" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (386 samples, 5.79%)</title><rect x="261.7" y="693" width="68.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="264.66" y="703.5" >[[kerne..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="1187.7" y="629" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1190.70" y="639.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::IsLWS (1 samples, 0.02%)</title><rect x="835.1" y="709" width="0.2" height="15.0" fill="rgb(234,101,14)" rx="2" ry="2" />
+<text  x="838.10" y="719.5" ></text>
+</g>
+<g >
+<title>_IO_vsprintf (62 samples, 0.93%)</title><rect x="105.3" y="805" width="11.0" height="15.0" fill="rgb(243,155,27)" rx="2" ry="2" />
+<text  x="108.28" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="969.5" y="693" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="972.51" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientMultiplexer::HttpClientStackImpl::executeClientTransaction (2 samples, 0.03%)</title><rect x="990.1" y="725" width="0.3" height="15.0" fill="rgb(242,166,54)" rx="2" ry="2" />
+<text  x="993.06" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (5 samples, 0.08%)</title><rect x="825.5" y="677" width="0.9" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="828.53" y="687.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseHeaders (208 samples, 3.12%)</title><rect x="899.2" y="725" width="36.8" height="15.0" fill="rgb(241,106,19)" rx="2" ry="2" />
+<text  x="902.21" y="735.5" >ES:..</text>
+</g>
+<g >
+<title>ESB::Map::find (3 samples, 0.05%)</title><rect x="1000.0" y="677" width="0.5" height="15.0" fill="rgb(251,70,6)" rx="2" ry="2" />
+<text  x="1002.97" y="687.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::flushBuffer (16 samples, 0.24%)</title><rect x="955.3" y="741" width="2.9" height="15.0" fill="rgb(243,90,50)" rx="2" ry="2" />
+<text  x="958.35" y="751.5" ></text>
+</g>
+<g >
+<title>calloc@plt (1 samples, 0.02%)</title><rect x="16.7" y="773" width="0.2" height="15.0" fill="rgb(209,33,2)" rx="2" ry="2" />
+<text  x="19.73" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestUriParser::parse (1 samples, 0.02%)</title><rect x="931.1" y="709" width="0.2" height="15.0" fill="rgb(219,74,52)" rx="2" ry="2" />
+<text  x="934.08" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="118.9" y="709" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="121.91" y="719.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (3 samples, 0.05%)</title><rect x="1060.4" y="693" width="0.5" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="1063.36" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,897 samples, 28.47%)</title><rect x="444.2" y="645" width="336.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="447.24" y="655.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::EmbeddedList::remove (1 samples, 0.02%)</title><rect x="1064.1" y="709" width="0.2" height="15.0" fill="rgb(212,137,51)" rx="2" ry="2" />
+<text  x="1067.08" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::addLast (1 samples, 0.02%)</title><rect x="1059.7" y="693" width="0.1" height="15.0" fill="rgb(235,106,15)" rx="2" ry="2" />
+<text  x="1062.66" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,446 samples, 21.70%)</title><rect x="524.1" y="549" width="256.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="527.11" y="559.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="485" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="495.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock (3 samples, 0.05%)</title><rect x="1070.3" y="709" width="0.5" height="15.0" fill="rgb(224,97,9)" rx="2" ry="2" />
+<text  x="1073.28" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocketFactory::executeClientTransaction (331 samples, 4.97%)</title><rect x="998.0" y="709" width="58.6" height="15.0" fill="rgb(234,39,49)" rx="2" ry="2" />
+<text  x="1001.03" y="719.5" >ES::Ht..</text>
+</g>
+<g >
+<title>_IO_vsnprintf (1 samples, 0.02%)</title><rect x="13.7" y="805" width="0.2" height="15.0" fill="rgb(253,9,38)" rx="2" ry="2" />
+<text  x="16.72" y="815.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::IsLWS (2 samples, 0.03%)</title><rect x="874.2" y="709" width="0.4" height="15.0" fill="rgb(234,101,14)" rx="2" ry="2" />
+<text  x="877.24" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (913 samples, 13.70%)</title><rect x="618.5" y="261" width="161.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="621.51" y="271.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::AddressComparator::compare (5 samples, 0.08%)</title><rect x="999.1" y="677" width="0.9" height="15.0" fill="rgb(219,146,23)" rx="2" ry="2" />
+<text  x="1002.09" y="687.5" ></text>
+</g>
+<g >
+<title>_IO_no_init (2 samples, 0.03%)</title><rect x="102.6" y="805" width="0.4" height="15.0" fill="rgb(222,70,30)" rx="2" ry="2" />
+<text  x="105.62" y="815.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (14 samples, 0.21%)</title><rect x="960.1" y="725" width="2.5" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="963.13" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (261 samples, 3.92%)</title><rect x="129.0" y="773" width="46.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="132.01" y="783.5" >[[ke..</text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatHeaders (47 samples, 0.71%)</title><rect x="963.7" y="725" width="8.3" height="15.0" fill="rgb(216,152,24)" rx="2" ry="2" />
+<text  x="966.67" y="735.5" ></text>
+</g>
+<g >
+<title>__libc_disable_asynccancel (2 samples, 0.03%)</title><rect x="119.1" y="805" width="0.3" height="15.0" fill="rgb(205,16,21)" rx="2" ry="2" />
+<text  x="122.09" y="815.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (5 samples, 0.08%)</title><rect x="919.4" y="693" width="0.9" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="922.40" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequest::reset (2 samples, 0.03%)</title><rect x="992.0" y="677" width="0.4" height="15.0" fill="rgb(239,126,54)" rx="2" ry="2" />
+<text  x="995.01" y="687.5" ></text>
+</g>
+<g >
+<title>ESB::ConnectedTCPSocket::close (1 samples, 0.02%)</title><rect x="985.3" y="709" width="0.2" height="15.0" fill="rgb(228,16,45)" rx="2" ry="2" />
+<text  x="988.28" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::ThreadPool::createWorkerThreads (8 samples, 0.12%)</title><rect x="13.9" y="821" width="1.4" height="15.0" fill="rgb(245,72,35)" rx="2" ry="2" />
+<text  x="16.90" y="831.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="613" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="623.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (187 samples, 2.81%)</title><rect x="1022.5" y="677" width="33.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1025.47" y="687.5" >[[..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,355 samples, 20.34%)</title><rect x="540.2" y="485" width="240.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="543.23" y="495.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::NullLock::writeAcquire (7 samples, 0.11%)</title><rect x="1077.9" y="757" width="1.2" height="15.0" fill="rgb(250,76,48)" rx="2" ry="2" />
+<text  x="1080.90" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequest::reset (1 samples, 0.02%)</title><rect x="974.6" y="725" width="0.2" height="15.0" fill="rgb(239,126,54)" rx="2" ry="2" />
+<text  x="977.65" y="735.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_l_avx (9 samples, 0.14%)</title><rect x="874.9" y="725" width="1.6" height="15.0" fill="rgb(247,111,9)" rx="2" ry="2" />
+<text  x="877.94" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (131 samples, 1.97%)</title><rect x="152.0" y="661" width="23.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="155.03" y="671.5" >[..</text>
+</g>
+<g >
+<title>ES::HttpUtil::IsLWS (2 samples, 0.03%)</title><rect x="937.5" y="725" width="0.3" height="15.0" fill="rgb(234,101,14)" rx="2" ry="2" />
+<text  x="940.46" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (105 samples, 1.58%)</title><rect x="1170.0" y="661" width="18.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1172.99" y="671.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::addLast (1 samples, 0.02%)</title><rect x="935.9" y="709" width="0.1" height="15.0" fill="rgb(235,106,15)" rx="2" ry="2" />
+<text  x="938.87" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::remove (3 samples, 0.05%)</title><rect x="1004.4" y="693" width="0.5" height="15.0" fill="rgb(212,137,51)" rx="2" ry="2" />
+<text  x="1007.40" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (4 samples, 0.06%)</title><rect x="18.1" y="773" width="0.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.15" y="783.5" ></text>
+</g>
+<g >
+<title>vfprintf (4 samples, 0.06%)</title><rect x="104.6" y="789" width="0.7" height="15.0" fill="rgb(217,173,32)" rx="2" ry="2" />
+<text  x="107.57" y="799.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestUriParser::parse (1 samples, 0.02%)</title><rect x="924.5" y="693" width="0.2" height="15.0" fill="rgb(219,74,52)" rx="2" ry="2" />
+<text  x="927.53" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::IsLWS (5 samples, 0.08%)</title><rect x="931.3" y="709" width="0.8" height="15.0" fill="rgb(234,101,14)" rx="2" ry="2" />
+<text  x="934.26" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::handleRemove (1 samples, 0.02%)</title><rect x="985.3" y="725" width="0.2" height="15.0" fill="rgb(244,115,24)" rx="2" ry="2" />
+<text  x="988.28" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="549" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="559.5" ></text>
+</g>
+<g >
+<title>_IO_setb (1 samples, 0.02%)</title><rect x="15.5" y="789" width="0.2" height="15.0" fill="rgb(213,134,14)" rx="2" ry="2" />
+<text  x="18.49" y="799.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,221 samples, 33.33%)</title><rect x="386.9" y="693" width="393.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="389.86" y="703.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpClientTransaction::reset (16 samples, 0.24%)</title><rect x="990.9" y="709" width="2.9" height="15.0" fill="rgb(211,170,42)" rx="2" ry="2" />
+<text  x="993.94" y="719.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_lock (1 samples, 0.02%)</title><rect x="1067.4" y="693" width="0.2" height="15.0" fill="rgb(216,165,51)" rx="2" ry="2" />
+<text  x="1070.45" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,077 samples, 16.16%)</title><rect x="589.5" y="325" width="190.7" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="592.46" y="335.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>_IO_vsnprintf (6 samples, 0.09%)</title><rect x="104.2" y="805" width="1.1" height="15.0" fill="rgb(253,9,38)" rx="2" ry="2" />
+<text  x="107.22" y="815.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocketFactory::CleanupHandler::destroy (6 samples, 0.09%)</title><rect x="881.5" y="757" width="1.1" height="15.0" fill="rgb(221,60,32)" rx="2" ry="2" />
+<text  x="884.50" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipSpaces (3 samples, 0.05%)</title><rect x="928.8" y="693" width="0.5" height="15.0" fill="rgb(225,222,45)" rx="2" ry="2" />
+<text  x="931.78" y="703.5" ></text>
+</g>
+<g >
+<title>__GI_strtoul (4 samples, 0.06%)</title><rect x="118.2" y="805" width="0.7" height="15.0" fill="rgb(233,177,10)" rx="2" ry="2" />
+<text  x="121.21" y="815.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::handleRemove (482 samples, 7.23%)</title><rect x="988.3" y="741" width="85.3" height="15.0" fill="rgb(214,188,34)" rx="2" ry="2" />
+<text  x="991.29" y="751.5" >ES::HttpCl..</text>
+</g>
+<g >
+<title>ES::HttpServerSocket::parseRequestHeaders (3 samples, 0.05%)</title><rect x="978.0" y="757" width="0.5" height="15.0" fill="rgb(248,115,26)" rx="2" ry="2" />
+<text  x="981.01" y="767.5" ></text>
+</g>
+<g >
+<title>[[vdso]] (5 samples, 0.08%)</title><rect x="1065.3" y="709" width="0.9" height="15.0" fill="rgb(225,147,28)" rx="2" ry="2" />
+<text  x="1068.32" y="719.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (1 samples, 0.02%)</title><rect x="911.1" y="693" width="0.1" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="914.07" y="703.5" ></text>
+</g>
+<g >
+<title>ESB::EpollMultiplexer::removeMultiplexedSocket (506 samples, 7.59%)</title><rect x="986.3" y="757" width="89.6" height="15.0" fill="rgb(213,116,48)" rx="2" ry="2" />
+<text  x="989.34" y="767.5" >ESB::Epoll..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,514 samples, 22.72%)</title><rect x="512.1" y="581" width="268.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="515.07" y="591.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatVersion (3 samples, 0.05%)</title><rect x="872.1" y="709" width="0.5" height="15.0" fill="rgb(213,188,28)" rx="2" ry="2" />
+<text  x="875.11" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::parseRequestBody (26 samples, 0.39%)</title><rect x="894.4" y="741" width="4.6" height="15.0" fill="rgb(217,27,45)" rx="2" ry="2" />
+<text  x="897.42" y="751.5" ></text>
+</g>
+<g >
+<title>__pthread_enable_asynccancel (5 samples, 0.08%)</title><rect x="845.9" y="741" width="0.9" height="15.0" fill="rgb(223,189,20)" rx="2" ry="2" />
+<text  x="848.90" y="751.5" ></text>
+</g>
+<g >
+<title>_IO_setb (1 samples, 0.02%)</title><rect x="103.7" y="805" width="0.2" height="15.0" fill="rgb(213,134,14)" rx="2" ry="2" />
+<text  x="106.68" y="815.5" ></text>
+</g>
+<g >
+<title>gethostbyname_r@@GLIBC_2.2.5 (2 samples, 0.03%)</title><rect x="1055.8" y="693" width="0.3" height="15.0" fill="rgb(208,165,22)" rx="2" ry="2" />
+<text  x="1058.76" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::beginBlock (2 samples, 0.03%)</title><rect x="959.1" y="725" width="0.3" height="15.0" fill="rgb(222,110,7)" rx="2" ry="2" />
+<text  x="962.06" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequest::reset (3 samples, 0.05%)</title><rect x="974.8" y="709" width="0.6" height="15.0" fill="rgb(239,126,54)" rx="2" ry="2" />
+<text  x="977.83" y="719.5" ></text>
+</g>
+<g >
+<title>vfprintf (36 samples, 0.54%)</title><rect x="109.9" y="789" width="6.4" height="15.0" fill="rgb(217,173,32)" rx="2" ry="2" />
+<text  x="112.88" y="799.5" ></text>
+</g>
+<g >
+<title>epoll_wait (2 samples, 0.03%)</title><rect x="1189.6" y="773" width="0.4" height="15.0" fill="rgb(242,33,10)" rx="2" ry="2" />
+<text  x="1192.65" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpHeader::HttpHeader (1 samples, 0.02%)</title><rect x="1057.9" y="677" width="0.2" height="15.0" fill="rgb(236,191,2)" rx="2" ry="2" />
+<text  x="1060.89" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="919.2" y="693" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="922.22" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.6" y="741" width="0.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.55" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::remove (13 samples, 0.20%)</title><rect x="983.0" y="757" width="2.3" height="15.0" fill="rgb(212,137,51)" rx="2" ry="2" />
+<text  x="985.97" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::endBody (3 samples, 0.05%)</title><rect x="879.9" y="741" width="0.5" height="15.0" fill="rgb(232,210,10)" rx="2" ry="2" />
+<text  x="882.90" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,062 samples, 15.94%)</title><rect x="592.1" y="293" width="188.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="595.12" y="303.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpHeader::HttpHeader (1 samples, 0.02%)</title><rect x="979.3" y="725" width="0.1" height="15.0" fill="rgb(236,191,2)" rx="2" ry="2" />
+<text  x="982.25" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,362 samples, 35.45%)</title><rect x="361.9" y="789" width="418.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="364.89" y="799.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpEchoServerHandler::fillResponseChunk (1 samples, 0.02%)</title><rect x="958.9" y="725" width="0.2" height="15.0" fill="rgb(213,149,10)" rx="2" ry="2" />
+<text  x="961.89" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="19.0" y="725" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="22.03" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,294 samples, 34.43%)</title><rect x="373.9" y="757" width="406.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="376.94" y="767.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="19.0" y="773" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="22.03" y="783.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (328 samples, 4.92%)</title><rect x="44.0" y="693" width="58.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="47.00" y="703.5" >[[kern..</text>
+</g>
+<g >
+<title>ES::HttpUtil::FormatInteger (11 samples, 0.17%)</title><rect x="970.0" y="709" width="2.0" height="15.0" fill="rgb(252,154,8)" rx="2" ry="2" />
+<text  x="973.05" y="719.5" ></text>
+</g>
+<g >
+<title>_IO_default_xsputn (3 samples, 0.05%)</title><rect x="102.1" y="805" width="0.5" height="15.0" fill="rgb(208,216,11)" rx="2" ry="2" />
+<text  x="105.09" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (237 samples, 3.56%)</title><rect x="133.3" y="709" width="41.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="136.26" y="719.5" >[[k..</text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseChunkedBody (2 samples, 0.03%)</title><rect x="893.5" y="741" width="0.4" height="15.0" fill="rgb(231,136,3)" rx="2" ry="2" />
+<text  x="896.54" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (160 samples, 2.40%)</title><rect x="1027.2" y="645" width="28.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1030.25" y="655.5" >[[..</text>
+</g>
+<g >
+<title>internal_getent (1 samples, 0.02%)</title><rect x="175.2" y="805" width="0.2" height="15.0" fill="rgb(208,91,1)" rx="2" ry="2" />
+<text  x="178.23" y="815.5" ></text>
+</g>
+<g >
+<title>_IO_str_init_static_internal (2 samples, 0.03%)</title><rect x="103.9" y="805" width="0.3" height="15.0" fill="rgb(208,134,31)" rx="2" ry="2" />
+<text  x="106.86" y="815.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestParser::parseStartLine (2 samples, 0.03%)</title><rect x="937.1" y="725" width="0.4" height="15.0" fill="rgb(241,16,17)" rx="2" ry="2" />
+<text  x="940.10" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="613" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="623.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (20 samples, 0.30%)</title><rect x="830.5" y="677" width="3.5" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="833.49" y="687.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::formatRequestBody (23 samples, 0.35%)</title><rect x="851.4" y="741" width="4.1" height="15.0" fill="rgb(220,83,53)" rx="2" ry="2" />
+<text  x="854.39" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::EmbeddedList::clear (3 samples, 0.05%)</title><rect x="974.8" y="693" width="0.6" height="15.0" fill="rgb(253,118,48)" rx="2" ry="2" />
+<text  x="977.83" y="703.5" ></text>
+</g>
+<g >
+<title>strncmp@plt (1 samples, 0.02%)</title><rect x="973.6" y="725" width="0.2" height="15.0" fill="rgb(234,95,33)" rx="2" ry="2" />
+<text  x="976.59" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (336 samples, 5.04%)</title><rect x="42.6" y="725" width="59.5" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="45.59" y="735.5" >[[kern..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (640 samples, 9.61%)</title><rect x="666.9" y="213" width="113.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="669.85" y="223.5" >[[kernel.kalls..</text>
+</g>
+<g >
+<title>__strcpy_sse2_unaligned (6 samples, 0.09%)</title><rect x="1071.7" y="725" width="1.1" height="15.0" fill="rgb(232,116,13)" rx="2" ry="2" />
+<text  x="1074.70" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,103 samples, 16.55%)</title><rect x="584.9" y="357" width="195.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="587.86" y="367.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (3 samples, 0.05%)</title><rect x="18.3" y="709" width="0.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.32" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoClientHandler::reserveRequestChunk (17 samples, 0.26%)</title><rect x="876.7" y="741" width="3.0" height="15.0" fill="rgb(242,56,53)" rx="2" ry="2" />
+<text  x="879.71" y="751.5" ></text>
+</g>
+<g >
+<title>ESB::Thread::ThreadEntry (2,262 samples, 33.95%)</title><rect x="789.4" y="805" width="400.6" height="15.0" fill="rgb(238,179,0)" rx="2" ry="2" />
+<text  x="792.41" y="815.5" >ESB::Thread::ThreadEntry</text>
+</g>
+<g >
+<title>ES::HttpMessageParser::skipTrailer (1 samples, 0.02%)</title><rect x="894.2" y="741" width="0.2" height="15.0" fill="rgb(205,178,46)" rx="2" ry="2" />
+<text  x="897.25" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::handleReadable (384 samples, 5.76%)</title><rect x="883.8" y="757" width="68.0" height="15.0" fill="rgb(215,158,35)" rx="2" ry="2" />
+<text  x="886.80" y="767.5" >ES::Htt..</text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (5 samples, 0.08%)</title><rect x="1062.7" y="693" width="0.9" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="1065.67" y="703.5" ></text>
+</g>
+<g >
+<title>__resolv_conf_get_current (5 samples, 0.08%)</title><rect x="123.0" y="805" width="0.9" height="15.0" fill="rgb(254,190,45)" rx="2" ry="2" />
+<text  x="125.99" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (26 samples, 0.39%)</title><rect x="1051.0" y="549" width="4.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1053.98" y="559.5" ></text>
+</g>
+<g >
+<title>ESB::SocketAddress::SocketAddress (2 samples, 0.03%)</title><rect x="993.1" y="693" width="0.3" height="15.0" fill="rgb(253,38,18)" rx="2" ry="2" />
+<text  x="996.07" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestUriParser::parseAbsPath (13 samples, 0.20%)</title><rect x="924.7" y="693" width="2.3" height="15.0" fill="rgb(236,112,54)" rx="2" ry="2" />
+<text  x="927.71" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (376 samples, 5.64%)</title><rect x="35.5" y="773" width="66.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="38.50" y="783.5" >[[kerne..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (334 samples, 5.01%)</title><rect x="42.9" y="709" width="59.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="45.94" y="719.5" >[[kern..</text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatFieldValue (22 samples, 0.33%)</title><rect x="868.2" y="709" width="3.9" height="15.0" fill="rgb(206,143,51)" rx="2" ry="2" />
+<text  x="871.21" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipLWS (2 samples, 0.03%)</title><rect x="834.6" y="693" width="0.3" height="15.0" fill="rgb(209,167,9)" rx="2" ry="2" />
+<text  x="837.57" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="1068.9" y="661" width="0.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.87" y="671.5" ></text>
+</g>
+<g >
+<title>ES::HttpTransaction::cleanupHandler (2 samples, 0.03%)</title><rect x="1075.4" y="741" width="0.4" height="15.0" fill="rgb(221,229,1)" rx="2" ry="2" />
+<text  x="1078.42" y="751.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_avx (2 samples, 0.03%)</title><rect x="874.6" y="725" width="0.3" height="15.0" fill="rgb(226,101,37)" rx="2" ry="2" />
+<text  x="877.59" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::parseResponseBody (17 samples, 0.26%)</title><rect x="816.3" y="741" width="3.0" height="15.0" fill="rgb(214,65,6)" rx="2" ry="2" />
+<text  x="819.32" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.7" y="773" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.73" y="783.5" ></text>
+</g>
+<g >
+<title>__strlen_avx2 (9 samples, 0.14%)</title><rect x="1060.9" y="693" width="1.6" height="15.0" fill="rgb(231,161,37)" rx="2" ry="2" />
+<text  x="1063.90" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (54 samples, 0.81%)</title><rect x="92.5" y="597" width="9.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="95.53" y="607.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::wantConnect (1 samples, 0.02%)</title><rect x="790.6" y="773" width="0.2" height="15.0" fill="rgb(218,223,22)" rx="2" ry="2" />
+<text  x="793.65" y="783.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.0" y="69" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.02" y="79.5" ></text>
+</g>
+<g >
+<title>all (6,663 samples, 100%)</title><rect x="10.0" y="853" width="1180.0" height="15.0" fill="rgb(210,76,34)" rx="2" ry="2" />
+<text  x="13.00" y="863.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="645" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="655.5" ></text>
+</g>
+<g >
+<title>__nss_hostname_digits_dots (5 samples, 0.08%)</title><rect x="781.4" y="821" width="0.9" height="15.0" fill="rgb(222,28,21)" rx="2" ry="2" />
+<text  x="784.44" y="831.5" ></text>
+</g>
+<g >
+<title>__libc_send (9 samples, 0.14%)</title><rect x="849.1" y="725" width="1.6" height="15.0" fill="rgb(246,6,27)" rx="2" ry="2" />
+<text  x="852.09" y="735.5" ></text>
+</g>
+<g >
+<title>_res_hconf_reorder_addrs (3 samples, 0.05%)</title><rect x="1009.7" y="693" width="0.5" height="15.0" fill="rgb(211,44,42)" rx="2" ry="2" />
+<text  x="1012.71" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoClientHandler::receiveResponseBody (2 samples, 0.03%)</title><rect x="816.9" y="725" width="0.3" height="15.0" fill="rgb(243,211,33)" rx="2" ry="2" />
+<text  x="819.86" y="735.5" ></text>
+</g>
+<g >
+<title>cfree@GLIBC_2.2.5 (4 samples, 0.06%)</title><rect x="787.5" y="821" width="0.7" height="15.0" fill="rgb(236,118,2)" rx="2" ry="2" />
+<text  x="790.46" y="831.5" ></text>
+</g>
+<g >
+<title>ESB::SocketAddress::presentationAddress (1 samples, 0.02%)</title><rect x="1066.6" y="725" width="0.1" height="15.0" fill="rgb(232,102,18)" rx="2" ry="2" />
+<text  x="1069.56" y="735.5" ></text>
+</g>
+<g >
+<title>__resolv_conf_get (10 samples, 0.15%)</title><rect x="121.2" y="805" width="1.8" height="15.0" fill="rgb(243,5,45)" rx="2" ry="2" />
+<text  x="124.22" y="815.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (2 samples, 0.03%)</title><rect x="979.4" y="725" width="0.4" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="982.43" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (3 samples, 0.05%)</title><rect x="948.8" y="741" width="0.5" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="951.79" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (3 samples, 0.05%)</title><rect x="18.3" y="725" width="0.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.32" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (3 samples, 0.05%)</title><rect x="935.0" y="709" width="0.5" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="937.98" y="719.5" ></text>
+</g>
+<g >
+<title>__pthread_disable_asynccancel (19 samples, 0.29%)</title><rect x="782.3" y="821" width="3.4" height="15.0" fill="rgb(211,99,21)" rx="2" ry="2" />
+<text  x="785.32" y="831.5" ></text>
+</g>
+<g >
+<title>__errno_location (3 samples, 0.05%)</title><rect x="845.0" y="741" width="0.5" height="15.0" fill="rgb(254,172,53)" rx="2" ry="2" />
+<text  x="848.01" y="751.5" ></text>
+</g>
+<g >
+<title>__lll_unlock_wake_private (1 samples, 0.02%)</title><rect x="780.7" y="821" width="0.2" height="15.0" fill="rgb(213,221,3)" rx="2" ry="2" />
+<text  x="783.73" y="831.5" ></text>
+</g>
+<g >
+<title>ESB::SocketAddress::setType (1 samples, 0.02%)</title><rect x="1006.9" y="693" width="0.2" height="15.0" fill="rgb(205,147,53)" rx="2" ry="2" />
+<text  x="1009.88" y="703.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::handleWritable (148 samples, 2.22%)</title><rect x="951.8" y="757" width="26.2" height="15.0" fill="rgb(233,107,47)" rx="2" ry="2" />
+<text  x="954.80" y="767.5" >E..</text>
+</g>
+<g >
+<title>ES::HttpMessageParser::parseChunkedBody (6 samples, 0.09%)</title><rect x="817.2" y="725" width="1.1" height="15.0" fill="rgb(231,136,3)" rx="2" ry="2" />
+<text  x="820.21" y="735.5" ></text>
+</g>
+<g >
+<title>__strncmp_sse42 (6 samples, 0.09%)</title><rect x="839.5" y="725" width="1.1" height="15.0" fill="rgb(220,228,3)" rx="2" ry="2" />
+<text  x="842.52" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="597" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="607.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,817 samples, 27.27%)</title><rect x="458.4" y="629" width="321.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="461.41" y="639.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipSpaces (1 samples, 0.02%)</title><rect x="819.0" y="725" width="0.2" height="15.0" fill="rgb(225,222,45)" rx="2" ry="2" />
+<text  x="821.98" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (3 samples, 0.05%)</title><rect x="929.3" y="677" width="0.5" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="932.31" y="687.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (253 samples, 3.80%)</title><rect x="130.4" y="741" width="44.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="133.43" y="751.5" >[[ke..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="945.6" y="709" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="948.61" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.7" y="741" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.73" y="751.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_avx (1 samples, 0.02%)</title><rect x="1071.2" y="725" width="0.1" height="15.0" fill="rgb(226,101,37)" rx="2" ry="2" />
+<text  x="1074.17" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::socketDescriptor (5 samples, 0.08%)</title><rect x="789.8" y="773" width="0.8" height="15.0" fill="rgb(211,66,12)" rx="2" ry="2" />
+<text  x="792.76" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerTransaction::reset (19 samples, 0.29%)</title><rect x="973.8" y="741" width="3.3" height="15.0" fill="rgb(251,105,45)" rx="2" ry="2" />
+<text  x="976.76" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (200 samples, 3.00%)</title><rect x="1153.2" y="693" width="35.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1156.16" y="703.5" >[[k..</text>
+</g>
+<g >
+<title>ES::HttpTransaction::reset (7 samples, 0.11%)</title><rect x="974.8" y="725" width="1.3" height="15.0" fill="rgb(232,35,0)" rx="2" ry="2" />
+<text  x="977.83" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (284 samples, 4.26%)</title><rect x="51.8" y="661" width="50.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="54.79" y="671.5" >[[ker..</text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatFieldValue (9 samples, 0.14%)</title><rect x="967.2" y="709" width="1.6" height="15.0" fill="rgb(206,143,51)" rx="2" ry="2" />
+<text  x="970.21" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::formatResponseHeaders (63 samples, 0.95%)</title><rect x="962.6" y="741" width="11.2" height="15.0" fill="rgb(224,210,34)" rx="2" ry="2" />
+<text  x="965.61" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="120.3" y="773" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.33" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpRequestUriFormatter::format (4 samples, 0.06%)</title><rect x="873.5" y="693" width="0.7" height="15.0" fill="rgb(215,206,28)" rx="2" ry="2" />
+<text  x="876.53" y="703.5" ></text>
+</g>
+<g >
+<title>malloc (3 samples, 0.05%)</title><rect x="1056.1" y="693" width="0.5" height="15.0" fill="rgb(208,180,31)" rx="2" ry="2" />
+<text  x="1059.11" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (5 samples, 0.08%)</title><rect x="120.3" y="757" width="0.9" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="123.33" y="767.5" ></text>
+</g>
+<g >
+<title>__libc_send (2,542 samples, 38.15%)</title><rect x="330.0" y="821" width="450.2" height="15.0" fill="rgb(246,6,27)" rx="2" ry="2" />
+<text  x="333.02" y="831.5" >__libc_send</text>
+</g>
+<g >
+<title>ES::HttpEchoClientHandler::endClientTransaction (403 samples, 6.05%)</title><rect x="994.0" y="725" width="71.3" height="15.0" fill="rgb(218,134,7)" rx="2" ry="2" />
+<text  x="996.95" y="735.5" >ES::Http..</text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (35 samples, 0.53%)</title><rect x="886.6" y="725" width="6.2" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="889.63" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="629" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="639.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (2 samples, 0.03%)</title><rect x="935.5" y="709" width="0.4" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="938.51" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpEchoServerContext::HttpEchoServerContext (1 samples, 0.02%)</title><rect x="886.1" y="741" width="0.2" height="15.0" fill="rgb(218,98,26)" rx="2" ry="2" />
+<text  x="889.10" y="751.5" ></text>
+</g>
+<g >
+<title>recv@plt (1 samples, 0.02%)</title><rect x="846.8" y="741" width="0.2" height="15.0" fill="rgb(243,217,12)" rx="2" ry="2" />
+<text  x="849.79" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="18.5" y="677" width="0.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.50" y="687.5" ></text>
+</g>
+<g >
+<title>__strlen_avx2 (3 samples, 0.05%)</title><rect x="786.9" y="821" width="0.6" height="15.0" fill="rgb(231,161,37)" rx="2" ry="2" />
+<text  x="789.93" y="831.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::formatRequestBody (3 samples, 0.05%)</title><rect x="812.4" y="757" width="0.6" height="15.0" fill="rgb(220,83,53)" rx="2" ry="2" />
+<text  x="815.43" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::wantWrite (1 samples, 0.02%)</title><rect x="791.2" y="773" width="0.2" height="15.0" fill="rgb(224,161,44)" rx="2" ry="2" />
+<text  x="794.18" y="783.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.6" y="773" width="0.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.55" y="783.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::cleanupHandler (1 samples, 0.02%)</title><rect x="812.3" y="757" width="0.1" height="15.0" fill="rgb(239,128,22)" rx="2" ry="2" />
+<text  x="815.25" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (8 samples, 0.12%)</title><rect x="778.8" y="117" width="1.4" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="781.78" y="127.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="948.4" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="951.44" y="687.5" ></text>
+</g>
+<g >
+<title>__strncmp_sse42 (10 samples, 0.15%)</title><rect x="945.8" y="725" width="1.8" height="15.0" fill="rgb(220,228,3)" rx="2" ry="2" />
+<text  x="948.78" y="735.5" ></text>
+</g>
+<g >
+<title>__strcasecmp_avx (1 samples, 0.02%)</title><rect x="1001.2" y="677" width="0.2" height="15.0" fill="rgb(226,101,37)" rx="2" ry="2" />
+<text  x="1004.21" y="687.5" ></text>
+</g>
+<g >
+<title>malloc (7 samples, 0.11%)</title><rect x="788.2" y="821" width="1.2" height="15.0" fill="rgb(208,180,31)" rx="2" ry="2" />
+<text  x="791.17" y="831.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,478 samples, 22.18%)</title><rect x="518.4" y="565" width="261.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="521.45" y="575.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="780.6" y="725" width="0.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="783.55" y="735.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (6 samples, 0.09%)</title><rect x="930.0" y="693" width="1.1" height="15.0" fill="rgb(235,182,39)" rx="2" ry="2" />
+<text  x="933.02" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (43 samples, 0.65%)</title><rect x="1048.0" y="581" width="7.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1050.97" y="591.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="1068.9" y="645" width="0.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.87" y="655.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::wantAccept (1 samples, 0.02%)</title><rect x="982.3" y="757" width="0.1" height="15.0" fill="rgb(223,218,5)" rx="2" ry="2" />
+<text  x="985.26" y="767.5" ></text>
+</g>
+<g >
+<title>ES::HttpServerSocket::wantConnect (1 samples, 0.02%)</title><rect x="982.4" y="757" width="0.2" height="15.0" fill="rgb(222,66,13)" rx="2" ry="2" />
+<text  x="985.44" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2,297 samples, 34.47%)</title><rect x="373.4" y="773" width="406.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="376.40" y="783.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (261 samples, 3.92%)</title><rect x="129.0" y="789" width="46.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="132.01" y="799.5" >[[ke..</text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (1 samples, 0.02%)</title><rect x="929.8" y="693" width="0.2" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="932.84" y="703.5" ></text>
+</g>
+<g >
+<title>ES::AddressComparator::compare (1 samples, 0.02%)</title><rect x="1000.3" y="661" width="0.2" height="15.0" fill="rgb(219,146,23)" rx="2" ry="2" />
+<text  x="1003.33" y="671.5" ></text>
+</g>
+<g >
+<title>__libc_recv (4 samples, 0.06%)</title><rect x="949.5" y="741" width="0.7" height="15.0" fill="rgb(218,73,21)" rx="2" ry="2" />
+<text  x="952.50" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::IsSpace (2 samples, 0.03%)</title><rect x="932.1" y="709" width="0.4" height="15.0" fill="rgb(241,190,53)" rx="2" ry="2" />
+<text  x="935.15" y="719.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="948.4" y="725" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="951.44" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatFieldValue (1 samples, 0.02%)</title><rect x="855.8" y="725" width="0.2" height="15.0" fill="rgb(206,143,51)" rx="2" ry="2" />
+<text  x="858.82" y="735.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="581" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="591.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientTransactionFactory::CleanupHandler::destroy (1 samples, 0.02%)</title><rect x="1075.1" y="741" width="0.1" height="15.0" fill="rgb(233,190,45)" rx="2" ry="2" />
+<text  x="1078.06" y="751.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="677" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="687.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (1 samples, 0.02%)</title><rect x="919.0" y="693" width="0.2" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="922.04" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1055.4" y="517" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1058.41" y="527.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="709" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseParser::parseReasonPhrase (38 samples, 0.57%)</title><rect x="827.8" y="693" width="6.8" height="15.0" fill="rgb(247,74,19)" rx="2" ry="2" />
+<text  x="830.84" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="1074.9" y="661" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1077.89" y="671.5" ></text>
+</g>
+<g >
+<title>ES::HttpClientSocket::handleWritable (193 samples, 2.90%)</title><rect x="847.0" y="757" width="34.1" height="15.0" fill="rgb(252,23,47)" rx="2" ry="2" />
+<text  x="849.96" y="767.5" >ES..</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,401 samples, 21.03%)</title><rect x="532.1" y="517" width="248.1" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="535.08" y="527.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>ESB::ConnectedTCPSocket::send (4 samples, 0.06%)</title><rect x="956.6" y="725" width="0.7" height="15.0" fill="rgb(218,181,14)" rx="2" ry="2" />
+<text  x="959.59" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (6 samples, 0.09%)</title><rect x="1079.1" y="757" width="1.1" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="1082.14" y="767.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (3 samples, 0.05%)</title><rect x="18.3" y="693" width="0.6" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="21.32" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1 samples, 0.02%)</title><rect x="985.3" y="661" width="0.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="988.28" y="671.5" ></text>
+</g>
+<g >
+<title>ES::HttpUtil::SkipLine (4 samples, 0.06%)</title><rect x="898.0" y="725" width="0.7" height="15.0" fill="rgb(211,202,31)" rx="2" ry="2" />
+<text  x="900.97" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::Date::Now (5 samples, 0.08%)</title><rect x="1065.3" y="725" width="0.9" height="15.0" fill="rgb(221,175,43)" rx="2" ry="2" />
+<text  x="1068.32" y="735.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::endBlock (1 samples, 0.02%)</title><rect x="954.3" y="741" width="0.2" height="15.0" fill="rgb(242,183,35)" rx="2" ry="2" />
+<text  x="957.28" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpHeader::HttpHeader (2 samples, 0.03%)</title><rect x="907.5" y="693" width="0.4" height="15.0" fill="rgb(236,191,2)" rx="2" ry="2" />
+<text  x="910.53" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (482 samples, 7.23%)</title><rect x="244.7" y="725" width="85.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="247.65" y="735.5" >[[kernel.k..</text>
+</g>
+<g >
+<title>__close_nocancel (1 samples, 0.02%)</title><rect x="118.9" y="805" width="0.2" height="15.0" fill="rgb(205,193,9)" rx="2" ry="2" />
+<text  x="121.91" y="815.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (1,084 samples, 16.27%)</title><rect x="588.2" y="341" width="192.0" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="591.22" y="351.5" >[[kernel.kallsyms]]</text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (2 samples, 0.03%)</title><rect x="1068.9" y="613" width="0.3" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="1071.87" y="623.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::deallocate (1 samples, 0.02%)</title><rect x="977.1" y="741" width="0.2" height="15.0" fill="rgb(207,96,15)" rx="2" ry="2" />
+<text  x="980.13" y="751.5" ></text>
+</g>
+<g >
+<title>ES::HttpMessage::addHeader (6 samples, 0.09%)</title><rect x="1062.5" y="709" width="1.1" height="15.0" fill="rgb(250,91,23)" rx="2" ry="2" />
+<text  x="1065.49" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::SimpleFileLogger::isLoggable (1 samples, 0.02%)</title><rect x="898.9" y="725" width="0.1" height="15.0" fill="rgb(222,9,28)" rx="2" ry="2" />
+<text  x="901.85" y="735.5" ></text>
+</g>
+<g >
+<title>ES::AddressComparator::compare (4 samples, 0.06%)</title><rect x="1074.2" y="709" width="0.7" height="15.0" fill="rgb(219,146,23)" rx="2" ry="2" />
+<text  x="1077.18" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::DiscardAllocator::allocate (18 samples, 0.27%)</title><rect x="830.8" y="661" width="3.2" height="15.0" fill="rgb(228,21,41)" rx="2" ry="2" />
+<text  x="833.85" y="671.5" ></text>
+</g>
+<g >
+<title>__nss_hostname_digits_dots (5 samples, 0.08%)</title><rect x="1007.8" y="693" width="0.9" height="15.0" fill="rgb(222,28,21)" rx="2" ry="2" />
+<text  x="1010.77" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (577 samples, 8.66%)</title><rect x="678.0" y="181" width="102.2" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="681.01" y="191.5" >[[kernel.kal..</text>
+</g>
+<g >
+<title>ES::HttpMessageFormatter::formatVersion (5 samples, 0.08%)</title><rect x="968.8" y="709" width="0.9" height="15.0" fill="rgb(213,188,28)" rx="2" ry="2" />
+<text  x="971.81" y="719.5" ></text>
+</g>
+<g >
+<title>ES::HttpResponseFormatter::formatStartLine (1 samples, 0.02%)</title><rect x="972.0" y="725" width="0.2" height="15.0" fill="rgb(212,183,35)" rx="2" ry="2" />
+<text  x="974.99" y="735.5" ></text>
+</g>
+<g >
+<title>ESB::SystemDnsClient::resolve (5 samples, 0.08%)</title><rect x="1064.3" y="709" width="0.8" height="15.0" fill="rgb(210,174,44)" rx="2" ry="2" />
+<text  x="1067.26" y="719.5" ></text>
+</g>
+<g >
+<title>ESB::Buffer::duplicate (6 samples, 0.09%)</title><rect x="825.4" y="693" width="1.0" height="15.0" fill="rgb(218,68,46)" rx="2" ry="2" />
+<text  x="828.36" y="703.5" ></text>
+</g>
+<g >
+<title>[[kernel.kallsyms]] (496 samples, 7.44%)</title><rect x="242.2" y="741" width="87.8" height="15.0" fill="rgb(229,91,43)" rx="2" ry="2" />
+<text  x="245.17" y="751.5" >[[kernel.k..</text>
+</g>
+<g >
+<title>ES::HttpServerSocket::parseRequestHeaders (274 samples, 4.11%)</title><rect x="899.0" y="741" width="48.6" height="15.0" fill="rgb(248,115,26)" rx="2" ry="2" />
+<text  x="902.03" y="751.5" >ES::..</text>
+</g>
+</g>
+</svg>

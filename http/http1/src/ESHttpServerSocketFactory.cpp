@@ -6,6 +6,10 @@
 #include <ESBSystemConfig.h>
 #endif
 
+#ifndef ES_HTTP_CONFIG_H
+#include <ESHttpConfig.h>
+#endif
+
 namespace ES {
 
 HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
@@ -16,9 +20,9 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
       _allocator(allocator),
       _sockets(),
       _cleanupHandler(*this),
-      _ioBufferPoolAllocator(ESB::SystemConfig::Instance().pageSize() * 1000,
+      _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
                              ESB::SystemConfig::Instance().cacheLineSize()),
-      _ioBufferPool(ESB::SystemConfig::Instance().pageSize() -
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize() -
                     ESB_BUFFER_OVERHEAD) {}
 
 HttpServerSocketFactory::~HttpServerSocketFactory() {

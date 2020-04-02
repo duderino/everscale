@@ -9,6 +9,7 @@ set(SOURCE_FILES
         src/ESHttpResponse.cpp
         src/ESHttpTransaction.cpp
         src/ESHttpUtil.cpp
+        src/ESHttpConfig.cpp
         )
 
 add_library(http-common STATIC ${SOURCE_FILES})
