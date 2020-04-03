@@ -33,17 +33,31 @@ namespace ES {
  */
 class HttpClientSocket : public ESB::MultiplexedSocket {
  public:
+  class Stack : public HttpClientStack {
+   public:
+    Stack();
+    virtual ~Stack();
+
+    virtual HttpClientHandler &handler() = 0;
+
+    virtual HttpClientCounters &counters() = 0;
+
+    virtual ESB::BufferPool &bufferPool() = 0;
+
+   private:
+    // Disabled
+    Stack(const Stack &);
+    Stack &operator=(const Stack &);
+  };
+
   /** Constructor
    *
    * @param transaction The client transaction object.  Many client transactions
    *  can be carried across the same http client socket with connection reuse.
    * @param cleanupHandler An object that can be used to destroy this one
    */
-  HttpClientSocket(HttpClientHandler &handler, HttpClientStack &stack,
-                   HttpClientTransaction *transaction,
-                   HttpClientCounters *counters,
-                   ESB::CleanupHandler *cleanupHandler,
-                   ESB::BufferPool &bufferPool);
+  HttpClientSocket(Stack &stack, HttpClientTransaction *transaction,
+                   ESB::CleanupHandler *cleanupHandler);
 
   /** Destructor.
    */
@@ -234,16 +248,13 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
   ESB::Error formatRequestBody(ESB::SocketMultiplexer &multiplexer);
   ESB::Error flushBuffer(ESB::SocketMultiplexer &multiplexer);
 
-  int _state;
-  int _bodyBytesWritten;
-  HttpClientStack &_stack;
-  HttpClientHandler &_handler;
-  HttpClientTransaction *_transaction;
-  HttpClientCounters *_counters;
-  ESB::CleanupHandler *_cleanupHandler;
-  ESB::Buffer *_buffer;
-  ESB::BufferPool &_bufferPool;
-  ESB::ConnectedTCPSocket _socket;
+  int _state;                            // 24 from base + 4 = 28
+  int _bodyBytesWritten;                 // 28 + 4 = 32
+  Stack &_stack;                         // 32 + 8 = 40
+  HttpClientTransaction *_transaction;   // 40 + 8 = 48
+  ESB::CleanupHandler *_cleanupHandler;  // 48 + 8 = 56
+  ESB::Buffer *_buffer;                  // 56 + 8 = 64
+  ESB::ConnectedTCPSocket _socket;       // 64 + 64
   static bool _ReuseConnections;
 };
 

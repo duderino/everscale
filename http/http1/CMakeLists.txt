@@ -62,6 +62,6 @@ SET(TEST_LIBS
         )
 
 add_unit_test(http1-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 5 tests/ESHttpParserTest.cpp)
-#add_gtest(http1-alignment-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/AlignmentTest.cpp)
+add_gtest(http1-alignment-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/AlignmentTest.cpp)
 
 

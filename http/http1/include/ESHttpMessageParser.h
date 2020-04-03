@@ -24,12 +24,11 @@ class HttpMessageParser {
  public:
   /** Create a new message parser
    *
-   * @param workingBuffer Temporary storage for parsing
+   * @param parseBuffer Temporary storage for parsing
    * @param allocator The discard allocator to use for allocating internal
    * strings.
    */
-  HttpMessageParser(ESB::Buffer *workingBuffer,
-                    ESB::DiscardAllocator &allocator);
+  HttpMessageParser(ESB::Buffer *parseBuffer, ESB::DiscardAllocator &allocator);
 
   virtual ~HttpMessageParser();
 
@@ -96,7 +95,7 @@ class HttpMessageParser {
   ESB::Error parseVersion(ESB::Buffer *inputBuffer, HttpMessage &message,
                           bool clientMode);
 
-  ESB::Buffer *_workingBuffer;
+  ESB::Buffer *_parseBuffer;
   ESB::DiscardAllocator &_allocator;
   int _state;
   ESB::UInt64 _bodyBytesRemaining;

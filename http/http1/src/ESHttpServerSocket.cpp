@@ -664,8 +664,8 @@ ESB::Error HttpServerSocket::parseRequestHeaders(
     HttpHeader *header = (HttpHeader *)_transaction.request().headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("socket:%d %s: %s", _socket.socketDescriptor(),
-                    ESB_SAFE_STR(header->fieldName()),
-                    ESB_SAFE_STR(header->fieldValue()));
+                    ESB_SAFE_STR(header->name()),
+                    ESB_SAFE_STR(header->value()));
     }
   }
 

@@ -213,7 +213,6 @@ class ConnectedTCPSocket : public TCPSocket {
   ConnectedTCPSocket(const ConnectedTCPSocket &);
   ConnectedTCPSocket &operator=(const ConnectedTCPSocket &);
 
-  bool _isConnected;
   SocketAddress _listenerAddress;
   SocketAddress _peerAddress;
 };

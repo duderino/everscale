@@ -19,20 +19,20 @@ class HttpHeader : public ESB::EmbeddedListElement {
    *
    * @return the field name
    */
-  inline const unsigned char *fieldName() const { return _fieldName; }
+  inline const unsigned char *name() const { return _fieldName; }
 
   /**
    * Get the field value, if present.
    *
    * @return the field value or NULL if not set
    */
-  inline const unsigned char *fieldValue() const { return _fieldValue; }
+  inline const unsigned char *value() const { return _fieldValue; }
 
   /** Set the field name.  Caller controls the memory for this value.
    *
    * @param name The field name.
    */
-  inline void setFieldName(const char *fieldName) {
+  inline void setName(const char *fieldName) {
     _fieldName = (const unsigned char *)fieldName;
   }
 
@@ -40,7 +40,7 @@ class HttpHeader : public ESB::EmbeddedListElement {
    *
    * @param name The field name.
    */
-  inline void setFieldName(const unsigned char *fieldName) {
+  inline void setName(const unsigned char *fieldName) {
     _fieldName = fieldName;
   }
 
@@ -49,7 +49,7 @@ class HttpHeader : public ESB::EmbeddedListElement {
    *
    * @param value the field value or NULL if not set
    */
-  inline void setFieldValue(const char *fieldValue) {
+  inline void setValue(const char *fieldValue) {
     _fieldValue = (const unsigned char *)fieldValue;
   }
 
@@ -58,7 +58,7 @@ class HttpHeader : public ESB::EmbeddedListElement {
    *
    * @param value the field value or NULL if not set
    */
-  inline void setFieldValue(const unsigned char *fieldValue) {
+  inline void setValue(const unsigned char *fieldValue) {
     _fieldValue = fieldValue;
   }
 

@@ -276,6 +276,7 @@ class Buffer : public EmbeddedListElement {
   UInt32 _writePosition;
   UInt32 _capacity;
   unsigned char *_buffer;
+  char _pad[8];
 };
 
 }  // namespace ESB

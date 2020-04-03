@@ -26,15 +26,15 @@ namespace ES {
 #define ES_URI_PARSING_NON_HTTP_URI (1 << 8)
 #define ES_URI_SKIPPING_FWD_SLASHES (1 << 9)
 
-HttpRequestUriParser::HttpRequestUriParser(ESB::Buffer *workingBuffer,
+HttpRequestUriParser::HttpRequestUriParser(ESB::Buffer *parseBuffer,
                                            ESB::DiscardAllocator &allocator)
-    : _state(0x00), _workingBuffer(workingBuffer), _allocator(allocator) {}
+    : _state(0x00), _parseBuffer(parseBuffer), _allocator(allocator) {}
 
 HttpRequestUriParser::~HttpRequestUriParser() {}
 
 void HttpRequestUriParser::reset() {
   _state = 0x00;
-  _workingBuffer->clear();
+  _parseBuffer->clear();
 }
 
 ESB::Error HttpRequestUriParser::parse(ESB::Buffer *inputBuffer,
@@ -155,12 +155,12 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
 
   unsigned char octet;
 
-  if (0 == _workingBuffer->writePosition()) {
+  if (0 == _parseBuffer->writePosition()) {
     if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -170,7 +170,7 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
       return ES_HTTP_BAD_REQUEST_URI_ABS_PATH;
     }
 
-    _workingBuffer->putNext('/');
+    _parseBuffer->putNext('/');
   }
 
   // ESB::Error error;
@@ -180,7 +180,7 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -210,24 +210,24 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
     } */
 
     if (HttpUtil::IsPchar(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 
     if ('/' == octet || ';' == octet) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 
     if ('?' == octet) {
-      requestUri.setAbsPath(_workingBuffer->duplicate(_allocator));
+      requestUri.setAbsPath(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.absPath()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_ABS_PATH;
       _state |= ES_URI_PARSING_QUERY;
@@ -236,14 +236,14 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
     }
 
     if ('#' == octet) {
-      requestUri.setAbsPath(_workingBuffer->duplicate(_allocator));
+      requestUri.setAbsPath(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.absPath()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_ABS_PATH;
       _state |= ES_URI_PARSING_FRAGMENT;
@@ -252,14 +252,14 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
     }
 
     if (HttpUtil::IsSpace(octet)) {
-      requestUri.setAbsPath(_workingBuffer->duplicate(_allocator));
+      requestUri.setAbsPath(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.absPath()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_ABS_PATH;
       _state |= ES_URI_PARSE_COMPLETE;
@@ -285,7 +285,7 @@ ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -315,19 +315,19 @@ ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
     }*/
 
     if (HttpUtil::IsUric(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 
     if ('#' == octet) {
-      requestUri.setQuery(_workingBuffer->duplicate(_allocator));
+      requestUri.setQuery(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.query()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_QUERY;
       _state |= ES_URI_PARSING_FRAGMENT;
@@ -336,14 +336,14 @@ ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
     }
 
     if (HttpUtil::IsSpace(octet)) {
-      requestUri.setQuery(_workingBuffer->duplicate(_allocator));
+      requestUri.setQuery(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.query()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_QUERY;
       _state |= ES_URI_PARSE_COMPLETE;
@@ -369,7 +369,7 @@ ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -398,19 +398,19 @@ ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer,
     }*/
 
     if (HttpUtil::IsUric(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 
     if (HttpUtil::IsSpace(octet)) {
-      requestUri.setFragment(_workingBuffer->duplicate(_allocator));
+      requestUri.setFragment(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.fragment()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_FRAGMENT;
       _state |= ES_URI_PARSE_COMPLETE;
@@ -432,12 +432,12 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
 
   unsigned char octet;
 
-  if (0 == _workingBuffer->writePosition()) {
+  if (0 == _parseBuffer->writePosition()) {
     if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -447,7 +447,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
       return ES_HTTP_BAD_REQUEST_URI_SCHEME;
     }
 
-    _workingBuffer->putNext(octet);
+    _parseBuffer->putNext(octet);
   }
 
   while (true) {
@@ -455,14 +455,14 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
     octet = inputBuffer->next();
 
     if (HttpUtil::IsAlphaNum(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 
@@ -471,7 +471,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
       case '=':
       case '.':
 
-        _workingBuffer->putNext(octet);
+        _parseBuffer->putNext(octet);
         break;
 
       case ':':
@@ -480,20 +480,20 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
 
         _state &= ~ES_URI_PARSING_SCHEME;
 
-        if (_workingBuffer->match(HTTP)) {
+        if (_parseBuffer->match(HTTP)) {
           _state |= ES_URI_SKIPPING_FWD_SLASHES;
 
           requestUri.setType(HttpRequestUri::ES_URI_HTTP);
 
-          _workingBuffer->clear();
+          _parseBuffer->clear();
 
           return skipForwardSlashes(inputBuffer, requestUri);
-        } else if (_workingBuffer->match(HTTPS)) {
+        } else if (_parseBuffer->match(HTTPS)) {
           _state |= ES_URI_SKIPPING_FWD_SLASHES;
 
           requestUri.setType(HttpRequestUri::ES_URI_HTTPS);
 
-          _workingBuffer->clear();
+          _parseBuffer->clear();
 
           return skipForwardSlashes(inputBuffer, requestUri);
         } else {
@@ -501,7 +501,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
 
           requestUri.setType(HttpRequestUri::ES_URI_OTHER);
 
-          _workingBuffer->putNext(':');
+          _parseBuffer->putNext(':');
 
           return parseNonHttpUri(inputBuffer, requestUri);
         }
@@ -552,12 +552,12 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
 
   unsigned char octet;
 
-  if (0 == _workingBuffer->writePosition()) {
+  if (0 == _parseBuffer->writePosition()) {
     if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -567,7 +567,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
       return ES_HTTP_BAD_REQUEST_URI_HOST;
     }
 
-    _workingBuffer->putNext(octet);
+    _parseBuffer->putNext(octet);
   }
 
   while (true) {
@@ -575,14 +575,14 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
     octet = inputBuffer->next();
 
     if (HttpUtil::IsAlphaNum(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 
@@ -590,19 +590,19 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
       case '-':
       case '.':
 
-        _workingBuffer->putNext(octet);
+        _parseBuffer->putNext(octet);
         break;
 
       case ':':
 
-        requestUri.setHost(_workingBuffer->duplicate(_allocator));
+        requestUri.setHost(_parseBuffer->duplicate(_allocator));
 
         if (0 == requestUri.host()) {
           return ESB_OUT_OF_MEMORY;
         }
 
         inputBuffer->readMark();
-        _workingBuffer->clear();
+        _parseBuffer->clear();
 
         _state &= ~ES_URI_PARSING_HOST;
         _state |= ES_URI_PARSING_PORT;
@@ -612,14 +612,14 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
       case ' ':
       case '\t':
 
-        requestUri.setHost(_workingBuffer->duplicate(_allocator));
+        requestUri.setHost(_parseBuffer->duplicate(_allocator));
 
         if (0 == requestUri.host()) {
           return ESB_OUT_OF_MEMORY;
         }
 
         inputBuffer->readMark();
-        _workingBuffer->clear();
+        _parseBuffer->clear();
 
         _state &= ~ES_URI_PARSING_HOST;
         _state |= ES_URI_PARSE_COMPLETE;
@@ -630,7 +630,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
 
       case '/':
 
-        requestUri.setHost(_workingBuffer->duplicate(_allocator));
+        requestUri.setHost(_parseBuffer->duplicate(_allocator));
 
         if (0 == requestUri.host()) {
           return ESB_OUT_OF_MEMORY;
@@ -638,7 +638,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
 
         inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
         inputBuffer->readMark();
-        _workingBuffer->clear();
+        _parseBuffer->clear();
 
         _state &= ~ES_URI_PARSING_HOST;
         _state |= ES_URI_PARSING_ABS_PATH;
@@ -647,14 +647,14 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
 
       case '?':
 
-        requestUri.setHost(_workingBuffer->duplicate(_allocator));
+        requestUri.setHost(_parseBuffer->duplicate(_allocator));
 
         if (0 == requestUri.host()) {
           return ESB_OUT_OF_MEMORY;
         }
 
         inputBuffer->readMark();
-        _workingBuffer->clear();
+        _parseBuffer->clear();
 
         _state &= ~ES_URI_PARSING_HOST;
         _state |= ES_URI_PARSING_QUERY;
@@ -665,14 +665,14 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
 
       case '#':
 
-        requestUri.setHost(_workingBuffer->duplicate(_allocator));
+        requestUri.setHost(_parseBuffer->duplicate(_allocator));
 
         if (0 == requestUri.host()) {
           return ESB_OUT_OF_MEMORY;
         }
 
         inputBuffer->readMark();
-        _workingBuffer->clear();
+        _parseBuffer->clear();
 
         _state &= ~ES_URI_PARSING_HOST;
         _state |= ES_URI_PARSING_FRAGMENT;
@@ -723,7 +723,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_PORT;
       _state |= ES_URI_PARSE_COMPLETE;
@@ -743,7 +743,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
 
       inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       return parseAbsPath(inputBuffer, requestUri);
     }
@@ -757,7 +757,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
       _state |= ES_URI_PARSING_QUERY;
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       requestUri.setAbsPath("/");
 
@@ -773,7 +773,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
       _state |= ES_URI_PARSING_FRAGMENT;
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       requestUri.setAbsPath("/");
 
@@ -803,21 +803,21 @@ ESB::Error HttpRequestUriParser::parseNonHttpUri(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
     octet = inputBuffer->next();
 
     if (HttpUtil::IsSpace(octet)) {
-      requestUri.setOther(_workingBuffer->duplicate(_allocator));
+      requestUri.setOther(_parseBuffer->duplicate(_allocator));
 
       if (0 == requestUri.other()) {
         return ESB_OUT_OF_MEMORY;
       }
 
       inputBuffer->readMark();
-      _workingBuffer->clear();
+      _parseBuffer->clear();
 
       _state &= ~ES_URI_PARSING_NON_HTTP_URI;
       _state |= ES_URI_PARSE_COMPLETE;
@@ -825,7 +825,7 @@ ESB::Error HttpRequestUriParser::parseNonHttpUri(ESB::Buffer *inputBuffer,
       return ESB_SUCCESS;
     }
 
-    _workingBuffer->putNext(octet);
+    _parseBuffer->putNext(octet);
   }
 }
 

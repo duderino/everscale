@@ -27,6 +27,10 @@ class HttpServerTransaction : public HttpTransaction {
 
   virtual void reset();
 
+  inline HttpRequestParser *getParser() { return &_parser; }
+
+  inline HttpResponseFormatter *getFormatter() { return &_formatter; }
+
   /** Placement new.
    *
    *  @param size The size of the object.
@@ -37,23 +41,16 @@ class HttpServerTransaction : public HttpTransaction {
     return allocator.allocate(size);
   }
 
-  inline HttpRequestParser *getParser() { return &_parser; }
-
-  inline const HttpRequestParser *getParser() const { return &_parser; }
-
-  inline HttpResponseFormatter *getFormatter() { return &_formatter; }
-
-  inline const HttpResponseFormatter *getFormatter() const {
-    return &_formatter;
-  }
-
+ protected:
  private:
   // Disabled
   HttpServerTransaction(const HttpServerTransaction &transaction);
   void operator=(const HttpServerTransaction &transaction);
 
-  HttpRequestParser _parser;
-  HttpResponseFormatter _formatter;
+  ESB::Buffer _parseBuffer;          // 320 from base + 64 = 384
+  HttpRequestParser _parser;         // 384 + 128 = 512
+  HttpResponseFormatter _formatter;  // 512 + 64 = 576
+  unsigned char _storage[2048 - 576];
 };
 
 }  // namespace ES

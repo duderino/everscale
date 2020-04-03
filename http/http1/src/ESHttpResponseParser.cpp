@@ -41,7 +41,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
     _responseState = ES_PARSING_VERSION;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
   }
 
   HttpResponse &response = (HttpResponse &)message;
@@ -59,7 +59,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
     _responseState |= ES_PARSING_STATUS_CODE;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
   }
 
   if (ES_PARSING_STATUS_CODE & _responseState) {
@@ -73,7 +73,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
     _responseState |= ES_PARSING_REASON_PHRASE;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
   }
 
   if (ES_PARSING_REASON_PHRASE & _responseState) {
@@ -87,7 +87,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
     _responseState |= ES_PARSE_COMPLETE;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
 
     return ESB_SUCCESS;
   }
@@ -152,7 +152,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
@@ -169,7 +169,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
           // newline encountered - save reason phrase
 
           {
-            unsigned char *reasonPhrase = _workingBuffer->duplicate(
+            unsigned char *reasonPhrase = _parseBuffer->duplicate(
                 _allocator, true);  // trims trailing whitespace
 
             if (!reasonPhrase) {
@@ -186,8 +186,8 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
           // LWS encountered - replace with a single space & trim leading white
           // space
 
-          if (0 < _workingBuffer->writePosition()) {
-            _workingBuffer->putNext(' ');
+          if (0 < _parseBuffer->writePosition()) {
+            _parseBuffer->putNext(' ');
           }
 
           break;
@@ -201,7 +201,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
     }
 
     if (HttpUtil::IsText(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 

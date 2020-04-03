@@ -11,7 +11,6 @@ namespace ES {
 HttpRequestUri::HttpRequestUri(UriType type)
     : _type(type),
       _port(-1),
-      _username(NULL),
       _host(NULL),
       _absPath(NULL),
       _query(NULL),
@@ -21,7 +20,6 @@ HttpRequestUri::HttpRequestUri(UriType type)
 HttpRequestUri::HttpRequestUri()
     : _type(ES_URI_HTTP),
       _port(-1),
-      _username(NULL),
       _host(NULL),
       _absPath(NULL),
       _query(NULL),
@@ -33,7 +31,6 @@ HttpRequestUri::~HttpRequestUri() {}
 void HttpRequestUri::reset() {
   _type = ES_URI_HTTP;
   _port = -1;
-  _username = NULL;
   _host = NULL;
   _absPath = NULL;
   _query = NULL;

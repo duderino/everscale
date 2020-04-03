@@ -84,11 +84,11 @@ ESB::Error HttpRequest::parsePeerAddress(unsigned char *hostname, int size,
 
   const HttpHeader *header = findHeader("Host");
 
-  if (!header || !header->fieldValue()) {
+  if (!header || !header->value()) {
     return ESB_INVALID_ARGUMENT;
   }
 
-  const unsigned char *p = header->fieldValue();
+  const unsigned char *p = header->value();
   const unsigned char *q = p;
 
   while (*p && ':' != *p) {

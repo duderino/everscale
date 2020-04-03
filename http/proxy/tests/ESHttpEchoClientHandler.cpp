@@ -77,8 +77,8 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
 
     for (HttpHeader *header = (HttpHeader *)response.headers().first(); header;
          header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
-                    ESB_SAFE_STR(header->fieldValue()));
+      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->name()),
+                    ESB_SAFE_STR(header->value()));
     }
   }
 

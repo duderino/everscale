@@ -60,6 +60,7 @@ class HttpRequestFormatter : public HttpMessageFormatter {
 
   int _requestState;
   HttpRequestUriFormatter _requestUriFormatter;
+  char _pad[16];
 };
 
 }  // namespace ES

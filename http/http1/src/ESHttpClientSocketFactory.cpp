@@ -51,19 +51,12 @@ int AddressComparator::compare(const void *first, const void *second) const {
 static AddressComparator AddressComparator;
 
 HttpClientSocketFactory::HttpClientSocketFactory(
-    ESB::SocketMultiplexer &multiplexer, HttpClientHandler &handler,
-    HttpClientCounters &counters, ESB::Allocator &allocator)
+    ESB::SocketMultiplexer &multiplexer, ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
-      _handler(handler),
-      _counters(counters),
       _allocator(allocator),
       _map(AddressComparator),  // TODO replace with connection pool
       _cleanupHandler(*this),
-      _dnsClient(),
-      _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB::SystemConfig::Instance().cacheLineSize()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize() -
-                    ESB_BUFFER_OVERHEAD) {}
+      _dnsClient() {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
   HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
@@ -88,7 +81,7 @@ HttpClientSocketFactory::~HttpClientSocketFactory() {
 
 HttpClientSocket *HttpClientSocketFactory::create(
     HttpClientTransaction *transaction) {
-  if (!transaction || !_clientStack) {
+  if (!transaction || !_stack) {
     return NULL;
   }
 
@@ -129,9 +122,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
     return socket;
   }
 
-  socket = new (_allocator)
-      HttpClientSocket(_handler, *_clientStack, transaction, &_counters,
-                       &_cleanupHandler, _ioBufferPool);
+  socket =
+      new (_allocator) HttpClientSocket(*_stack, transaction, &_cleanupHandler);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
@@ -254,7 +246,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
       _dnsClient.resolve(transaction->peerAddress(), hostname, port, isSecure);
 
   if (ESB_SUCCESS != error) {
-    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    _stack->counters().getFailures()->record(transaction->startTime(),
+                                             ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RESOLVE);
     return error;
@@ -263,7 +256,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
   HttpClientSocket *socket = create(transaction);
 
   if (!socket) {
-    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    _stack->counters().getFailures()->record(transaction->startTime(),
+                                             ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
     ESB_LOG_CRITICAL("Cannot allocate new client socket");
@@ -274,8 +268,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
     error = socket->connect();
 
     if (ESB_SUCCESS != error) {
-      _counters.getFailures()->record(transaction->startTime(),
-                                      ESB::Date::Now());
+      _stack->counters().getFailures()->record(transaction->startTime(),
+                                               ESB::Date::Now());
       ESB_LOG_WARNING_ERRNO(error, "Cannot connect to %s:%d", hostname, port);
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -288,7 +282,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
   error = _multiplexer.addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    _stack->counters().getFailures()->record(transaction->startTime(),
+                                             ESB::Date::Now());
     socket->close();
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);

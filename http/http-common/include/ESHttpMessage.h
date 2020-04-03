@@ -28,13 +28,13 @@ class HttpMessage {
 
   inline const ESB::EmbeddedList &headers() const { return _headers; }
 
-  const HttpHeader *findHeader(const char *fieldName) const;
+  const HttpHeader *findHeader(const char *name) const;
 
-  ESB::Error addHeader(const char *fieldName, const char *fieldValue,
+  ESB::Error addHeader(const char *name, const char *value,
                        ESB::Allocator &allocator);
 
-  ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName,
-                       const char *fieldValueFormat, ...)
+  ESB::Error addHeader(ESB::Allocator &allocator, const char *name,
+                       const char *valueFormat, ...)
       __attribute__((format(printf, 4, 5)));
 
   /**

@@ -27,9 +27,8 @@ class HttpClientMultiplexer : public HttpMultiplexer {
  public:
   HttpClientMultiplexer(ESB::UInt32 connections,
                         HttpSeedTransactionHandler &seedTransactionHandler,
-                        ESB::UInt32 maxSockets,
-                        HttpClientHandler &clientHandler,
-                        HttpClientCounters &clientCounters,
+                        ESB::UInt32 maxSockets, HttpClientHandler &handler,
+                        HttpClientCounters &counters,
                         ESB::Allocator &allocator);
 
   virtual ~HttpClientMultiplexer();
@@ -43,11 +42,14 @@ class HttpClientMultiplexer : public HttpMultiplexer {
   HttpClientMultiplexer(const HttpClientMultiplexer &);
   void operator=(const HttpClientMultiplexer &);
 
-  class HttpClientStackImpl : public HttpClientStack {
+  class HttpClientStackImpl : public HttpClientSocket::Stack {
    public:
     HttpClientStackImpl(ESB::EpollMultiplexer &multiplexer,
-                        HttpClientSocketFactory &clientSocketFactory,
-                        HttpClientTransactionFactory &clientTransactionFactory);
+                        HttpClientSocketFactory &socketFactory,
+                        HttpClientTransactionFactory &transactionFactory,
+                        HttpClientHandler &handler,
+                        HttpClientCounters &counters,
+                        ESB::BufferPool &bufferPool);
     virtual ~HttpClientStackImpl();
 
     virtual HttpClientTransaction *createTransaction();
@@ -55,6 +57,9 @@ class HttpClientMultiplexer : public HttpMultiplexer {
     virtual ESB::Error executeClientTransaction(
         HttpClientTransaction *transaction);
     virtual void destroyTransaction(HttpClientTransaction *transaction);
+    virtual HttpClientHandler &handler();
+    virtual HttpClientCounters &counters();
+    virtual ESB::BufferPool &bufferPool();
 
    private:
     // Disabled
@@ -62,14 +67,19 @@ class HttpClientMultiplexer : public HttpMultiplexer {
     HttpClientStackImpl &operator=(const HttpClientStackImpl &);
 
     ESB::EpollMultiplexer &_multiplexer;
-    HttpClientSocketFactory &_clientSocketFactory;
-    HttpClientTransactionFactory &_clientTransactionFactory;
+    HttpClientSocketFactory &_socketFactory;
+    HttpClientTransactionFactory &_transactionFactory;
+    HttpClientHandler &_handler;
+    HttpClientCounters &_counters;
+    ESB::BufferPool &_bufferPool;
   };
 
   ESB::UInt32 _connections;
   HttpSeedTransactionHandler &_seedTransactionHandler;
-  HttpClientSocketFactory _clientSocketFactory;
-  HttpClientTransactionFactory _clientTransactionFactory;
+  HttpClientSocketFactory _socketFactory;
+  HttpClientTransactionFactory _transactionFactory;
+  ESB::DiscardAllocator _ioBufferPoolAllocator;
+  ESB::BufferPool _ioBufferPool;
   HttpClientStackImpl _clientStack;
 };
 

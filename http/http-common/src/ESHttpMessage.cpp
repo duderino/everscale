@@ -23,7 +23,7 @@ const HttpHeader *HttpMessage::findHeader(const char *fieldName) const {
 
   for (const HttpHeader *header = (const HttpHeader *)_headers.first(); header;
        header = (const HttpHeader *)header->next()) {
-    if (0 == strcasecmp(fieldName, (const char *)header->fieldName())) {
+    if (0 == strcasecmp(fieldName, (const char *)header->name())) {
       return header;
     }
   }

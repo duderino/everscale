@@ -194,9 +194,8 @@ bool ParseRequest(const char *inputFileName) {
 
       for (header = (HttpHeader *)request.headers().first(); header;
            header = (HttpHeader *)header->next()) {
-        fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
-                0 == header->fieldValue() ? "null"
-                                          : (const char *)header->fieldValue());
+        fprintf(stderr, "   %s: %s\n", (const char *)header->name(),
+                0 == header->value() ? "null" : (const char *)header->value());
       }
     }
 
@@ -650,9 +649,8 @@ bool ParseResponse(const char *inputFileName) {
 
       for (header = (HttpHeader *)response.headers().first(); header;
            header = (HttpHeader *)header->next()) {
-        fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
-                0 == header->fieldValue() ? "null"
-                                          : (const char *)header->fieldValue());
+        fprintf(stderr, "   %s: %s\n", (const char *)header->name(),
+                0 == header->value() ? "null" : (const char *)header->value());
       }
     }
 

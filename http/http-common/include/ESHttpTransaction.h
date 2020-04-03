@@ -39,10 +39,6 @@
 
 namespace ES {
 
-#ifndef ES_HTTP_WORKING_BUFFER_SIZE
-#define ES_HTTP_WORKING_BUFFER_SIZE 2048
-#endif
-
 // TODO buffers should not be exposed here.  Move to a subclass that is not
 // visible to the client and server handlers.
 class HttpTransaction : public ESB::EmbeddedListElement {
@@ -78,15 +74,11 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   inline HttpResponse &response() { return _response; }
 
-  inline void setContext(void *appContext) { _appContext = appContext; }
+  inline void setContext(void *appContext) { _context = appContext; }
 
-  inline void *context() { return _appContext; }
+  inline void *context() { return _context; }
 
-  inline const void *context() const { return _appContext; }
-
-  inline ESB::Buffer *getWorkingBuffer() { return &_workingBuffer; }
-
-  inline const ESB::Buffer *getWorkingBuffer() const { return &_workingBuffer; }
+  inline const void *context() const { return _context; }
 
   /** Return an optional handler that can destroy the element.
    *
@@ -100,21 +92,19 @@ class HttpTransaction : public ESB::EmbeddedListElement {
   inline const ESB::Date &startTime() const { return _start; }
 
  protected:
-  ESB::DiscardAllocator _allocator;
+  ESB::DiscardAllocator _allocator;  // 24 from base+48= 72
 
  private:
   // Disabled
   HttpTransaction(const HttpTransaction &transaction);
   void operator=(const HttpTransaction &transaction);
 
-  void *_appContext;
-  ESB::CleanupHandler *_cleanupHandler;
-  ESB::Date _start;
-  ESB::SocketAddress _peerAddress;
-  HttpRequest _request;
-  HttpResponse _response;
-  ESB::Buffer _workingBuffer;
-  unsigned char _workingBufferStorage[ES_HTTP_WORKING_BUFFER_SIZE];
+  void *_context;                        // 72+8 = 80
+  ESB::CleanupHandler *_cleanupHandler;  // 80+8 = 88
+  ESB::Date _start;                      // 88+16 = 104
+  ESB::SocketAddress _peerAddress;       // 104+24 = 128
+  HttpRequest _request;                  // 128+128 = 256
+  HttpResponse _response;                // 256+64 = 320
 };
 
 }  // namespace ES

@@ -24,17 +24,11 @@ class HttpClientTransaction : public HttpTransaction {
 
   virtual ~HttpClientTransaction();
 
-  virtual void reset();
-
   inline HttpResponseParser *getParser() { return &_parser; }
-
-  inline const HttpResponseParser *getParser() const { return &_parser; }
 
   inline HttpRequestFormatter *getFormatter() { return &_formatter; }
 
-  inline const HttpRequestFormatter *getFormatter() const {
-    return &_formatter;
-  }
+  virtual void reset();
 
   /** Placement new.
    *
@@ -51,8 +45,10 @@ class HttpClientTransaction : public HttpTransaction {
   HttpClientTransaction(const HttpClientTransaction &transaction);
   void operator=(const HttpClientTransaction &transaction);
 
-  HttpResponseParser _parser;
-  HttpRequestFormatter _formatter;
+  ESB::Buffer _parseBuffer;         // 320 from base + 64 = 384
+  HttpResponseParser _parser;       // 384+64 = 448
+  HttpRequestFormatter _formatter;  // 448+64 = 512
+  unsigned char _storage[2048 - 512];
 };
 
 /** TODO replace with something more generic */

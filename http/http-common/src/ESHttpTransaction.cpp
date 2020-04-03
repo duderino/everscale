@@ -20,31 +20,29 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
     : _allocator(ESB::SystemConfig::Instance().pageSize(),
                  ESB::SystemConfig::Instance().cacheLineSize(),
                  ESB::SystemAllocator::Instance()),
-      _appContext(0),
+      _context(0),
       _cleanupHandler(cleanupHandler),
       _start(),
       _peerAddress(),
       _request(),
-      _response(),
-      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
+      _response() {}
 
 HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
                                  ESB::CleanupHandler *cleanupHandler)
     : _allocator(ESB::SystemConfig::Instance().pageSize(),
                  ESB::SystemConfig::Instance().cacheLineSize(),
                  ESB::SystemAllocator::Instance()),
-      _appContext(0),
+      _context(0),
       _cleanupHandler(cleanupHandler),
       _start(),
       _peerAddress(*peerAddress),
       _request(),
-      _response(),
-      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
+      _response() {}
 
 HttpTransaction::~HttpTransaction() {}
 
 void HttpTransaction::reset() {
-  _appContext = 0;
+  _context = 0;
 
   ESB::SocketAddress peerAddress;
 
@@ -54,7 +52,6 @@ void HttpTransaction::reset() {
   _request.reset();
   _response.reset();
   //_ioBuffer.compact();
-  _workingBuffer.clear();
   _start = 0;
 }
 

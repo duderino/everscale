@@ -213,12 +213,12 @@ class HttpRequestUri {
 
   UriType _type;
   ESB::Int32 _port;
-  const unsigned char *_username;
   const unsigned char *_host;
   const unsigned char *_absPath;
   const unsigned char *_query;
   const unsigned char *_fragment;
   const unsigned char *_other;
+  char _pad[8];
 };
 
 }  // namespace ES

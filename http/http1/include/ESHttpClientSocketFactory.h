@@ -43,12 +43,10 @@ class HttpClientSocketFactory {
    *
    */
   HttpClientSocketFactory(ESB::SocketMultiplexer &multiplexer,
-                          HttpClientHandler &handler,
-                          HttpClientCounters &counters,
                           ESB::Allocator &allocator);
   /** Must be called after constructor */
-  inline void setClientStack(HttpClientStack &clientStack) {
-    _clientStack = &clientStack;
+  inline void setClientStack(HttpClientSocket::Stack &clientStack) {
+    _stack = &clientStack;
   }
 
   /** Destructor.
@@ -101,17 +99,13 @@ class HttpClientSocketFactory {
     HttpClientSocketFactory &_factory;
   };
 
-  HttpClientStack *_clientStack;
+  HttpClientSocket::Stack *_stack;
   ESB::SocketMultiplexer &_multiplexer;
-  HttpClientHandler &_handler;
-  HttpClientCounters &_counters;
   ESB::Allocator &_allocator;
   ESB::Map _map;
   ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
   ESB::SystemDnsClient _dnsClient;
-  ESB::DiscardAllocator _ioBufferPoolAllocator;
-  ESB::BufferPool _ioBufferPool;
 };
 
 }  // namespace ES

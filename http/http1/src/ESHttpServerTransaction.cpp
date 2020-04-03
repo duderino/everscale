@@ -6,7 +6,8 @@ namespace ES {
 
 HttpServerTransaction::HttpServerTransaction()
     : HttpTransaction(0),
-      _parser(getWorkingBuffer(), _allocator),
+      _parseBuffer(_storage, sizeof(_storage)),
+      _parser(&_parseBuffer, _allocator),
       _formatter() {}
 
 HttpServerTransaction::~HttpServerTransaction() {}
@@ -15,6 +16,7 @@ void HttpServerTransaction::reset() {
   HttpTransaction::reset();
   _parser.reset();
   _formatter.reset();
+  _parseBuffer.clear();
 }
 
 }  // namespace ES

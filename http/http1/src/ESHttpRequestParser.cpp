@@ -17,11 +17,11 @@ namespace ES {
 #define ES_PARSING_HTTP_VERSION (1 << 2)
 #define ES_PARSE_COMPLETE (1 << 3)
 
-HttpRequestParser::HttpRequestParser(ESB::Buffer *workingBuffer,
+HttpRequestParser::HttpRequestParser(ESB::Buffer *parseBuffer,
                                      ESB::DiscardAllocator &allocator)
-    : HttpMessageParser(workingBuffer, allocator),
+    : HttpMessageParser(parseBuffer, allocator),
       _requestState(0x00),
-      _requestUriParser(workingBuffer, allocator) {}
+      _requestUriParser(parseBuffer, allocator) {}
 
 HttpRequestParser::~HttpRequestParser() {}
 
@@ -44,7 +44,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
     _requestState = ES_PARSING_METHOD;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
   }
 
   HttpRequest &request = (HttpRequest &)message;
@@ -62,7 +62,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
     _requestState |= ES_PARSING_REQUEST_URI;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
   }
 
   if (ES_PARSING_REQUEST_URI & _requestState) {
@@ -76,7 +76,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
     _requestState |= ES_PARSING_HTTP_VERSION;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
   }
 
   if (ES_PARSING_HTTP_VERSION & _requestState) {
@@ -90,7 +90,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
     _requestState |= ES_PARSE_COMPLETE;
 
     inputBuffer->readMark();
-    _workingBuffer->clear();
+    _parseBuffer->clear();
 
     return ESB_SUCCESS;
   }
@@ -120,20 +120,20 @@ ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer,
       return ESB_AGAIN;
     }
 
-    if (!_workingBuffer->isWritable()) {
+    if (!_parseBuffer->isWritable()) {
       return ESB_OVERFLOW;
     }
 
     octet = inputBuffer->next();
 
     if (HttpUtil::IsSpace(octet)) {
-      request.setMethod(_workingBuffer->duplicate(_allocator));
+      request.setMethod(_parseBuffer->duplicate(_allocator));
 
       return 0 == request.method() ? ESB_OUT_OF_MEMORY : ESB_SUCCESS;
     }
 
     if (HttpUtil::IsToken(octet)) {
-      _workingBuffer->putNext(octet);
+      _parseBuffer->putNext(octet);
       continue;
     }
 

@@ -21,6 +21,9 @@
 #include <ESBEmbeddedMapElement.h>
 #endif
 
+#define ESB_IS_BLOCKING (1 << 1)
+#define ESB_IS_CONNECTED (1 << 2)
+
 namespace ESB {
 
 /** TCPSocket is a generic base class for connected and listening tcp
@@ -128,7 +131,7 @@ class TCPSocket {
    *
    *  @return true if this socket is a blocking socket, false otherwise.
    */
-  inline bool isBlocking() const { return _isBlocking; }
+  inline bool isBlocking() const { return _flags & ESB_IS_BLOCKING; }
 
   /** Set the socket's blocking/non-blocking property.
    *
@@ -176,7 +179,7 @@ class TCPSocket {
   }
 
  protected:
-  bool _isBlocking;
+  int _flags;
   SOCKET _sockFd;
 
  private:

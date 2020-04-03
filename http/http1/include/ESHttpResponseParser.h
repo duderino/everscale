@@ -52,6 +52,7 @@ class HttpResponseParser : public HttpMessageParser {
                                HttpResponse &response);
 
   int _responseState;
+  char _pad[16];
 };
 
 }  // namespace ES

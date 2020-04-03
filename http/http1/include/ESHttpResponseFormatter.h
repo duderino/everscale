@@ -50,6 +50,7 @@ class HttpResponseFormatter : public HttpMessageFormatter {
                                 const HttpResponse &response);
 
   int _responseState;
+  char _pad[32];
 };
 
 }  // namespace ES

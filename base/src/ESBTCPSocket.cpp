@@ -70,20 +70,35 @@ CleanupHandler *TCPSocket::State::cleanupHandler() { return _cleanupHandler; }
 
 const void *TCPSocket::State::key() const { return &_peerAddress; }
 
-TCPSocket::TCPSocket() : _isBlocking(false), _sockFd(INVALID_SOCKET) {}
+TCPSocket::TCPSocket() : _flags(0), _sockFd(INVALID_SOCKET) {}
 
-TCPSocket::TCPSocket(bool isBlocking)
-    : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
+TCPSocket::TCPSocket(bool isBlocking) : _flags(0), _sockFd(INVALID_SOCKET) {
+  if (isBlocking) {
+    _flags |= ESB_IS_BLOCKING;
+  } else {
+    _flags &= ~ESB_IS_BLOCKING;
+  }
+}
 
 TCPSocket::TCPSocket(const State &state)
-    : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
+    : _flags(0), _sockFd(state.socketDescriptor()) {
+  if (state.isBlocking()) {
+    _flags |= ESB_IS_BLOCKING;
+  } else {
+    _flags &= ~ESB_IS_BLOCKING;
+  }
+}
 
 TCPSocket::~TCPSocket() { close(); }
 
 Error TCPSocket::reset(const State &state) {
   close();
-  _isBlocking = state.isBlocking();
   _sockFd = state.socketDescriptor();
+  if (state.isBlocking()) {
+    _flags |= ESB_IS_BLOCKING;
+  } else {
+    _flags &= ~ESB_IS_BLOCKING;
+  }
   return ESB_SUCCESS;
 }
 
@@ -148,7 +163,11 @@ Error TCPSocket::setBlocking(bool isBlocking) {
 #error "Method to set socket to blocking/non-blocking is required."
 #endif
 
-  _isBlocking = isBlocking;
+  if (isBlocking) {
+    _flags |= ESB_IS_BLOCKING;
+  } else {
+    _flags &= ~ESB_IS_BLOCKING;
+  }
 
   return ESB_SUCCESS;
 }

@@ -23,12 +23,11 @@ class HttpRequestParser : public HttpMessageParser {
  public:
   /** Create a new request parser
    *
-   * @param workingBuffer Temporary storage for parsing
+   * @param parseBuffer Temporary storage for parsing
    * @param allocator The discard allocator to use for allocating internal
    * strings.
    */
-  HttpRequestParser(ESB::Buffer *workingBuffer,
-                    ESB::DiscardAllocator &allocator);
+  HttpRequestParser(ESB::Buffer *parseBuffer, ESB::DiscardAllocator &allocator);
 
   virtual ~HttpRequestParser();
 
@@ -63,6 +62,7 @@ class HttpRequestParser : public HttpMessageParser {
 
   int _requestState;
   HttpRequestUriParser _requestUriParser;
+  char _pad[16];
 };
 
 }  // namespace ES

@@ -29,26 +29,21 @@
 namespace ESB {
 
 ConnectedTCPSocket::ConnectedTCPSocket()
-    : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {}
+    : TCPSocket(), _listenerAddress(), _peerAddress() {}
 
 ConnectedTCPSocket::ConnectedTCPSocket(bool isBlocking)
-    : TCPSocket(isBlocking),
-      _isConnected(false),
-      _listenerAddress(),
-      _peerAddress() {}
+    : TCPSocket(isBlocking), _listenerAddress(), _peerAddress() {}
 
 ConnectedTCPSocket::ConnectedTCPSocket(const SocketAddress &peer,
                                        bool isBlocking)
-    : TCPSocket(isBlocking),
-      _isConnected(false),
-      _listenerAddress(),
-      _peerAddress(peer) {}
+    : TCPSocket(isBlocking), _listenerAddress(), _peerAddress(peer) {}
 
 ConnectedTCPSocket::ConnectedTCPSocket(const State &state)
     : TCPSocket(state),
-      _isConnected(true),
       _listenerAddress(state.listeningAddress()),
-      _peerAddress(state.peerAddress()) {}
+      _peerAddress(state.peerAddress()) {
+  _flags |= ESB_IS_CONNECTED;
+}
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
 
@@ -59,7 +54,7 @@ Error ConnectedTCPSocket::reset(const State &acceptData) {
     return error;
   }
 
-  _isConnected = true;
+  _flags |= ESB_IS_CONNECTED;
   _listenerAddress = acceptData.listeningAddress();
   _peerAddress = acceptData.peerAddress();
 
@@ -97,7 +92,7 @@ Error ConnectedTCPSocket::connect() {
     return LastError();
   }
 
-  error = setBlocking(_isBlocking);
+  error = setBlocking(isBlocking());
 
   if (ESB_SUCCESS != error) {
     close();
@@ -112,7 +107,7 @@ Error ConnectedTCPSocket::connect() {
                                 sizeof(SocketAddress::Address))) {
     error = LastError();
 
-    if (false == _isBlocking) {
+    if (!isBlocking()) {
 #if defined UNIX_NONBLOCKING_CONNECT_ERROR
       if (ESB_INPROGRESS == error) {
         return ESB_SUCCESS;
@@ -134,7 +129,7 @@ Error ConnectedTCPSocket::connect() {
 #error "connect and sockaddr or equivalent is required"
 #endif
 
-  _isConnected = true;
+  _flags |= ESB_IS_CONNECTED;
 
   return ESB_SUCCESS;
 }
@@ -142,7 +137,7 @@ Error ConnectedTCPSocket::connect() {
 void ConnectedTCPSocket::close() {
   TCPSocket::close();
 
-  _isConnected = false;
+  _flags &= ~ESB_IS_CONNECTED;
 }
 
 bool ConnectedTCPSocket::isConnected() {
@@ -150,7 +145,7 @@ bool ConnectedTCPSocket::isConnected() {
     return false;
   }
 
-  if (_isConnected) {
+  if (_flags & ESB_IS_CONNECTED) {
     return true;
   }
 
@@ -166,14 +161,14 @@ bool ConnectedTCPSocket::isConnected() {
 
   if (SOCKET_ERROR !=
       getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
-    _isConnected = true;
+    _flags |= ESB_IS_CONNECTED;
   }
 
 #else
 #error "getpeername or equivalent is required"
 #endif
 
-  return _isConnected;
+  return _flags & ESB_IS_CONNECTED;
 }
 
 bool ConnectedTCPSocket::isClient() const {

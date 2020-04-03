@@ -100,32 +100,32 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
     }
 
     if (ES_FORMATTING_FIELD_NAME & _state) {
-      assert(_currentHeader->fieldName());
+      assert(_currentHeader->name());
 
-      if (0 == _currentHeader->fieldName()) {
+      if (0 == _currentHeader->name()) {
         return HttpUtil::Rollback(outputBuffer, ES_HTTP_BAD_REQUEST_FIELD_NAME);
       }
 
-      error = formatFieldName(outputBuffer, _currentHeader->fieldName());
+      error = formatFieldName(outputBuffer, _currentHeader->name());
 
       if (ESB_SUCCESS != error) {
         return error;
       }
 
-      if (0 == strcasecmp((const char *)_currentHeader->fieldName(),
-                          "Content-Length")) {
+      if (0 ==
+          strcasecmp((const char *)_currentHeader->name(), "Content-Length")) {
         _state |= ES_FOUND_CONTENT_LENGTH_HEADER;
       }
 
-      if (0 == strcasecmp((const char *)_currentHeader->fieldName(),
+      if (0 == strcasecmp((const char *)_currentHeader->name(),
                           "Transfer-Encoding")) {
         // If a Transfer-Encoding header field (section 14.41) is present and
         // has any value other than "identity", then the transfer-length is
         // defined by use of the "chunked" transfer-coding (section 3.6),
         // unless the message is terminated by closing the connection.
 
-        if (0 == _currentHeader->fieldValue() ||
-            0 != strncmp((const char *)_currentHeader->fieldValue(), "identity",
+        if (0 == _currentHeader->value() ||
+            0 != strncmp((const char *)_currentHeader->value(), "identity",
                          sizeof("identity") - 1)) {
           _state |= ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER;
         }
@@ -136,7 +136,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
     }
 
     if (ES_FORMATTING_FIELD_VALUE & _state) {
-      error = formatFieldValue(outputBuffer, _currentHeader->fieldValue());
+      error = formatFieldValue(outputBuffer, _currentHeader->value());
 
       if (ESB_SUCCESS != error) {
         return error;

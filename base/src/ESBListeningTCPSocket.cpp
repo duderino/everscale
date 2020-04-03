@@ -50,7 +50,7 @@ Error ListeningTCPSocket::bind() {
     return LastError();
   }
 
-  error = setBlocking(_isBlocking);
+  error = setBlocking(isBlocking());
 
   if (ESB_SUCCESS != error) {
     close();
@@ -133,8 +133,9 @@ Error ListeningTCPSocket::accept(State *data) {
     return LastError();
   }
 
-  if (!_isBlocking) {
-    Error error = TCPSocket::SetBlocking(data->socketDescriptor(), _isBlocking);
+  if (!isBlocking()) {
+    Error error =
+        TCPSocket::SetBlocking(data->socketDescriptor(), isBlocking());
 
     if (ESB_SUCCESS != error) {
       TCPSocket::Close(data->socketDescriptor());
@@ -144,7 +145,7 @@ Error ListeningTCPSocket::accept(State *data) {
   }
 
   data->setListeningAddress(_listeningAddress);
-  data->setIsBlocking(_isBlocking);
+  data->setIsBlocking(isBlocking());
 
   return ESB_SUCCESS;
 }
