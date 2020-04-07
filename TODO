@@ -1,5 +1,4 @@
 buffer rework:
- - io buffers belong to sockets.  try moving them to sockets and keep if performance doesn't degrade
  - anticipating h2, move parsing and formatting state from sockets to transactions
  - every socket needs 2 io buffers, one for send one for recv... unless it can be guaranteed that they only read data from the current transaction
  - unless it can be guaranteed that every transaction is either parsing or formatting but never both, give transactions two parse buffers too.
@@ -55,7 +54,6 @@ allocators:
  - add counters to track stranded memory in discard allocators
  - create an option to disable all allocators - just forward to the source allocator unless you are system.  Then see if there are memory leaks and measure perf difference.  also measure perf difference vs. tcmalloc
  - Should placement new automatically set cleanup handler if object has one?  Put cleanup handler in ESB::Object?
- - consider creating page allocator using mmap and using this for http buffers
 
 containers:
  - lockless linked list

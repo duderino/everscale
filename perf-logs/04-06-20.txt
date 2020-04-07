@@ -1,6 +1,8 @@
 jblatt@ubuntu-dev:~/src/duderino/everscale$ ./http/proxy/http-client-server-test -c 500 -i 5000 -r 1
 
 # results vs 04-01-20.txt reduced variance in latency by allocating memory for io buffers in chunks of 1000.
+# in the same batch of experiments I also tried allocating io buffers from mmap(), but QPS was 20-30k worse
+# than just having the system allocator allocate pages.
 
 CLIENT TRANS SUCCESS: QPS=58221.00, N=58221, LATENCY MSEC MEAN=3.49, VAR=20.71, MIN=1.20, MAX=92.16
 CLIENT TRANS SUCCESS: QPS=184934.00, N=184934, LATENCY MSEC MEAN=2.70, VAR=0.75, MIN=0.76, MAX=19.84
