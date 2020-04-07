@@ -21,9 +21,10 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
       _sockets(),
       _cleanupHandler(*this),
       _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB::SystemConfig::Instance().cacheLineSize()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize() -
-                    ESB_BUFFER_OVERHEAD) {}
+                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
+                             ESB::SystemAllocator::Instance()),
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
+                    ESB::NullLock::Instance(), _ioBufferPoolAllocator) {}
 
 HttpServerSocketFactory::~HttpServerSocketFactory() {
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();

@@ -64,12 +64,15 @@ class DiscardAllocator : public Allocator {
    *  @param chunkSize The size of the chunks the allocator uses.
    *  @param alignmentSize Returned allocation addresses will be a multiple of
    * this value, which must be a power of two.
+   *    *  @param multipleOf The size of the allocations made against the
+   * underlying allocator must be multiples of this.
    *  @param source The allocator to use to allocate any chunks.
    *        This is probably the system allocator.
    *  @see GetOverhead To determine how much extra memory the allocator
    *      will request from the source allocator for each chunk.
    */
-  DiscardAllocator(UInt32 chunkSize, UInt32 alignmentSize = sizeof(ESB::Word),
+  DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize = sizeof(Word),
+                   UInt16 multipleOf = 1,
                    Allocator &source = SystemAllocator::Instance());
 
   /** Destructor.  Any memory still used by the allocator will be return to
@@ -125,6 +128,10 @@ class DiscardAllocator : public Allocator {
     return allocator.allocate(size);
   }
 
+  static inline ESB::UInt32 SizeofChunk(ESB::UInt32 alignmentSize) {
+    return ESB_ALIGN(sizeof(Chunk), alignmentSize);
+  }
+
  private:
   //  Disabled
   DiscardAllocator(const DiscardAllocator &);
@@ -140,7 +147,8 @@ class DiscardAllocator : public Allocator {
   Chunk *allocateChunk(int chunkSize);
 
   Chunk *_head;
-  UInt32 _alignmentSize;
+  UInt16 _alignmentSize;
+  UInt16 _multipleOf;
   UInt32 _chunkSize;
   Allocator &_source;
   AllocatorCleanupHandler _cleanupHandler;

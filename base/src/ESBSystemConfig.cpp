@@ -26,24 +26,6 @@ namespace ESB {
 
 SystemConfig SystemConfig::_Instance;
 
-static ESB::UInt32 PageSize() {
-#if defined HAVE_SYSCONF && defined HAVE_SC_PAGESIZE
-  return sysconf(_SC_PAGESIZE);
-#elif defined HAVE_GETPAGESIZE
-  return getpagesize();
-#else
-#error "Need sysconf(_SC_PAGESIZE) or equivalent"
-#endif
-}
-
-static ESB::UInt32 CacheLineSize() {
-#if defined HAVE_SYSCONF && defined HAVE_SC_LEVEL1_DCACHE_LINESIZE
-  return sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-#else
-#error "Need sysconf(_SC_LEVEL1_DCACHE_LINESIZE) or equivalent"
-#endif
-}
-
 static UInt32 SoftLimit(int resource) {
 #if defined HAVE_STRUCT_RLIMIT && defined HAVE_GETRLIMIT
   struct rlimit rLimit;
@@ -105,8 +87,7 @@ static Error SetSoftLimit(int resource, UInt32 limit) {
 #endif
 }
 
-SystemConfig::SystemConfig()
-    : _pageSize(PageSize()), _cacheLineSize(CacheLineSize()) {}
+SystemConfig::SystemConfig() {}
 
 SystemConfig::~SystemConfig() {}
 

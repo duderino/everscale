@@ -2,16 +2,13 @@
 #include <ESBDiscardAllocator.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
 namespace ESB {
 
-DiscardAllocator::DiscardAllocator(UInt32 chunkSize, UInt32 alignmentSize,
-                                   Allocator &source)
+DiscardAllocator::DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize,
+                                   UInt16 multipleOf, Allocator &source)
     : _head(NULL),
       _alignmentSize(alignmentSize),
+      _multipleOf(multipleOf),
       _chunkSize(ESB_ALIGN(128 > chunkSize ? 128 : chunkSize, _alignmentSize)),
       _source(source),
       _cleanupHandler(*this) {}
@@ -30,6 +27,8 @@ DiscardAllocator::~DiscardAllocator() {
 }
 
 void *DiscardAllocator::allocate(UWord size) {
+  assert(0 < size);
+
   if (1 > size) {
     return NULL;
   }
@@ -113,8 +112,13 @@ Error DiscardAllocator::reset() {
 }
 
 DiscardAllocator::Chunk *DiscardAllocator::allocateChunk(int chunkSize) {
-  Chunk *chunk = (Chunk *)_source.allocate(
-      ESB_ALIGN(sizeof(Chunk), _alignmentSize) + chunkSize);
+  ESB::UInt32 size = SizeofChunk(_alignmentSize) + chunkSize;
+  assert(0 == size % _multipleOf);
+  if (0 != size % _multipleOf) {
+    return NULL;
+  }
+
+  Chunk *chunk = (Chunk *)_source.allocate(size);
 
   if (!chunk) {
     return NULL;
@@ -125,7 +129,7 @@ DiscardAllocator::Chunk *DiscardAllocator::allocateChunk(int chunkSize) {
   chunk->_size = chunkSize;
 
   // Always keep the next available block aligned
-  chunk->_data = ((char *)chunk) + ESB_ALIGN(sizeof(Chunk), _alignmentSize);
+  chunk->_data = ((char *)chunk) + SizeofChunk(_alignmentSize);
 
   return chunk;
 }

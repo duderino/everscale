@@ -23,10 +23,6 @@ class SystemConfig {
 
   virtual ~SystemConfig();
 
-  inline UInt32 pageSize() { return _pageSize; }
-
-  inline UInt32 cacheLineSize() { return _cacheLineSize; }
-
   UInt32 socketSoftMax();
 
   UInt32 socketHardMax();
@@ -40,8 +36,6 @@ class SystemConfig {
   SystemConfig(const SystemConfig &);
   SystemConfig &operator=(const SystemConfig &);
 
-  UInt32 _pageSize;
-  UInt32 _cacheLineSize;
   static SystemConfig _Instance;
 };
 

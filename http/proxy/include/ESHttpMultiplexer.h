@@ -13,7 +13,7 @@ namespace ES {
 
 class HttpMultiplexer : public ESB::SocketMultiplexer {
  public:
-  HttpMultiplexer(ESB::UInt32 maxSockets, ESB::Allocator &allocator);
+  HttpMultiplexer(ESB::UInt32 maxSockets);
 
   virtual ~HttpMultiplexer();
 
@@ -24,7 +24,6 @@ class HttpMultiplexer : public ESB::SocketMultiplexer {
   virtual bool isRunning() const;
 
  protected:
-  ESB::Allocator &_sourceAllocator;
   ESB::DiscardAllocator _factoryAllocator;
   ESB::EpollMultiplexer _epollMultiplexer;
 

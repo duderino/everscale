@@ -44,8 +44,7 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   HttpServerMultiplexer(ESB::UInt32 maxSockets,
                         ESB::ListeningTCPSocket &listeningSocket,
                         HttpServerHandler &serverHandler,
-                        HttpServerCounters &serverCounters,
-                        ESB::Allocator &allocator);
+                        HttpServerCounters &serverCounters);
 
   virtual ~HttpServerMultiplexer();
 

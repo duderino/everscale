@@ -36,8 +36,7 @@ TEST(DiscardAllocator, AllocExtraBigChunks) {
 
 TEST(DiscardAllocator, AllocMultipleChunksCacheLineAligned) {
   uint chunkSize = 4096;
-  DiscardAllocator allocator(chunkSize,
-                             SystemConfig::Instance().cacheLineSize());
+  DiscardAllocator allocator(chunkSize, ESB_CACHE_LINE_SIZE);
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
@@ -49,8 +48,7 @@ TEST(DiscardAllocator, AllocMultipleChunksCacheLineAligned) {
 
 TEST(DiscardAllocator, AllocExtraBigChunksCacheLineAligned) {
   uint chunkSize = 4096;
-  DiscardAllocator allocator(chunkSize,
-                             SystemConfig::Instance().cacheLineSize());
+  DiscardAllocator allocator(chunkSize, ESB_CACHE_LINE_SIZE);
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {

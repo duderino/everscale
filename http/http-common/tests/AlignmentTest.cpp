@@ -15,9 +15,8 @@
 using namespace ES;
 
 TEST(HttpCommon, Alignment) {
-  ESB::UInt32 cacheLineSize = ESB::SystemConfig::Instance().cacheLineSize();
-  EXPECT_EQ(cacheLineSize * 2, sizeof(HttpRequest));
-  EXPECT_EQ(cacheLineSize, sizeof(HttpResponse));
-  EXPECT_EQ(cacheLineSize, sizeof(HttpRequestUri));
-  EXPECT_EQ(cacheLineSize, sizeof(HttpHeader));
+  EXPECT_EQ(ESB_CACHE_LINE_SIZE * 2, sizeof(HttpRequest));
+  EXPECT_EQ(ESB_CACHE_LINE_SIZE, sizeof(HttpResponse));
+  EXPECT_EQ(ESB_CACHE_LINE_SIZE, sizeof(HttpRequestUri));
+  EXPECT_EQ(ESB_CACHE_LINE_SIZE, sizeof(HttpHeader));
 }

@@ -6,10 +6,6 @@
 #include <ESHttpUtil.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
 #ifndef ESB_SYSTEM_CONFIG_H
 #include <ESBSystemConfig.h>
 #endif
@@ -17,8 +13,9 @@
 namespace ES {
 
 HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
-    : _allocator(ESB::SystemConfig::Instance().pageSize(),
-                 ESB::SystemConfig::Instance().cacheLineSize(),
+    : _allocator(ESB_PAGE_SIZE -
+                     ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
+                 ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                  ESB::SystemAllocator::Instance()),
       _appContext(0),
       _cleanupHandler(cleanupHandler),
@@ -30,8 +27,9 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
 
 HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
                                  ESB::CleanupHandler *cleanupHandler)
-    : _allocator(ESB::SystemConfig::Instance().pageSize(),
-                 ESB::SystemConfig::Instance().cacheLineSize(),
+    : _allocator(ESB_PAGE_SIZE -
+                     ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
+                 ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                  ESB::SystemAllocator::Instance()),
       _appContext(0),
       _cleanupHandler(cleanupHandler),
@@ -53,7 +51,6 @@ void HttpTransaction::reset() {
   _allocator.reset();
   _request.reset();
   _response.reset();
-  //_ioBuffer.compact();
   _workingBuffer.clear();
   _start = 0;
 }

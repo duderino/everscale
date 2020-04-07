@@ -50,7 +50,7 @@ ESB::Error HttpClient::start() {
     }
     ESB::SocketMultiplexer *multiplexer = new (_allocator)
         HttpClientMultiplexer(connections, _seedTransactionHandler, maxSockets,
-                              _clientHandler, _clientCounters, _allocator);
+                              _clientHandler, _clientCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,

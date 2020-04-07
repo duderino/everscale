@@ -6,17 +6,14 @@
 #include <ESBSystemConfig.h>
 #endif
 
-#include <errno.h>
-
 namespace ES {
 
-HttpMultiplexer::HttpMultiplexer(ESB::UInt32 maxSockets,
-                                 ESB::Allocator &allocator)
-    : _sourceAllocator(allocator),
-      _factoryAllocator(ESB::SystemConfig::Instance().pageSize() * 1000,
-                        ESB::SystemConfig::Instance().cacheLineSize(),
-                        _sourceAllocator),
-      _epollMultiplexer(maxSockets, _sourceAllocator) {}
+HttpMultiplexer::HttpMultiplexer(ESB::UInt32 maxSockets)
+    : _factoryAllocator(
+          ESB_PAGE_SIZE * 1000 -
+              ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
+          ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
+      _epollMultiplexer(maxSockets, ESB::SystemAllocator::Instance()) {}
 
 HttpMultiplexer::~HttpMultiplexer() {}
 

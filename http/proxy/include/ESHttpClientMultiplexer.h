@@ -29,8 +29,7 @@ class HttpClientMultiplexer : public HttpMultiplexer {
                         HttpSeedTransactionHandler &seedTransactionHandler,
                         ESB::UInt32 maxSockets,
                         HttpClientHandler &clientHandler,
-                        HttpClientCounters &clientCounters,
-                        ESB::Allocator &allocator);
+                        HttpClientCounters &clientCounters);
 
   virtual ~HttpClientMultiplexer();
 

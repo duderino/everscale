@@ -221,6 +221,10 @@ check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
 
 check_include_file("fcntl.h" HAVE_FCNTL_H)
 
+check_include_file("sys/mman.h" HAVE_SYS_MMAN_H)
+check_symbol_exists(mmap "sys/mman.h" HAVE_MMAP)
+check_symbol_exists(munmap "sys/mman.h" HAVE_MUNMAP)
+
 check_include_file_cxx("atomic" HAVE_ATOMIC_H)
 check_cxx_source_compiles("#include <atomic>
 int main () {

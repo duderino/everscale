@@ -63,9 +63,9 @@ ESB::Error HttpServer::start() {
   ESB_LOG_NOTICE("Maximum sockets %u", maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
-    ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpServerMultiplexer(maxSockets, _listeningSocket, _serverHandler,
-                              _serverCounters, _allocator);
+    ESB::SocketMultiplexer *multiplexer =
+        new (_allocator) HttpServerMultiplexer(maxSockets, _listeningSocket,
+                                               _serverHandler, _serverCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,

@@ -6,9 +6,8 @@ namespace ES {
 
 HttpServerMultiplexer::HttpServerMultiplexer(
     ESB::UInt32 maxSockets, ESB::ListeningTCPSocket &listeningSocket,
-    HttpServerHandler &serverHandler, HttpServerCounters &serverCounters,
-    ESB::Allocator &allocator)
-    : HttpMultiplexer(maxSockets, allocator),
+    HttpServerHandler &serverHandler, HttpServerCounters &serverCounters)
+    : HttpMultiplexer(maxSockets),
       _serverSocketFactory(serverHandler, serverCounters, _factoryAllocator),
       _listeningSocket(serverHandler, listeningSocket, _serverSocketFactory,
                        serverCounters) {}

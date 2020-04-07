@@ -7,8 +7,8 @@ namespace ES {
 HttpClientMultiplexer::HttpClientMultiplexer(
     ESB::UInt32 connections, HttpSeedTransactionHandler &seedTransactionHandler,
     ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
-    HttpClientCounters &clientCounters, ESB::Allocator &allocator)
-    : HttpMultiplexer(maxSockets, allocator),
+    HttpClientCounters &clientCounters)
+    : HttpMultiplexer(maxSockets),
       _connections(connections),
       _seedTransactionHandler(seedTransactionHandler),
       _clientSocketFactory(*this, clientHandler, clientCounters,

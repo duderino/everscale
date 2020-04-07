@@ -61,9 +61,10 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _cleanupHandler(*this),
       _dnsClient(),
       _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB::SystemConfig::Instance().cacheLineSize()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize() -
-                    ESB_BUFFER_OVERHEAD) {}
+                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
+                             ESB::SystemAllocator::Instance()),
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
+                    ESB::NullLock::Instance(), _ioBufferPoolAllocator) {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
   HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
