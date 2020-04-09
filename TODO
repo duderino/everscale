@@ -1,6 +1,5 @@
 buffer rework:
  - anticipating h2, move parsing and formatting state from sockets to transactions
- - every socket needs 2 io buffers, one for send one for recv... unless it can be guaranteed that they only read data from the current transaction
  - unless it can be guaranteed that every transaction is either parsing or formatting but never both, give transactions two parse buffers too.
  - make http server sockets bufferless and transactionless when they are waiting for the next transaction.  if all buffers in transaction objects, use server transaction pool and perhaps a dedicated discard allocator.  Else use buffer pools.
 

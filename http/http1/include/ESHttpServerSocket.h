@@ -220,7 +220,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
   HttpServerHandler *_handler;
   HttpServerCounters *_counters;
   ESB::BufferPool &_bufferPool;
-  ESB::Buffer *_buffer;
+  ESB::Buffer *_recvBuffer;
+  ESB::Buffer *_sendBuffer;
   HttpServerTransaction _transaction;
   ESB::ConnectedTCPSocket _socket;
 };
