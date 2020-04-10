@@ -1,0 +1,14 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: jtblatt/everscale-build:04-09-20
+    steps:
+      - checkout
+      - run:
+          command: |
+              set +e
+              export CC=clang
+              export CXX=clang++
+              export CLANG_FORMAT=clang-format
+              cmake . && make && make test
