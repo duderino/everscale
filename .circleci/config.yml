@@ -14,7 +14,7 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
-              cmake -DCMAKE_BUILD_TYPE=DEBUG . && make && make test
+              BUILD_TYPE=DEBUG cmake . && make && make test
       - run:
           name: "tsan build"
           command: |
@@ -24,7 +24,7 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
-              cmake -DCMAKE_BUILD_TYPE=TSAN . && make && make test
+              BUILD_TYPE=TSAN cmake . && make && make test
       - run:
           name: "asan build"
           command: |
@@ -34,7 +34,7 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
-              cmake -DCMAKE_BUILD_TYPE=ASAN . && make && make test
+              BUILD_TYPE=ASAN cmake . && make && make test
       - run:
           name: "release build"
           command: |
@@ -44,4 +44,4 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
-              cmake -DCMAKE_BUILD_TYPE=RELEASE . && make && make test
+              BUILD_TYPE=RELEASE cmake . && make && make test
