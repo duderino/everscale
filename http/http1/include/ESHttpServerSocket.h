@@ -30,12 +30,10 @@ namespace ES {
 class HttpServerSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
-   *
-   * @param cleanupHandler An object that can be used to destroy this one
    */
-  HttpServerSocket(HttpServerHandler *handler,
-                   ESB::CleanupHandler *cleanupHandler,
-                   HttpServerCounters *counters, ESB::BufferPool &bufferPool);
+  HttpServerSocket(HttpServerHandler &handler,
+                   ESB::CleanupHandler &cleanupHandler,
+                   HttpServerCounters &counters, ESB::BufferPool &bufferPool);
 
   /** Destructor.
    */
@@ -182,11 +180,11 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
 
   /** Reset the server socket
    *
-   * @param acceptData An object created popupated by ESB::ListeningTCPSockets
+   * @param state An object created populated by ESB::ListeningTCPSockets
    *  when accepting a new connection.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error reset(HttpServerHandler *handler, ESB::TCPSocket::State &state);
+  ESB::Error reset(ESB::TCPSocket::State &state);
 
   /** Placement new.
    *
@@ -216,9 +214,9 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
   int _state;
   int _bodyBytesWritten;
   int _requestsPerConnection;
-  ESB::CleanupHandler *_cleanupHandler;
-  HttpServerHandler *_handler;
-  HttpServerCounters *_counters;
+  ESB::CleanupHandler &_cleanupHandler;
+  HttpServerHandler &_handler;
+  HttpServerCounters &_counters;
   ESB::BufferPool &_bufferPool;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;

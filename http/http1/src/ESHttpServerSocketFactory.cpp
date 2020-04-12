@@ -40,14 +40,14 @@ HttpServerSocket *HttpServerSocketFactory::create(
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   if (!socket) {
-    socket = new (_allocator) HttpServerSocket(&_handler, &_cleanupHandler,
-                                               &_counters, _ioBufferPool);
+    socket = new (_allocator)
+        HttpServerSocket(_handler, _cleanupHandler, _counters, _ioBufferPool);
     if (!socket) {
       return NULL;
     }
   }
 
-  socket->reset(&_handler, state);
+  socket->reset(state);
   return socket;
 }
 
