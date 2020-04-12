@@ -179,7 +179,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
       }
 
       // And read from the socket
-      assert(_buffer->isWritable());
+      assert(_recvBuffer->isWritable());
       result = _socket.receive(_recvBuffer);
 
       if (!multiplexer.isRunning()) {
