@@ -19,12 +19,7 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
       _counters(counters),
       _allocator(allocator),
       _sockets(),
-      _cleanupHandler(*this),
-      _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
-                             ESB::SystemAllocator::Instance()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
-                    ESB::NullLock::Instance(), _ioBufferPoolAllocator) {}
+      _cleanupHandler(*this) {}
 
 HttpServerSocketFactory::~HttpServerSocketFactory() {
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
@@ -37,11 +32,15 @@ HttpServerSocketFactory::~HttpServerSocketFactory() {
 
 HttpServerSocket *HttpServerSocketFactory::create(
     ESB::TCPSocket::State &state) {
+  if (!_stack) {
+    return NULL;
+  }
+
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   if (!socket) {
     socket = new (_allocator)
-        HttpServerSocket(_handler, _cleanupHandler, _counters, _ioBufferPool);
+        HttpServerSocket(_handler, *_stack, _counters, _cleanupHandler);
     if (!socket) {
       return NULL;
     }

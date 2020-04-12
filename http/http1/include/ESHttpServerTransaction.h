@@ -21,7 +21,7 @@ namespace ES {
 
 class HttpServerTransaction : public HttpTransaction {
  public:
-  HttpServerTransaction();
+  HttpServerTransaction(ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpServerTransaction();
 

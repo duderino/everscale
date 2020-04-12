@@ -21,6 +21,10 @@
 #include <ESBBufferPool.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_STACK_H
+#include <ESHttpServerStack.h>
+#endif
+
 namespace ES {
 
 /** A factory that creates and reuses HttpServerSockets
@@ -30,6 +34,8 @@ class HttpServerSocketFactory {
   HttpServerSocketFactory(HttpServerHandler &handler,
                           HttpServerCounters &counters,
                           ESB::Allocator &allocator);
+  /** Must be called after constructor */
+  inline void setStack(HttpServerStack &stack) { _stack = &stack; }
 
   virtual ~HttpServerSocketFactory();
 
@@ -76,13 +82,12 @@ class HttpServerSocketFactory {
     HttpServerSocketFactory &_factory;
   };
 
+  HttpServerStack *_stack;
   HttpServerHandler &_handler;
   HttpServerCounters &_counters;
   ESB::Allocator &_allocator;
   ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
-  ESB::DiscardAllocator _ioBufferPoolAllocator;
-  ESB::BufferPool _ioBufferPool;
 };
 
 }  // namespace ES

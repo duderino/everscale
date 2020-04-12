@@ -59,12 +59,7 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _allocator(allocator),
       _map(AddressComparator),  // TODO replace with connection pool
       _cleanupHandler(*this),
-      _dnsClient(),
-      _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
-                             ESB::SystemAllocator::Instance()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
-                    ESB::NullLock::Instance(), _ioBufferPoolAllocator) {}
+      _dnsClient() {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
   HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
@@ -89,7 +84,7 @@ HttpClientSocketFactory::~HttpClientSocketFactory() {
 
 HttpClientSocket *HttpClientSocketFactory::create(
     HttpClientTransaction *transaction) {
-  if (!transaction || !_clientStack) {
+  if (!transaction || !_stack) {
     return NULL;
   }
 
@@ -131,8 +126,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
   }
 
   socket = new (_allocator)
-      HttpClientSocket(_handler, *_clientStack, transaction->peerAddress(),
-                       _counters, &_cleanupHandler, _ioBufferPool);
+      HttpClientSocket(_handler, *_stack, transaction->peerAddress(), _counters,
+                       _cleanupHandler);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];

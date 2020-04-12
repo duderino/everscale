@@ -5,38 +5,11 @@
 #include <ESHttpClientTransaction.h>
 #endif
 
+#ifndef ES_HTTP_CLIENT_STACK_H
+#include <ESHttpClientStack.h>
+#endif
+
 namespace ES {
-
-class HttpClientStack {
- public:
-  HttpClientStack();
-  virtual ~HttpClientStack();
-
-  virtual HttpClientTransaction *createTransaction() = 0;
-
-  virtual bool isRunning() = 0;
-
-  /**
-   * Execute the client transaction.  If this method returns ESB_SUCCESS, then
-   * the transaction will be cleaned up automatically after it finishes.  If
-   * this method returns anything else then the caller should clean it up with
-   * destroyClientTransaction
-   *
-   * @param transaction The transaction
-   * @return ESB_SUCCESS if the transaction was successfully started, another
-   * error code otherwise.  If error, cleanup the transaction with the
-   * destroyTransaction function.
-   */
-  virtual ESB::Error executeClientTransaction(
-      HttpClientTransaction *transaction) = 0;
-
-  virtual void destroyTransaction(HttpClientTransaction *transaction) = 0;
-
- private:
-  // Disabled
-  HttpClientStack(const HttpClientStack &);
-  HttpClientStack &operator=(const HttpClientStack &);
-};
 
 class HttpClientHandler {
  public:

@@ -37,6 +37,14 @@
 #include <ESHttpClientTransactionFactory.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_STACK_H
+#include <ESHttpServerStack.h>
+#endif
+
+#ifndef ES_HTTP_SERVER_TRANSACTION_FACTORY_H
+#include <ESHttpServerTransactionFactory.h>
+#endif
+
 namespace ES {
 
 class HttpServerMultiplexer : public HttpMultiplexer {
@@ -57,7 +65,33 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   HttpServerMultiplexer(const HttpServerMultiplexer &);
   void operator=(const HttpServerMultiplexer &);
 
+  // This is what the server multiplexer exposes to server sockets
+  class HttpServerStackImpl : public HttpServerStack {
+   public:
+    HttpServerStackImpl(ESB::EpollMultiplexer &multiplexer,
+                        HttpServerTransactionFactory &serverTransactionFactory,
+                        ESB::BufferPool &bufferPool);
+    virtual ~HttpServerStackImpl();
+
+    virtual HttpServerTransaction *createTransaction();
+    virtual bool isRunning();
+    virtual void destroyTransaction(HttpServerTransaction *transaction);
+    virtual ESB::Buffer *acquireBuffer();
+    virtual void releaseBuffer(ESB::Buffer *buffer);
+
+   private:
+    // Disabled
+    HttpServerStackImpl(const HttpServerStackImpl &);
+    HttpServerStackImpl &operator=(const HttpServerStackImpl &);
+
+    ESB::BufferPool &_bufferPool;
+    ESB::EpollMultiplexer &_multiplexer;
+    HttpServerTransactionFactory &_serverTransactionFactory;
+  };
+
   HttpServerSocketFactory _serverSocketFactory;
+  HttpServerTransactionFactory _serverTransactionFactory;
+  HttpServerStackImpl _serverStack;
   HttpListeningSocket _listeningSocket;
 };
 

@@ -42,11 +42,13 @@ class HttpClientMultiplexer : public HttpMultiplexer {
   HttpClientMultiplexer(const HttpClientMultiplexer &);
   void operator=(const HttpClientMultiplexer &);
 
+  // This is what the client multiplexer exposes to client sockets
   class HttpClientStackImpl : public HttpClientStack {
    public:
     HttpClientStackImpl(ESB::EpollMultiplexer &multiplexer,
                         HttpClientSocketFactory &clientSocketFactory,
-                        HttpClientTransactionFactory &clientTransactionFactory);
+                        HttpClientTransactionFactory &clientTransactionFactory,
+                        ESB::BufferPool &bufferPool);
     virtual ~HttpClientStackImpl();
 
     virtual HttpClientTransaction *createTransaction();
@@ -54,12 +56,15 @@ class HttpClientMultiplexer : public HttpMultiplexer {
     virtual ESB::Error executeClientTransaction(
         HttpClientTransaction *transaction);
     virtual void destroyTransaction(HttpClientTransaction *transaction);
+    virtual ESB::Buffer *acquireBuffer();
+    virtual void releaseBuffer(ESB::Buffer *buffer);
 
    private:
     // Disabled
     HttpClientStackImpl(const HttpClientStackImpl &);
     HttpClientStackImpl &operator=(const HttpClientStackImpl &);
 
+    ESB::BufferPool &_bufferPool;
     ESB::EpollMultiplexer &_multiplexer;
     HttpClientSocketFactory &_clientSocketFactory;
     HttpClientTransactionFactory &_clientTransactionFactory;

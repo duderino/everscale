@@ -5,13 +5,13 @@
 namespace ES {
 
 HttpClientTransaction::HttpClientTransaction(
-    ESB::CleanupHandler *cleanupHandler)
+    ESB::CleanupHandler &cleanupHandler)
     : HttpTransaction(cleanupHandler),
       _parser(getWorkingBuffer(), _allocator),
       _formatter() {}
 
 HttpClientTransaction::HttpClientTransaction(
-    ESB::SocketAddress *peerAddress, ESB::CleanupHandler *cleanupHandler)
+    ESB::SocketAddress *peerAddress, ESB::CleanupHandler &cleanupHandler)
     : HttpTransaction(peerAddress, cleanupHandler),
       _parser(getWorkingBuffer(), _allocator),
       _formatter() {}

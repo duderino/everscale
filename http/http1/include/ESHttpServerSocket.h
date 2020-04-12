@@ -17,8 +17,8 @@
 #include <ESHttpServerCounters.h>
 #endif
 
-#ifndef ESB_BUFFER_POOL_H
-#include <ESBBufferPool.h>
+#ifndef ES_HTTP_SERVER_STACK_H
+#include <ESHttpServerStack.h>
 #endif
 
 namespace ES {
@@ -31,9 +31,9 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
    */
-  HttpServerSocket(HttpServerHandler &handler,
-                   ESB::CleanupHandler &cleanupHandler,
-                   HttpServerCounters &counters, ESB::BufferPool &bufferPool);
+  HttpServerSocket(HttpServerHandler &handler, HttpServerStack &stack,
+                   HttpServerCounters &counters,
+                   ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
@@ -214,13 +214,13 @@ class HttpServerSocket : public ESB::MultiplexedSocket {
   int _state;
   int _bodyBytesWritten;
   int _requestsPerConnection;
-  ESB::CleanupHandler &_cleanupHandler;
+  HttpServerStack &_stack;
   HttpServerHandler &_handler;
+  HttpServerTransaction *_transaction;
   HttpServerCounters &_counters;
-  ESB::BufferPool &_bufferPool;
+  ESB::CleanupHandler &_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;
-  HttpServerTransaction _transaction;
   ESB::ConnectedTCPSocket _socket;
 };
 

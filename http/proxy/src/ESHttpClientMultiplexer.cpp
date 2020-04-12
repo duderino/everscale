@@ -15,8 +15,8 @@ HttpClientMultiplexer::HttpClientMultiplexer(
                            _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientStack(_epollMultiplexer, _clientSocketFactory,
-                   _clientTransactionFactory) {
-  _clientSocketFactory.setClientStack(_clientStack);
+                   _clientTransactionFactory, _ioBufferPool) {
+  _clientSocketFactory.setStack(_clientStack);
 }
 
 HttpClientMultiplexer::~HttpClientMultiplexer() {}
@@ -54,6 +54,18 @@ const char *HttpClientMultiplexer::name() const {
 
 ESB::CleanupHandler *HttpClientMultiplexer::cleanupHandler() { return NULL; }
 
+HttpClientMultiplexer::HttpClientStackImpl::HttpClientStackImpl(
+    ESB::EpollMultiplexer &multiplexer,
+    HttpClientSocketFactory &clientSocketFactory,
+    HttpClientTransactionFactory &clientTransactionFactory,
+    ESB::BufferPool &bufferPool)
+    : _bufferPool(bufferPool),
+      _multiplexer(multiplexer),
+      _clientSocketFactory(clientSocketFactory),
+      _clientTransactionFactory(clientTransactionFactory) {}
+
+HttpClientMultiplexer::HttpClientStackImpl::~HttpClientStackImpl() {}
+
 bool HttpClientMultiplexer::HttpClientStackImpl::isRunning() {
   return _multiplexer.isRunning();
 }
@@ -73,14 +85,13 @@ void HttpClientMultiplexer::HttpClientStackImpl::destroyTransaction(
   return _clientTransactionFactory.release(transaction);
 }
 
-HttpClientMultiplexer::HttpClientStackImpl::HttpClientStackImpl(
-    ESB::EpollMultiplexer &multiplexer,
-    HttpClientSocketFactory &clientSocketFactory,
-    HttpClientTransactionFactory &clientTransactionFactory)
-    : _multiplexer(multiplexer),
-      _clientSocketFactory(clientSocketFactory),
-      _clientTransactionFactory(clientTransactionFactory) {}
+ESB::Buffer *HttpClientMultiplexer::HttpClientStackImpl::acquireBuffer() {
+  return _bufferPool.acquireBuffer();
+}
 
-HttpClientMultiplexer::HttpClientStackImpl::~HttpClientStackImpl() {}
+void HttpClientMultiplexer::HttpClientStackImpl::releaseBuffer(
+    ESB::Buffer *buffer) {
+  _bufferPool.releaseBuffer(buffer);
+}
 
 }  // namespace ES

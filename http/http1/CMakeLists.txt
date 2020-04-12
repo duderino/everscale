@@ -4,6 +4,7 @@ project(http1 VERSION ${VERSION} LANGUAGES CXX)
 set(SOURCE_FILES
         src/ESHttpClientCounters.cpp
         src/ESHttpClientHandler.cpp
+        src/ESHttpClientStack.cpp
         src/ESHttpClientHistoricalCounters.cpp
         src/ESHttpClientSimpleCounters.cpp
         src/ESHttpClientSocket.cpp
@@ -25,7 +26,9 @@ set(SOURCE_FILES
         src/ESHttpServerSimpleCounters.cpp
         src/ESHttpServerSocket.cpp
         src/ESHttpServerSocketFactory.cpp
+        src/ESHttpServerStack.cpp
         src/ESHttpServerTransaction.cpp
+        src/ESHttpServerTransactionFactory.cpp
         )
 
 add_library(http1 STATIC ${SOURCE_FILES})

@@ -12,12 +12,12 @@
 
 namespace ES {
 
-HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
+HttpTransaction::HttpTransaction(ESB::CleanupHandler &cleanupHandler)
     : _allocator(ESB_PAGE_SIZE -
                      ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                  ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                  ESB::SystemAllocator::Instance()),
-      _appContext(0),
+      _appContext(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),
       _peerAddress(),
@@ -25,13 +25,13 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler *cleanupHandler)
       _response(),
       _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
 
-HttpTransaction::HttpTransaction(ESB::SocketAddress *peerAddress,
-                                 ESB::CleanupHandler *cleanupHandler)
+HttpTransaction::HttpTransaction(const ESB::SocketAddress *peerAddress,
+                                 ESB::CleanupHandler &cleanupHandler)
     : _allocator(ESB_PAGE_SIZE -
                      ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                  ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                  ESB::SystemAllocator::Instance()),
-      _appContext(0),
+      _appContext(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),
       _peerAddress(*peerAddress),
@@ -56,7 +56,7 @@ void HttpTransaction::reset() {
 }
 
 ESB::CleanupHandler *HttpTransaction::cleanupHandler() {
-  return _cleanupHandler;
+  return &_cleanupHandler;
 }
 
 }  // namespace ES

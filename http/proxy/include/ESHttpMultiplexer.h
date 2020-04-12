@@ -9,6 +9,10 @@
 #include <ESBEpollMultiplexer.h>
 #endif
 
+#ifndef ESB_BUFFER_POOL_H
+#include <ESBBufferPool.h>
+#endif
+
 namespace ES {
 
 class HttpMultiplexer : public ESB::SocketMultiplexer {
@@ -23,14 +27,17 @@ class HttpMultiplexer : public ESB::SocketMultiplexer {
   virtual int maximumSockets() const;
   virtual bool isRunning() const;
 
- protected:
-  ESB::DiscardAllocator _factoryAllocator;
-  ESB::EpollMultiplexer _epollMultiplexer;
-
  private:
   // disabled
   HttpMultiplexer(const HttpMultiplexer &);
   void operator=(const HttpMultiplexer &);
+
+  ESB::DiscardAllocator _ioBufferPoolAllocator;
+
+ protected:
+  ESB::BufferPool _ioBufferPool;
+  ESB::DiscardAllocator _factoryAllocator;
+  ESB::EpollMultiplexer _epollMultiplexer;
 };
 
 }  // namespace ES

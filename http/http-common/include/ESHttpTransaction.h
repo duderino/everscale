@@ -47,10 +47,10 @@ namespace ES {
 // visible to the client and server handlers.
 class HttpTransaction : public ESB::EmbeddedListElement {
  public:
-  HttpTransaction(ESB::CleanupHandler *cleanupHandler);
+  HttpTransaction(ESB::CleanupHandler &cleanupHandler);
 
-  HttpTransaction(ESB::SocketAddress *peerAddress,
-                  ESB::CleanupHandler *cleanupHandler);
+  HttpTransaction(const ESB::SocketAddress *peerAddress,
+                  ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpTransaction();
 
@@ -108,7 +108,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
   void operator=(const HttpTransaction &transaction);
 
   void *_appContext;
-  ESB::CleanupHandler *_cleanupHandler;
+  ESB::CleanupHandler &_cleanupHandler;
   ESB::Date _start;
   ESB::SocketAddress _peerAddress;
   HttpRequest _request;

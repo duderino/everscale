@@ -51,8 +51,7 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
                                    HttpClientStack &stack,
                                    ESB::SocketAddress &peerAddress,
                                    HttpClientCounters &counters,
-                                   ESB::CleanupHandler *cleanupHandler,
-                                   ESB::BufferPool &bufferPool)
+                                   ESB::CleanupHandler &cleanupHandler)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
       _stack(stack),
@@ -62,22 +61,29 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
-      _bufferPool(bufferPool),
       _socket(peerAddress, false) {}
 
 HttpClientSocket::~HttpClientSocket() {
   if (_recvBuffer) {
-    _bufferPool.releaseBuffer(_recvBuffer);
+    _stack.releaseBuffer(_recvBuffer);
     _recvBuffer = NULL;
   }
   if (_sendBuffer) {
-    _bufferPool.releaseBuffer(_sendBuffer);
+    _stack.releaseBuffer(_sendBuffer);
     _sendBuffer = NULL;
+  }
+  if (_transaction) {
+    _stack.destroyTransaction(_transaction);
+    _transaction = NULL;
   }
 }
 
 ESB::Error HttpClientSocket::reset(bool reused,
                                    HttpClientTransaction *transaction) {
+  assert(!_recvBuffer);
+  assert(!_sendBuffer);
+  assert(!_transaction);
+
   if (!transaction) {
     return ESB_NULL_POINTER;
   }
@@ -149,7 +155,7 @@ bool HttpClientSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
   if (!_recvBuffer) {
-    _recvBuffer = _bufferPool.acquireBuffer();
+    _recvBuffer = _stack.acquireBuffer();
     if (!_recvBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create client buffer");
       return false;  // remove from multiplexer
@@ -260,7 +266,7 @@ bool HttpClientSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
 
   if (!_sendBuffer) {
-    _sendBuffer = _bufferPool.acquireBuffer();
+    _sendBuffer = _stack.acquireBuffer();
     if (!_sendBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create client buffer");
       return false;  // remove from multiplexer
@@ -458,23 +464,25 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   }
 
   if (_sendBuffer) {
-    _bufferPool.releaseBuffer(_sendBuffer);
+    _stack.releaseBuffer(_sendBuffer);
     _sendBuffer = NULL;
   }
   if (_recvBuffer) {
-    _bufferPool.releaseBuffer(_recvBuffer);
+    _stack.releaseBuffer(_recvBuffer);
     _recvBuffer = NULL;
   }
 
   bool reuseConnection = false;
 
   if (_state & TRANSACTION_BEGIN) {
+    assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
     _handler.endClientTransaction(
         _stack, _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
+    assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
@@ -482,6 +490,7 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
+    assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
@@ -489,24 +498,28 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
+    assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
+    assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
+    assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
+    assert(_transaction);
     _counters.getSuccesses()->record(_transaction->startTime(),
                                      ESB::Date::Now());
 
@@ -527,6 +540,7 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
     _handler.endClientTransaction(
         _stack, _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
   } else if (_state & RETRY_STALE_CONNECTION) {
+    assert(_transaction);
     ESB_LOG_DEBUG("socket:%d connection stale, retrying transaction",
                   _socket.socketDescriptor());
     ESB::Error error = _stack.executeClientTransaction(_transaction);
@@ -545,9 +559,8 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   }
 
   if (0x00 == (_state & RETRY_STALE_CONNECTION)) {
-    assert(_transaction->cleanupHandler());
-    if (_transaction->cleanupHandler()) {
-      _transaction->cleanupHandler()->destroy(_transaction);
+    if (_transaction) {
+      _stack.destroyTransaction(_transaction);
       _transaction = NULL;
     }
   }
@@ -567,7 +580,7 @@ SOCKET HttpClientSocket::socketDescriptor() const {
 }
 
 ESB::CleanupHandler *HttpClientSocket::cleanupHandler() {
-  return _cleanupHandler;
+  return &_cleanupHandler;
 }
 
 const char *HttpClientSocket::getName() const { return "HttpClientSocket"; }

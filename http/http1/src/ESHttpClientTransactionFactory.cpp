@@ -23,7 +23,7 @@ HttpClientTransaction *HttpClientTransactionFactory::create() {
       (HttpClientTransaction *)_embeddedList.removeLast();
 
   if (!transaction) {
-    transaction = new (_allocator) HttpClientTransaction(&_cleanupHandler);
+    transaction = new (_allocator) HttpClientTransaction(_cleanupHandler);
 
     if (!transaction) {
       return 0;

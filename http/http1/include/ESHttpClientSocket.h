@@ -21,10 +21,6 @@
 #include <ESHttpConnectionPool.h>
 #endif
 
-#ifndef ESB_BUFFER_POOL_H
-#include <ESBBufferPool.h>
-#endif
-
 namespace ES {
 
 /** A socket that receives and echoes back HTTP requests
@@ -38,8 +34,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
   HttpClientSocket(HttpClientHandler &handler, HttpClientStack &stack,
                    ESB::SocketAddress &peerAddress,
                    HttpClientCounters &counters,
-                   ESB::CleanupHandler *cleanupHandler,
-                   ESB::BufferPool &bufferPool);
+                   ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
@@ -236,10 +231,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
   HttpClientHandler &_handler;
   HttpClientTransaction *_transaction;
   HttpClientCounters &_counters;
-  ESB::CleanupHandler *_cleanupHandler;
+  ESB::CleanupHandler &_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;
-  ESB::BufferPool &_bufferPool;
   ESB::ConnectedTCPSocket _socket;
   static bool _ReuseConnections;
 };

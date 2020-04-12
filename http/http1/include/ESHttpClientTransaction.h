@@ -17,10 +17,10 @@ namespace ES {
 
 class HttpClientTransaction : public HttpTransaction {
  public:
-  HttpClientTransaction(ESB::CleanupHandler *cleanupHandler);
+  HttpClientTransaction(ESB::CleanupHandler &cleanupHandler);
 
   HttpClientTransaction(ESB::SocketAddress *peerAddress,
-                        ESB::CleanupHandler *cleanupHandler);
+                        ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpClientTransaction();
 
