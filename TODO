@@ -1,5 +1,4 @@
 buffer rework:
- - anticipating h2, move parsing and formatting state from sockets to transactions
  - unless it can be guaranteed that every transaction is either parsing or formatting but never both, give transactions two parse buffers too.
  - make http server sockets bufferless and transactionless when they are waiting for the next transaction.  if all buffers in transaction objects, use server transaction pool and perhaps a dedicated discard allocator.  Else use buffer pools.
 
@@ -90,7 +89,7 @@ http stuff
  - save don't skip trailer
  - slow loris defense
  - https support
- - h2 support
+ - h2 support, move parsing and formatting state from sockets to transactions
  - perfect forward secrecy
  - sni-based cert serving
  - ocsp staples

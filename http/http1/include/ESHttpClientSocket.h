@@ -34,14 +34,10 @@ namespace ES {
 class HttpClientSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
-   *
-   * @param transaction The client transaction object.  Many client transactions
-   *  can be carried across the same http client socket with connection reuse.
-   * @param cleanupHandler An object that can be used to destroy this one
    */
   HttpClientSocket(HttpClientHandler &handler, HttpClientStack &stack,
-                   HttpClientTransaction *transaction,
-                   HttpClientCounters *counters,
+                   ESB::SocketAddress &peerAddress,
+                   HttpClientCounters &counters,
                    ESB::CleanupHandler *cleanupHandler,
                    ESB::BufferPool &bufferPool);
 
@@ -239,7 +235,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
   HttpClientStack &_stack;
   HttpClientHandler &_handler;
   HttpClientTransaction *_transaction;
-  HttpClientCounters *_counters;
+  HttpClientCounters &_counters;
   ESB::CleanupHandler *_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;

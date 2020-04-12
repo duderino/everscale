@@ -49,21 +49,21 @@ bool HttpClientSocket::_ReuseConnections = true;
 
 HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
                                    HttpClientStack &stack,
-                                   HttpClientTransaction *transaction,
-                                   HttpClientCounters *counters,
+                                   ESB::SocketAddress &peerAddress,
+                                   HttpClientCounters &counters,
                                    ESB::CleanupHandler *cleanupHandler,
                                    ESB::BufferPool &bufferPool)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
       _stack(stack),
       _handler(handler),
-      _transaction(transaction),
+      _transaction(NULL),
       _counters(counters),
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
       _bufferPool(bufferPool),
-      _socket(transaction->peerAddress(), false) {}
+      _socket(peerAddress, false) {}
 
 HttpClientSocket::~HttpClientSocket() {
   if (_recvBuffer) {
@@ -469,46 +469,46 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
   bool reuseConnection = false;
 
   if (_state & TRANSACTION_BEGIN) {
-    _counters->getFailures()->record(_transaction->startTime(),
-                                     ESB::Date::Now());
+    _counters.getFailures()->record(_transaction->startTime(),
+                                    ESB::Date::Now());
 
     _handler.endClientTransaction(
         _stack, _transaction, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
-    _counters->getFailures()->record(_transaction->startTime(),
-                                     ESB::Date::Now());
+    _counters.getFailures()->record(_transaction->startTime(),
+                                    ESB::Date::Now());
 
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
-    _counters->getFailures()->record(_transaction->startTime(),
-                                     ESB::Date::Now());
+    _counters.getFailures()->record(_transaction->startTime(),
+                                    ESB::Date::Now());
 
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
-    _counters->getFailures()->record(_transaction->startTime(),
-                                     ESB::Date::Now());
+    _counters.getFailures()->record(_transaction->startTime(),
+                                    ESB::Date::Now());
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
-    _counters->getFailures()->record(_transaction->startTime(),
-                                     ESB::Date::Now());
+    _counters.getFailures()->record(_transaction->startTime(),
+                                    ESB::Date::Now());
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
-    _counters->getFailures()->record(_transaction->startTime(),
-                                     ESB::Date::Now());
+    _counters.getFailures()->record(_transaction->startTime(),
+                                    ESB::Date::Now());
     _handler.endClientTransaction(
         _stack, _transaction,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
-    _counters->getSuccesses()->record(_transaction->startTime(),
-                                      ESB::Date::Now());
+    _counters.getSuccesses()->record(_transaction->startTime(),
+                                     ESB::Date::Now());
 
     if (GetReuseConnections()) {
       const HttpHeader *header =

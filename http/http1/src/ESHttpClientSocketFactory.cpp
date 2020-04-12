@@ -131,8 +131,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
   }
 
   socket = new (_allocator)
-      HttpClientSocket(_handler, *_clientStack, transaction, &_counters,
-                       &_cleanupHandler, _ioBufferPool);
+      HttpClientSocket(_handler, *_clientStack, transaction->peerAddress(),
+                       _counters, &_cleanupHandler, _ioBufferPool);
 
   if (!socket && ESB_CRITICAL_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
@@ -140,6 +140,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
     ESB_LOG_CRITICAL("Cannot allocate new connection for '%s:%d'", dottedIP,
                      transaction->peerAddress().port());
   }
+
+  socket->reset(false, transaction);
 
   return socket;
 }
