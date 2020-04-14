@@ -52,45 +52,66 @@
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#include <cmath>
 #endif
 
 namespace ES {
-class SeedTransactions : public HttpSeedTransactionHandler {
+
+class SeedCommand : public HttpClientCommand {
  public:
-  SeedTransactions(ESB::Allocator &allocator, ESB::UInt32 iterations,
-                   ESB::Int32 port, const char *host, const char *absPath,
-                   const char *method, const char *contentType)
+  SeedCommand(ESB::Allocator &allocator, ESB::UInt32 connections,
+              ESB::UInt32 iterations, ESB::Int32 port, const char *host,
+              const char *absPath, const char *method, const char *contentType)
       : _allocator(allocator),
+        _connections(connections),
         _iterations(iterations),
         _port(port),
         _host(host),
         _absPath(absPath),
         _method(method),
         _contentType(contentType) {}
-  virtual ~SeedTransactions() {}
+  virtual ~SeedCommand() {}
 
-  virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
-    // Create the request context
-    HttpEchoClientContext *context = new (_allocator)
-        HttpEchoClientContext(_iterations - 1, _allocator.cleanupHandler());
-    assert(context);
+  virtual ESB::Error run(HttpClientStack &stack) {
+    for (ESB::UInt32 i = 0; i < _connections; ++i) {
+      if (0 > HttpEchoClientContext::DecrementIterations()) {
+        break;
+      }
 
-    transaction->setContext(context);
+      HttpClientTransaction *transaction = stack.createTransaction();
+      assert(transaction);
 
-    // Build the request
+      // Create the request context
+      HttpEchoClientContext *context =
+          new (_allocator) HttpEchoClientContext(_allocator.cleanupHandler());
+      assert(context);
 
-    ESB::Error error = HttpEchoClientRequestBuilder(
-        _host, _port, _absPath, _method, _contentType, transaction);
-    assert(ESB_SUCCESS == error);
-    return error;
+      transaction->setContext(context);
+
+      // Build the request
+
+      ESB::Error error = HttpEchoClientRequestBuilder(
+          _host, _port, _absPath, _method, _contentType, transaction);
+      assert(ESB_SUCCESS == error);
+
+      error = stack.executeClientTransaction(transaction);
+      assert(ESB_SUCCESS == error);
+    }
+
+    return ESB_SUCCESS;
   }
+
+  virtual const char *name() { return "ClientSeed"; }
+
+  virtual ESB::CleanupHandler *cleanupHandler() { return NULL; }
 
  private:
   // Disabled
-  SeedTransactions(const SeedTransactions &);
-  SeedTransactions &operator=(const SeedTransactions &);
+  SeedCommand(const SeedCommand &);
+  SeedCommand &operator=(const SeedCommand &);
 
   ESB::Allocator &_allocator;
+  const ESB::UInt32 _connections;
   const ESB::UInt32 _iterations;
   const ESB::Int32 _port;
   const char *_host;
@@ -158,6 +179,8 @@ int main(int argc, char **argv) {
     }
   }
 
+  HttpEchoClientContext::SetIterations(connections * iterations);
+
   ESB::Time::Instance().start();
   ESB::SimpleFileLogger logger(stdout);
   logger.setSeverity((ESB::Logger::Severity)logLevel);
@@ -175,7 +198,7 @@ int main(int argc, char **argv) {
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
-    return -5;
+    return -1;
   }
 
   // Init
@@ -186,21 +209,21 @@ int main(int argc, char **argv) {
   error = server.initialize();
 
   if (ESB_SUCCESS != error) {
-    return -1;
+    return -2;
   }
 
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
-                                      sizeof(body), connections * iterations);
+                                      sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  // ESB::DiscardAllocator allocator(ESB::SystemConfig::Instance().pageSize());
-  SeedTransactions seed(ESB::SystemAllocator::Instance(), iterations, port,
-                        host, absPath, method, contentType);
-  HttpClient client(clientThreads, connections, seed, clientHandler);
+  SeedCommand seed(ESB::SystemAllocator::Instance(),
+                   connections / clientThreads, iterations, port, host, absPath,
+                   method, contentType);
+  HttpClient client(clientThreads, clientHandler);
 
   error = client.initialize();
 
   if (ESB_SUCCESS != error) {
-    return -2;
+    return -3;
   }
 
   // Start
@@ -208,16 +231,22 @@ int main(int argc, char **argv) {
   error = server.start();
 
   if (ESB_SUCCESS != error) {
-    return -3;
+    return -4;
   }
 
   error = client.start();
 
   if (ESB_SUCCESS != error) {
-    return -4;
+    return -5;
   }
 
-  while (!clientHandler.isFinished()) {
+  error = client.pushAll(&seed);
+
+  if (ESB_SUCCESS != error) {
+    return -6;
+  }
+
+  while (!HttpEchoClientContext::IsFinished()) {
     sleep(1);
   }
 

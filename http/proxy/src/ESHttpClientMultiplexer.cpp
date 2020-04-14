@@ -4,13 +4,10 @@
 
 namespace ES {
 
-HttpClientMultiplexer::HttpClientMultiplexer(
-    ESB::UInt32 connections, HttpSeedTransactionHandler &seedTransactionHandler,
-    ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
-    HttpClientCounters &clientCounters)
+HttpClientMultiplexer::HttpClientMultiplexer(ESB::UInt32 maxSockets,
+                                             HttpClientHandler &clientHandler,
+                                             HttpClientCounters &clientCounters)
     : HttpMultiplexer(maxSockets),
-      _connections(connections),
-      _seedTransactionHandler(seedTransactionHandler),
       _clientSocketFactory(*this, clientHandler, clientCounters,
                            _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
@@ -23,29 +20,6 @@ HttpClientMultiplexer::HttpClientMultiplexer(
 HttpClientMultiplexer::~HttpClientMultiplexer() {}
 
 bool HttpClientMultiplexer::run(ESB::SharedInt *isRunning) {
-  // TODO replace this loop with ESB::EventSocket and ESB::SharedQueue dispatch.
-  for (ESB::UInt32 i = 0; i < _connections; ++i) {
-    HttpClientTransaction *transaction = _clientTransactionFactory.create();
-    if (!transaction) {
-      ESB_LOG_CRITICAL("Cannot allocate seed transaction");
-      return false;
-    }
-
-    ESB::Error error = _seedTransactionHandler.modifyTransaction(transaction);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot modify seed transaction");
-      _clientTransactionFactory.release(transaction);
-      return false;
-    }
-
-    error = _clientSocketFactory.executeClientTransaction(transaction);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot execute seed transaction");
-      _clientTransactionFactory.release(transaction);
-      return false;
-    }
-  }
-
   ESB::Error error = _multiplexer.addMultiplexedSocket(&_commandSocket);
 
   if (ESB_SUCCESS != error) {

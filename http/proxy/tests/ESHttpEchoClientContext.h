@@ -5,24 +5,21 @@
 #include <ESBAllocator.h>
 #endif
 
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
+#endif
+
 namespace ES {
 
 class HttpEchoClientContext : public ESB::Object {
  public:
-  HttpEchoClientContext(unsigned int remainingIterations,
-                        ESB::CleanupHandler &cleanupHandler);
+  HttpEchoClientContext(ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpEchoClientContext();
 
-  inline unsigned int getBytesSent() { return _bytesSent; }
+  inline unsigned int bytesSent() { return _bytesSent; }
 
   inline void setBytesSent(unsigned int bytesSent) { _bytesSent = bytesSent; }
-
-  inline unsigned int getRemainingIterations() { return _iterations; }
-
-  inline void setRemainingIterations(unsigned int iterations) {
-    _iterations = iterations;
-  }
 
   inline ESB::CleanupHandler &cleanupHandler() const { return _cleanupHandler; }
 
@@ -36,14 +33,27 @@ class HttpEchoClientContext : public ESB::Object {
     return allocator.allocate(size);
   }
 
+  /**
+   * Atomically decrement the remaining and return the value pre-decrement.
+   *
+   * @return the value before the decrement.
+   */
+  static inline int DecrementIterations() { return _RemainingIterations.dec(); }
+
+  static inline bool IsFinished() { return 0 >= _RemainingIterations.get(); }
+
+  static inline void SetIterations(int remainingIterations) {
+    _RemainingIterations.set(remainingIterations);
+  }
+
  private:
   // Disabled
   HttpEchoClientContext(const HttpEchoClientContext &context);
   void operator=(const HttpEchoClientContext &context);
 
   unsigned int _bytesSent;
-  unsigned int _iterations;
   ESB::CleanupHandler &_cleanupHandler;
+  static ESB::SharedInt _RemainingIterations;
 };
 
 }  // namespace ES

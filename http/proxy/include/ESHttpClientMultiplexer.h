@@ -29,9 +29,7 @@ namespace ES {
 
 class HttpClientMultiplexer : public HttpMultiplexer {
  public:
-  HttpClientMultiplexer(ESB::UInt32 connections,
-                        HttpSeedTransactionHandler &seedTransactionHandler,
-                        ESB::UInt32 maxSockets,
+  HttpClientMultiplexer(ESB::UInt32 maxSockets,
                         HttpClientHandler &clientHandler,
                         HttpClientCounters &clientCounters);
 
@@ -86,8 +84,6 @@ class HttpClientMultiplexer : public HttpMultiplexer {
     HttpClientTransactionFactory &_clientTransactionFactory;
   };
 
-  ESB::UInt32 _connections;
-  HttpSeedTransactionHandler &_seedTransactionHandler;
   HttpClientSocketFactory _clientSocketFactory;
   HttpClientTransactionFactory _clientTransactionFactory;
   HttpClientStackImpl _clientStack;

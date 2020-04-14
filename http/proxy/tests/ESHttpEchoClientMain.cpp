@@ -59,11 +59,11 @@
 #endif
 
 namespace ES {
-class SeedTransactions : public HttpSeedTransactionHandler {
+class SeedCommand : public HttpSeedTransactionHandler {
  public:
-  SeedTransactions(ESB::Allocator &allocator, ESB::UInt32 iterations,
-                   ESB::Int32 port, const char *host, const char *absPath,
-                   const char *method, const char *contentType)
+  SeedCommand(ESB::Allocator &allocator, ESB::UInt32 iterations,
+              ESB::Int32 port, const char *host, const char *absPath,
+              const char *method, const char *contentType)
       : _allocator(allocator),
         _iterations(iterations),
         _port(port),
@@ -71,7 +71,7 @@ class SeedTransactions : public HttpSeedTransactionHandler {
         _absPath(absPath),
         _method(method),
         _contentType(contentType) {}
-  virtual ~SeedTransactions() {}
+  virtual ~SeedCommand() {}
 
   virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
     // Create the request context
@@ -91,8 +91,8 @@ class SeedTransactions : public HttpSeedTransactionHandler {
 
  private:
   // Disabled
-  SeedTransactions(const SeedTransactions &);
-  SeedTransactions &operator=(const SeedTransactions &);
+  SeedCommand(const SeedCommand &);
+  SeedCommand &operator=(const SeedCommand &);
 
   ESB::Allocator &_allocator;
   const ESB::UInt32 _iterations;
@@ -353,8 +353,8 @@ int main(int argc, char **argv) {
 
   HttpClientHistoricalCounters counters(1000, 30,
                                         ESB::SystemAllocator::Instance());
-  SeedTransactions seed(ESB::SystemAllocator::Instance(), iterations, port,
-                        host, absPath, method, contentType);
+  SeedCommand seed(ESB::SystemAllocator::Instance(), iterations, port, host,
+                   absPath, method, contentType);
   HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
                                 connections * iterations);
   HttpClient client(threads, connections, seed, handler);

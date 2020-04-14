@@ -28,9 +28,7 @@ class HttpClient {
   /**
    * Create a client stack.
    */
-  HttpClient(ESB::UInt32 threads, ESB::UInt32 connections,
-             HttpSeedTransactionHandler &seedTransactionHandler,
-             HttpClientHandler &clientHandler,
+  HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler,
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpClient();
@@ -68,10 +66,8 @@ class HttpClient {
   } HttpClientState;
 
   ESB::UInt32 _threads;
-  ESB::UInt32 _connections;
   ESB::SharedInt _state;
   ESB::Allocator &_allocator;
-  HttpSeedTransactionHandler &_seedTransactionHandler;
   HttpClientHandler &_clientHandler;
   ESB::List _multiplexers;
   ESB::ThreadPool _threadPool;

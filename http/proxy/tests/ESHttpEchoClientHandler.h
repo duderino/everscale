@@ -23,7 +23,7 @@ class HttpEchoClientHandler : public HttpClientHandler {
  public:
   HttpEchoClientHandler(const char *absPath, const char *method,
                         const char *contentType, const unsigned char *body,
-                        int bodySize, int totalTransactions);
+                        int bodySize);
 
   virtual ~HttpEchoClientHandler();
 
@@ -100,10 +100,6 @@ class HttpEchoClientHandler : public HttpClientHandler {
                                     HttpClientTransaction *transaction,
                                     State state);
 
-  inline bool isFinished() const {
-    return _totalTransactions <= _completedTransactions.get();
-  }
-
  private:
   // Disabled
   HttpEchoClientHandler(const HttpEchoClientHandler &clientHandler);
@@ -114,7 +110,6 @@ class HttpEchoClientHandler : public HttpClientHandler {
   const char *_contentType;
   const unsigned char *_body;
   const int _bodySize;
-  int _totalTransactions;
   ESB::SharedInt _completedTransactions;
 };
 

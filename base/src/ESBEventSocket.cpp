@@ -44,7 +44,8 @@ Error EventSocket::write(ESB::UInt64 value) {
   }
 
 #ifdef HAVE_WRITE
-  Error error = ConvertError(::write(_eventFd, &value, sizeof(value)));
+  ESB::SSize result = ::write(_eventFd, &value, sizeof(value));
+  ESB::Error error = 0 < result ? ESB_SUCCESS : LastError();
 #else
 #error "write() or equivalent is required"
 #endif
@@ -62,7 +63,8 @@ Error EventSocket::read(ESB::UInt64 *value) {
   }
 
 #ifdef HAVE_READ
-  Error error = ConvertError(::read(_eventFd, value, sizeof(*value)));
+  ESB::SSize result = ::read(_eventFd, value, sizeof(*value));
+  ESB::Error error = 0 < result ? ESB_SUCCESS : LastError();
 #else
 #error "read() or equivalent is required"
 #endif

@@ -16,15 +16,16 @@
 
 namespace ES {
 
-HttpEchoClientHandler::HttpEchoClientHandler(
-    const char *absPath, const char *method, const char *contentType,
-    const unsigned char *body, int bodySize, int totalTransactions)
+HttpEchoClientHandler::HttpEchoClientHandler(const char *absPath,
+                                             const char *method,
+                                             const char *contentType,
+                                             const unsigned char *body,
+                                             int bodySize)
     : _absPath(absPath),
       _method(method),
       _contentType(contentType),
       _body(body),
       _bodySize(bodySize),
-      _totalTransactions(totalTransactions),
       _completedTransactions() {}
 
 HttpEchoClientHandler::~HttpEchoClientHandler() {}
@@ -38,7 +39,7 @@ int HttpEchoClientHandler::reserveRequestChunk(
 
   assert(context);
 
-  return _bodySize - context->getBytesSent();
+  return _bodySize - context->bytesSent();
 }
 
 void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
@@ -54,13 +55,13 @@ void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
 
   assert(context);
 
-  unsigned int totalBytesRemaining = _bodySize - context->getBytesSent();
+  unsigned int totalBytesRemaining = _bodySize - context->bytesSent();
   unsigned int bytesToSend =
       chunkSize > totalBytesRemaining ? totalBytesRemaining : chunkSize;
 
-  memcpy(chunk, _body + context->getBytesSent(), bytesToSend);
+  memcpy(chunk, _body + context->bytesSent(), bytesToSend);
 
-  context->setBytesSent(context->getBytesSent() + bytesToSend);
+  context->setBytesSent(context->bytesSent() + bytesToSend);
 }
 
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
@@ -110,10 +111,6 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
 
 void HttpEchoClientHandler::endClientTransaction(
     HttpClientStack &stack, HttpClientTransaction *transaction, State state) {
-  if (_totalTransactions == _completedTransactions.inc()) {
-    ESB_LOG_NOTICE("All transactions completed");
-  }
-
   assert(transaction);
   HttpEchoClientContext *context =
       (HttpEchoClientContext *)transaction->context();
@@ -147,7 +144,10 @@ void HttpEchoClientHandler::endClientTransaction(
       ESB_LOG_WARNING("Transaction failed at unknown state");
   }
 
-  if (0U == context->getRemainingIterations()) {
+  // returns the value pre-decrement
+  int remainingIterations = HttpEchoClientContext::DecrementIterations();
+
+  if (0 >= remainingIterations) {
     ESB::CleanupHandler &cleanupHandler = context->cleanupHandler();
     cleanupHandler.destroy(context);
     transaction->setContext(0);
@@ -161,7 +161,6 @@ void HttpEchoClientHandler::endClientTransaction(
     return;
   }
 
-  context->setRemainingIterations(context->getRemainingIterations() - 1);
   context->setBytesSent(0U);
 
   newTransaction->setContext(context);
@@ -189,7 +188,7 @@ void HttpEchoClientHandler::endClientTransaction(
   }
 
   ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
-                context->getRemainingIterations());
+                remainingIterations);
 }
 
 }  // namespace ES

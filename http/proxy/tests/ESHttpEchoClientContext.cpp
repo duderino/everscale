@@ -3,11 +3,12 @@
 #endif
 
 namespace ES {
+
+ESB::SharedInt HttpEchoClientContext::_RemainingIterations;
+
 HttpEchoClientContext::HttpEchoClientContext(
-    unsigned int remainingIterations, ESB::CleanupHandler &cleanupHandler)
-    : _bytesSent(0U),
-      _iterations(remainingIterations),
-      _cleanupHandler(cleanupHandler) {}
+    ESB::CleanupHandler &cleanupHandler)
+    : _bytesSent(0U), _cleanupHandler(cleanupHandler) {}
 
 HttpEchoClientContext::~HttpEchoClientContext() {}
 

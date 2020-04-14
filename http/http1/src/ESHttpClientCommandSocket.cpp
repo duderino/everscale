@@ -52,7 +52,7 @@ ESB::Error HttpClientCommandSocket::push(HttpClientCommand *command) {
   ESB::Error error = _eventSocket.write(1);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot update valauae of event socket");
+    ESB_LOG_ERROR_ERRNO(error, "Cannot update value of event socket");
     return error;
   }
 
@@ -62,7 +62,7 @@ ESB::Error HttpClientCommandSocket::push(HttpClientCommand *command) {
 // This code runs in the multiplexer's thread
 bool HttpClientCommandSocket::handleReadable(
     ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_NOTICE("Event socket had event");
+  ESB_LOG_DEBUG("Event socket had event");
 
   ESB::UInt64 value = 0;
   ESB::Error error = _eventSocket.read(&value);

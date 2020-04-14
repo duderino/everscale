@@ -8,15 +8,11 @@
 
 namespace ES {
 
-HttpClient::HttpClient(ESB::UInt32 threads, ESB::UInt32 connections,
-                       HttpSeedTransactionHandler &seedTransactionHandler,
-                       HttpClientHandler &clientHandler,
+HttpClient::HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler,
                        ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
-      _connections(connections),
       _state(ES_HTTP_CLIENT_IS_DESTROYED),
       _allocator(allocator),
-      _seedTransactionHandler(seedTransactionHandler),
       _clientHandler(clientHandler),
       _multiplexers(),
       _threadPool("HttpClientMultiplexerPool", _threads),
@@ -25,8 +21,15 @@ HttpClient::HttpClient(ESB::UInt32 threads, ESB::UInt32 connections,
 HttpClient::~HttpClient() {}
 
 ESB::Error HttpClient::pushAll(HttpClientCommand *command) {
-  if (ES_HTTP_CLIENT_IS_STARTED != _state.get()) {
-    return ESB_INVALID_STATE;
+  switch (_state.get()) {
+    case ES_HTTP_CLIENT_IS_INITIALIZED:
+    case ES_HTTP_CLIENT_IS_STARTED:
+      break;
+    case ES_HTTP_CLIENT_IS_STOPPED:
+    case ES_HTTP_CLIENT_IS_DESTROYED:
+      return ESB_SHUTDOWN;
+    default:
+      return ESB_INVALID_STATE;
   }
 
   if (!command) {
@@ -75,13 +78,8 @@ ESB::Error HttpClient::start() {
   ESB_LOG_NOTICE("Maximum sockets %u", maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
-    ESB::UInt32 connections = _connections / _threads;
-    if (i + 1 == _threads) {
-      connections += _connections % _threads;
-    }
     ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpClientMultiplexer(connections, _seedTransactionHandler, maxSockets,
-                              _clientHandler, _clientCounters);
+        HttpClientMultiplexer(maxSockets, _clientHandler, _clientCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
