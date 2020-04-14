@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.5)
 project(http1 VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
+        src/ESHttpClientCommand.cpp
+        src/ESHttpClientCommandSocket.cpp
         src/ESHttpClientCounters.cpp
         src/ESHttpClientHandler.cpp
-        src/ESHttpClientStack.cpp
         src/ESHttpClientHistoricalCounters.cpp
         src/ESHttpClientSimpleCounters.cpp
         src/ESHttpClientSocket.cpp
         src/ESHttpClientSocketFactory.cpp
+        src/ESHttpClientStack.cpp
         src/ESHttpClientTransaction.cpp
         src/ESHttpClientTransactionFactory.cpp
         src/ESHttpConnectionPool.cpp
@@ -21,6 +23,7 @@ set(SOURCE_FILES
         src/ESHttpRequestUriParser.cpp
         src/ESHttpResponseFormatter.cpp
         src/ESHttpResponseParser.cpp
+        src/ESHttpServerCommand.cpp
         src/ESHttpServerCounters.cpp
         src/ESHttpServerHandler.cpp
         src/ESHttpServerSimpleCounters.cpp

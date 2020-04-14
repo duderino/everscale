@@ -4,6 +4,7 @@ code health:
  - use allocator cleanup handlers in embedded list test and more widely
  - use references instead of pointers when they shouldn't be NULL
  - Split HttpServerStack into two interfaces: one for HttpServerSocket and one for HttpListeningSocket+HttpServerHandler
+ - reduce the number of name() and getName() functions
 
 connection pool rework:
  - create connection pool class of client sockets to client socket factory.
@@ -11,11 +12,12 @@ connection pool rework:
 
 client stack rework:
  - replace client stack seed callback with function to exec arbitrary stuff on multiplexer thread.  Use EventSocket and SharedQueue for the impl.
-http logging should show peer/self addresses:
+ - http logging should show peer/self addresses:
  - put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
  - add log statements to http server+client+listener sockets that pretty print peer/listener address
 
 proxy impl:
+ - proxy stack/multiplexer/handler
  - pause/resume for http server sockets
  - pause/resume for http client sockets
  - proxy handler that implements both server and client handlers and uses pause/resume appropriately.  initially copy data from server recv to client send buffers and from client recv to server send buffers.
