@@ -144,13 +144,14 @@ void HttpEchoClientHandler::endClientTransaction(
       ESB_LOG_WARNING("Transaction failed at unknown state");
   }
 
+  HttpEchoClientContext::IncCompletedIterations();
   // returns the value pre-decrement
-  int remainingIterations = HttpEchoClientContext::DecrementIterations();
+  int remainingIterations = HttpEchoClientContext::DecRemainingIterations();
 
-  if (0 >= remainingIterations) {
+  if (0 > remainingIterations) {
     ESB::CleanupHandler &cleanupHandler = context->cleanupHandler();
     cleanupHandler.destroy(context);
-    transaction->setContext(0);
+    transaction->setContext(NULL);
     return;
   }
 
@@ -164,7 +165,7 @@ void HttpEchoClientHandler::endClientTransaction(
   context->setBytesSent(0U);
 
   newTransaction->setContext(context);
-  transaction->setContext(0);
+  transaction->setContext(NULL);
 
   char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
   transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));

@@ -4,7 +4,9 @@
 
 namespace ES {
 
+volatile int HttpEchoClientContext::_TotalIterations = 0;
 ESB::SharedInt HttpEchoClientContext::_RemainingIterations;
+ESB::SharedInt HttpEchoClientContext::_CompletedIterations;
 
 HttpEchoClientContext::HttpEchoClientContext(
     ESB::CleanupHandler &cleanupHandler)

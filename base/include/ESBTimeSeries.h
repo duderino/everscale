@@ -42,6 +42,8 @@ class TimeSeries : public PerformanceCounter {
 
   virtual void record(const Date &start, const Date &stop);
 
+  virtual UInt32 queries() const;
+
   inline const char *name() const { return _name; }
 
   /**

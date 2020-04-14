@@ -23,6 +23,8 @@ class PerformanceCounter : public EmbeddedListElement {
 
   virtual void record(const Date &start, const Date &stop) = 0;
 
+  virtual UInt32 queries() const = 0;
+
   virtual void log(Logger &logger, Logger::Severity severity =
                                        Logger::Severity::Debug) const = 0;
 

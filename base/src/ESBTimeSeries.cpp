@@ -80,6 +80,20 @@ void TimeSeries::record(const Date &start, const Date &stop) {
   counter->record(start, stop);
 }
 
+UInt32 TimeSeries::queries() const {
+  ReadScopeLock lock(_lock);
+
+  UInt32 queries = 0;
+
+  for (const SimplePerformanceCounter *counter =
+           (const SimplePerformanceCounter *)_list.first();
+       counter; counter = (const SimplePerformanceCounter *)counter->next()) {
+    queries += counter->queries();
+  }
+
+  return queries;
+}
+
 void TimeSeries::log(Logger &logger, Logger::Severity severity) const {
   ReadScopeLock lock(_lock);
 

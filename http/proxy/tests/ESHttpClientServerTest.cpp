@@ -52,11 +52,9 @@
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#include <cmath>
 #endif
 
 namespace ES {
-
 class SeedCommand : public HttpClientCommand {
  public:
   SeedCommand(ESB::Allocator &allocator, ESB::UInt32 connections,
@@ -74,7 +72,7 @@ class SeedCommand : public HttpClientCommand {
 
   virtual ESB::Error run(HttpClientStack &stack) {
     for (ESB::UInt32 i = 0; i < _connections; ++i) {
-      if (0 > HttpEchoClientContext::DecrementIterations()) {
+      if (0 > HttpEchoClientContext::DecRemainingIterations()) {
         break;
       }
 
@@ -119,6 +117,10 @@ class SeedCommand : public HttpClientCommand {
   const char *_method;
   const char *_contentType;
 };
+
+static volatile ESB::Word IsRunning = 1;
+static void SignalHandler(int signal) { IsRunning = 0; }
+
 }  // namespace ES
 
 using namespace ES;
@@ -179,15 +181,23 @@ int main(int argc, char **argv) {
     }
   }
 
-  HttpEchoClientContext::SetIterations(connections * iterations);
+  const ESB::UInt32 totalTransactions = connections * iterations;
+  HttpEchoClientContext::SetTotalIterations(totalTransactions);
 
   ESB::Time::Instance().start();
   ESB::SimpleFileLogger logger(stdout);
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
 
+  //
+  // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
+  //
+
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
+  signal(SIGINT, SignalHandler);
+  signal(SIGQUIT, SignalHandler);
+  signal(SIGTERM, SignalHandler);
 
   //
   // Max out open files
@@ -246,7 +256,7 @@ int main(int argc, char **argv) {
     return -6;
   }
 
-  while (!HttpEchoClientContext::IsFinished()) {
+  while (IsRunning && !HttpEchoClientContext::IsFinished()) {
     sleep(1);
   }
 
@@ -257,9 +267,12 @@ int main(int argc, char **argv) {
   error = server.stop();
   assert(ESB_SUCCESS == error);
 
-  // TODO assert on counters here
   client.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+
+  const ESB::UInt32 totalSuccesses =
+      client.counters().getSuccesses()->queries();
+  const ESB::UInt32 totalFailures = client.counters().getFailures()->queries();
 
   // Destroy
 
@@ -269,6 +282,14 @@ int main(int argc, char **argv) {
   ESB::Time::Instance().stop();
   error = ESB::Time::Instance().join();
   assert(ESB_SUCCESS == error);
+
+  if (totalSuccesses != totalTransactions || 0 < totalFailures) {
+    ESB_LOG_CRITICAL(
+        "TEST FAILURE: expected %u successes but got %u successes and %u "
+        "failures",
+        totalTransactions, totalSuccesses, totalFailures);
+    return -7;
+  }
 
   return ESB_SUCCESS;
 }

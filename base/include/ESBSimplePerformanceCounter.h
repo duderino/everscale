@@ -44,7 +44,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
 
   double queriesPerSec() const;
 
-  UInt32 queries() const;
+  virtual UInt32 queries() const;
 
   double meanMSec() const;
 

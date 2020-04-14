@@ -38,12 +38,20 @@ class HttpEchoClientContext : public ESB::Object {
    *
    * @return the value before the decrement.
    */
-  static inline int DecrementIterations() { return _RemainingIterations.dec(); }
+  static inline int DecRemainingIterations() {
+    return _RemainingIterations.dec();
+  }
 
-  static inline bool IsFinished() { return 0 >= _RemainingIterations.get(); }
+  static inline void IncCompletedIterations() { _CompletedIterations.inc(); }
 
-  static inline void SetIterations(int remainingIterations) {
-    _RemainingIterations.set(remainingIterations);
+  static inline bool IsFinished() {
+    int completedIterations = _CompletedIterations.get();
+    return _TotalIterations <= completedIterations;
+  }
+
+  static inline void SetTotalIterations(int totalIterations) {
+    _TotalIterations = totalIterations;
+    _RemainingIterations.set(totalIterations);
   }
 
  private:
@@ -53,7 +61,9 @@ class HttpEchoClientContext : public ESB::Object {
 
   unsigned int _bytesSent;
   ESB::CleanupHandler &_cleanupHandler;
+  static volatile int _TotalIterations;
   static ESB::SharedInt _RemainingIterations;
+  static ESB::SharedInt _CompletedIterations;
 };
 
 }  // namespace ES

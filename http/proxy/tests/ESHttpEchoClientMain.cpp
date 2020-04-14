@@ -59,12 +59,13 @@
 #endif
 
 namespace ES {
-class SeedCommand : public HttpSeedTransactionHandler {
+class SeedCommand : public HttpClientCommand {
  public:
-  SeedCommand(ESB::Allocator &allocator, ESB::UInt32 iterations,
-              ESB::Int32 port, const char *host, const char *absPath,
-              const char *method, const char *contentType)
+  SeedCommand(ESB::Allocator &allocator, ESB::UInt32 connections,
+              ESB::UInt32 iterations, ESB::Int32 port, const char *host,
+              const char *absPath, const char *method, const char *contentType)
       : _allocator(allocator),
+        _connections(connections),
         _iterations(iterations),
         _port(port),
         _host(host),
@@ -73,21 +74,38 @@ class SeedCommand : public HttpSeedTransactionHandler {
         _contentType(contentType) {}
   virtual ~SeedCommand() {}
 
-  virtual ESB::Error modifyTransaction(HttpClientTransaction *transaction) {
-    // Create the request context
-    HttpEchoClientContext *context = new (_allocator)
-        HttpEchoClientContext(_iterations - 1, _allocator.cleanupHandler());
-    assert(context);
+  virtual ESB::Error run(HttpClientStack &stack) {
+    for (ESB::UInt32 i = 0; i < _connections; ++i) {
+      if (0 > HttpEchoClientContext::DecRemainingIterations()) {
+        break;
+      }
 
-    transaction->setContext(context);
+      HttpClientTransaction *transaction = stack.createTransaction();
+      assert(transaction);
 
-    // Build the request
+      // Create the request context
+      HttpEchoClientContext *context =
+          new (_allocator) HttpEchoClientContext(_allocator.cleanupHandler());
+      assert(context);
 
-    ESB::Error error = HttpEchoClientRequestBuilder(
-        _host, _port, _absPath, _method, _contentType, transaction);
-    assert(ESB_SUCCESS == error);
-    return error;
+      transaction->setContext(context);
+
+      // Build the request
+
+      ESB::Error error = HttpEchoClientRequestBuilder(
+          _host, _port, _absPath, _method, _contentType, transaction);
+      assert(ESB_SUCCESS == error);
+
+      error = stack.executeClientTransaction(transaction);
+      assert(ESB_SUCCESS == error);
+    }
+
+    return ESB_SUCCESS;
   }
+
+  virtual const char *name() { return "ClientSeed"; }
+
+  virtual ESB::CleanupHandler *cleanupHandler() { return NULL; }
 
  private:
   // Disabled
@@ -95,6 +113,7 @@ class SeedCommand : public HttpSeedTransactionHandler {
   SeedCommand &operator=(const SeedCommand &);
 
   ESB::Allocator &_allocator;
+  const ESB::UInt32 _connections;
   const ESB::UInt32 _iterations;
   const ESB::Int32 _port;
   const char *_host;
@@ -102,12 +121,13 @@ class SeedCommand : public HttpSeedTransactionHandler {
   const char *_method;
   const char *_contentType;
 };
+
+static volatile ESB::Word IsRunning = 1;
+static void SignalHandler(int signal) { IsRunning = 0; }
+
 }  // namespace ES
 
 using namespace ES;
-
-static void RawEchoClientSignalHandler(int signal);
-static volatile ESB::Word IsRunning = 1;
 
 static void printHelp(const char *progName) {
   fprintf(stderr, "Usage: %s <options>\n", progName);
@@ -246,7 +266,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::SimpleFileLogger logger;
+  HttpEchoClientContext::SetTotalIterations(connections * iterations);
+
+  ESB::Time::Instance().start();
+  ESB::SimpleFileLogger logger(stdout);
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
 
@@ -263,9 +286,9 @@ int main(int argc, char **argv) {
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, RawEchoClientSignalHandler);
-  signal(SIGQUIT, RawEchoClientSignalHandler);
-  signal(SIGTERM, RawEchoClientSignalHandler);
+  signal(SIGINT, SignalHandler);
+  signal(SIGQUIT, SignalHandler);
+  signal(SIGTERM, SignalHandler);
 
   //
   // Max out open files
@@ -351,16 +374,12 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  HttpClientHistoricalCounters counters(1000, 30,
-                                        ESB::SystemAllocator::Instance());
-  SeedCommand seed(ESB::SystemAllocator::Instance(), iterations, port, host,
-                   absPath, method, contentType);
-  HttpEchoClientHandler handler(absPath, method, contentType, body, bodySize,
-                                connections * iterations);
-  HttpClient client(threads, connections, seed, handler);
-
-  // TODO - make configuration stack-specific and increase options richness
+  HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
+                                      sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
+  SeedCommand seed(ESB::SystemAllocator::Instance(), connections / threads,
+                   iterations, port, host, absPath, method, contentType);
+  HttpClient client(threads, clientHandler);
 
   error = client.initialize();
 
@@ -384,7 +403,7 @@ int main(int argc, char **argv) {
     return -2;
   }
 
-  while (IsRunning && !handler.isFinished()) {
+  while (IsRunning && !HttpEchoClientContext::IsFinished()) {
     sleep(1);
   }
 
@@ -404,5 +423,3 @@ int main(int argc, char **argv) {
 
   return ESB_SUCCESS;
 }
-
-void RawEchoClientSignalHandler(int signal) { IsRunning = 0; }
