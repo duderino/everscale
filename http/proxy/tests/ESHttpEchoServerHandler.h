@@ -19,7 +19,7 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * @param address The IP address and port of the client.
    * @return a result code
    */
-  virtual Result acceptConnection(ESB::SocketMultiplexer &multiplexer,
+  virtual Result acceptConnection(HttpServerStack &stack,
                                   ESB::SocketAddress *address);
 
   /**
@@ -31,8 +31,8 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * objects, etc
    * @return a result code
    */
-  virtual Result beginServerTransaction(ESB::SocketMultiplexer &multiplexer,
-                                        HttpTransaction *transaction);
+  virtual Result beginServerTransaction(HttpServerStack &stack,
+                                        HttpServerTransaction *transaction);
 
   /**
    * Process a request's HTTP headers.
@@ -41,8 +41,8 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * objects, etc.
    * @return a result code
    */
-  virtual Result receiveRequestHeaders(ESB::SocketMultiplexer &multiplexer,
-                                       HttpTransaction *transaction);
+  virtual Result receiveRequestHeaders(HttpServerStack &stack,
+                                       HttpServerTransaction *transaction);
 
   /**
    * Incrementally process a request's body.  This will be called 1+ times as
@@ -58,8 +58,8 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * finished.
    * @return a result code
    */
-  virtual Result receiveRequestBody(ESB::SocketMultiplexer &multiplexer,
-                                    HttpTransaction *transaction,
+  virtual Result receiveRequestBody(HttpServerStack &stack,
+                                    HttpServerTransaction *transaction,
                                     unsigned const char *chunk,
                                     unsigned int chunkSize);
 
@@ -80,8 +80,8 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveResponseChunk(ESB::SocketMultiplexer &multiplexer,
-                                   HttpTransaction *transaction);
+  virtual int reserveResponseChunk(HttpServerStack &stack,
+                                   HttpServerTransaction *transaction);
 
   /**
    * Fill a response body chunk with data.
@@ -92,8 +92,8 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestResponseChunk method.
    */
-  virtual void fillResponseChunk(ESB::SocketMultiplexer &multiplexer,
-                                 HttpTransaction *transaction,
+  virtual void fillResponseChunk(HttpServerStack &stack,
+                                 HttpServerTransaction *transaction,
                                  unsigned char *chunk, unsigned int chunkSize);
 
   /**
@@ -104,8 +104,9 @@ class HttpEchoServerHandler : public HttpServerHandler {
    * objects, etc
    * @param state The state at which the transaction ended
    */
-  virtual void endServerTransaction(ESB::SocketMultiplexer &multiplexer,
-                                    HttpTransaction *transaction, State state);
+  virtual void endServerTransaction(HttpServerStack &stack,
+                                    HttpServerTransaction *transaction,
+                                    State state);
 
  private:
   // Disabled

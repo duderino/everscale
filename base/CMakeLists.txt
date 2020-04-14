@@ -56,6 +56,7 @@ set(SOURCE_FILES
         src/ESBSystemConfig.cpp
         src/ESBEmbeddedMapElement.cpp
         src/ESBSharedEmbeddedMap.cpp
+	src/ESBEventSocket.cpp
         )
 add_library(base STATIC ${SOURCE_FILES})
 

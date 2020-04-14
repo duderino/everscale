@@ -9,16 +9,8 @@
 #include <ESBListeningTCPSocket.h>
 #endif
 
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
-#include <ESBEmbeddedListElement.h>
-#endif
-
-#ifndef ES_HTTP_SERVER_SOCKET_FACTORY_H
-#include <ESHttpServerSocketFactory.h>
+#ifndef ES_HTTP_SERVER_STACK_H
+#include <ESHttpServerStack.h>
 #endif
 
 #ifndef ES_HTTP_SERVER_HANDLER_H
@@ -36,16 +28,9 @@ namespace ES {
 class HttpListeningSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
-   *
-   * @param socket A fully initialized (after bind() and listen()) listening
-   * socket to accept new requests from.
-   * @param allocator An allocator that will allocate new HttpServerSockets
-   * @param socketCleanupHandler A cleanup handler for all HttpServerSockets
-   * created by this object.
    */
   HttpListeningSocket(HttpServerHandler &handler,
-                      ESB::ListeningTCPSocket &socket,
-                      HttpServerSocketFactory &factory,
+                      ESB::ListeningTCPSocket &socket, HttpServerStack &stack,
                       HttpServerCounters &counters);
 
   /** Destructor.
@@ -208,7 +193,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
 
   HttpServerHandler &_handler;
   ESB::ListeningTCPSocket &_socket;
-  HttpServerSocketFactory &_factory;
+  HttpServerStack &_stack;
   HttpServerCounters &_counters;
 };
 

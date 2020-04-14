@@ -5,10 +5,6 @@
 #include <ESHttpTransaction.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_HANDLER_H
-#include <ESHttpServerHandler.h>
-#endif
-
 #ifndef ES_HTTP_REQUEST_PARSER_H
 #include <ESHttpRequestParser.h>
 #endif

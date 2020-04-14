@@ -34,7 +34,7 @@ HttpEchoServerHandler::HttpEchoServerHandler() {}
 HttpEchoServerHandler::~HttpEchoServerHandler() {}
 
 HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
-    ESB::SocketMultiplexer &multiplexer, ESB::SocketAddress *address) {
+    HttpServerStack &stack, ESB::SocketAddress *address) {
   if (ESB_INFO_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
     address->presentationAddress(dottedIP, sizeof(dottedIP));
@@ -45,7 +45,7 @@ HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
+    HttpServerStack &stack, HttpServerTransaction *transaction) {
   assert(transaction);
   ESB::Allocator &allocator = transaction->allocator();
 
@@ -72,7 +72,7 @@ HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
+    HttpServerStack &stack, HttpServerTransaction *transaction) {
   assert(transaction);
   HttpRequest &request = transaction->request();
   HttpRequestUri &requestUri = request.requestUri();
@@ -116,7 +116,7 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    HttpServerStack &stack, HttpServerTransaction *transaction,
     unsigned const char *chunk, unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
@@ -143,7 +143,7 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
 }
 
 int HttpEchoServerHandler::reserveResponseChunk(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction) {
+    HttpServerStack &stack, HttpServerTransaction *transaction) {
   HttpEchoServerContext *context =
       (HttpEchoServerContext *)transaction->context();
   assert(context);
@@ -151,7 +151,7 @@ int HttpEchoServerHandler::reserveResponseChunk(
 }
 
 void HttpEchoServerHandler::fillResponseChunk(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    HttpServerStack &stack, HttpServerTransaction *transaction,
     unsigned char *chunk, unsigned int chunkSize) {
   assert(transaction);
   assert(chunk);
@@ -170,7 +170,7 @@ void HttpEchoServerHandler::fillResponseChunk(
 }
 
 void HttpEchoServerHandler::endServerTransaction(
-    ESB::SocketMultiplexer &multiplexer, HttpTransaction *transaction,
+    HttpServerStack &stack, HttpServerTransaction *transaction,
     HttpServerHandler::State state) {
   assert(transaction);
   HttpEchoServerContext *context =

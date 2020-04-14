@@ -10,8 +10,9 @@ HttpServerMultiplexer::HttpServerMultiplexer(
     : HttpMultiplexer(maxSockets),
       _serverSocketFactory(serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverStack(_epollMultiplexer, _serverTransactionFactory, _ioBufferPool),
-      _listeningSocket(serverHandler, listeningSocket, _serverSocketFactory,
+      _serverStack(_epollMultiplexer, _serverTransactionFactory,
+                   _serverSocketFactory, _ioBufferPool),
+      _listeningSocket(serverHandler, listeningSocket, _serverStack,
                        serverCounters) {
   _serverSocketFactory.setStack(_serverStack);
 }
@@ -37,11 +38,12 @@ ESB::CleanupHandler *HttpServerMultiplexer::cleanupHandler() { return NULL; }
 
 HttpServerMultiplexer::HttpServerStackImpl::HttpServerStackImpl(
     ESB::EpollMultiplexer &multiplexer,
-    HttpServerTransactionFactory &serverTransactionFactory,
-    ESB::BufferPool &bufferPool)
+    HttpServerTransactionFactory &transactionFactory,
+    HttpServerSocketFactory &socketFactory, ESB::BufferPool &bufferPool)
     : _bufferPool(bufferPool),
       _multiplexer(multiplexer),
-      _serverTransactionFactory(serverTransactionFactory) {}
+      _serverTransactionFactory(transactionFactory),
+      _serverSocketFactory(socketFactory) {}
 
 HttpServerMultiplexer::HttpServerStackImpl::~HttpServerStackImpl() {}
 
@@ -66,6 +68,24 @@ ESB::Buffer *HttpServerMultiplexer::HttpServerStackImpl::acquireBuffer() {
 void HttpServerMultiplexer::HttpServerStackImpl::releaseBuffer(
     ESB::Buffer *buffer) {
   _bufferPool.releaseBuffer(buffer);
+}
+
+ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addServerSocket(
+    ESB::TCPSocket::State &state) {
+  HttpServerSocket *socket = _serverSocketFactory.create(state);
+
+  if (!socket) {
+    return ESB_OUT_OF_MEMORY;
+  }
+
+  ESB::Error error = _multiplexer.addMultiplexedSocket(socket);
+
+  if (ESB_SUCCESS != error) {
+    _serverSocketFactory.release(socket);
+    return error;
+  }
+
+  return ESB_SUCCESS;
 }
 
 }  // namespace ES

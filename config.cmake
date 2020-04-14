@@ -130,6 +130,8 @@ check_symbol_exists(memmove "string.h" HAVE_MEMMOVE)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 check_symbol_exists(gethostname "unistd.h" HAVE_GETHOSTNAME)
 check_symbol_exists(close "unistd.h" HAVE_CLOSE)
+check_symbol_exists(write "unistd.h" HAVE_WRITE)
+check_symbol_exists(read "unistd.h" HAVE_READ)
 check_symbol_exists(usleep "unistd.h" HAVE_USLEEP)
 check_cxx_source_compiles("
 #include <unistd.h>
@@ -233,6 +235,9 @@ int main () {
   atomic1++; ++atomic2;
   return atomic1 == atomic2;
 }" HAVE_ATOMIC_T)
+
+check_include_file("sys/eventfd.h" HAVE_SYS_EVENTFD_H)
+check_symbol_exists(eventfd "sys/eventfd.h" HAVE_EVENTFD)
 
 configure_file(config.h.in base/include/ESBConfig.h @ONLY)
 configure_file(config.h.in unit-tf/include/ESTFConfig.h @ONLY)

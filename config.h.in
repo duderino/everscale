@@ -142,6 +142,8 @@
 #cmakedefine HAVE_UNISTD_H @HAVE_UNISTD_H@
 #cmakedefine HAVE_GETHOSTNAME @HAVE_GETHOSTNAME@
 #cmakedefine HAVE_CLOSE @HAVE_CLOSE@
+#cmakedefine HAVE_WRITE @HAVE_WRITE@
+#cmakedefine HAVE_READ @HAVE_READ@
 #cmakedefine HAVE_USLEEP @HAVE_USLEEP@
 #cmakedefine HAVE_SYSCONF @HAVE_SYSCONF@
 #cmakedefine HAVE_SC_PAGESIZE @HAVE_SC_PAGESIZE@
@@ -214,6 +216,9 @@
 #cmakedefine HAVE_SYS_MMAN_H @HAVE_SYS_MMAN_H@
 #cmakedefine HAVE_MMAP @HAVE_MMAP@
 #cmakedefine HAVE_MUNMAP @HAVE_MUNMAP@
+
+#cmakedefine HAVE_SYS_EVENTFD_H @HAVE_SYS_EVENTFD_H@
+#cmakedefine HAVE_EVENTFD @HAVE_EVENTFD@
 
 #ifdef HAVE_ASSERT_H
 #include <assert.h>

@@ -1,11 +1,9 @@
-buffer rework:
- - unless it can be guaranteed that every transaction is either parsing or formatting but never both, give transactions two parse buffers too.
- - make http server sockets bufferless and transactionless when they are waiting for the next transaction.  if all buffers in transaction objects, use server transaction pool and perhaps a dedicated discard allocator.  Else use buffer pools.
-
 code health:
+ - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback
  - add noexcept to all uses of placement new
  - use allocator cleanup handlers in embedded list test and more widely
  - use references instead of pointers when they shouldn't be NULL
+ - Split HttpServerStack into two interfaces: one for HttpServerSocket and one for HttpListeningSocket+HttpServerHandler
 
 connection pool rework:
  - create connection pool class of client sockets to client socket factory.

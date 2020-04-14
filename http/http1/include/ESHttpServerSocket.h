@@ -9,6 +9,10 @@
 #include <ESBConnectedTCPSocket.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_HANDLER_H
+#include <ESHttpServerHandler.h>
+#endif
+
 #ifndef ES_HTTP_SERVER_TRANSACTION_H
 #include <ESHttpServerTransaction.h>
 #endif

@@ -20,12 +20,9 @@ namespace ES {
 
 HttpListeningSocket::HttpListeningSocket(HttpServerHandler &handler,
                                          ESB::ListeningTCPSocket &socket,
-                                         HttpServerSocketFactory &factory,
+                                         HttpServerStack &stack,
                                          HttpServerCounters &counters)
-    : _handler(handler),
-      _socket(socket),
-      _factory(factory),
-      _counters(counters) {}
+    : _handler(handler), _socket(socket), _stack(stack), _counters(counters) {}
 
 HttpListeningSocket::~HttpListeningSocket() {
   ESB_LOG_DEBUG("HttpListeningSocket destroyed");
@@ -79,7 +76,7 @@ bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
   _counters.getTotalConnections()->inc();
 
   HttpServerHandler::Result result =
-      _handler.acceptConnection(multiplexer, &state.peerAddress());
+      _handler.acceptConnection(_stack, &state.peerAddress());
 
   if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
     ESB_LOG_DEBUG("listener:%d Handler rejected connection",
@@ -88,32 +85,13 @@ bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
     return true;
   }
 
-  HttpServerSocket *serverSocket = _factory.create(state);
-
-  if (!serverSocket) {
-    ESB_LOG_CRITICAL("listener:%d cannot allocate new server socket",
-                     _socket.socketDescriptor());
-    ESB::TCPSocket::Close(state.socketDescriptor());
-    return true;
-  }
-
-  error = multiplexer.addMultiplexedSocket(serverSocket);
-
-  if (ESB_SHUTDOWN == error) {
-    ESB_LOG_WARNING(
-        "listener:%d Dispatcher has been shutdown, closing newly "
-        "accepted connection",
-        _socket.socketDescriptor());
-    _factory.release(serverSocket);
-    return true;
-  }
+  error = _stack.addServerSocket(state);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error,
                         "listener:%d cannot add accepted connection to "
-                        "dispatcher",
+                        "multiplexer",
                         _socket.socketDescriptor());
-    _factory.release(serverSocket);
     return true;
   }
 
