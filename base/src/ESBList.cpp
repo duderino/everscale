@@ -306,6 +306,22 @@ Error List::deleteNode(ListNode *node) {
   return error;
 }
 
+void *List::index(int idx) {
+  if (0 > idx || _size <= idx) {
+    return NULL;
+  }
+
+  int i = 0;
+  for (ListNode *node = _head; node; node = node->_next, ++i) {
+    if (i == idx) {
+      return node->_value;
+    }
+  }
+
+  assert(0 == "idx in range should always be found");
+  return NULL;
+}
+
 UInt32 List::size() const { return _size; }
 
 bool List::isEmpty() const { return !_head; }

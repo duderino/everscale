@@ -21,6 +21,10 @@
 #include <ESBList.h>
 #endif
 
+#ifndef ESB_RAND_H
+#include <ESBRand.h>
+#endif
+
 namespace ES {
 
 class HttpClient {
@@ -34,14 +38,18 @@ class HttpClient {
   virtual ~HttpClient();
 
   /**
-   * Enqueue a command to be run on all multiplexer threads.  NB: the command's
-   * cleanup handler must return NULL, else multiple multiplexers will try to
-   * clean it up.
+   * Enqueue a command to be run on a random multiplexer thread.  If the
+   * command has a cleanup handler, the multiplexer will call its cleanup
+   * handler after the command finishes.
    *
    * @param command The command to execute
+   * @param idx the index of a specific multiplexer ranging from 0 to
+   * threads()-1 inclusive.  If -1 then a random multiplexer will be picked.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error pushAll(HttpClientCommand *command);
+  ESB::Error push(HttpClientCommand *command, int idx = -1);
+
+  inline ESB::UInt32 threads() { return _threads; }
 
   ESB::Error initialize();
 
@@ -71,6 +79,7 @@ class HttpClient {
   HttpClientHandler &_clientHandler;
   ESB::List _multiplexers;
   ESB::ThreadPool _threadPool;
+  ESB::Rand _rand;
   HttpClientHistoricalCounters _clientCounters;
 };
 

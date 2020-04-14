@@ -20,7 +20,7 @@ HttpClient::HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler,
 
 HttpClient::~HttpClient() {}
 
-ESB::Error HttpClient::pushAll(HttpClientCommand *command) {
+ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
   switch (_state.get()) {
     case ES_HTTP_CLIENT_IS_INITIALIZED:
     case ES_HTTP_CLIENT_IS_STARTED:
@@ -36,26 +36,22 @@ ESB::Error HttpClient::pushAll(HttpClientCommand *command) {
     return ESB_NULL_POINTER;
   }
 
-  if (command->cleanupHandler()) {
-    // must return NULL else all multiplexers will try to destroy/free the same
-    // command.
-    return ESB_INVALID_ARGUMENT;
+  if (0 > idx) {
+    // both endpoints of the range are inclusive.
+    idx = _rand.generate(0, _threads - 1);
   }
 
-  ESB::Error result = ESB_SUCCESS;
+  HttpClientMultiplexer *multiplexer =
+      (HttpClientMultiplexer *)_multiplexers.index(idx);
+  assert(multiplexer);
+  ESB::Error error = multiplexer->push(command);
 
-  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
-       it = it.next()) {
-    HttpClientMultiplexer *multiplexer = (HttpClientMultiplexer *)it.value();
-    ESB::Error error = multiplexer->push(command);
-
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
-      result = error;
-    }
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
+    return error;
   }
 
-  return result;
+  return ESB_SUCCESS;
 }
 
 ESB::Error HttpClient::initialize() {

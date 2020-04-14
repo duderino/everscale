@@ -116,6 +116,15 @@ class EmbeddedList {
    */
   void remove(EmbeddedListElement *element);
 
+  /** Return the element at an index where the first element is at index 0.
+   * O(n).
+   *
+   * @param idx the index
+   * @return The element at the index or NULL if there is no element at the
+   * index.
+   */
+  EmbeddedListElement *index(int idx);
+
   /** Placement new.
    *
    *  @param size The size of the object.

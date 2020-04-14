@@ -122,6 +122,17 @@ void EmbeddedList::addLast(EmbeddedListElement *element) {
   _tail = element;
 }
 
+EmbeddedListElement *EmbeddedList::index(int idx) {
+  int i = 0;
+  for (EmbeddedListElement *elem = first(); elem; elem = elem->next(), ++i) {
+    if (i == idx) {
+      return elem;
+    }
+  }
+
+  return NULL;
+}
+
 bool EmbeddedList::validate() const {
   for (EmbeddedListElement *current = _head; current;
        current = current->next()) {
@@ -156,5 +167,4 @@ bool EmbeddedList::validate() const {
 
   return true;
 }
-
 }  // namespace ESB

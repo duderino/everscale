@@ -334,6 +334,15 @@ class List : public Lockable {
    */
   Error remove(ListIterator *iterator);
 
+  /** Return the element at an index where the first element is at index 0.
+   * O(n).
+   *
+   * @param idx the index
+   * @return The element at the index or NULL if there is no element at the
+   * index.
+   */
+  void *index(int idx);
+
   /** Get the current size of the list.  O(1).
    *
    *  @return The current size of the list.
