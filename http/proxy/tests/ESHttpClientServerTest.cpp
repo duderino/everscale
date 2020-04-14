@@ -63,7 +63,6 @@ int main(int argc, char **argv) {
   int clientThreads = 3;
   int serverThreads = 3;
   const char *host = "localhost.localdomain";
-  int port = 8888;
   unsigned int connections = 500;  // concurrent connections
   unsigned int iterations = 500;   // http requests per concurrent connection
   bool reuseConnections = true;
@@ -148,7 +147,8 @@ int main(int argc, char **argv) {
   // Init
 
   HttpEchoServerHandler serverHandler;
-  HttpServer server(serverThreads, port, serverHandler);
+  // bind to port 0 so kernel will choose a free ephemeral port
+  HttpServer server(serverThreads, 0, serverHandler);
 
   error = server.initialize();
 
@@ -184,8 +184,8 @@ int main(int argc, char **argv) {
   for (int i = 0; i < client.threads(); ++i) {
     HttpEchoClientSeedCommand *command =
         new (ESB::SystemAllocator::Instance()) HttpEchoClientSeedCommand(
-            connections / clientThreads, iterations, port, host, absPath,
-            method, contentType,
+            connections / clientThreads, iterations, server.port(), host,
+            absPath, method, contentType,
             ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {

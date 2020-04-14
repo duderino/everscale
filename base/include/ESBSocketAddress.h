@@ -110,6 +110,8 @@ class SocketAddress {
    */
   Address *primitiveAddress();
 
+  void updatePrimitiveAddress(Address *address);
+
   /** Get the IP address of the SocketAddress.
    *
    *  @param address A character array large enough to hold the ip address

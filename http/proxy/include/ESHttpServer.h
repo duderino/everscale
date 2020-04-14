@@ -34,6 +34,10 @@ class HttpServer {
 
   virtual ~HttpServer();
 
+  inline ESB::UInt16 port() {
+    return _listeningSocket.listeningAddress().port();
+  }
+
   ESB::Error initialize();
 
   ESB::Error start();

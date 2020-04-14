@@ -1,3 +1,15 @@
+connection pool rework:
+ - create connection pool class of client sockets to client socket factory.
+ - create option of global or per-silo connection pool and set default to better performing option.
+
+client stack rework:
+ - http logging should show peer/self addresses:
+ - put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
+ - add log statements to http server+client+listener sockets that pretty print peer/listener address
+
+server stack rework:
+ - create server equivalent of client command socket and dynamically push new listeners in from other threads.
+
 code health:
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback
  - add noexcept to all uses of placement new
@@ -6,16 +18,6 @@ code health:
  - Split HttpServerStack into two interfaces: one for HttpServerSocket (call it HttpServerInternals)  and one for HttpListeningSocket+HttpServerHandler
  - Split HttpClientStack into two interfaces: one for HttpClientSocket (call it HttpClientInternals) and one for HttpClientHandler
  - reduce the number of name() and getName() functions
-
-connection pool rework:
- - create connection pool class of client sockets to client socket factory.
- - create option of global or per-silo connection pool and set default to better performing option.
-
-client stack rework:
- - replace client stack seed callback with function to exec arbitrary stuff on multiplexer thread.  Use EventSocket and SharedQueue for the impl.
- - http logging should show peer/self addresses:
- - put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
- - add log statements to http server+client+listener sockets that pretty print peer/listener address
 
 proxy impl:
  - proxy stack/multiplexer/handler
@@ -40,7 +42,6 @@ multiplex socket
 
 http stack test
  - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
- - bind to ephemeral port in stack unit tests
  - pin threads / fe-be connection alignment / packet steering
 
 server:

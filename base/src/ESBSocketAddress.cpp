@@ -210,4 +210,12 @@ bool SocketAddress::operator<(const SocketAddress &address) const {
   return 0 > _transport - address._transport;
 }
 
+void SocketAddress::updatePrimitiveAddress(SocketAddress::Address *address) {
+  if (!address) {
+    return;
+  }
+
+  memcpy(&_address, address, sizeof(_address));
+}
+
 }  // namespace ESB

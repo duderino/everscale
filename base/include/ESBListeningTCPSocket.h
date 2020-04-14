@@ -42,7 +42,7 @@ class ListeningTCPSocket : public TCPSocket {
    *  listen on the specified port and let the kernel choose the IP address
    *  of the listening socket (INADDR_ANY).
    *
-   *  @param port The port to listen on.
+   *  @param port The port to listen on.  If 0 then pick an ephemeral port.
    *  @param backlog The length of the incoming connection queue.  Some
    *      platforms (e.g., Win32) will silently cap this value at 5.
    *  @param isBlocking whether or not this socket is blocking.  Blocking

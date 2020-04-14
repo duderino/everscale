@@ -83,6 +83,26 @@ Error ListeningTCPSocket::bind() {
 #error "bind and sockaddr or equivalent is required."
 #endif
 
+  if (0 != _listeningAddress.port()) {
+    return ESB_SUCCESS;
+  }
+
+  // If we bound to an ephemeral port, determine the assigned port.
+
+#if defined HAVE_GETSOCKNAME && defined HAVE_STRUCT_SOCKADDR
+  SocketAddress::Address addr;
+  memset(&addr, 0, sizeof(addr));
+  socklen_t length = sizeof(addr);
+  if (SOCKET_ERROR == ::getsockname(_sockFd, (sockaddr *)&addr, &length)) {
+    close();
+    return LastError();
+  }
+  assert(length == sizeof(addr));
+  _listeningAddress.updatePrimitiveAddress(&addr);
+#else
+#error "getsockname and sockaddr or equivalent is required."
+#endif
+
   return ESB_SUCCESS;
 }
 

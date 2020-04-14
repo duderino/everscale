@@ -168,6 +168,7 @@ set(HAVE_SOCKLEN_T 1) # TODO detect presence with a test program
 check_symbol_exists(socket "sys/socket.h" HAVE_SOCKET)
 check_symbol_exists(bind "sys/socket.h" HAVE_BIND)
 check_symbol_exists(listen "sys/socket.h" HAVE_LISTEN)
+check_symbol_exists(getsockname "sys/socket.h" HAVE_GETSOCKNAME)
 check_symbol_exists(accept "sys/socket.h" HAVE_ACCEPT)
 check_symbol_exists(connect "sys/socket.h" HAVE_CONNECT)
 check_symbol_exists(send "sys/socket.h" HAVE_SEND)

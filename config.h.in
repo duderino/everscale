@@ -161,6 +161,7 @@
 #cmakedefine HAVE_SOCKET @HAVE_SOCKET@
 #cmakedefine HAVE_BIND @HAVE_BIND@
 #cmakedefine HAVE_LISTEN @HAVE_LISTEN@
+#cmakedefine HAVE_GETSOCKNAME @HAVE_GETSOCKNAME@
 #cmakedefine HAVE_ACCEPT @HAVE_ACCEPT@
 #cmakedefine HAVE_CONNECT @HAVE_CONNECT@
 #cmakedefine HAVE_SEND @HAVE_SEND@
