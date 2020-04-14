@@ -22,25 +22,23 @@ HttpMultiplexer::HttpMultiplexer(ESB::UInt32 maxSockets)
           ESB_PAGE_SIZE * 1000 -
               ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
           ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _epollMultiplexer(maxSockets, ESB::SystemAllocator::Instance()) {}
+      _multiplexer(maxSockets, ESB::SystemAllocator::Instance()) {}
 
 HttpMultiplexer::~HttpMultiplexer() {}
 
 ESB::Error HttpMultiplexer::addMultiplexedSocket(
     ESB::MultiplexedSocket *multiplexedSocket) {
-  return _epollMultiplexer.addMultiplexedSocket(multiplexedSocket);
+  return _multiplexer.addMultiplexedSocket(multiplexedSocket);
 }
 
 int HttpMultiplexer::currentSockets() const {
-  return _epollMultiplexer.currentSockets();
+  return _multiplexer.currentSockets();
 }
 
 int HttpMultiplexer::maximumSockets() const {
-  return _epollMultiplexer.maximumSockets();
+  return _multiplexer.maximumSockets();
 }
 
-bool HttpMultiplexer::isRunning() const {
-  return _epollMultiplexer.isRunning();
-}
+bool HttpMultiplexer::isRunning() const { return _multiplexer.isRunning(); }
 
 }  // namespace ES

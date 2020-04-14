@@ -14,8 +14,9 @@ HttpClientMultiplexer::HttpClientMultiplexer(
       _clientSocketFactory(*this, clientHandler, clientCounters,
                            _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
-      _clientStack(_epollMultiplexer, _clientSocketFactory,
-                   _clientTransactionFactory, _ioBufferPool) {
+      _clientStack(_multiplexer, _clientSocketFactory,
+                   _clientTransactionFactory, _ioBufferPool),
+      _commandSocket(_clientStack) {
   _clientSocketFactory.setStack(_clientStack);
 }
 
@@ -45,12 +46,17 @@ bool HttpClientMultiplexer::run(ESB::SharedInt *isRunning) {
     }
   }
 
-  return _epollMultiplexer.run(isRunning);
+  ESB::Error error = _multiplexer.addMultiplexedSocket(&_commandSocket);
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add command socket to multiplexer");
+    return false;
+  }
+
+  return _multiplexer.run(isRunning);
 }
 
-const char *HttpClientMultiplexer::name() const {
-  return _epollMultiplexer.name();
-}
+const char *HttpClientMultiplexer::name() const { return _multiplexer.name(); }
 
 ESB::CleanupHandler *HttpClientMultiplexer::cleanupHandler() { return NULL; }
 

@@ -24,6 +24,37 @@ HttpClient::HttpClient(ESB::UInt32 threads, ESB::UInt32 connections,
 
 HttpClient::~HttpClient() {}
 
+ESB::Error HttpClient::pushAll(HttpClientCommand *command) {
+  if (ES_HTTP_CLIENT_IS_STARTED != _state.get()) {
+    return ESB_INVALID_STATE;
+  }
+
+  if (!command) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (command->cleanupHandler()) {
+    // must return NULL else all multiplexers will try to destroy/free the same
+    // command.
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  ESB::Error result = ESB_SUCCESS;
+
+  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
+       it = it.next()) {
+    HttpClientMultiplexer *multiplexer = (HttpClientMultiplexer *)it.value();
+    ESB::Error error = multiplexer->push(command);
+
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
+      result = error;
+    }
+  }
+
+  return result;
+}
+
 ESB::Error HttpClient::initialize() {
   assert(ES_HTTP_CLIENT_IS_DESTROYED == _state.get());
   _state.set(ES_HTTP_CLIENT_IS_INITIALIZED);

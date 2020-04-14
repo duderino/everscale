@@ -10,7 +10,7 @@ HttpServerMultiplexer::HttpServerMultiplexer(
     : HttpMultiplexer(maxSockets),
       _serverSocketFactory(serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverStack(_epollMultiplexer, _serverTransactionFactory,
+      _serverStack(_multiplexer, _serverTransactionFactory,
                    _serverSocketFactory, _ioBufferPool),
       _listeningSocket(serverHandler, listeningSocket, _serverStack,
                        serverCounters) {
@@ -27,12 +27,10 @@ bool HttpServerMultiplexer::run(ESB::SharedInt *isRunning) {
     return false;
   }
 
-  return _epollMultiplexer.run(isRunning);
+  return _multiplexer.run(isRunning);
 }
 
-const char *HttpServerMultiplexer::name() const {
-  return _epollMultiplexer.name();
-}
+const char *HttpServerMultiplexer::name() const { return _multiplexer.name(); }
 
 ESB::CleanupHandler *HttpServerMultiplexer::cleanupHandler() { return NULL; }
 

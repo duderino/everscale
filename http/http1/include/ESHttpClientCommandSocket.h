@@ -1,5 +1,5 @@
-#ifndef ES_HTTP_CLIENT_SOCKET_H
-#define ES_HTTP_CLIENT_SOCKET_H
+#ifndef ES_HTTP_CLIENT_COMMAND_SOCKET_H
+#define ES_HTTP_CLIENT_COMMAND_SOCKET_H
 
 #ifndef ES_HTTP_CLIENT_STACK_H
 #include <ESHttpClientStack.h>
@@ -41,8 +41,8 @@ class HttpClientCommandSocket : public ESB::MultiplexedSocket {
 
   /**
    * Enqueue a command on the command socket.  When the command socket is
-   * in a multiplexer, the multiplexer will wake up, dequeue the commnad,
-   * and execute it on the multiplexer's threaad of control.
+   * in a multiplexer, the multiplexer will wake up, dequeue the command,
+   * and execute it on the multiplexer's thread of control.
    *
    * @param command The command to execute
    * @return ESB_SUCCESS if successful, another error code otherwise.

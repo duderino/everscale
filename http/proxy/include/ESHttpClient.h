@@ -35,6 +35,16 @@ class HttpClient {
 
   virtual ~HttpClient();
 
+  /**
+   * Enqueue a command to be run on all multiplexer threads.  NB: the command's
+   * cleanup handler must return NULL, else multiple multiplexers will try to
+   * clean it up.
+   *
+   * @param command The command to execute
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  ESB::Error pushAll(HttpClientCommand *command);
+
   ESB::Error initialize();
 
   ESB::Error start();

@@ -16,9 +16,9 @@ class HttpClientStack {
   HttpClientStack();
   virtual ~HttpClientStack();
 
-  virtual HttpClientTransaction *createTransaction() = 0;
-
   virtual bool isRunning() = 0;
+
+  virtual HttpClientTransaction *createTransaction() = 0;
 
   /**
    * Execute the client transaction.  If this method returns ESB_SUCCESS, then

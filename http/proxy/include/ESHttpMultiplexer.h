@@ -37,7 +37,7 @@ class HttpMultiplexer : public ESB::SocketMultiplexer {
  protected:
   ESB::BufferPool _ioBufferPool;
   ESB::DiscardAllocator _factoryAllocator;
-  ESB::EpollMultiplexer _epollMultiplexer;
+  ESB::EpollMultiplexer _multiplexer;
 };
 
 }  // namespace ES

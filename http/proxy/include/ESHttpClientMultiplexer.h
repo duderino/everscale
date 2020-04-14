@@ -21,6 +21,10 @@
 #include <ESHttpClientTransactionFactory.h>
 #endif
 
+#ifndef ES_HTTP_CLIENT_COMMAND_SOCKET_H
+#include <ESHttpClientCommandSocket.h>
+#endif
+
 namespace ES {
 
 class HttpClientMultiplexer : public HttpMultiplexer {
@@ -36,6 +40,18 @@ class HttpClientMultiplexer : public HttpMultiplexer {
   virtual const char *name() const;
   virtual bool run(ESB::SharedInt *isRunning);
   virtual ESB::CleanupHandler *cleanupHandler();
+
+  /**
+   * Enqueue a command in the multiplexer and wake it up.  When the multiplexer
+   * wakes up, it will dequeue the command and execute it in it's thread of
+   * control.
+   *
+   * @param command The command to execute
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  inline ESB::Error push(HttpClientCommand *command) {
+    return _commandSocket.push(command);
+  }
 
  private:
   // disabled
@@ -75,6 +91,7 @@ class HttpClientMultiplexer : public HttpMultiplexer {
   HttpClientSocketFactory _clientSocketFactory;
   HttpClientTransactionFactory _clientTransactionFactory;
   HttpClientStackImpl _clientStack;
+  HttpClientCommandSocket _commandSocket;
 };
 
 }  // namespace ES
