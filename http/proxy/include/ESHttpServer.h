@@ -49,6 +49,8 @@ class HttpServer {
    */
   ESB::Error push(HttpServerCommand *command, int idx = -1);
 
+  ESB::Error addListener(ESB::ListeningTCPSocket &listener);
+
   inline ESB::UInt32 threads() { return _threads; }
 
   ESB::Error initialize();

@@ -8,6 +8,31 @@
 
 namespace ES {
 
+class AddListeningSocketCommand : public HttpServerCommand {
+ public:
+  AddListeningSocketCommand(ESB::ListeningTCPSocket &socket,
+                            ESB::CleanupHandler &cleanupHandler)
+      : _socket(socket), _cleanupHandler(cleanupHandler) {}
+
+  virtual ~AddListeningSocketCommand(){};
+
+  virtual ESB::Error run(HttpServerStack &stack) {
+    return stack.addListeningSocket(_socket);
+  }
+
+  virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
+
+  virtual const char *name() { return "AddListeningSocket"; }
+
+ private:
+  // Disabled
+  AddListeningSocketCommand(const AddListeningSocketCommand &);
+  AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
+
+  ESB::ListeningTCPSocket &_socket;
+  ESB::CleanupHandler &_cleanupHandler;
+};
+
 HttpServer::HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
                        ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
@@ -47,6 +72,21 @@ ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
     return error;
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServer::addListener(ESB::ListeningTCPSocket &listener) {
+  for (int i = 0; i < _threads; ++i) {
+    AddListeningSocketCommand *command =
+        new (ESB::SystemAllocator::Instance()) AddListeningSocketCommand(
+            listener, ESB::SystemAllocator::Instance().cleanupHandler());
+    ESB::Error error = push(command, i);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot push add listener command");
+      return error;
+    }
   }
 
   return ESB_SUCCESS;

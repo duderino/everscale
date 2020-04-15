@@ -54,35 +54,6 @@
 #include <stdlib.h>
 #endif
 
-namespace ES {
-
-class AddListeningSocketCommand : public HttpServerCommand {
- public:
-  AddListeningSocketCommand(ESB::ListeningTCPSocket &socket,
-                             ESB::CleanupHandler &cleanupHandler)
-      : _socket(socket), _cleanupHandler(cleanupHandler) {}
-
-  virtual ~AddListeningSocketCommand(){};
-
-  virtual ESB::Error run(HttpServerStack &stack) {
-    return stack.addListeningSocket(_socket);
-  }
-
-  virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
-
-  virtual const char *name() { return "AddListeningSocket"; }
-
- private:
-  // Disabled
-  AddListeningSocketCommand(const AddListeningSocketCommand &);
-  AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
-
-  ESB::ListeningTCPSocket &_socket;
-  ESB::CleanupHandler &_cleanupHandler;
-};
-
-}  // namespace ES
-
 static volatile ESB::Word IsRunning = 1;
 static void SignalHandler(int signal) { IsRunning = 0; }
 
@@ -234,15 +205,10 @@ int main(int argc, char **argv) {
 
   // add listening sockets to running server
 
-  for (int i = 0; i < server.threads(); ++i) {
-    AddListeningSocketCommand *command =
-        new (ESB::SystemAllocator::Instance()) AddListeningSocketCommand(
-            listener, ESB::SystemAllocator::Instance().cleanupHandler());
-    error = server.push(command, i);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
-      return -7;
-    }
+  error = server.addListener(listener);
+
+  if (ESB_SUCCESS != error) {
+    return -7;
   }
 
   error = client.start();
