@@ -45,12 +45,15 @@
 #include <ESHttpServerTransactionFactory.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_COMMAND_SOCKET_H
+#include <ESHttpServerCommandSocket.h>
+#endif
+
 namespace ES {
 
 class HttpServerMultiplexer : public HttpMultiplexer {
  public:
   HttpServerMultiplexer(ESB::UInt32 maxSockets,
-                        ESB::ListeningTCPSocket &listeningSocket,
                         HttpServerHandler &serverHandler,
                         HttpServerCounters &serverCounters);
 
@@ -60,6 +63,18 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   virtual bool run(ESB::SharedInt *isRunning);
   virtual ESB::CleanupHandler *cleanupHandler();
 
+  /**
+   * Enqueue a command in the multiplexer and wake it up.  When the multiplexer
+   * wakes up, it will dequeue the command and execute it in it's thread of
+   * control.
+   *
+   * @param command The command to execute
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  inline ESB::Error push(HttpServerCommand *command) {
+    return _commandSocket.push(command);
+  }
+
  private:
   // disabled
   HttpServerMultiplexer(const HttpServerMultiplexer &);
@@ -68,8 +83,9 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   // This is what the server multiplexer exposes to server sockets
   class HttpServerStackImpl : public HttpServerStack {
    public:
-    HttpServerStackImpl(ESB::EpollMultiplexer &multiplexer,
-                        ESB::BufferPool &bufferPool,
+    HttpServerStackImpl(ESB::Allocator &allocator,
+                        ESB::EpollMultiplexer &multiplexer,
+                        ESB::BufferPool &bufferPool, HttpServerHandler &handler,
                         HttpServerCounters &counters,
                         HttpServerTransactionFactory &transactionFactory,
                         HttpServerSocketFactory &socketFactory);
@@ -80,6 +96,7 @@ class HttpServerMultiplexer : public HttpMultiplexer {
     virtual ESB::Buffer *acquireBuffer();
     virtual void releaseBuffer(ESB::Buffer *buffer);
     virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state);
+    virtual ESB::Error addListeningSocket(ESB::ListeningTCPSocket &socket);
     virtual HttpServerCounters &counters();
 
    private:
@@ -87,8 +104,10 @@ class HttpServerMultiplexer : public HttpMultiplexer {
     HttpServerStackImpl(const HttpServerStackImpl &);
     HttpServerStackImpl &operator=(const HttpServerStackImpl &);
 
+    ESB::Allocator &_allocator;
     ESB::EpollMultiplexer &_multiplexer;
     ESB::BufferPool &_bufferPool;
+    HttpServerHandler &_handler;
     HttpServerCounters &_counters;
     HttpServerTransactionFactory &_transactionFactory;
     HttpServerSocketFactory &_socketFactory;
@@ -97,7 +116,7 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   HttpServerSocketFactory _serverSocketFactory;
   HttpServerTransactionFactory _serverTransactionFactory;
   HttpServerStackImpl _serverStack;
-  HttpListeningSocket _listeningSocket;
+  HttpServerCommandSocket _commandSocket;
 };
 
 }  // namespace ES

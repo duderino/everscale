@@ -4,25 +4,26 @@
 
 namespace ES {
 
-HttpServerMultiplexer::HttpServerMultiplexer(
-    ESB::UInt32 maxSockets, ESB::ListeningTCPSocket &listeningSocket,
-    HttpServerHandler &serverHandler, HttpServerCounters &serverCounters)
+HttpServerMultiplexer::HttpServerMultiplexer(ESB::UInt32 maxSockets,
+                                             HttpServerHandler &serverHandler,
+                                             HttpServerCounters &serverCounters)
     : HttpMultiplexer(maxSockets),
       _serverSocketFactory(serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverStack(_multiplexer, _ioBufferPool, serverCounters,
-                   _serverTransactionFactory, _serverSocketFactory),
-      _listeningSocket(listeningSocket, _serverStack, serverHandler) {
+      _serverStack(_factoryAllocator, _multiplexer, _ioBufferPool,
+                   serverHandler, serverCounters, _serverTransactionFactory,
+                   _serverSocketFactory),
+      _commandSocket(_serverStack) {
   _serverSocketFactory.setStack(_serverStack);
 }
 
 HttpServerMultiplexer::~HttpServerMultiplexer() {}
 
 bool HttpServerMultiplexer::run(ESB::SharedInt *isRunning) {
-  ESB::Error error = addMultiplexedSocket(&_listeningSocket);
+  ESB::Error error = _multiplexer.addMultiplexedSocket(&_commandSocket);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add listener to multiplexer");
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add command socket to multiplexer");
     return false;
   }
 
@@ -34,12 +35,15 @@ const char *HttpServerMultiplexer::name() const { return _multiplexer.name(); }
 ESB::CleanupHandler *HttpServerMultiplexer::cleanupHandler() { return NULL; }
 
 HttpServerMultiplexer::HttpServerStackImpl::HttpServerStackImpl(
-    ESB::EpollMultiplexer &multiplexer, ESB::BufferPool &bufferPool,
+    ESB::Allocator &allocator, ESB::EpollMultiplexer &multiplexer,
+    ESB::BufferPool &bufferPool, HttpServerHandler &handler,
     HttpServerCounters &counters,
     HttpServerTransactionFactory &transactionFactory,
     HttpServerSocketFactory &socketFactory)
-    : _multiplexer(multiplexer),
+    : _allocator(allocator),
+      _multiplexer(multiplexer),
       _bufferPool(bufferPool),
+      _handler(handler),
       _counters(counters),
       _transactionFactory(transactionFactory),
       _socketFactory(socketFactory) {}
@@ -81,6 +85,25 @@ ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addServerSocket(
 
   if (ESB_SUCCESS != error) {
     _socketFactory.release(socket);
+    return error;
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addListeningSocket(
+    ESB::ListeningTCPSocket &socket) {
+  HttpListeningSocket *listener = new (_allocator)
+      HttpListeningSocket(socket, *this, _handler, _allocator.cleanupHandler());
+
+  if (!listener) {
+    return ESB_OUT_OF_MEMORY;
+  }
+
+  ESB::Error error = _multiplexer.addMultiplexedSocket(listener);
+
+  if (ESB_SUCCESS != error) {
+    _allocator.cleanupHandler().destroy(listener);
     return error;
   }
 

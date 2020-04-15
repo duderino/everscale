@@ -54,6 +54,35 @@
 #include <stdlib.h>
 #endif
 
+namespace ES {
+
+class HttpListeningSocketCommand : public HttpServerCommand {
+ public:
+  HttpListeningSocketCommand(ESB::ListeningTCPSocket &socket,
+                             ESB::CleanupHandler &cleanupHandler)
+      : _socket(socket), _cleanupHandler(cleanupHandler) {}
+
+  virtual ~HttpListeningSocketCommand(){};
+
+  virtual ESB::Error run(HttpServerStack &stack) {
+    return stack.addListeningSocket(_socket);
+  }
+
+  virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
+
+  virtual const char *name() { return "ListeningSocketCommand"; }
+
+ private:
+  // Disabled
+  HttpListeningSocketCommand(const HttpListeningSocketCommand &);
+  HttpListeningSocketCommand &operator=(const HttpListeningSocketCommand &);
+
+  ESB::ListeningTCPSocket &_socket;
+  ESB::CleanupHandler &_cleanupHandler;
+};
+
+}  // namespace ES
+
 static volatile ESB::Word IsRunning = 1;
 static void SignalHandler(int signal) { IsRunning = 0; }
 
@@ -144,16 +173,42 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  // Init
+  //
+  // Create listening socket
+  //
+
+  // bind to port 0 so kernel will choose a free ephemeral port
+  ESB::ListeningTCPSocket listener(0, ESB_UINT16_MAX);
+
+  error = listener.bind();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u",
+                           listener.listeningAddress().port());
+    return -2;
+  }
+
+  ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
+
+  error = listener.listen();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %u",
+                           listener.listeningAddress().port());
+    return -3;
+  }
+
+  //
+  // Init client and server
+  //
 
   HttpEchoServerHandler serverHandler;
-  // bind to port 0 so kernel will choose a free ephemeral port
-  HttpServer server(serverThreads, 0, serverHandler);
+  HttpServer server(serverThreads, serverHandler);
 
   error = server.initialize();
 
   if (ESB_SUCCESS != error) {
-    return -2;
+    return -4;
   }
 
   HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
@@ -164,46 +219,71 @@ int main(int argc, char **argv) {
   error = client.initialize();
 
   if (ESB_SUCCESS != error) {
-    return -3;
+    return -5;
   }
 
-  // Start
+  //
+  // Start client and server
+  //
 
   error = server.start();
 
   if (ESB_SUCCESS != error) {
-    return -4;
+    return -6;
+  }
+
+  // add listening sockets to running server
+
+  for (int i = 0; i < server.threads(); ++i) {
+    HttpListeningSocketCommand *command =
+        new (ESB::SystemAllocator::Instance()) HttpListeningSocketCommand(
+            listener, ESB::SystemAllocator::Instance().cleanupHandler());
+    error = server.push(command, i);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
+      return -7;
+    }
   }
 
   error = client.start();
 
   if (ESB_SUCCESS != error) {
-    return -5;
+    return -8;
   }
+
+  // add load generators to running client
 
   for (int i = 0; i < client.threads(); ++i) {
     HttpEchoClientSeedCommand *command =
         new (ESB::SystemAllocator::Instance()) HttpEchoClientSeedCommand(
-            connections / clientThreads, iterations, server.port(), host,
-            absPath, method, contentType,
-            ESB::SystemAllocator::Instance().cleanupHandler());
+            connections / clientThreads, iterations,
+            listener.listeningAddress().port(), host, absPath, method,
+            contentType, ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
-      return -6;
+      return -9;
     }
   }
+
+  //
+  // Wait for all requests to finish
+  //
 
   while (IsRunning && !HttpEchoClientContext::IsFinished()) {
     sleep(1);
   }
 
-  // Stop
+  //
+  // Stop client and server
+  //
 
   error = client.stop();
   assert(ESB_SUCCESS == error);
   error = server.stop();
   assert(ESB_SUCCESS == error);
+
+  // Dump performance metrics
 
   client.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
@@ -212,7 +292,9 @@ int main(int argc, char **argv) {
       client.counters().getSuccesses()->queries();
   const ESB::UInt32 totalFailures = client.counters().getFailures()->queries();
 
-  // Destroy
+  //
+  // Destroy client and server
+  //
 
   client.destroy();
   server.destroy();
@@ -221,12 +303,16 @@ int main(int argc, char **argv) {
   error = ESB::Time::Instance().join();
   assert(ESB_SUCCESS == error);
 
+  //
+  // Assert all requests succeeded
+  //
+
   if (totalSuccesses != totalTransactions || 0 < totalFailures) {
     ESB_LOG_CRITICAL(
         "TEST FAILURE: expected %u successes but got %u successes and %u "
         "failures",
         totalTransactions, totalSuccesses, totalFailures);
-    return -7;
+    return -10;
   }
 
   return ESB_SUCCESS;

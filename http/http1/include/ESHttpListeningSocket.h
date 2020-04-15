@@ -26,7 +26,8 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   /** Constructor
    */
   HttpListeningSocket(ESB::ListeningTCPSocket &socket, HttpServerStack &stack,
-                      HttpServerHandler &handler);
+                      HttpServerHandler &handler,
+                      ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
@@ -189,6 +190,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   ESB::ListeningTCPSocket &_socket;
   HttpServerStack &_stack;
   HttpServerHandler &_handler;
+  ESB::CleanupHandler &_cleanupHandler;
 };
 
 }  // namespace ES

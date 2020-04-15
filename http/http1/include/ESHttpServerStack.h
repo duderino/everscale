@@ -21,6 +21,10 @@
 #include <ESHttpServerCounters.h>
 #endif
 
+#ifndef ESB_LISTENING_TCP_SOCKET_H
+#include <ESBListeningTCPSocket.h>
+#endif
+
 namespace ES {
 
 class HttpServerStack {
@@ -57,6 +61,14 @@ class HttpServerStack {
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
   virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state) = 0;
+
+  /**
+   * Construct a new listening socket and immediately add it to the multiplexer
+   *
+   * @param socket A live TCP listening socket (post bind and post listen)
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESB::Error addListeningSocket(ESB::ListeningTCPSocket &socket) = 0;
 
  private:
   // Disabled

@@ -20,8 +20,12 @@ namespace ES {
 
 HttpListeningSocket::HttpListeningSocket(ESB::ListeningTCPSocket &socket,
                                          HttpServerStack &stack,
-                                         HttpServerHandler &handler)
-    : _socket(socket), _stack(stack), _handler(handler) {}
+                                         HttpServerHandler &handler,
+                                         ESB::CleanupHandler &cleanupHandler)
+    : _socket(socket),
+      _stack(stack),
+      _handler(handler),
+      _cleanupHandler(cleanupHandler) {}
 
 HttpListeningSocket::~HttpListeningSocket() {
   ESB_LOG_DEBUG("HttpListeningSocket destroyed");
@@ -152,7 +156,9 @@ SOCKET HttpListeningSocket::socketDescriptor() const {
   return _socket.socketDescriptor();
 }
 
-ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() { return NULL; }
+ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() {
+  return &_cleanupHandler;
+}
 
 const char *HttpListeningSocket::getName() const {
   return "HttpListeningSocket";

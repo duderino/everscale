@@ -21,6 +21,10 @@
 #include <ESBList.h>
 #endif
 
+#ifndef ESB_RAND_H
+#include <ESBRand.h>
+#endif
+
 namespace ES {
 
 class HttpServer {
@@ -28,15 +32,24 @@ class HttpServer {
   /**
    * Constructor
    */
-  HttpServer(ESB::UInt32 threads, ESB::UInt16 port,
-             HttpServerHandler &serverHandler,
+  HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpServer();
 
-  inline ESB::UInt16 port() {
-    return _listeningSocket.listeningAddress().port();
-  }
+  /**
+   * Enqueue a command to be run on a random multiplexer thread.  If the
+   * command has a cleanup handler, the multiplexer will call its cleanup
+   * handler after the command finishes.
+   *
+   * @param command The command to execute
+   * @param idx the index of a specific multiplexer ranging from 0 to
+   * threads()-1 inclusive.  If -1 then a random multiplexer will be picked.
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  ESB::Error push(HttpServerCommand *command, int idx = -1);
+
+  inline ESB::UInt32 threads() { return _threads; }
 
   ESB::Error initialize();
 
@@ -66,7 +79,7 @@ class HttpServer {
   HttpServerHandler &_serverHandler;
   ESB::List _multiplexers;
   ESB::ThreadPool _threadPool;
-  ESB::ListeningTCPSocket _listeningSocket;
+  ESB::Rand _rand;
   HttpServerSimpleCounters _serverCounters;
 };
 

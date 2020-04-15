@@ -8,8 +8,7 @@
 
 namespace ES {
 
-HttpServer::HttpServer(ESB::UInt32 threads, ESB::UInt16 port,
-                       HttpServerHandler &serverHandler,
+HttpServer::HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
                        ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
       _state(ES_HTTP_SERVER_IS_DESTROYED),
@@ -17,7 +16,7 @@ HttpServer::HttpServer(ESB::UInt32 threads, ESB::UInt16 port,
       _serverHandler(serverHandler),
       _multiplexers(),
       _threadPool("HttpServerMultiplexerPool", _threads),
-      _listeningSocket(port, ESB_UINT16_MAX, false),
+      _rand(),
       _serverCounters() {}
 
 HttpServer::~HttpServer() {
@@ -26,25 +25,35 @@ HttpServer::~HttpServer() {
   }
 }
 
+ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
+  if (ES_HTTP_SERVER_IS_STARTED != _state.get()) {
+    return ESB_INVALID_STATE;
+  }
+
+  if (!command) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (0 > idx) {
+    // both endpoints of the range are inclusive.
+    idx = _rand.generate(0, _threads - 1);
+  }
+
+  HttpServerMultiplexer *multiplexer =
+      (HttpServerMultiplexer *)_multiplexers.index(idx);
+  assert(multiplexer);
+  ESB::Error error = multiplexer->push(command);
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
+    return error;
+  }
+
+  return ESB_SUCCESS;
+}
+
 ESB::Error HttpServer::initialize() {
   assert(ES_HTTP_SERVER_IS_DESTROYED == _state.get());
-
-  ESB::Error error = _listeningSocket.bind();
-
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %d",
-                           _listeningSocket.listeningAddress().port());
-    return error;
-  }
-
-  error = _listeningSocket.listen();
-
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %d",
-                           _listeningSocket.listeningAddress().port());
-    return error;
-  }
-
   _state.set(ES_HTTP_SERVER_IS_INITIALIZED);
   return ESB_SUCCESS;
 }
@@ -63,9 +72,8 @@ ESB::Error HttpServer::start() {
   ESB_LOG_NOTICE("Maximum sockets %u", maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
-    ESB::SocketMultiplexer *multiplexer =
-        new (_allocator) HttpServerMultiplexer(maxSockets, _listeningSocket,
-                                               _serverHandler, _serverCounters);
+    ESB::SocketMultiplexer *multiplexer = new (_allocator)
+        HttpServerMultiplexer(maxSockets, _serverHandler, _serverCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,

@@ -16,20 +16,14 @@ HttpClient::HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler,
       _clientHandler(clientHandler),
       _multiplexers(),
       _threadPool("HttpClientMultiplexerPool", _threads),
+      _rand(),
       _clientCounters(60, 1, _allocator) {}
 
 HttpClient::~HttpClient() {}
 
 ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
-  switch (_state.get()) {
-    case ES_HTTP_CLIENT_IS_INITIALIZED:
-    case ES_HTTP_CLIENT_IS_STARTED:
-      break;
-    case ES_HTTP_CLIENT_IS_STOPPED:
-    case ES_HTTP_CLIENT_IS_DESTROYED:
-      return ESB_SHUTDOWN;
-    default:
-      return ESB_INVALID_STATE;
+  if (ES_HTTP_CLIENT_IS_STARTED != _state.get()) {
+    return ESB_INVALID_STATE;
   }
 
   if (!command) {

@@ -34,10 +34,39 @@
 #include <stdlib.h>
 #endif
 
-using namespace ES;
+namespace ES {
 
-static void HttpEchoServerSignalHandler(int signal);
+class HttpListeningSocketCommand : public HttpServerCommand {
+ public:
+  HttpListeningSocketCommand(ESB::ListeningTCPSocket &socket,
+                             ESB::CleanupHandler &cleanupHandler)
+      : _socket(socket), _cleanupHandler(cleanupHandler) {}
+
+  virtual ~HttpListeningSocketCommand(){};
+
+  virtual ESB::Error run(HttpServerStack &stack) {
+    return stack.addListeningSocket(_socket);
+  }
+
+  virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
+
+  virtual const char *name() { return "ListeningSocketCommand"; }
+
+ private:
+  // Disabled
+  HttpListeningSocketCommand(const HttpListeningSocketCommand &);
+  HttpListeningSocketCommand &operator=(const HttpListeningSocketCommand &);
+
+  ESB::ListeningTCPSocket &_socket;
+  ESB::CleanupHandler &_cleanupHandler;
+};
+
+}  // namespace ES
+
 static volatile ESB::Word IsRunning = 1;
+static void SignalHandler(int signal) { IsRunning = 0; }
+
+using namespace ES;
 
 static void printHelp() {
   fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
@@ -95,7 +124,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  ESB::SimpleFileLogger logger;
+  ESB::Time::Instance().start();
+  ESB::SimpleFileLogger logger(stdout);
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
 
@@ -103,14 +133,14 @@ int main(int argc, char **argv) {
                  logLevel, threads, port);
 
   //
-  // Install signal handlers
+  // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
   //
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, HttpEchoServerSignalHandler);
-  signal(SIGQUIT, HttpEchoServerSignalHandler);
-  signal(SIGTERM, HttpEchoServerSignalHandler);
+  signal(SIGINT, SignalHandler);
+  signal(SIGQUIT, SignalHandler);
+  signal(SIGTERM, SignalHandler);
 
   //
   // Max out open files
@@ -119,31 +149,79 @@ int main(int argc, char **argv) {
   ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
       ESB::SystemConfig::Instance().socketHardMax());
 
-  ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
+    return -1;
+  }
+
+  //
+  // Create listening socket
+  //
+
+  ESB::ListeningTCPSocket listener(port, ESB_UINT16_MAX);
+
+  error = listener.bind();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u",
+                           listener.listeningAddress().port());
+    return -2;
+  }
+
+  ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
+
+  error = listener.listen();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %u",
+                           listener.listeningAddress().port());
+    return -3;
+  }
+
+  // Init
 
   HttpEchoServerHandler handler;
-  HttpServer server(threads, port, handler);
+  HttpServer server(threads, handler);
 
   error = server.initialize();
 
   if (ESB_SUCCESS != error) {
-    return -1;
+    return -4;
   }
+
+  // Start
 
   error = server.start();
 
   if (ESB_SUCCESS != error) {
-    return -2;
+    return -5;
   }
+
+  // add listening sockets to running server
+
+  for (int i = 0; i < server.threads(); ++i) {
+    HttpListeningSocketCommand *command =
+        new (ESB::SystemAllocator::Instance()) HttpListeningSocketCommand(
+            listener, ESB::SystemAllocator::Instance().cleanupHandler());
+    error = server.push(command, i);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
+      return -6;
+    }
+  }
+
+  // Wait for ctrl-C
 
   while (IsRunning) {
     sleep(1);
   }
 
+  // Stop server
+
   error = server.stop();
 
   if (ESB_SUCCESS != error) {
-    return -3;
+    return -7;
   }
 
   server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
