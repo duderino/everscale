@@ -1,12 +1,12 @@
-#ifndef ES_HTTP_CLIENT_COMMAND_SOCKET_H
-#define ES_HTTP_CLIENT_COMMAND_SOCKET_H
+#ifndef ES_HTTP_SERVER_COMMAND_SOCKET_H
+#define ES_HTTP_SERVER_COMMAND_SOCKET_H
 
-#ifndef ES_HTTP_CLIENT_STACK_H
-#include <ESHttpClientStack.h>
+#ifndef ES_HTTP_SERVER_STACK_H
+#include <ESHttpServerStack.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_COMMAND_H
-#include <ESHttpClientCommand.h>
+#ifndef ES_HTTP_SERVER_COMMAND_H
+#include <ESHttpServerCommand.h>
 #endif
 
 #ifndef ES_HTTP_COMMAND_SOCKET_H
@@ -15,17 +15,17 @@
 
 namespace ES {
 
-/** A socket that can wake up multiplexers to run HttpClientCommands.
+/** A socket that can wake up multiplexers to run HttpServerCommands.
  */
-class HttpClientCommandSocket : public HttpCommandSocket {
+class HttpServerCommandSocket : public HttpCommandSocket {
  public:
   /** Constructor
    */
-  HttpClientCommandSocket(HttpClientStack &stack);
+  HttpServerCommandSocket(HttpServerStack &stack);
 
   /** Destructor.
    */
-  virtual ~HttpClientCommandSocket();
+  virtual ~HttpServerCommandSocket();
 
   /**
    * Enqueue a command on the command socket.  When the command socket is
@@ -35,7 +35,7 @@ class HttpClientCommandSocket : public HttpCommandSocket {
    * @param command The command to execute
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error push(HttpClientCommand *command);
+  ESB::Error push(HttpServerCommand *command);
 
   /** Placement new.
    *
@@ -52,10 +52,10 @@ class HttpClientCommandSocket : public HttpCommandSocket {
 
  private:
   // Disabled
-  HttpClientCommandSocket(const HttpClientCommandSocket &);
-  HttpClientCommandSocket &operator=(const HttpClientCommandSocket &);
+  HttpServerCommandSocket(const HttpServerCommandSocket &);
+  HttpServerCommandSocket &operator=(const HttpServerCommandSocket &);
 
-  HttpClientStack &_stack;
+  HttpServerStack &_stack;
 };
 
 }  // namespace ES

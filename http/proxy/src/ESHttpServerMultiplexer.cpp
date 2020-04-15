@@ -10,10 +10,9 @@ HttpServerMultiplexer::HttpServerMultiplexer(
     : HttpMultiplexer(maxSockets),
       _serverSocketFactory(serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverStack(_multiplexer, _serverTransactionFactory,
-                   _serverSocketFactory, _ioBufferPool),
-      _listeningSocket(serverHandler, listeningSocket, _serverStack,
-                       serverCounters) {
+      _serverStack(_multiplexer, _ioBufferPool, serverCounters,
+                   _serverTransactionFactory, _serverSocketFactory),
+      _listeningSocket(listeningSocket, _serverStack, serverHandler) {
   _serverSocketFactory.setStack(_serverStack);
 }
 
@@ -35,13 +34,15 @@ const char *HttpServerMultiplexer::name() const { return _multiplexer.name(); }
 ESB::CleanupHandler *HttpServerMultiplexer::cleanupHandler() { return NULL; }
 
 HttpServerMultiplexer::HttpServerStackImpl::HttpServerStackImpl(
-    ESB::EpollMultiplexer &multiplexer,
+    ESB::EpollMultiplexer &multiplexer, ESB::BufferPool &bufferPool,
+    HttpServerCounters &counters,
     HttpServerTransactionFactory &transactionFactory,
-    HttpServerSocketFactory &socketFactory, ESB::BufferPool &bufferPool)
-    : _bufferPool(bufferPool),
-      _multiplexer(multiplexer),
-      _serverTransactionFactory(transactionFactory),
-      _serverSocketFactory(socketFactory) {}
+    HttpServerSocketFactory &socketFactory)
+    : _multiplexer(multiplexer),
+      _bufferPool(bufferPool),
+      _counters(counters),
+      _transactionFactory(transactionFactory),
+      _socketFactory(socketFactory) {}
 
 HttpServerMultiplexer::HttpServerStackImpl::~HttpServerStackImpl() {}
 
@@ -51,12 +52,12 @@ bool HttpServerMultiplexer::HttpServerStackImpl::isRunning() {
 
 HttpServerTransaction *
 HttpServerMultiplexer::HttpServerStackImpl::createTransaction() {
-  return _serverTransactionFactory.create();
+  return _transactionFactory.create();
 }
 
 void HttpServerMultiplexer::HttpServerStackImpl::destroyTransaction(
     HttpServerTransaction *transaction) {
-  return _serverTransactionFactory.release(transaction);
+  return _transactionFactory.release(transaction);
 }
 
 ESB::Buffer *HttpServerMultiplexer::HttpServerStackImpl::acquireBuffer() {
@@ -70,7 +71,7 @@ void HttpServerMultiplexer::HttpServerStackImpl::releaseBuffer(
 
 ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addServerSocket(
     ESB::TCPSocket::State &state) {
-  HttpServerSocket *socket = _serverSocketFactory.create(state);
+  HttpServerSocket *socket = _socketFactory.create(state);
 
   if (!socket) {
     return ESB_OUT_OF_MEMORY;
@@ -79,11 +80,15 @@ ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addServerSocket(
   ESB::Error error = _multiplexer.addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    _serverSocketFactory.release(socket);
+    _socketFactory.release(socket);
     return error;
   }
 
   return ESB_SUCCESS;
+}
+
+HttpServerCounters &HttpServerMultiplexer::HttpServerStackImpl::counters() {
+  return _counters;
 }
 
 }  // namespace ES

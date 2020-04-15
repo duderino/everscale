@@ -1,22 +1,22 @@
-#ifndef ES_HTTP_CLIENT_COMMAND_SOCKET_H
-#include <ESHttpClientCommandSocket.h>
+#ifndef ES_HTTP_SERVER_COMMAND_SOCKET_H
+#include <ESHttpServerCommandSocket.h>
 #endif
 
 namespace ES {
 
-HttpClientCommandSocket::HttpClientCommandSocket(HttpClientStack &stack)
+HttpServerCommandSocket::HttpServerCommandSocket(HttpServerStack &stack)
     : _stack(stack) {}
 
-HttpClientCommandSocket::~HttpClientCommandSocket() {}
+HttpServerCommandSocket::~HttpServerCommandSocket() {}
 
 // This code runs in any thread
-ESB::Error HttpClientCommandSocket::push(HttpClientCommand *command) {
+ESB::Error HttpServerCommandSocket::push(HttpServerCommand *command) {
   return pushInternal(command);
 }
 
-ESB::Error HttpClientCommandSocket::runCommand(
+ESB::Error HttpServerCommandSocket::runCommand(
     ESB::EmbeddedListElement *element) {
-  HttpClientCommand *command = (HttpClientCommand *)element;
+  HttpServerCommand *command = (HttpServerCommand *)element;
 
   ESB_LOG_DEBUG("Executing command '%s' in multiplexer",
                 ESB_SAFE_STR(command->name()));

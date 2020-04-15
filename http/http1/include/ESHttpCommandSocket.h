@@ -1,36 +1,35 @@
-#ifndef ES_HTTP_LISTENING_SOCKET_H
-#define ES_HTTP_LISTENING_SOCKET_H
+#ifndef ES_HTTP_COMMAND_SOCKET_H
+#define ES_HTTP_COMMAND_SOCKET_H
 
 #ifndef ESB_MULTIPLEXED_SOCKET_H
 #include <ESBMultiplexedSocket.h>
 #endif
 
-#ifndef ESB_LISTENING_TCP_SOCKET_H
-#include <ESBListeningTCPSocket.h>
+#ifndef ESB_EVENT_SOCKET_H
+#include <ESBEventSocket.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_STACK_H
-#include <ESHttpServerStack.h>
+#ifndef ESB_EMBEDDED_LIST_H
+#include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_HANDLER_H
-#include <ESHttpServerHandler.h>
+#ifndef ESB_MUTEX_H
+#include <ESBMutex.h>
 #endif
 
 namespace ES {
 
-/** A listening socket that creates HttpServerSockets
+/** A base class for sockets that can wake up multiplexers to run commands.
  */
-class HttpListeningSocket : public ESB::MultiplexedSocket {
+class HttpCommandSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
    */
-  HttpListeningSocket(ESB::ListeningTCPSocket &socket, HttpServerStack &stack,
-                      HttpServerHandler &handler);
+  HttpCommandSocket();
 
   /** Destructor.
    */
-  virtual ~HttpListeningSocket();
+  virtual ~HttpCommandSocket();
 
   /** Does this socket want to accept a new connection?  Implies the
    * implementation is a listening socket.
@@ -41,21 +40,21 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   virtual bool wantAccept();
 
   /** Does this socket want to connect to a peer?  Implies the implementation is
-   * a connected socket (client socket, not server socket).
+   * a connected socket (client socket, not client socket).
    *
    * @return true if this socket wants to connect to a peer, false otherwise.
    */
   virtual bool wantConnect();
 
   /** Does this socket want to read data?  Implies the implementation is a
-   * connected socket (client socket or server socket)
+   * connected socket (client socket or client socket)
    *
    * @return true if this socket wants to read data, false otherwise.
    */
   virtual bool wantRead();
 
   /** Does this socket want to write data?  Implies the implementation is a
-   * connected socket (client socket or server socket).
+   * connected socket (client socket or client socket).
    *
    * @return true if this socket wants to write data, false otherwise.
    */
@@ -80,7 +79,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
    */
   virtual bool handleAccept(ESB::SocketMultiplexer &multiplexer);
 
-  /** Client connected socket has connected to the peer endpoint.
+  /**  connected socket has connected to the peer endpoint.
    *
    * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
@@ -171,26 +170,32 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
    */
   virtual const char *getName() const;
 
-  /** Placement new.
+ protected:
+  /**
+   * Enqueue a command on the command socket.  When the command socket is
+   * in a multiplexer, the multiplexer will wake up, dequeue the command,
+   * and execute it on the multiplexer's thread of control.
    *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
+   * @param command The command to execute
+   * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  ESB::Error pushInternal(ESB::EmbeddedListElement *command);
+
+  // Subclasses must implement this to downcast EmbeddedListElement to either
+  // HttpClientCommand or HttpServerCommand
+  virtual ESB::Error runCommand(ESB::EmbeddedListElement *command) = 0;
 
  private:
   // Disabled
-  HttpListeningSocket(const HttpListeningSocket &);
-  HttpListeningSocket &operator=(const HttpListeningSocket &);
+  HttpCommandSocket(const HttpCommandSocket &);
+  HttpCommandSocket &operator=(const HttpCommandSocket &);
 
-  ESB::ListeningTCPSocket &_socket;
-  HttpServerStack &_stack;
-  HttpServerHandler &_handler;
+  ESB::EventSocket _eventSocket;
+  ESB::Mutex _lock;
+  ESB::EmbeddedList _queue;
+  bool _removed;
 };
 
 }  // namespace ES
 
-#endif /* ! ES_HTTP_LISTENING_SOCKET_H */
+#endif

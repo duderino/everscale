@@ -17,6 +17,10 @@
 #include <ESBTCPSocket.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_COUNTERS_H
+#include <ESHttpServerCounters.h>
+#endif
+
 namespace ES {
 
 class HttpServerStack {
@@ -43,6 +47,8 @@ class HttpServerStack {
    * Return an i/o buffer for later reuse.
    */
   virtual void releaseBuffer(ESB::Buffer *buffer) = 0;
+
+  virtual HttpServerCounters &counters() = 0;
 
   /**
    * Construct a new server socket and immediately add it to a multiplexer.

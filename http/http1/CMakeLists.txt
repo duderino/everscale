@@ -13,6 +13,7 @@ set(SOURCE_FILES
         src/ESHttpClientStack.cpp
         src/ESHttpClientTransaction.cpp
         src/ESHttpClientTransactionFactory.cpp
+        src/ESHttpCommandSocket.cpp
         src/ESHttpConnectionPool.cpp
         src/ESHttpListeningSocket.cpp
         src/ESHttpMessageFormatter.cpp
@@ -24,6 +25,7 @@ set(SOURCE_FILES
         src/ESHttpResponseFormatter.cpp
         src/ESHttpResponseParser.cpp
         src/ESHttpServerCommand.cpp
+        src/ESHttpServerCommandSocket.cpp
         src/ESHttpServerCounters.cpp
         src/ESHttpServerHandler.cpp
         src/ESHttpServerSimpleCounters.cpp

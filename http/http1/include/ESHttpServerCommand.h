@@ -25,6 +25,8 @@ class HttpServerCommand : public ESB::EmbeddedListElement {
    */
   virtual ESB::Error run(HttpServerStack &stack) = 0;
 
+  virtual const char *name() = 0;
+
  private:
   // Disabled
   HttpServerCommand(const HttpServerCommand &serverCommand);

@@ -69,9 +69,10 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   class HttpServerStackImpl : public HttpServerStack {
    public:
     HttpServerStackImpl(ESB::EpollMultiplexer &multiplexer,
+                        ESB::BufferPool &bufferPool,
+                        HttpServerCounters &counters,
                         HttpServerTransactionFactory &transactionFactory,
-                        HttpServerSocketFactory &socketFactory,
-                        ESB::BufferPool &bufferPool);
+                        HttpServerSocketFactory &socketFactory);
     virtual ~HttpServerStackImpl();
     virtual bool isRunning();
     virtual HttpServerTransaction *createTransaction();
@@ -79,16 +80,18 @@ class HttpServerMultiplexer : public HttpMultiplexer {
     virtual ESB::Buffer *acquireBuffer();
     virtual void releaseBuffer(ESB::Buffer *buffer);
     virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state);
+    virtual HttpServerCounters &counters();
 
    private:
     // Disabled
     HttpServerStackImpl(const HttpServerStackImpl &);
     HttpServerStackImpl &operator=(const HttpServerStackImpl &);
 
-    ESB::BufferPool &_bufferPool;
     ESB::EpollMultiplexer &_multiplexer;
-    HttpServerTransactionFactory &_serverTransactionFactory;
-    HttpServerSocketFactory &_serverSocketFactory;
+    ESB::BufferPool &_bufferPool;
+    HttpServerCounters &_counters;
+    HttpServerTransactionFactory &_transactionFactory;
+    HttpServerSocketFactory &_socketFactory;
   };
 
   HttpServerSocketFactory _serverSocketFactory;

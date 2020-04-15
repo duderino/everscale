@@ -18,11 +18,10 @@ namespace ES {
 
 // TODO add performance counters
 
-HttpListeningSocket::HttpListeningSocket(HttpServerHandler &handler,
-                                         ESB::ListeningTCPSocket &socket,
+HttpListeningSocket::HttpListeningSocket(ESB::ListeningTCPSocket &socket,
                                          HttpServerStack &stack,
-                                         HttpServerCounters &counters)
-    : _handler(handler), _socket(socket), _stack(stack), _counters(counters) {}
+                                         HttpServerHandler &handler)
+    : _socket(socket), _stack(stack), _handler(handler) {}
 
 HttpListeningSocket::~HttpListeningSocket() {
   ESB_LOG_DEBUG("HttpListeningSocket destroyed");
@@ -73,7 +72,7 @@ bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
     return true;
   }
 
-  _counters.getTotalConnections()->inc();
+  _stack.counters().getTotalConnections()->inc();
 
   HttpServerHandler::Result result =
       _handler.acceptConnection(_stack, &state.peerAddress());
