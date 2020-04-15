@@ -38,7 +38,7 @@ class HttpClient {
   virtual ~HttpClient();
 
   /**
-   * Enqueue a command to be run on a random multiplexer thread.  If the
+   * Enqueue a command to be run on a multiplexer thread.  If the
    * command has a cleanup handler, the multiplexer will call its cleanup
    * handler after the command finishes.
    *

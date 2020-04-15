@@ -56,13 +56,13 @@
 
 namespace ES {
 
-class HttpListeningSocketCommand : public HttpServerCommand {
+class AddListeningSocketCommand : public HttpServerCommand {
  public:
-  HttpListeningSocketCommand(ESB::ListeningTCPSocket &socket,
+  AddListeningSocketCommand(ESB::ListeningTCPSocket &socket,
                              ESB::CleanupHandler &cleanupHandler)
       : _socket(socket), _cleanupHandler(cleanupHandler) {}
 
-  virtual ~HttpListeningSocketCommand(){};
+  virtual ~AddListeningSocketCommand(){};
 
   virtual ESB::Error run(HttpServerStack &stack) {
     return stack.addListeningSocket(_socket);
@@ -70,12 +70,12 @@ class HttpListeningSocketCommand : public HttpServerCommand {
 
   virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
 
-  virtual const char *name() { return "ListeningSocketCommand"; }
+  virtual const char *name() { return "AddListeningSocket"; }
 
  private:
   // Disabled
-  HttpListeningSocketCommand(const HttpListeningSocketCommand &);
-  HttpListeningSocketCommand &operator=(const HttpListeningSocketCommand &);
+  AddListeningSocketCommand(const AddListeningSocketCommand &);
+  AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
 
   ESB::ListeningTCPSocket &_socket;
   ESB::CleanupHandler &_cleanupHandler;
@@ -235,8 +235,8 @@ int main(int argc, char **argv) {
   // add listening sockets to running server
 
   for (int i = 0; i < server.threads(); ++i) {
-    HttpListeningSocketCommand *command =
-        new (ESB::SystemAllocator::Instance()) HttpListeningSocketCommand(
+    AddListeningSocketCommand *command =
+        new (ESB::SystemAllocator::Instance()) AddListeningSocketCommand(
             listener, ESB::SystemAllocator::Instance().cleanupHandler());
     error = server.push(command, i);
     if (ESB_SUCCESS != error) {
