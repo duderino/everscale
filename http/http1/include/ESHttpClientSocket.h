@@ -179,6 +179,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
    */
   virtual const char *getName() const;
 
+  virtual const void *key() const { return &_socket.peerAddress(); }
+
   /** Reset the client socket
    *
    * @param reused true if the socket is being reused for a new transaction

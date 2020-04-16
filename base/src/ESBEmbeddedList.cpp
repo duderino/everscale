@@ -9,13 +9,6 @@ EmbeddedList::EmbeddedList() : _head(0), _tail(0) {}
 EmbeddedList::~EmbeddedList() {}
 
 void EmbeddedList::clear(bool cleanup) {
-  if (false == cleanup) {
-    _head = 0;
-    _tail = 0;
-
-    return;
-  }
-
   for (EmbeddedListElement *element = removeFirst(); element;
        element = removeFirst()) {
     CleanupHandler *cleanupHandler = element->cleanupHandler();

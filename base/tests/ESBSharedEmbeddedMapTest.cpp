@@ -18,8 +18,10 @@
 
 using namespace ESB;
 
-class SocketAddressComparator : public HashComparator {
+class SocketAddressCallbacks : public SharedEmbeddedMap::Callbacks {
  public:
+  SocketAddressCallbacks(Allocator &allocator) : _allocator(allocator) {}
+
   virtual int compare(const void *f, const void *s) const {
     SocketAddress *first = (SocketAddress *)f;
     SocketAddress *second = (SocketAddress *)s;
@@ -38,6 +40,18 @@ class SocketAddressComparator : public HashComparator {
     hash |= addr->primitiveAddress()->sin_port;
     return hash;
   }
+
+  virtual void cleanup(EmbeddedMapElement *element) {
+    element->~EmbeddedMapElement();
+    _allocator.deallocate(element);
+  }
+
+ private:
+  // Disabled
+  SocketAddressCallbacks(const SocketAddressCallbacks &);
+  SocketAddressCallbacks &operator=(const SocketAddressCallbacks &);
+
+  Allocator &_allocator;
 };
 
 class FauxConnection : public EmbeddedMapElement {
@@ -56,8 +70,6 @@ class FauxConnection : public EmbeddedMapElement {
   SocketAddress _address;
 };
 
-static SocketAddressComparator SocketAddressComparator;
-
 static void randomSocketAddress(SocketAddress *out, Rand &rand) {
   char dottedIP[16];
   snprintf(dottedIP, sizeof(dottedIP), "%d:%d:%d:%d", rand.generate(0, 255),
@@ -71,11 +83,12 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
   Rand rand;
   const UInt32 buckets = 541;
   const UInt32 locks = 11;
-  SharedEmbeddedMap map(SocketAddressComparator, buckets, locks);
+  Allocator &allocator = SystemAllocator::Instance();
+  SocketAddressCallbacks callbacks(allocator);
+  SharedEmbeddedMap map(callbacks, buckets, locks, allocator);
   SocketAddress addresses[10000];
   const UInt32 numAddresses = sizeof(addresses) / sizeof(SocketAddress);
   const double expectedElementsPerBucket = ((double)numAddresses) / buckets;
-  Allocator &allocator = SystemAllocator::Instance();
 
   //
   // The randomly generated socket addresses can put duplicates in the
@@ -84,7 +97,7 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
   // number of occurrences of each socket address so we can tell when an
   // element should no longer be present in the SharedEmbeddedMap.
   //
-  Map occurrences(SocketAddressComparator);
+  Map occurrences(callbacks);
 
   // Insert
 
@@ -157,6 +170,6 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
   }
 
   // Let the map go out of scope with half the elements.  It should cleanup
-  // automatically using cleanup handlers.  If it doesn't the leak detector
+  // automatically using cleanup callbacks.  If it doesn't the leak detector
   // should catch it.
 }

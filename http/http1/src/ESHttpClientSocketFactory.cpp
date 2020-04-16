@@ -12,43 +12,36 @@
 
 namespace ES {
 
-class AddressComparator : public ESB::Comparator {
- public:
-  /** Default constructor.
-   */
-  AddressComparator();
+HttpClientSocketFactory::SocketAddressCallbacks::SocketAddressCallbacks(
+    ESB::Allocator &allocator)
+    : _allocator(allocator) {}
 
-  /** Default destructor.
-   */
-  virtual ~AddressComparator();
+int HttpClientSocketFactory::SocketAddressCallbacks::compare(
+    const void *f, const void *s) const {
+  ESB::SocketAddress *first = (ESB::SocketAddress *)f;
+  ESB::SocketAddress *second = (ESB::SocketAddress *)s;
 
-  /** Compare two locations.
-   *
-   *  @param first The first location to compare.
-   *  @param second The second location to compare.
-   *  @return 0 if both locations are equal, a negative number if the first
-   *      location is less than the second, or a positive number if the first
-   *      location is greater than the second.
-   */
-  virtual int compare(const void *first, const void *second) const;
-};
-
-AddressComparator::AddressComparator() {}
-
-AddressComparator::~AddressComparator() {}
-
-int AddressComparator::compare(const void *first, const void *second) const {
-  ESB::SocketAddress *address1 = (ESB::SocketAddress *)first;
-  ESB::SocketAddress *address2 = (ESB::SocketAddress *)second;
-
-  assert(address1);
-  assert(address2);
-
-  return memcmp(address1->primitiveAddress(), address2->primitiveAddress(),
-                sizeof(*address1->primitiveAddress()));
+  // TODO not IPv6 safe
+  return memcmp(first->primitiveAddress(), second->primitiveAddress(),
+                sizeof(ESB::SocketAddress::Address));
 }
 
-static AddressComparator AddressComparator;
+ESB::UInt32 HttpClientSocketFactory::SocketAddressCallbacks::hash(
+    const void *key) const {
+  ESB::SocketAddress *addr = (ESB::SocketAddress *)key;
+
+  // TODO not IPv6 safe
+  ESB::UInt32 hash = addr->primitiveAddress()->sin_addr.s_addr;
+  hash |= addr->primitiveAddress()->sin_family;
+  hash |= addr->primitiveAddress()->sin_port;
+  return hash;
+}
+
+void HttpClientSocketFactory::SocketAddressCallbacks::cleanup(
+    ESB::EmbeddedMapElement *element) {
+  element->~EmbeddedMapElement();
+  _allocator.deallocate(element);
+}
 
 HttpClientSocketFactory::HttpClientSocketFactory(
     ESB::SocketMultiplexer &multiplexer, HttpClientHandler &handler,
@@ -57,28 +50,16 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _handler(handler),
       _counters(counters),
       _allocator(allocator),
-      _map(AddressComparator),  // TODO replace with connection pool
+      _callbacks(_allocator),
+      _map(_callbacks, HttpConfig::Instance().connectionPoolBuckets(), 0),
       _cleanupHandler(*this),
       _dnsClient() {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
-  HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
-
-  while (socket) {
+  for (HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
+       socket; socket = (HttpClientSocket *)_sockets.removeFirst()) {
     socket->~HttpClientSocket();
-    socket = (HttpClientSocket *)_sockets.removeFirst();
-  }
-
-  ESB::SocketAddress *address = NULL;
-
-  for (ESB::MapIterator iterator = _map.minimumIterator(); !iterator.isNull();
-       iterator = iterator.next()) {
-    address = (ESB::SocketAddress *)iterator.key();
-    assert(address);
-    address->~SocketAddress();
-    socket = (HttpClientSocket *)iterator.value();
-    assert(socket);
-    socket->~HttpClientSocket();
+    _allocator.deallocate(socket);
   }
 }
 
@@ -88,19 +69,14 @@ HttpClientSocket *HttpClientSocketFactory::create(
     return NULL;
   }
 
-  HttpClientSocket *socket = NULL;
-  ESB::EmbeddedList *list =
-      (ESB::EmbeddedList *)_map.find(&transaction->peerAddress());
+  HttpClientSocket *socket =
+      (HttpClientSocket *)_map.remove(&transaction->peerAddress());
 
-  if (list) {
-    socket = (HttpClientSocket *)list->removeLast();
-
-    if (socket) {
-      assert(socket->isConnected());
-      socket->reset(true, transaction);
-      ESB_LOG_DEBUG("[%s] reusing connection", socket->logAddress());
-      return socket;
-    }
+  if (socket) {
+    assert(socket->isConnected());
+    socket->reset(true, transaction);
+    ESB_LOG_DEBUG("[%s] reusing connection", socket->logAddress());
+    return socket;
   }
 
   if (ESB_DEBUG_LOGGABLE) {
@@ -150,41 +126,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
     return;
   }
 
-  ESB::EmbeddedList *list =
-      (ESB::EmbeddedList *)_map.find(socket->peerAddress());
-
-  if (list) {
-    ESB_LOG_DEBUG("[%s] Returning connection to pool", socket->logAddress());
-    list->addLast(socket);
-    return;
-  }
-
-  ESB::SocketAddress *address =
-      new (_allocator) ESB::SocketAddress(*socket->peerAddress());
-
-  if (!address) {
-    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
-                           "[%s] Cannot return connection to pool",
-                           socket->logAddress());
-    socket->close();
-    _sockets.addLast(socket);
-    return;
-  }
-
-  list = new (_allocator) ESB::EmbeddedList();
-
-  if (!list) {
-    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
-                           "[%s] Cannot return connection to pool",
-                           socket->logAddress());
-    socket->close();
-    _sockets.addLast(socket);
-    return;
-  }
-
-  list->addLast(socket);
-
-  ESB::Error error = _map.insert(address, list);
+  ESB::Error error = _map.insert(socket);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot return connection to pool",

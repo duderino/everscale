@@ -13,7 +13,7 @@ class HttpConfig {
   virtual ~HttpConfig();
   inline ESB::UInt32 ioBufferSize() { return _ioBufferSize; }
   inline ESB::UInt32 ioBufferChunkSize() { return _ioBufferChunkSize; }
-  inline ESB::UInt32 parseBufferSize() { return _parseBufferSize; }
+  inline ESB::UInt32 connectionPoolBuckets() { return _connectionPoolBuckets; };
 
  private:
   // Singleton
@@ -24,7 +24,7 @@ class HttpConfig {
 
   ESB::UInt32 _ioBufferSize;
   ESB::UInt32 _ioBufferChunkSize;
-  ESB::UInt32 _parseBufferSize;
+  ESB::UInt32 _connectionPoolBuckets;
   static HttpConfig _Instance;
 };
 

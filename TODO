@@ -4,6 +4,7 @@ socket:
 connection pool rework:
  - create connection pool class of client sockets to client socket factory.
  - create option of global or per-silo connection pool and set default to better performing option.
+ - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 
 code health:
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo

@@ -1,14 +1,6 @@
 #ifndef ES_HTTP_CLIENT_SOCKET_FACTORY_H
 #define ES_HTTP_CLIENT_SOCKET_FACTORY_H
 
-#ifndef ESB_EMBEDDED_LIST_H
-#include <ESBEmbeddedList.h>
-#endif
-
-#ifndef ESB_MAP_H
-#include <ESBMap.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_TRANSACTION_H
 #include <ESHttpClientTransaction.h>
 #endif
@@ -31,6 +23,14 @@
 
 #ifndef ESB_BUFFER_POOL_H
 #include <ESBBufferPool.h>
+#endif
+
+#ifndef ESB_EMBEDDED_LIST_H
+#include <ESBEmbeddedList.h>
+#endif
+
+#ifndef ESB_SHARED_EMBEDDED_MAP_H
+#include <ESBSharedEmbeddedMap.h>
 #endif
 
 namespace ES {
@@ -75,6 +75,8 @@ class HttpClientSocketFactory {
   HttpClientSocketFactory(const HttpClientSocketFactory &);
   HttpClientSocketFactory &operator=(const HttpClientSocketFactory &);
 
+  // To cleanup client sockets created by this factory.  Cleanup returns the
+  // socket to the factory for subsequent reuse.
   class CleanupHandler : public ESB::CleanupHandler {
    public:
     /** Constructor
@@ -99,12 +101,30 @@ class HttpClientSocketFactory {
     HttpClientSocketFactory &_factory;
   };
 
+  // Callbacks for the hash table-based connection pool
+  class SocketAddressCallbacks : public ESB::SharedEmbeddedMap::Callbacks {
+   public:
+    SocketAddressCallbacks(ESB::Allocator &allocator);
+
+    virtual int compare(const void *f, const void *s) const;
+    virtual ESB::UInt32 hash(const void *key) const;
+    virtual void cleanup(ESB::EmbeddedMapElement *element);
+
+   private:
+    // Disabled
+    SocketAddressCallbacks(const SocketAddressCallbacks &);
+    SocketAddressCallbacks &operator=(const SocketAddressCallbacks &);
+
+    ESB::Allocator &_allocator;
+  };
+
   HttpClientStack *_stack;
   ESB::SocketMultiplexer &_multiplexer;
   HttpClientHandler &_handler;
   HttpClientCounters &_counters;
   ESB::Allocator &_allocator;
-  ESB::Map _map;
+  SocketAddressCallbacks _callbacks;
+  ESB::SharedEmbeddedMap _map;
   ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
   ESB::SystemDnsClient _dnsClient;

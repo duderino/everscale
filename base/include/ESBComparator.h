@@ -5,6 +5,10 @@
 #include <ESBConfig.h>
 #endif
 
+#ifndef ESB_TYPES_H
+#include <ESBTypes.h>
+#endif
+
 namespace ESB {
 
 /** @defgroup collection Collections
@@ -34,6 +38,28 @@ class Comparator {
    *      location is greater than the second.
    */
   virtual int compare(const void *first, const void *second) const = 0;
+};
+
+/** HashComparators add hashing to Comparators.
+ *
+ *  @ingroup collection
+ */
+class HashComparator : public Comparator {
+ public:
+  /** Default constructor.
+   */
+  HashComparator();
+
+  /** Default destructor.
+   */
+  virtual ~HashComparator();
+
+  /** Generate a hash code from a key.
+   *
+   *  @param key The first location to compare.
+   *  @return the hash code
+   */
+  virtual UInt32 hash(const void *key) const = 0;
 };
 
 }  // namespace ESB

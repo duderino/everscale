@@ -10,19 +10,21 @@
 #include <ESBReadScopeLock.h>
 #endif
 
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
+#endif
+
 namespace ESB {
 
-HashComparator::HashComparator() {}
+SharedEmbeddedMap::Callbacks::Callbacks() {}
+SharedEmbeddedMap::Callbacks::~Callbacks() {}
 
-HashComparator::~HashComparator() {}
-
-SharedEmbeddedMap::SharedEmbeddedMap(HashComparator &comparator,
-                                     UInt32 numBuckets, UInt32 numLocks,
-                                     Allocator &allocator)
+SharedEmbeddedMap::SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets,
+                                     UInt32 numLocks, Allocator &allocator)
     : _numElements(),
       _numBuckets(numBuckets),
       _numLocks(ESB_MIN(numBuckets, numLocks)),
-      _comparator(comparator),
+      _callbacks(callbacks),
       _buckets(NULL),
       _locks(NULL),
       _allocator(allocator) {
@@ -32,39 +34,29 @@ SharedEmbeddedMap::SharedEmbeddedMap(HashComparator &comparator,
     return;
   }
 
-  _locks = (Mutex *)_allocator.allocate(numLocks * sizeof(Mutex));
-  if (!_locks) {
-    allocator.deallocate(_buckets);
-    _buckets = NULL;
-    return;
-  }
-
-  // call ctors directly on the memory
-
   for (UInt32 i = 0; i < numBuckets; ++i) {
     new (&_buckets[i]) EmbeddedList();
   }
 
-  for (UInt32 i = 0; i < numLocks; ++i) {
-    new (&_locks[i]) Mutex();
+  if (0 < _numLocks) {
+    _locks = (Mutex *)_allocator.allocate(numLocks * sizeof(Mutex));
+    if (!_locks) {
+      allocator.deallocate(_buckets);
+      _buckets = NULL;
+      return;
+    }
+
+    for (UInt32 i = 0; i < numLocks; ++i) {
+      new (&_locks[i]) Mutex();
+    }
   }
 }
 
 SharedEmbeddedMap::~SharedEmbeddedMap() {
+  clear();
+
   if (_buckets) {
     for (UInt32 i = 0; i < _numBuckets; ++i) {
-      while (true) {
-        EmbeddedListElement *elem = _buckets[i].removeFirst();
-        if (!elem) {
-          break;
-        }
-
-        CleanupHandler *handler = elem->cleanupHandler();
-        if (handler) {
-          handler->destroy(elem);
-        }
-      }
-
       _buckets[i].~EmbeddedList();
     }
     _allocator.deallocate(_buckets);
@@ -76,6 +68,28 @@ SharedEmbeddedMap::~SharedEmbeddedMap() {
     }
     _allocator.deallocate(_locks);
   }
+}
+
+void SharedEmbeddedMap::clear() {
+  for (UInt32 i = 0; i < _numBuckets; ++i) {
+    WriteScopeLock lock(bucketLock(i));
+    while (true) {
+      EmbeddedMapElement *element =
+          (EmbeddedMapElement *)_buckets[i].removeFirst();
+      if (!element) {
+        break;
+      }
+      _callbacks.cleanup(element);
+    }
+  }
+}
+
+Lockable &SharedEmbeddedMap::bucketLock(ESB::UInt32 bucket) const {
+  if (0 >= _numLocks) {
+    return ESB::NullLock::Instance();
+  }
+
+  return _locks[bucket % _numLocks];
 }
 
 Error SharedEmbeddedMap::insert(EmbeddedMapElement *value) {
@@ -91,8 +105,8 @@ Error SharedEmbeddedMap::insert(EmbeddedMapElement *value) {
     return ESB_INVALID_ARGUMENT;
   }
 
-  UInt32 bucket = _comparator.hash(value->key()) % _numBuckets;
-  WriteScopeLock lock(_locks[bucket % _numLocks]);
+  UInt32 bucket = _callbacks.hash(value->key()) % _numBuckets;
+  WriteScopeLock lock(bucketLock(bucket));
   _buckets[bucket].addFirst(value);
   _numElements.inc();
 
@@ -104,12 +118,12 @@ EmbeddedMapElement *SharedEmbeddedMap::remove(const void *key) {
     return NULL;
   }
 
-  UInt32 bucket = _comparator.hash(key) % _numBuckets;
-  WriteScopeLock lock(_locks[bucket % _numLocks]);
+  UInt32 bucket = _callbacks.hash(key) % _numBuckets;
+  WriteScopeLock lock(bucketLock(bucket));
 
   EmbeddedMapElement *elem = (EmbeddedMapElement *)_buckets[bucket].first();
   for (; elem; elem = (EmbeddedMapElement *)elem->next()) {
-    if (0 == _comparator.compare(key, elem->key())) {
+    if (0 == _callbacks.compare(key, elem->key())) {
       _buckets[bucket].remove(elem);
       _numElements.dec();
       return elem;
@@ -124,12 +138,12 @@ const EmbeddedMapElement *SharedEmbeddedMap::find(const void *key) const {
     return NULL;
   }
 
-  UInt32 bucket = _comparator.hash(key) % _numBuckets;
-  ReadScopeLock lock(_locks[bucket % _numLocks]);
+  UInt32 bucket = _callbacks.hash(key) % _numBuckets;
+  ReadScopeLock lock(bucketLock(bucket));
 
   EmbeddedMapElement *elem = (EmbeddedMapElement *)_buckets[bucket].first();
   for (; elem; elem = (EmbeddedMapElement *)elem->next()) {
-    if (0 == _comparator.compare(key, elem->key())) {
+    if (0 == _callbacks.compare(key, elem->key())) {
       return elem;
     }
   }
@@ -142,7 +156,7 @@ bool SharedEmbeddedMap::validate(double *chiSquared) const {
   double sum = 0.0;
 
   for (UInt32 i = 0; i < _numBuckets; ++i) {
-    ReadScopeLock lock(_locks[i % _numLocks]);
+    ReadScopeLock lock(bucketLock(i));
     if (!_buckets[i].validate()) {
       return false;
     }

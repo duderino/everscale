@@ -5,8 +5,8 @@
 #include <ESBConfig.h>
 #endif
 
-#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
-#include <ESBEmbeddedListElement.h>
+#ifndef ESB_EMBEDDED_MAP_ELEMENT_H
+#include <ESBEmbeddedMapElement.h>
 #endif
 
 #ifndef ESB_SOCKET_H
@@ -23,7 +23,7 @@ namespace ESB {
  *
  *  @ingroup network
  */
-class MultiplexedSocket : public EmbeddedListElement {
+class MultiplexedSocket : public EmbeddedMapElement {
  public:
   /** Constructor
    */

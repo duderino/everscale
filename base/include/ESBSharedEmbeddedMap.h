@@ -27,47 +27,44 @@
 
 namespace ESB {
 
-/** HashComparators add hashing to Comparators.
- *
- *  @ingroup collection
- */
-class HashComparator : public Comparator {
- public:
-  /** Default constructor.
-   */
-  HashComparator();
-
-  /** Default destructor.
-   */
-  virtual ~HashComparator();
-
-  /** Generate a hash code from a key.
-   *
-   *  @param key The first location to compare.
-   *  @return the hash code
-   */
-  virtual UInt32 hash(const void *key) const = 0;
-};
-
 /** A hash table supporting concurrent access
  *
  *  @ingroup util
  */
 class SharedEmbeddedMap {
  public:
+  /**
+   * All the callbacks needed to customize a SharedEmbeddedMap
+   */
+  class Callbacks : public HashComparator {
+   public:
+    /**
+     * Default constructor
+     */
+    Callbacks();
+
+    virtual ~Callbacks();
+
+    virtual void cleanup(EmbeddedMapElement *element) = 0;
+  };
+
   /** Constructor.
    *
-   * @param comparator a comparator.
+   * @param callbacks element comparison and cleanup functions.
    * @param numBuckets more buckets, fewer collisions, more memory.
-   * @param numLocks more locks, less contention, more memory.
+   * @param numLocks more locks, less contention, more memory.  if 0, no
+   * internal locking will be performed
    */
-  SharedEmbeddedMap(HashComparator &comparator, UInt32 numBuckets,
-                    UInt32 numLocks,
+  SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets, UInt32 numLocks,
                     Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.  No cleanup handlers are called
    */
   virtual ~SharedEmbeddedMap();
+
+  /** Remove all elements from the map.
+   */
+  void clear();
 
   /** Insert a key/value pair into the map.  O(1).
    *
@@ -118,10 +115,12 @@ class SharedEmbeddedMap {
   SharedEmbeddedMap(const SharedEmbeddedMap &);
   SharedEmbeddedMap &operator=(const SharedEmbeddedMap &);
 
+  Lockable &bucketLock(ESB::UInt32 bucket) const;
+
   SharedInt _numElements;
   UInt32 _numBuckets;
   UInt32 _numLocks;
-  HashComparator &_comparator;
+  Callbacks &_callbacks;
   EmbeddedList *_buckets;
   mutable Mutex *_locks;
   Allocator &_allocator;
