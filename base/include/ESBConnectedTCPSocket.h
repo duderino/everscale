@@ -68,6 +68,12 @@ class ConnectedTCPSocket : public TCPSocket {
    */
   virtual ~ConnectedTCPSocket();
 
+  /* Get the socket peer's ipaddr+port in human-friendly presentation format.
+   *
+   * @return The peer's presentation address.
+   */
+  virtual const char *logAddress();
+
   /** Reset a tcp socket.  If the socket is currently open, this will close
    *  it as a side-effect.
    *
@@ -97,7 +103,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *      socket.  If this socket was not created by a listening socket,
    *      the address will be uninitialized (i.e., all fields will be 0).
    */
-  const SocketAddress &listenerAddress() const;
+  const SocketAddress &listeningAddress() const;
 
   /** Attempt to connect to the peer.
    *
@@ -216,6 +222,7 @@ class ConnectedTCPSocket : public TCPSocket {
   bool _isConnected;
   SocketAddress _listenerAddress;
   SocketAddress _peerAddress;
+  char _logAddress[ESB_LOG_ADDRESS_SIZE];
 };
 
 }  // namespace ESB

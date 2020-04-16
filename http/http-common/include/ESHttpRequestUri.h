@@ -37,6 +37,20 @@ class HttpRequestUri {
    */
   inline UriType type() const { return _type; }
 
+  inline const char *typeString() const {
+    switch (_type) {
+      case ES_URI_ASTERISK:
+        return "*";
+      case ES_URI_HTTP:
+        return "http";
+      case ES_URI_HTTPS:
+        return "https";
+      case ES_URI_OTHER:
+      default:
+        return "other";
+    }
+  }
+
   /**
    * Set the Request-URI's type
    *

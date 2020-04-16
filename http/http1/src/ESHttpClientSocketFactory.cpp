@@ -96,15 +96,9 @@ HttpClientSocket *HttpClientSocketFactory::create(
     socket = (HttpClientSocket *)list->removeLast();
 
     if (socket) {
-      if (ESB_DEBUG_LOGGABLE) {
-        char buffer[ESB_IPV6_PRESENTATION_SIZE];
-        transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-        ESB_LOG_DEBUG("Reusing connection for '%s:%d'", buffer,
-                      transaction->peerAddress().port());
-      }
-
       assert(socket->isConnected());
       socket->reset(true, transaction);
+      ESB_LOG_DEBUG("[%s] reusing connection", socket->logAddress());
       return socket;
     }
   }
@@ -112,7 +106,7 @@ HttpClientSocket *HttpClientSocketFactory::create(
   if (ESB_DEBUG_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
     transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-    ESB_LOG_DEBUG("Creating new connection for '%s:%d'", buffer,
+    ESB_LOG_DEBUG("[%s:%u] creating new connection", buffer,
                   transaction->peerAddress().port());
   }
 
@@ -129,11 +123,13 @@ HttpClientSocket *HttpClientSocketFactory::create(
       HttpClientSocket(_handler, *_stack, transaction->peerAddress(), _counters,
                        _cleanupHandler);
 
-  if (!socket && ESB_CRITICAL_LOGGABLE) {
+  if (!socket) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
     transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
-    ESB_LOG_CRITICAL("Cannot allocate new connection for '%s:%d'", dottedIP,
-                     transaction->peerAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
+                           "[%s:%d] cannot create new connection", dottedIP,
+                           transaction->peerAddress().port());
+    return socket;
   }
 
   socket->reset(false, transaction);
@@ -147,13 +143,8 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   }
 
   if (!socket->isConnected()) {
-    if (ESB_DEBUG_LOGGABLE) {
-      char buffer[ESB_IPV6_PRESENTATION_SIZE];
-      socket->peerAddress()->presentationAddress(buffer, sizeof(buffer));
-      ESB_LOG_DEBUG("Not returning connection to '%s:%d' to pool", buffer,
-                    socket->peerAddress()->port());
-    }
-
+    ESB_LOG_DEBUG("[%s] Not returning connection to pool",
+                  socket->logAddress());
     socket->close();  // idempotent, just to be safe
     _sockets.addLast(socket);
     return;
@@ -163,13 +154,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
       (ESB::EmbeddedList *)_map.find(socket->peerAddress());
 
   if (list) {
-    if (ESB_DEBUG_LOGGABLE) {
-      char buffer[ESB_IPV6_PRESENTATION_SIZE];
-      socket->peerAddress()->presentationAddress(buffer, sizeof(buffer));
-      ESB_LOG_DEBUG("Returning connection to '%s:%d' to pool", buffer,
-                    socket->peerAddress()->port());
-    }
-
+    ESB_LOG_DEBUG("[%s] Returning connection to pool", socket->logAddress());
     list->addLast(socket);
     return;
   }
@@ -178,13 +163,9 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
       new (_allocator) ESB::SocketAddress(*socket->peerAddress());
 
   if (!address) {
-    if (ESB_CRITICAL_LOGGABLE) {
-      char buffer[ESB_IPV6_PRESENTATION_SIZE];
-      socket->peerAddress()->presentationAddress(buffer, sizeof(buffer));
-      ESB_LOG_CRITICAL("Cannot return connection to '%s:%d' to pool: bad alloc",
-                       buffer, socket->peerAddress()->port());
-    }
-
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
+                           "[%s] Cannot return connection to pool",
+                           socket->logAddress());
     socket->close();
     _sockets.addLast(socket);
     return;
@@ -192,14 +173,10 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
 
   list = new (_allocator) ESB::EmbeddedList();
 
-  if (0 == list) {
-    if (ESB_WARNING_LOGGABLE) {
-      char buffer[ESB_IPV6_PRESENTATION_SIZE];
-      socket->peerAddress()->presentationAddress(buffer, sizeof(buffer));
-      ESB_LOG_WARNING("Cannot return connection to '%s:%d' to pool: bad alloc",
-                      buffer, socket->peerAddress()->port());
-    }
-
+  if (!list) {
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
+                           "[%s] Cannot return connection to pool",
+                           socket->logAddress());
     socket->close();
     _sockets.addLast(socket);
     return;
@@ -210,14 +187,8 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   ESB::Error error = _map.insert(address, list);
 
   if (ESB_SUCCESS != error) {
-    if (ESB_WARNING_LOGGABLE) {
-      char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-      socket->peerAddress()->presentationAddress(dottedIP, sizeof(dottedIP));
-      ESB_LOG_WARNING_ERRNO(error,
-                            "Cannot return connection to '%s:%d' to pool",
-                            dottedIP, socket->peerAddress()->port());
-    }
-
+    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot return connection to pool",
+                          socket->logAddress());
     socket->close();
     _sockets.addLast(socket);
   }
@@ -274,7 +245,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
     if (ESB_SUCCESS != error) {
       _counters.getFailures()->record(transaction->startTime(),
                                       ESB::Date::Now());
-      ESB_LOG_WARNING_ERRNO(error, "Cannot connect to %s:%d", hostname, port);
+      ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot connect", socket->logAddress());
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
       socket->close();
@@ -287,10 +258,12 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
 
   if (ESB_SUCCESS != error) {
     _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
+    ESB_LOG_CRITICAL_ERRNO(error,
+                           "[%s] Cannot add client socket to multiplexer",
+                           socket->logAddress());
     socket->close();
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot add client socket to multiplexer");
     release(socket);
     return error;
   }

@@ -89,19 +89,29 @@ Error ListeningTCPSocket::bind() {
 
   // If we bound to an ephemeral port, determine the assigned port.
 
-#if defined HAVE_GETSOCKNAME && defined HAVE_STRUCT_SOCKADDR
   SocketAddress::Address addr;
-  memset(&addr, 0, sizeof(addr));
+
+#ifdef HAVE_SOCKLEN_T
   socklen_t length = sizeof(addr);
+#else
+  ESB::UInt32 length = sizeof(addr);
+#endif
+
+#if defined HAVE_GETSOCKNAME
   if (SOCKET_ERROR == ::getsockname(_sockFd, (sockaddr *)&addr, &length)) {
     close();
     return LastError();
   }
   assert(length == sizeof(addr));
-  _listeningAddress.updatePrimitiveAddress(&addr);
 #else
-#error "getsockname and sockaddr or equivalent is required."
+#error "getsockname or equivalent is required."
 #endif
+
+  _listeningAddress.updatePrimitiveAddress(&addr);
+
+  if (_logAddress[0]) {
+    _listeningAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
+  }
 
   return ESB_SUCCESS;
 }
@@ -112,9 +122,6 @@ Error ListeningTCPSocket::listen() {
 
     return ESB_INVALID_STATE;
   }
-
-  _listeningAddress.presentationAddress(_presentationAddress,
-                                        sizeof(_presentationAddress));
 
 #ifdef HAVE_LISTEN
 
@@ -171,6 +178,14 @@ Error ListeningTCPSocket::accept(State *data) {
 
 const SocketAddress &ListeningTCPSocket::listeningAddress() const {
   return _listeningAddress;
+}
+
+const char *ListeningTCPSocket::logAddress() {
+  if (!_logAddress[0]) {
+    _listeningAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
+  }
+
+  return _logAddress;
 }
 
 }  // namespace ESB

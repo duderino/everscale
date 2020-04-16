@@ -144,6 +144,9 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  ESB_LOG_NOTICE("Maximum sockets %u",
+                 ESB::SystemConfig::Instance().socketSoftMax());
+
   //
   // Create listening socket
   //
@@ -239,6 +242,8 @@ int main(int argc, char **argv) {
   while (IsRunning && !HttpEchoClientContext::IsFinished()) {
     sleep(1);
   }
+
+  ESB_LOG_NOTICE("Load test finished");
 
   //
   // Stop client and server

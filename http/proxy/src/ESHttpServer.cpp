@@ -109,7 +109,7 @@ ESB::Error HttpServer::start() {
   }
 
   ESB::UInt32 maxSockets = ESB::SystemConfig::Instance().socketSoftMax();
-  ESB_LOG_NOTICE("Maximum sockets %u", maxSockets);
+  ESB_LOG_DEBUG("Maximum sockets %u", maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
     ESB::SocketMultiplexer *multiplexer = new (_allocator)
@@ -137,7 +137,7 @@ ESB::Error HttpServer::start() {
   }
 
   _state.set(ES_HTTP_SERVER_IS_STARTED);
-  ESB_LOG_NOTICE("Started");
+  ESB_LOG_DEBUG("Started");
   return ESB_SUCCESS;
 }
 
@@ -145,9 +145,9 @@ ESB::Error HttpServer::stop() {
   assert(ES_HTTP_SERVER_IS_STARTED == _state.get());
   _state.set(ES_HTTP_SERVER_IS_STOPPED);
 
-  ESB_LOG_NOTICE("Stopping");
+  ESB_LOG_DEBUG("Stopping");
   _threadPool.stop();
-  ESB_LOG_NOTICE("Stopped");
+  ESB_LOG_DEBUG("Stopped");
 
   return ESB_SUCCESS;
 }

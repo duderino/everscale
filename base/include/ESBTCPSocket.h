@@ -118,6 +118,14 @@ class TCPSocket {
    */
   virtual void close();
 
+  /** Get a presentation address for use in log messages.  For connected sockets
+   * this will be the peer's ipaddr+port.  For listening sockets, this will be
+   * the listening socket's ipaddr+port.
+   *
+   * @return The presentation address.
+   */
+  virtual const char *logAddress() = 0;
+
   /** Close a socket descriptor
    *
    * @param socket The socket descriptor to close

@@ -112,15 +112,21 @@ class SocketAddress {
 
   void updatePrimitiveAddress(Address *address);
 
-  /** Get the IP address of the SocketAddress.
+  /** Get the IP address of the SocketAddress in human readable format.
    *
-   *  @param address A character array large enough to hold the ip address
-   *      as a dotted-decimal string (e.g., "255.255.255.255").  16 chars
-   *      is long enough to hold a dotted-decimal string for IPv4 with
-   *      the terminating NULL character.
+   *  @param address A character array of at least ESB_IPV6_PRESENTATION_SIZE
+   * bytes.
    *  @param size The size of the character array.
    */
   void presentationAddress(char *address, int size) const;
+
+  /** Get the IP address+port of the SocketAddress in human readable format.
+   *
+   *  @param address A character array of at least ESB_LOG_ADDRESS_SIZE bytes
+   *  @param size The size of the character array.
+   *  @param fd an optional file descriptor to include in the log address
+   */
+  void logAddress(char *address, int size, int fd) const;
 
   /** Get the port of the SocketAddress.
    *

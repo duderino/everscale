@@ -29,28 +29,43 @@
 namespace ESB {
 
 ConnectedTCPSocket::ConnectedTCPSocket()
-    : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {}
+    : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
+  _logAddress[0] = 0;
+}
 
 ConnectedTCPSocket::ConnectedTCPSocket(bool isBlocking)
     : TCPSocket(isBlocking),
       _isConnected(false),
       _listenerAddress(),
-      _peerAddress() {}
+      _peerAddress() {
+  _logAddress[0] = 0;
+}
 
 ConnectedTCPSocket::ConnectedTCPSocket(const SocketAddress &peer,
                                        bool isBlocking)
     : TCPSocket(isBlocking),
       _isConnected(false),
       _listenerAddress(),
-      _peerAddress(peer) {}
+      _peerAddress(peer) {
+  _logAddress[0] = 0;
+}
 
 ConnectedTCPSocket::ConnectedTCPSocket(const State &state)
     : TCPSocket(state),
       _isConnected(true),
       _listenerAddress(state.listeningAddress()),
-      _peerAddress(state.peerAddress()) {}
+      _peerAddress(state.peerAddress()) {
+  _logAddress[0] = 0;
+}
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
+
+const char *ConnectedTCPSocket::logAddress() {
+  if (!_logAddress[0]) {
+    _peerAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
+  }
+  return _logAddress;
+}
 
 Error ConnectedTCPSocket::reset(const State &acceptData) {
   Error error = TCPSocket::reset(acceptData);
@@ -76,7 +91,7 @@ const SocketAddress &ConnectedTCPSocket::peerAddress() const {
   return _peerAddress;
 }
 
-const SocketAddress &ConnectedTCPSocket::listenerAddress() const {
+const SocketAddress &ConnectedTCPSocket::listeningAddress() const {
   return _listenerAddress;
 }
 
@@ -154,21 +169,19 @@ bool ConnectedTCPSocket::isConnected() {
     return true;
   }
 
+  SocketAddress::Address address;
+
 #ifdef HAVE_SOCKLEN_T
-  socklen_t addressSize;
+  socklen_t addressSize = sizeof(SocketAddress::Address);
 #else
-  int addressSize;
+  ESB::UInt32 addressSize = sizeof(SocketAddress::Address);
 #endif
 
-#if defined HAVE_GETPEERNAME && defined HAVE_STRUCT_SOCKADDR
-  SocketAddress::Address address;
-  addressSize = sizeof(SocketAddress::Address);
-
+#if defined HAVE_GETPEERNAME
   if (SOCKET_ERROR !=
       getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
     _isConnected = true;
   }
-
 #else
 #error "getpeername or equivalent is required"
 #endif

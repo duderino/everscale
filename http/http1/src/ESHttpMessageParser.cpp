@@ -110,7 +110,7 @@ ESB::Error HttpMessageParser::parseHeaders(ESB::Buffer *inputBuffer,
       // However, we recommend that applications, when parsing such headers,
       // recognize a single LF as a line terminator and ignore the leading CR.
 
-      if (false == inputBuffer->isReadable()) {
+      if (!inputBuffer->isReadable()) {
         return ESB_AGAIN;
       }
 
@@ -119,7 +119,7 @@ ESB::Error HttpMessageParser::parseHeaders(ESB::Buffer *inputBuffer,
       if ('\r' == octet) {
         inputBuffer->skipNext();
 
-        if (false == inputBuffer->isReadable()) {
+        if (!inputBuffer->isReadable()) {
           inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
           return ESB_AGAIN;

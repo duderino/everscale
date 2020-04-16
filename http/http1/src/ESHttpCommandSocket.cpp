@@ -54,7 +54,8 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
   ESB::Error error = _eventSocket.write(1);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot update value of event socket");
+    ESB_LOG_ERROR_ERRNO(error, "[%d] cannot update command socket",
+                        _eventSocket.socketDescriptor());
     return error;
   }
 
@@ -63,13 +64,14 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
 
 // This code runs in the multiplexer's thread
 bool HttpCommandSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_DEBUG("Event socket had event");
+  ESB_LOG_DEBUG("[%d] command socket event", _eventSocket.socketDescriptor());
 
   ESB::UInt64 value = 0;
   ESB::Error error = _eventSocket.read(&value);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot read value of event socket");
+    ESB_LOG_ERROR_ERRNO(error, "[%d] cannot read command socket",
+                        _eventSocket.socketDescriptor());
     return true;  // keep in multiplexer, try again
   }
 
@@ -81,7 +83,8 @@ bool HttpCommandSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
     }
 
     if (!command) {
-      ESB_LOG_WARNING("Event socket and queue size are out of sync");
+      ESB_LOG_WARNING("[%d] command socket and queue are out of sync",
+                      _eventSocket.socketDescriptor());
       return true;  // keep in multiplexer, try again
     }
 
@@ -97,28 +100,33 @@ bool HttpCommandSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
 }
 
 bool HttpCommandSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_ERROR("Event sockets cannot handle writable");
+  ESB_LOG_ERROR("[%d] command sockets cannot handle writable",
+                _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
 }
 
 bool HttpCommandSocket::handleError(ESB::Error errorCode,
                                     ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_ERROR_ERRNO(errorCode, "Event socket had error");
+  ESB_LOG_ERROR_ERRNO(errorCode, "[%d] command socket had error",
+                      _eventSocket.socketDescriptor());
   return false;  // remove from multiplexer
 }
 
 bool HttpCommandSocket::handleRemoteClose(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_ERROR("Event sockets cannot handle remote close");
+  ESB_LOG_ERROR("[%d] command sockets cannot handle remote close",
+                _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
 }
 
 bool HttpCommandSocket::handleIdle(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_ERROR("Event sockets cannot handle idle");
+  ESB_LOG_ERROR("[%d] command sockets cannot handle idle",
+                _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
 }
 
 bool HttpCommandSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_NOTICE("Event socket removed from multiplexer");
+  ESB_LOG_NOTICE("[%d] command socket removed from multiplexer",
+                 _eventSocket.socketDescriptor());
 
   ESB::WriteScopeLock lock(_lock);
   _removed = true;

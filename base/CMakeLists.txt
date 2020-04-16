@@ -56,7 +56,7 @@ set(SOURCE_FILES
         src/ESBSystemConfig.cpp
         src/ESBEmbeddedMapElement.cpp
         src/ESBSharedEmbeddedMap.cpp
-	src/ESBEventSocket.cpp
+        src/ESBEventSocket.cpp
         )
 add_library(base STATIC ${SOURCE_FILES})
 
@@ -102,3 +102,4 @@ add_gtest(date-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests t
 add_gtest(time-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBTimeTest.cpp)
 add_gtest(map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBMapTest2.cpp)
 add_gtest(system-config-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSystemConfigTest.cpp)
+add_gtest(socket-address-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSocketAddressTest.cpp)

@@ -67,22 +67,6 @@ void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
     HttpClientStack &stack, HttpClientTransaction *transaction) {
   assert(transaction);
-  HttpResponse &response = transaction->response();
-
-  if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("Response headers parsed");
-    ESB_LOG_DEBUG("StatusCode: %d", response.statusCode());
-    ESB_LOG_DEBUG("ReasonPhrase: %s", ESB_SAFE_STR(response.reasonPhrase()));
-    ESB_LOG_DEBUG("Version: HTTP/%d.%d", response.httpVersion() / 100,
-                  response.httpVersion() % 100 / 10);
-
-    for (HttpHeader *header = (HttpHeader *)response.headers().first(); header;
-         header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
-                    ESB_SAFE_STR(header->fieldValue()));
-    }
-  }
-
   return HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
@@ -93,17 +77,7 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   assert(chunk);
 
   if (0U == chunkSize) {
-    ESB_LOG_DEBUG("Response body finished");
     return ES_HTTP_CLIENT_HANDLER_CONTINUE;
-  }
-
-  if (ESB_DEBUG_LOGGABLE) {
-    char buffer[4096];
-    unsigned int size =
-        (sizeof(buffer) - 1) > chunkSize ? chunkSize : (sizeof(buffer) - 1);
-    memcpy(buffer, chunk, size);
-    buffer[size] = 0;
-    ESB_LOG_DEBUG("Received body chunk: %s", buffer);
   }
 
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
@@ -138,7 +112,6 @@ void HttpEchoClientHandler::endClientTransaction(
       ESB_LOG_INFO("Transaction failed at receive response body state");
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
-      ESB_LOG_DEBUG("Transaction finished");
       break;
     default:
       ESB_LOG_WARNING("Transaction failed at unknown state");
@@ -158,7 +131,7 @@ void HttpEchoClientHandler::endClientTransaction(
   HttpClientTransaction *newTransaction = stack.createTransaction();
 
   if (!newTransaction) {
-    ESB_LOG_WARNING("Cannot create new transaction: bad alloc");
+    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create new transaction");
     return;
   }
 
@@ -176,7 +149,7 @@ void HttpEchoClientHandler::endClientTransaction(
 
   if (ESB_SUCCESS != error) {
     stack.destroyTransaction(newTransaction);
-    ESB_LOG_WARNING_ERRNO(error, "cannot build request");
+    ESB_LOG_WARNING_ERRNO(error, "Cannot build request");
     return;
   }
 
@@ -184,7 +157,7 @@ void HttpEchoClientHandler::endClientTransaction(
 
   if (ESB_SUCCESS != error) {
     stack.destroyTransaction(newTransaction);
-    ESB_LOG_WARNING_ERRNO(error, "cannot execute transaction");
+    ESB_LOG_WARNING_ERRNO(error, "Cannot execute transaction");
     return;
   }
 

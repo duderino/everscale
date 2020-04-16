@@ -72,6 +72,13 @@ class ListeningTCPSocket : public TCPSocket {
    */
   virtual ~ListeningTCPSocket();
 
+  /* Get the listening socket's ipaddr+port in human-friendly presentation
+   * format.
+   *
+   * @return The presentation address.
+   */
+  virtual const char *logAddress();
+
   /** Bind the socket to its IP address and port.
    *
    *  @return ESB_SUCCESS if successful, another error code otherwise.
@@ -105,10 +112,6 @@ class ListeningTCPSocket : public TCPSocket {
    */
   const SocketAddress &listeningAddress() const;
 
-  inline const char *presentationAddress() const {
-    return _presentationAddress;
-  }
-
   /** Placement new.
    *
    *  @param size The size of the object.
@@ -125,8 +128,8 @@ class ListeningTCPSocket : public TCPSocket {
   ListeningTCPSocket &operator=(const ListeningTCPSocket &);
 
   int _backlog;
-  char _presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
   SocketAddress _listeningAddress;
+  char _logAddress[ESB_LOG_ADDRESS_SIZE];
 };
 
 }  // namespace ESB

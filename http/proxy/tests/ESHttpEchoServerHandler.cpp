@@ -2,10 +2,6 @@
 #include <ESHttpEchoServerHandler.h>
 #endif
 
-#ifndef ESB_NULL_LOGGER_H
-#include <ESBNullLogger.h>
-#endif
-
 #ifndef ES_HTTP_ECHO_SERVER_CONTEXT_H
 #include <ESHttpEchoServerContext.h>
 #endif
@@ -35,12 +31,6 @@ HttpEchoServerHandler::~HttpEchoServerHandler() {}
 
 HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
     HttpServerStack &stack, ESB::SocketAddress *address) {
-  if (ESB_INFO_LOGGABLE) {
-    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    address->presentationAddress(dottedIP, sizeof(dottedIP));
-    ESB_LOG_INFO("Accepted new connection from %s:%u", dottedIP,
-                 address->port());
-  }
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
@@ -48,21 +38,16 @@ HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
     HttpServerStack &stack, HttpServerTransaction *transaction) {
   assert(transaction);
   ESB::Allocator &allocator = transaction->allocator();
-
-  if (ESB_DEBUG_LOGGABLE) {
-    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
-    ESB_LOG_DEBUG("Begin new transaction with %s:%u", dottedIP,
-                  transaction->peerAddress().port());
-  }
-
   HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
 
-  if (!context && ESB_WARNING_LOGGABLE) {
-    char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-    transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
-    ESB_LOG_WARNING("Cannot allocate new transaction for %s:%u", dottedIP,
-                    transaction->peerAddress().port());
+  if (!context) {
+    if (ESB_WARNING_LOGGABLE) {
+      char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
+      transaction->peerAddress().presentationAddress(dottedIP,
+                                                     sizeof(dottedIP));
+      ESB_LOG_WARNING("Cannot allocate new transaction for %s:%u", dottedIP,
+                      transaction->peerAddress().port());
+    }
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
@@ -74,44 +59,6 @@ HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
 HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
     HttpServerStack &stack, HttpServerTransaction *transaction) {
   assert(transaction);
-  HttpRequest &request = transaction->request();
-  HttpRequestUri &requestUri = request.requestUri();
-
-  if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("Received request headers");
-    ESB_LOG_DEBUG("Method: %s", transaction->request().method());
-
-    switch (transaction->request().requestUri().type()) {
-      case HttpRequestUri::ES_URI_ASTERISK:
-        ESB_LOG_DEBUG("Asterisk Request-URI");
-        break;
-      case HttpRequestUri::ES_URI_HTTP:
-      case HttpRequestUri::ES_URI_HTTPS:
-        ESB_LOG_DEBUG("Scheme: %s",
-                      HttpRequestUri::ES_URI_HTTP == requestUri.type()
-                          ? "http"
-                          : "https");
-        ESB_LOG_DEBUG("Host: %s", ESB_SAFE_STR(requestUri.host()));
-        ESB_LOG_DEBUG("Port: %d", requestUri.port());
-        ESB_LOG_DEBUG("AbsPath: %s", ESB_SAFE_STR(requestUri.absPath()));
-        ESB_LOG_DEBUG("Query: %s", ESB_SAFE_STR(requestUri.query()));
-        ESB_LOG_DEBUG("Fragment: %s", ESB_SAFE_STR(requestUri.fragment()));
-        break;
-      case HttpRequestUri::ES_URI_OTHER:
-        ESB_LOG_DEBUG("Other: %s", ESB_SAFE_STR(requestUri.other()));
-        break;
-    }
-
-    ESB_LOG_DEBUG("Version: HTTP/%d.%d", request.httpVersion() / 100,
-                  request.httpVersion() % 100 / 10);
-
-    for (HttpHeader *header = (HttpHeader *)request.headers().first(); header;
-         header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("%s: %s", ESB_SAFE_STR(header->fieldName()),
-                    ESB_SAFE_STR(header->fieldValue()));
-    }
-  }
-
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
@@ -124,19 +71,9 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
   HttpResponse &response = transaction->response();
 
   if (0U == chunkSize) {
-    ESB_LOG_DEBUG("Request body finished");
     response.setStatusCode(200);
     response.setReasonPhrase("OK");
     return ES_HTTP_SERVER_HANDLER_SEND_RESPONSE;
-  }
-
-  if (ESB_DEBUG_LOGGABLE) {
-    char buffer[4096];
-    unsigned int size =
-        (sizeof(buffer) - 1) > chunkSize ? chunkSize : (sizeof(buffer) - 1);
-    memcpy(buffer, chunk, size);
-    buffer[size] = 0;
-    ESB_LOG_DEBUG("Received body chunk: %s", buffer);
   }
 
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
@@ -199,7 +136,6 @@ void HttpEchoServerHandler::endServerTransaction(
       ESB_LOG_INFO("Transaction failed at response header send state");
       break;
     case ES_HTTP_SERVER_HANDLER_END:
-      ESB_LOG_DEBUG("Transaction finished");
       break;
     default:
       ESB_LOG_WARNING("Transaction failed at unknown state");

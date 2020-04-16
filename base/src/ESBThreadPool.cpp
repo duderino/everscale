@@ -38,7 +38,7 @@ ThreadPool::ThreadPool(const char *name, UInt32 threads, Allocator &allocator)
 ThreadPool::~ThreadPool() {}
 
 Error ThreadPool::start() {
-  ESB_LOG_NOTICE("ThreadPool '%s' starting", _name);
+  ESB_LOG_DEBUG("ThreadPool '%s' starting", _name);
 
   if (false == createWorkerThreads()) {
     ESB_LOG_CRITICAL("Cannot start ThreadPool '%s': out of threads", _name);
@@ -66,7 +66,7 @@ Error ThreadPool::start() {
 }
 
 void ThreadPool::stop() {
-  ESB_LOG_NOTICE("ThreadPool '%s' stopping", _name);
+  ESB_LOG_DEBUG("ThreadPool '%s' stopping", _name);
 
   // worker threads will get ESB_SHUTDOWN next time they try to pull an item
   // from the queue

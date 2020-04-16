@@ -1,18 +1,13 @@
+socket:
+ - only update epoll if fd has changed interest set
+
 connection pool rework:
  - create connection pool class of client sockets to client socket factory.
  - create option of global or per-silo connection pool and set default to better performing option.
 
-client stack rework:
- - http logging should show peer/self addresses:
- - put presentation address+port in all TCP sockets and use in http socket log messages (client, sever, listener)
- - add log statements to http server+client+listener sockets that pretty print peer/listener address
-
-server stack rework:
- - create server equivalent of client command socket and dynamically push new listeners in from other threads.
-
 code health:
- - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback
- - add noexcept to all uses of placement new
+ - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
+ - add noexcept and allocator references to all uses of placement new
  - use allocator cleanup handlers in embedded list test and more widely
  - use references instead of pointers when they shouldn't be NULL
  - Split HttpServerStack into two interfaces: one for HttpServerSocket (call it HttpServerInternals)  and one for HttpListeningSocket+HttpServerHandler

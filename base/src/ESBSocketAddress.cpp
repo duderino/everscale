@@ -148,7 +148,9 @@ const SocketAddress::Address *SocketAddress::primitiveAddress() const {
 SocketAddress::Address *SocketAddress::primitiveAddress() { return &_address; }
 
 void SocketAddress::presentationAddress(char *address, int size) const {
-  if (!address || 16 > size) {
+  assert(address);
+  assert(size >= ESB_IPV6_PRESENTATION_SIZE);
+  if (!address || ESB_IPV6_PRESENTATION_SIZE > size) {
     return;
   }
 
@@ -166,6 +168,23 @@ void SocketAddress::presentationAddress(char *address, int size) const {
 #else /* ! HAVE_STRUCT_SOCKADDR_IN */
 #error "sockaddr_in or equivalent is required"
 #endif
+
+  address[ESB_IPV6_PRESENTATION_SIZE - 1] = 0;
+}
+
+void SocketAddress::logAddress(char *address, int size, int fd) const {
+  assert(address);
+  assert(size >= ESB_LOG_ADDRESS_SIZE);
+  // TODO support IPv6
+  if (!address || ESB_LOG_ADDRESS_SIZE > size) {
+    return;
+  }
+
+  char buffer[ESB_IPV6_PRESENTATION_SIZE];
+  presentationAddress(buffer, sizeof(buffer));
+
+  snprintf(address, size, "%s:%u,%d", buffer, port(), fd);
+  address[ESB_LOG_ADDRESS_SIZE - 1] = 0;
 }
 
 UInt16 SocketAddress::port() const {

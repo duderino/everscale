@@ -190,6 +190,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket {
 
   inline void close() { _socket.close(); }
 
+  inline const char *logAddress() { return _socket.logAddress(); }
+
   inline ESB::Error connect() { return _socket.connect(); }
 
   inline bool isConnected() { return _socket.isConnected(); }
