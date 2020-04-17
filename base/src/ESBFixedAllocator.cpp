@@ -20,6 +20,10 @@ FixedAllocator::FixedAllocator(UInt32 blocks, UInt32 blockSize,
 FixedAllocator::~FixedAllocator() { destroy(); }
 
 void *FixedAllocator::allocate(UWord size) {
+#ifdef ESB_NO_ALLOC
+  return SystemAllocator::Instance().allocate(size);
+#else
+
   if (!_pool) {
     if (ESB_SUCCESS != initialize()) {
       return NULL;
@@ -35,9 +39,13 @@ void *FixedAllocator::allocate(UWord size) {
   _availList = _availList->_next;
 
   return elem;
+#endif
 }
 
 Error FixedAllocator::deallocate(void *block) {
+#ifdef ESB_NO_ALLOC
+  return SystemAllocator::Instance().deallocate(block);
+#else
   if (!block) {
     return ESB_NULL_POINTER;
   }
@@ -58,6 +66,7 @@ Error FixedAllocator::deallocate(void *block) {
   _availList = (AvailListElem *)elem;
 
   return ESB_SUCCESS;
+#endif
 }
 
 Error FixedAllocator::initialize() {

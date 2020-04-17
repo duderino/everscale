@@ -22,11 +22,13 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
       _cleanupHandler(*this) {}
 
 HttpServerSocketFactory::~HttpServerSocketFactory() {
-  HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
-
-  while (socket) {
+  while (true) {
+    HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
+    if (!socket) {
+      break;
+    }
     socket->~HttpServerSocket();
-    socket = (HttpServerSocket *)_sockets.removeFirst();
+    _allocator.deallocate(socket);
   }
 }
 

@@ -56,8 +56,11 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _dnsClient() {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
-  for (HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
-       socket; socket = (HttpClientSocket *)_sockets.removeFirst()) {
+  while (true) {
+    HttpClientSocket *socket = (HttpClientSocket *)_sockets.removeFirst();
+    if (!socket) {
+      break;
+    }
     socket->~HttpClientSocket();
     _allocator.deallocate(socket);
   }

@@ -1,8 +1,8 @@
-socket:
- - only update epoll if fd has changed interest set
+important:
+ - only update epoll if fd has changed interest set 
+ - compare performance of RELEASE vs RELEASENOPOOL vs. RELEASENOPOOL+tcmalloc on bare metal.  If allocators aren't the best option, limit their use to HttpTransaction and use standard new/delete/new[]/delete[] everywhere else.
 
 connection pool rework:
- - create connection pool class of client sockets to client socket factory.
  - create option of global or per-silo connection pool and set default to better performing option.
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 

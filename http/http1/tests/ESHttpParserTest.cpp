@@ -42,7 +42,8 @@ static ESB::Buffer OutputBuffer(OutputBufferStorage,
                                 sizeof(OutputBufferStorage));
 static ESB::Buffer WorkingBuffer(WorkingBufferStorage,
                                  sizeof(WorkingBufferStorage));
-static ESB::DiscardAllocator Allocator(4096, 64);
+static ESB::DiscardAllocator Allocator(4096, sizeof(ESB::UWord), 1,
+                                       ESB::SystemAllocator::Instance(), true);
 static HttpRequestParser RequestParser(&WorkingBuffer, Allocator);
 static HttpResponseParser ResponseParser(&WorkingBuffer, Allocator);
 static HttpRequestFormatter RequestFormatter;

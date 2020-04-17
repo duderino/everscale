@@ -10,9 +10,9 @@ if (DEFINED ENV{BUILD_TYPE})
   set(CMAKE_BUILD_TYPE $ENV{BUILD_TYPE} CACHE STRING "build type" FORCE)
 endif()
 
-set(VALID_BUILD_TYPES DEFAULT ASAN TSAN DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+set(VALID_BUILD_TYPES DEFAULT ASAN TSAN DEBUG RELEASE RELWITHDEBINFO MINSIZEREL DEBUGNOPOOL RELEASENOPOOL)
 if(NOT CMAKE_BUILD_TYPE IN_LIST VALID_BUILD_TYPES)
-    message(FATAL_ERROR "ENV{BUILD_TYPE} '${CMAKE_BUILD_TYPE}' not in (DEFAULT|ASAN|TSAN|DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL)")
+    message(FATAL_ERROR "ENV{BUILD_TYPE} '${CMAKE_BUILD_TYPE}' not in (DEFAULT|ASAN|TSAN|DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL|DEBUGNOPOOL|RELEASENOPOOL)")
 else()
     message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 endif()
@@ -41,4 +41,10 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -ggdb -Wall -Werror -D_REENTRANT -DNDEBU
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG" CACHE STRING "minrelease C flags" FORCE)
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "minrelease C++ flags" FORCE)
 
+# This build disables all memory allocators and instead uses malloc/free for every allocation.  This can catch memory leaks obscured by the use of memory allocators.
+set(CMAKE_C_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fsanitize=leak" CACHE STRING "debug no pool C flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=leak" CACHE STRING "debug no pool C++ flags" FORCE)
+
+set(CMAKE_C_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG" CACHE STRING "release no pool C flags" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "release no pool C++ flags" FORCE)
 

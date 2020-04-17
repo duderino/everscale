@@ -9,12 +9,14 @@ HttpServerTransactionFactory::HttpServerTransactionFactory(
     : _allocator(allocator), _embeddedList(), _cleanupHandler(*this) {}
 
 HttpServerTransactionFactory::~HttpServerTransactionFactory() {
-  HttpServerTransaction *transaction =
-      (HttpServerTransaction *)_embeddedList.removeFirst();
-
-  while (transaction) {
+  while (true) {
+    HttpServerTransaction *transaction =
+        (HttpServerTransaction *)_embeddedList.removeFirst();
+    if (!transaction) {
+      break;
+    }
     transaction->~HttpServerTransaction();
-    transaction = (HttpServerTransaction *)_embeddedList.removeFirst();
+    _allocator.deallocate(transaction);
   }
 }
 

@@ -16,7 +16,7 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler &cleanupHandler)
     : _allocator(ESB_PAGE_SIZE -
                      ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                  ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
-                 ESB::SystemAllocator::Instance()),
+                 ESB::SystemAllocator::Instance(), true),
       _appContext(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),

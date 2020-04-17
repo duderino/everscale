@@ -1,0 +1,90 @@
+Comparison of memory pools vs. no-memory pools+tcmalloc  tcmalloc appears to be harmful.  memory pools seem to make no difference vs. plain old malloc.
+
+# no memory pools + tcmalloc
+
+./http/proxy/http-client-server-test -r 500 -i 5000 -r 1
+
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=104451.00, N=104451, LATENCY MSEC MEAN=3.24, VAR=13.34, MIN=0.66, MAX=97.12
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=167853.00, N=167853, LATENCY MSEC MEAN=2.97, VAR=0.37, MIN=1.08, MAX=8.11
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=163476.00, N=163476, LATENCY MSEC MEAN=3.04, VAR=0.30, MIN=1.09, MAX=8.39
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=162804.00, N=162804, LATENCY MSEC MEAN=3.06, VAR=0.35, MIN=1.11, MAX=8.58
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=162559.00, N=162559, LATENCY MSEC MEAN=3.06, VAR=0.35, MIN=1.08, MAX=8.34
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=159281.00, N=159281, LATENCY MSEC MEAN=3.13, VAR=0.48, MIN=1.20, MAX=11.27
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=168962.00, N=168962, LATENCY MSEC MEAN=2.95, VAR=0.34, MIN=1.15, MAX=7.72
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=165688.00, N=165688, LATENCY MSEC MEAN=3.00, VAR=0.43, MIN=1.18, MAX=8.30
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=166555.00, N=166555, LATENCY MSEC MEAN=2.99, VAR=0.42, MIN=0.73, MAX=9.03
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=168740.00, N=168740, LATENCY MSEC MEAN=2.95, VAR=0.21, MIN=1.17, MAX=8.61
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=155948.00, N=155948, LATENCY MSEC MEAN=3.19, VAR=0.63, MIN=0.99, MAX=8.84
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=160241.00, N=160241, LATENCY MSEC MEAN=3.11, VAR=0.34, MIN=1.01, MAX=8.50
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=155425.00, N=155425, LATENCY MSEC MEAN=3.20, VAR=0.38, MIN=1.16, MAX=8.49
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=148719.00, N=148719, LATENCY MSEC MEAN=3.35, VAR=0.35, MIN=1.24, MAX=8.88
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=148904.00, N=148904, LATENCY MSEC MEAN=3.34, VAR=0.67, MIN=1.06, MAX=9.26
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=140394.00, N=140394, LATENCY MSEC MEAN=3.15, VAR=0.44, MIN=1.23, MAX=8.66
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/http/http1/src/ESHttpServerSimpleCounters.cpp:42] SERVER CONNECTION ACCEPTS: 501
+[1587094992:6268:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSharedAveragingCounter.cpp:35] SERVER AVG TRANS PER CONNECTION: N=501, MEAN=4990.02, VAR=28106.17, MIN=4727.00, MAX=5255.00
+jblatt@ubuntu-dev:~/src/duderino/everscale$ ldd http/proxy/http-client-server-test 
+        linux-vdso.so.1 (0x00007ffc233e3000)
+        libtcmalloc.so.4 => /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 (0x00007fc30422b000)
+        libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fc303ea2000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fc303b04000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fc3038ec000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fc3036cd000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fc3032dc000)
+        libunwind.so.8 => /usr/lib/x86_64-linux-gnu/libunwind.so.8 (0x00007fc3030c1000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fc30449b000)
+        liblzma.so.5 => /lib/x86_64-linux-gnu/liblzma.so.5 (0x00007fc302e9b000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fc302c97000)
+
+# no memory pools + standard malloc
+
+./http/proxy/http-client-server-test -r 500 -i 5000 -r 1
+
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=116918.00, N=116918, LATENCY MSEC MEAN=2.98, VAR=11.77, MIN=0.88, MAX=92.74
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=182950.00, N=182950, LATENCY MSEC MEAN=2.72, VAR=0.42, MIN=0.89, MAX=8.27
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=190018.00, N=190018, LATENCY MSEC MEAN=2.62, VAR=0.27, MIN=0.97, MAX=7.52
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=189371.00, N=189371, LATENCY MSEC MEAN=2.63, VAR=0.21, MIN=0.96, MAX=7.32
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=185436.00, N=185436, LATENCY MSEC MEAN=2.68, VAR=0.20, MIN=0.98, MAX=7.65
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=184975.00, N=184975, LATENCY MSEC MEAN=2.69, VAR=0.29, MIN=0.78, MAX=8.63
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=181138.00, N=181138, LATENCY MSEC MEAN=2.75, VAR=0.28, MIN=1.00, MAX=8.13
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=177841.00, N=177841, LATENCY MSEC MEAN=2.80, VAR=0.32, MIN=0.99, MAX=8.14
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=173864.00, N=173864, LATENCY MSEC MEAN=2.86, VAR=0.37, MIN=1.04, MAX=10.33
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=162607.00, N=162607, LATENCY MSEC MEAN=3.06, VAR=0.47, MIN=0.98, MAX=8.81
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=168829.00, N=168829, LATENCY MSEC MEAN=2.95, VAR=0.43, MIN=1.08, MAX=8.50
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=161667.00, N=161667, LATENCY MSEC MEAN=3.08, VAR=0.66, MIN=1.06, MAX=8.58
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=161526.00, N=161526, LATENCY MSEC MEAN=3.08, VAR=0.71, MIN=0.95, MAX=8.23
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=154203.00, N=154203, LATENCY MSEC MEAN=3.23, VAR=0.95, MIN=0.91, MAX=15.65
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=108657.00, N=108657, LATENCY MSEC MEAN=2.95, VAR=0.30, MIN=1.06, MAX=6.64
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/http/http1/src/ESHttpServerSimpleCounters.cpp:42] SERVER CONNECTION ACCEPTS: 501
+[1587094860:5863:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSharedAveragingCounter.cpp:35] SERVER AVG TRANS PER CONNECTION: N=501, MEAN=4990.02, VAR=75061.17, MIN=4660.00, MAX=5356.00
+
+# memory pools + standard malloc
+
+./http/proxy/http-client-server-test -r 500 -i 5000 -r 1
+
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=8263.00, N=8263, LATENCY MSEC MEAN=5.49, VAR=145.83, MIN=1.10, MAX=95.69
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=183595.00, N=183595, LATENCY MSEC MEAN=2.71, VAR=0.68, MIN=0.84, MAX=7.98
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=187176.00, N=187176, LATENCY MSEC MEAN=2.66, VAR=0.53, MIN=0.80, MAX=8.73
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=194263.00, N=194263, LATENCY MSEC MEAN=2.57, VAR=0.48, MIN=0.41, MAX=9.07
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=180303.00, N=180303, LATENCY MSEC MEAN=2.76, VAR=0.65, MIN=0.80, MAX=6.72
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=180048.00, N=180048, LATENCY MSEC MEAN=2.77, VAR=0.56, MIN=0.65, MAX=9.87
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=168910.00, N=168910, LATENCY MSEC MEAN=2.95, VAR=0.86, MIN=0.82, MAX=8.50
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=173874.00, N=173874, LATENCY MSEC MEAN=2.86, VAR=0.70, MIN=0.21, MAX=13.93
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=168160.00, N=168160, LATENCY MSEC MEAN=2.96, VAR=0.76, MIN=0.90, MAX=8.54
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=166901.00, N=166901, LATENCY MSEC MEAN=2.98, VAR=0.66, MIN=0.88, MAX=7.80
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=178811.00, N=178811, LATENCY MSEC MEAN=2.78, VAR=0.72, MIN=0.65, MAX=8.06
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=163931.00, N=163931, LATENCY MSEC MEAN=3.04, VAR=0.74, MIN=0.91, MAX=8.24
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=167018.00, N=167018, LATENCY MSEC MEAN=2.98, VAR=0.90, MIN=0.92, MAX=8.83
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=161924.00, N=161924, LATENCY MSEC MEAN=3.07, VAR=0.66, MIN=0.97, MAX=8.51
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=165607.00, N=165607, LATENCY MSEC MEAN=3.00, VAR=0.91, MIN=0.83, MAX=7.92
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSimplePerformanceCounter.cpp:97] CLIENT TRANS SUCCESS: QPS=51216.00, N=51216, LATENCY MSEC MEAN=3.25, VAR=0.95, MIN=0.79, MAX=6.81
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/http/http1/src/ESHttpServerSimpleCounters.cpp:42] SERVER CONNECTION ACCEPTS: 501
+[1587094347:2802:NOTICE:/home/jblatt/src/duderino/everscale/base/src/ESBSharedAveragingCounter.cpp:35] SERVER AVG TRANS PER CONNECTION: N=501, MEAN=4990.02, VAR=442947.55, MIN=4321.00, MAX=5833.00
+jblatt@ubuntu-dev:~/src/duderino/everscale$ ldd http/proxy/http-client-server-test
+        linux-vdso.so.1 (0x00007ffe111a9000)
+        libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fc3a9711000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fc3a9373000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fc3a915b000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fc3a8f3c000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fc3a8b4b000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fc3a9a9a000)
+

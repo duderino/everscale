@@ -9,12 +9,14 @@ HttpClientTransactionFactory::HttpClientTransactionFactory(
     : _allocator(allocator), _embeddedList(), _cleanupHandler(*this) {}
 
 HttpClientTransactionFactory::~HttpClientTransactionFactory() {
-  HttpClientTransaction *transaction =
-      (HttpClientTransaction *)_embeddedList.removeFirst();
-
-  while (transaction) {
+  while (true) {
+    HttpClientTransaction *transaction =
+        (HttpClientTransaction *)_embeddedList.removeFirst();
+    if (!transaction) {
+      break;
+    }
     transaction->~HttpClientTransaction();
-    transaction = (HttpClientTransaction *)_embeddedList.removeFirst();
+    _allocator.deallocate(transaction);
   }
 }
 
@@ -26,7 +28,7 @@ HttpClientTransaction *HttpClientTransactionFactory::create() {
     transaction = new (_allocator) HttpClientTransaction(_cleanupHandler);
 
     if (!transaction) {
-      return 0;
+      return NULL;
     }
   }
 

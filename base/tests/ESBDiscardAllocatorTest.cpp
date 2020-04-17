@@ -114,7 +114,8 @@ static const int AllocationsPerIteration = 10000;
 
 DiscardAllocatorTest::DiscardAllocatorTest()
     : _rand(ESB::Date::Now().microSeconds() + Thread::CurrentThreadId()),
-      _allocator(ChunkSize, ESB_CACHE_LINE_SIZE) {}
+      _allocator(ChunkSize, ESB_CACHE_LINE_SIZE, 1, SystemAllocator::Instance(),
+                 true) {}
 
 DiscardAllocatorTest::~DiscardAllocatorTest() {}
 

@@ -73,7 +73,8 @@ class DiscardAllocator : public Allocator {
    */
   DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize = sizeof(Word),
                    UInt16 multipleOf = 1,
-                   Allocator &source = SystemAllocator::Instance());
+                   Allocator &source = SystemAllocator::Instance(),
+                   bool forcePool = false);
 
   /** Destructor.  Any memory still used by the allocator will be return to
    *  the source allocator at this point.
@@ -147,6 +148,9 @@ class DiscardAllocator : public Allocator {
   Chunk *allocateChunk(int chunkSize);
 
   Chunk *_head;
+#ifdef ESB_NO_ALLOC
+  bool _forcePool;
+#endif
   UInt16 _alignmentSize;
   UInt16 _multipleOf;
   UInt32 _chunkSize;

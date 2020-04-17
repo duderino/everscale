@@ -5,13 +5,18 @@
 namespace ESB {
 
 DiscardAllocator::DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize,
-                                   UInt16 multipleOf, Allocator &source)
+                                   UInt16 multipleOf, Allocator &source,
+                                   bool forcePool)
     : _head(NULL),
+#ifdef ESB_NO_ALLOC
+      _forcePool(forcePool),
+#endif
       _alignmentSize(alignmentSize),
       _multipleOf(multipleOf),
       _chunkSize(ESB_ALIGN(128 > chunkSize ? 128 : chunkSize, _alignmentSize)),
       _source(source),
-      _cleanupHandler(*this) {}
+      _cleanupHandler(*this) {
+}
 
 DiscardAllocator::~DiscardAllocator() {
   Chunk *current = _head;
@@ -27,6 +32,11 @@ DiscardAllocator::~DiscardAllocator() {
 }
 
 void *DiscardAllocator::allocate(UWord size) {
+#ifdef ESB_NO_ALLOC
+  if (!_forcePool) {
+    return SystemAllocator::Instance().allocate(size);
+  }
+#endif
   assert(0 < size);
 
   if (1 > size) {
@@ -88,6 +98,11 @@ void *DiscardAllocator::allocate(UWord size) {
 }
 
 Error DiscardAllocator::deallocate(void *block) {
+#ifdef ESB_NO_ALLOC
+  if (!_forcePool) {
+    return SystemAllocator::Instance().deallocate(block);
+  }
+#endif
   return block ? ESB_SUCCESS : ESB_NULL_POINTER;
 }
 

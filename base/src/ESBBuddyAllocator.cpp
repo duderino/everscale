@@ -2,6 +2,10 @@
 #include <ESBBuddyAllocator.h>
 #endif
 
+#ifndef ESB_SYSTEM_ALLOCATOR_H
+#include <ESBSystemAllocator.h>
+#endif
+
 namespace ESB {
 
 BuddyAllocator::KVal BuddyAllocator::GetKVal(UWord requestedSize) {
@@ -95,6 +99,9 @@ BuddyAllocator::BuddyAllocator(UInt32 size, Allocator &source)
 BuddyAllocator::~BuddyAllocator() { destroy(); }
 
 void *BuddyAllocator::allocate(UWord size) {
+#ifdef ESB_NO_ALLOC
+  return SystemAllocator::Instance().allocate(size);
+#else
   if (0 == size) {
     return 0;
   }
@@ -156,9 +163,13 @@ void *BuddyAllocator::allocate(UWord size) {
   assert(right);
 
   return (void *)(((char *)right) + sizeof(AvailListElem));
+#endif
 }
 
 Error BuddyAllocator::deallocate(void *block) {
+#ifdef ESB_NO_ALLOC
+  return SystemAllocator::Instance().deallocate(block);
+#else
   if (!block) {
     return ESB_NULL_POINTER;
   }
@@ -281,6 +292,7 @@ Error BuddyAllocator::deallocate(void *block) {
   }
 
   return ESB_SUCCESS;
+#endif
 }
 
 Error BuddyAllocator::initialize() {

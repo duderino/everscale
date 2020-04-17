@@ -45,3 +45,13 @@ jobs:
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
               BUILD_TYPE=RELEASE cmake . && make && make test
+      - run:
+          name: "nopool build"
+          command: |
+              set +e
+              export CC=clang
+              export CXX=clang++
+              export CLANG_FORMAT=clang-format
+              export CTEST_OUTPUT_ON_FAILURE=1
+              export VERBOSE=1
+              BUILD_TYPE=DEBUGNOPOOL cmake . && make && make test

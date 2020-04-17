@@ -12,7 +12,8 @@ using namespace ESB;
 
 TEST(DiscardAllocator, AllocMultipleChunks) {
   uint chunkSize = 4096;
-  DiscardAllocator allocator(chunkSize);
+  DiscardAllocator allocator(chunkSize, sizeof(ESB::Word), 1,
+                             SystemAllocator::Instance(), true);
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
@@ -24,7 +25,8 @@ TEST(DiscardAllocator, AllocMultipleChunks) {
 
 TEST(DiscardAllocator, AllocExtraBigChunks) {
   uint chunkSize = 4096;
-  DiscardAllocator allocator(chunkSize);
+  DiscardAllocator allocator(chunkSize, sizeof(ESB::Word), 1,
+                             SystemAllocator::Instance(), true);
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
@@ -36,7 +38,8 @@ TEST(DiscardAllocator, AllocExtraBigChunks) {
 
 TEST(DiscardAllocator, AllocMultipleChunksCacheLineAligned) {
   uint chunkSize = 4096;
-  DiscardAllocator allocator(chunkSize, ESB_CACHE_LINE_SIZE);
+  DiscardAllocator allocator(chunkSize, ESB_CACHE_LINE_SIZE, 1,
+                             SystemAllocator::Instance(), true);
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
@@ -48,7 +51,8 @@ TEST(DiscardAllocator, AllocMultipleChunksCacheLineAligned) {
 
 TEST(DiscardAllocator, AllocExtraBigChunksCacheLineAligned) {
   uint chunkSize = 4096;
-  DiscardAllocator allocator(chunkSize, ESB_CACHE_LINE_SIZE);
+  DiscardAllocator allocator(chunkSize, ESB_CACHE_LINE_SIZE, 1,
+                             SystemAllocator::Instance(), true);
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {

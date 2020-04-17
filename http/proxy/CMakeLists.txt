@@ -82,6 +82,7 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../stack/include"
         )
 
+#        -ltcmalloc
 set(TEST_LIBS
         -pthread
         unit-tf
