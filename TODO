@@ -1,6 +1,13 @@
 important:
- - only update epoll if fd has changed interest set 
  - compare performance of RELEASE vs RELEASENOPOOL vs. RELEASENOPOOL+tcmalloc on bare metal.  If allocators aren't the best option, limit their use to HttpTransaction and use standard new/delete/new[]/delete[] everywhere else.
+ - SO_REUSEPORT:  instead of sharing a listening socket across multiplexers, just let each multiplexer create its own listening socket using SO_REUSEPORT.  But keep the old approach for other platforms... how?  If have SO_REUSEPORT, always set it.  if have so reuse port in listenerPush, create duplicative sockets for same port, else just use the one supplied.
+
+    int sfd = socket(domain, socktype, 0);
+
+    int optval = 1;
+    setsockopt(sfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+
+    bind(sfd, (struct sockaddr *) &addr, addrlen);
 
 connection pool rework:
  - create option of global or per-silo connection pool and set default to better performing option.

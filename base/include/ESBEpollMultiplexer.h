@@ -115,12 +115,6 @@ class EpollMultiplexer : public SocketMultiplexer {
   EpollMultiplexer(const EpollMultiplexer &);
   EpollMultiplexer &operator=(const EpollMultiplexer &);
 
-  /** Initialize the multiplexer
-   *
-   * @return ESB_SUCCESS if successful, another error code otherwise
-   */
-  Error initialize();
-
   /** Destroy the multiplexer
    *
    */
@@ -147,6 +141,10 @@ class EpollMultiplexer : public SocketMultiplexer {
    */
   Error checkIdleSockets(SharedInt *isRunning);
 
+  struct DescriptorState {
+    int _interests;
+  };
+
   int _epollDescriptor;
   UInt32 _maxSockets;
 #ifdef HAVE_TIME_T
@@ -159,6 +157,7 @@ class EpollMultiplexer : public SocketMultiplexer {
 #else
 #error "struct epoll_event is required"
 #endif
+  struct DescriptorState *_eventCache;
   ESB::SharedInt *_isRunning;
   Allocator &_allocator;
   ESB::Lockable &_lock;
