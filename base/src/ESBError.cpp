@@ -90,7 +90,8 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Unsupported Charset",
                                           "Index out of bounds",
                                           "Shutdown in progress",
-                                          "Partial success"};
+                                          "Partial success",
+                                          "Cleanup"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

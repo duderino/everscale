@@ -195,6 +195,13 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_SHUTDOWN (-24)
 
+/**
+ * Operation is finished and should be cleaned up
+ *
+ * @ingroup error
+ */
+#define ESB_CLEANUP (-25)
+
 }  // namespace ESB
 
 #endif

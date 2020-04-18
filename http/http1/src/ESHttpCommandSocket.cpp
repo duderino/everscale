@@ -27,9 +27,10 @@ bool HttpCommandSocket::wantWrite() { return false; }
 
 bool HttpCommandSocket::isIdle() { return false; }
 
-bool HttpCommandSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
+ESB::Error HttpCommandSocket::handleAccept(
+    ESB::SocketMultiplexer &multiplexer) {
   ESB_LOG_ERROR("Event sockets cannot handle accept");
-  return true;  // keep in multiplexer
+  return ESB_SUCCESS;  // keep in multiplexer
 }
 
 bool HttpCommandSocket::handleConnect(ESB::SocketMultiplexer &multiplexer) {

@@ -214,6 +214,10 @@ int main(int argc, char **argv) {
     return -7;
   }
 
+  // Close the listening socket, the server has duplicated it and we don't
+  // want it to receive any connections if SO_REUSEPORT is active.
+  listener.close();
+
   error = client.start();
 
   if (ESB_SUCCESS != error) {

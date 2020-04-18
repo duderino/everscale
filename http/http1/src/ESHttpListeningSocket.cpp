@@ -22,7 +22,7 @@ HttpListeningSocket::HttpListeningSocket(ESB::ListeningTCPSocket &socket,
                                          HttpServerStack &stack,
                                          HttpServerHandler &handler,
                                          ESB::CleanupHandler &cleanupHandler)
-    : _socket(socket),
+    : _socket(socket),  // this duplicates the listening socket
       _stack(stack),
       _handler(handler),
       _cleanupHandler(cleanupHandler) {}
@@ -45,35 +45,23 @@ bool HttpListeningSocket::wantWrite() { return false; }
 
 bool HttpListeningSocket::isIdle() { return false; }
 
-bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
+ESB::Error HttpListeningSocket::handleAccept(
+    ESB::SocketMultiplexer &multiplexer) {
   assert(!_socket.isBlocking());
 
   ESB::TCPSocket::State state;
-  ESB::Error error = ESB_SUCCESS;
-
-  for (int i = 0; i < 10; ++i) {
-    error = _socket.accept(&state);
-    if (ESB_INTR != error) {
-      break;
-    }
-  }
-
-  if (ESB_INTR == error) {
-    ESB_LOG_DEBUG("[%s] not ready to accept - too many interrupts",
-                  _socket.logAddress());
-    return true;
-  }
+  ESB::Error error = _socket.accept(&state);
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[%s] not ready to accept - thundering herd",
+    ESB_LOG_DEBUG("[%s] not ready to accept - no sockets",
                   _socket.logAddress());
-    return true;
+    return ESB_SUCCESS;
   }
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "[%s] error accepting new connection",
                        _socket.logAddress());
-    return true;
+    return error;
   }
 
   _stack.counters().getTotalConnections()->inc();
@@ -84,7 +72,7 @@ bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
   if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
     ESB_LOG_DEBUG("[%s] Handler rejected connection", _socket.logAddress());
     ESB::TCPSocket::Close(state.socketDescriptor());
-    return true;
+    return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }
 
   error = _stack.addServerSocket(state);
@@ -93,7 +81,7 @@ bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
     ESB_LOG_ERROR_ERRNO(error,
                         "[%s] cannot add accepted connection to multiplexer",
                         _socket.logAddress());
-    return true;
+    return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }
 
   if (ESB_INFO_LOGGABLE) {
@@ -104,7 +92,7 @@ bool HttpListeningSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
                  buffer);
   }
 
-  return true;
+  return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
 }
 
 bool HttpListeningSocket::handleConnect(ESB::SocketMultiplexer &multiplexer) {

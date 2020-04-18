@@ -2,6 +2,10 @@
 #include <ESBListeningTCPSocket.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -33,11 +37,60 @@ ListeningTCPSocket::ListeningTCPSocket(SocketAddress &address, int backlog,
 
 ListeningTCPSocket::~ListeningTCPSocket() {}
 
-Error ListeningTCPSocket::bind() {
-  Error error = ESB_SUCCESS;
+ListeningTCPSocket::ListeningTCPSocket(const ListeningTCPSocket &socket) {
+  duplicate(socket);
+}
 
+ListeningTCPSocket &ListeningTCPSocket::operator=(
+    const ListeningTCPSocket &socket) {
+  duplicate(socket);
+  return *this;
+}
+
+Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
+  _isBlocking = socket._isBlocking;
+  _backlog = socket._backlog;
+  _listeningAddress = socket._listeningAddress;
+  memcpy(_logAddress, socket._logAddress, sizeof(_logAddress));
+
+#ifdef HAVE_SO_REUSEPORT
+  Error error = bind();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-bind port %u",
+                        _listeningAddress.port());
+    return error;
+  }
+
+  error = listen();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-listen port %u",
+                        _listeningAddress.port());
+    close();
+    return error;
+  }
+#elif defined HAVE_DUP
+  _sockFd = dup(socket._sockFd);
+
+  if (0 > _sockFd) {
+    error = LastError();
+    ESB_LOG_ERROR_ERRNO(error, "Cannot duplicate listening socket on port %u",
+                        _listeningAddress.port());
+    _sockFd = INVALID_SOCKET;
+    return error;
+  }
+#else
+#error "dup() or equivalent is required"
+#endif
+
+  ESB_LOG_NOTICE("Duplicated listening socket on port %u with fd %d",
+                 _listeningAddress.port(), _sockFd);
+
+  return ESB_SUCCESS;
+}
+
+Error ListeningTCPSocket::bind() {
   if (INVALID_SOCKET != _sockFd) {
-    return ESB_INVALID_STATE;
+    close();
   }
 
 #ifdef HAVE_SOCKET
@@ -50,23 +103,28 @@ Error ListeningTCPSocket::bind() {
     return LastError();
   }
 
-  error = setBlocking(_isBlocking);
+  ESB::Error error = setBlocking(_isBlocking);
 
   if (ESB_SUCCESS != error) {
     close();
-
     return error;
   }
 
 #ifdef HAVE_SETSOCKOPT
   int value = 1;
-
-  if (SOCKET_ERROR == setsockopt(_sockFd, SOL_SOCKET, SO_REUSEADDR,
-                                 (const char *)&value, sizeof(value))) {
+  if (SOCKET_ERROR ==
+      setsockopt(_sockFd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value))) {
     close();
-
     return LastError();
   }
+#ifdef HAVE_SO_REUSEPORT
+  value = 1;
+  if (SOCKET_ERROR ==
+      setsockopt(_sockFd, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value))) {
+    close();
+    return LastError();
+  }
+#endif
 #else
 #error "setsockopt or equivalent is required"
 #endif
@@ -76,7 +134,6 @@ Error ListeningTCPSocket::bind() {
                              (sockaddr *)_listeningAddress.primitiveAddress(),
                              sizeof(SocketAddress::Address))) {
     close();
-
     return LastError();
   }
 #else
@@ -119,7 +176,6 @@ Error ListeningTCPSocket::bind() {
 Error ListeningTCPSocket::listen() {
   if (INVALID_SOCKET == _sockFd) {
     assert(0 == "Attempted to listen on an invalid socket.");
-
     return ESB_INVALID_STATE;
   }
 
@@ -137,6 +193,11 @@ Error ListeningTCPSocket::listen() {
 }
 
 Error ListeningTCPSocket::accept(State *data) {
+  if (INVALID_SOCKET == _sockFd) {
+    assert(0 == "Attempted to accept on an invalid socket.");
+    return ESB_INVALID_STATE;
+  }
+
   if (!data) {
     return ESB_NULL_POINTER;
   }

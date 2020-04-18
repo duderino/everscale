@@ -74,12 +74,13 @@ class MultiplexedSocket : public EmbeddedMapElement {
    * called.  This is not an error condition.
    *
    * @param multiplexer The multiplexer managing this socket.
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
+   * @return ESB_SUCCESS will keep in multiplexer, ESB_AGAIN will call again,
+   * and any other error code will remove socket from multiplexer.
+   * Implementations should not close the socket descriptor until handleRemove
+   * is called.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleAccept(SocketMultiplexer &multiplexer) = 0;
+  virtual Error handleAccept(SocketMultiplexer &multiplexer) = 0;
 
   /** Client connected socket has connected to the peer endpoint.
    *

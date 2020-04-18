@@ -132,6 +132,7 @@ check_symbol_exists(gethostname "unistd.h" HAVE_GETHOSTNAME)
 check_symbol_exists(close "unistd.h" HAVE_CLOSE)
 check_symbol_exists(write "unistd.h" HAVE_WRITE)
 check_symbol_exists(read "unistd.h" HAVE_READ)
+check_symbol_exists(dup "unistd.h" HAVE_DUP)
 check_symbol_exists(usleep "unistd.h" HAVE_USLEEP)
 check_cxx_source_compiles("
 #include <unistd.h>
@@ -176,6 +177,13 @@ check_symbol_exists(recv "sys/socket.h" HAVE_RECV)
 check_symbol_exists(getpeername "sys/socket.h" HAVE_GETPEERNAME)
 check_symbol_exists(setsockopt "sys/socket.h" HAVE_SETSOCKOPT)
 check_symbol_exists(getsockopt "sys/socket.h" HAVE_GETSOCKOPT)
+check_cxx_source_compiles("
+#include <sys/socket.h>
+int main () {
+  int sockFd = -1;
+  int optval = 1;
+  return setsockopt(sockFd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+}" HAVE_SO_REUSEPORT)
 
 check_include_file("sys/ioctl.h" HAVE_SYS_IOCTL_H)
 check_symbol_exists(ioctl "sys/ioctl.h" HAVE_IOCTL)

@@ -67,6 +67,32 @@ class ListeningTCPSocket : public TCPSocket {
   ListeningTCPSocket(SocketAddress &address, int backlog,
                      bool isBlocking = false);
 
+  /**
+   * Duplicate an existing bound and listening socket by creating a new file
+   * descriptor bound to the same port as the original.
+   *
+   * @param socket The socket to duplicate
+   */
+  ListeningTCPSocket(const ListeningTCPSocket &socket);
+
+  /**
+   * Duplicate an existing bound and listening socket by creating a new file
+   * descriptor bound to the same port as the original.
+   *
+   * @param socket The socket to duplicate
+   * @return this
+   */
+  ListeningTCPSocket &operator=(const ListeningTCPSocket &socket);
+
+  /**
+   * Duplicate an existing bound and listening socket by creating a new file
+   * descriptor bound to the same port as the original.
+   *
+   * @param socket The socket to duplicate
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  Error duplicate(const ListeningTCPSocket &socket);
+
   /** Destroy the listening socket.  Will close the socket if it has not
    *  already been closed.
    */
@@ -123,10 +149,6 @@ class ListeningTCPSocket : public TCPSocket {
   }
 
  private:
-  //  Disabled
-  ListeningTCPSocket(const ListeningTCPSocket &socket);
-  ListeningTCPSocket &operator=(const ListeningTCPSocket &);
-
   int _backlog;
   SocketAddress _listeningAddress;
   char _logAddress[ESB_LOG_ADDRESS_SIZE];

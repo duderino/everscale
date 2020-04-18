@@ -22,25 +22,25 @@ void Logger::SetInstance(Logger *logger) {
 const char *Logger::SeverityToString(Logger::Severity severity) {
   switch (severity) {
     case None:
-      return "NONE";
+      return "NON";
     case Emergency:
-      return "EMERGENCY";
+      return "EMR";
     case Alert:
-      return "ALERT";
+      return "ALR";
     case Critical:
-      return "CRITICAL";
+      return "CRT";
     case Err:
-      return "ERROR";
+      return "ERR";
     case Warning:
-      return "WARNING";
+      return "WRN";
     case Notice:
-      return "NOTICE";
+      return "NOT";
     case Info:
-      return "INFO";
+      return "INF";
     case Debug:
-      return "DEBUG";
+      return "DBG";
     default:
-      return "OTHER";
+      return "OTH";
   }
 }
 

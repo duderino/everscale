@@ -125,11 +125,11 @@ bool HttpClientSocket::isIdle() {
   return false;
 }
 
-bool HttpClientSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
+ESB::Error HttpClientSocket::handleAccept(ESB::SocketMultiplexer &multiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   ESB_LOG_WARNING("[%d] Cannot handle accept events",
                   _socket.socketDescriptor());
-  return true;  // keep in multiplexer
+  return ESB_SUCCESS;  // keep in multiplexer
 }
 
 bool HttpClientSocket::handleConnect(ESB::SocketMultiplexer &multiplexer) {
@@ -552,11 +552,11 @@ ESB::Error HttpClientSocket::parseResponseHeaders(
       _recvBuffer, _transaction->response());
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[%s] need more header data from stream",
+    ESB_LOG_DEBUG("[%s] need more response header data from stream",
                   _socket.logAddress());
 
     if (!_recvBuffer->compact()) {
-      ESB_LOG_INFO("[%s] cannot parse headers: parser jammed",
+      ESB_LOG_INFO("[%s] cannot parse response headers: parser jammed",
                    _socket.logAddress());
       return ESB_OVERFLOW;  // remove from multiplexer
     }
@@ -565,7 +565,7 @@ ESB::Error HttpClientSocket::parseResponseHeaders(
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] cannot parse headers",
+    ESB_LOG_INFO_ERRNO(error, "[%s] cannot response parse headers",
                        _socket.logAddress());
     return error;  // remove from multiplexer
   }
@@ -573,7 +573,7 @@ ESB::Error HttpClientSocket::parseResponseHeaders(
   // parse complete
 
   if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("[%s] headers parsed", _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] response headers parsed", _socket.logAddress());
     ESB_LOG_DEBUG("[%s] StatusCode: %d", _socket.logAddress(),
                   _transaction->response().statusCode());
     ESB_LOG_DEBUG("[%s] ReasonPhrase: %s", _socket.logAddress(),
@@ -605,12 +605,13 @@ ESB::Error HttpClientSocket::parseResponseBody(
                                                  &chunkSize);
 
     if (ESB_AGAIN == error) {
-      ESB_LOG_DEBUG("[%s] need more body data from stream",
+      ESB_LOG_DEBUG("[%s] need more response body data from stream",
                     _socket.logAddress());
       if (!_recvBuffer->isWritable()) {
-        ESB_LOG_DEBUG("[%s] compacting input buffer", _socket.logAddress());
+        ESB_LOG_DEBUG("[%s] compacting response input buffer",
+                      _socket.logAddress());
         if (!_recvBuffer->compact()) {
-          ESB_LOG_INFO("[%s] cannot parse body: parser jammed",
+          ESB_LOG_INFO("[%s] cannot parse response body: parser jammed",
                        _socket.logAddress());
           return ESB_OVERFLOW;  // remove from multiplexer
         }
@@ -619,7 +620,7 @@ ESB::Error HttpClientSocket::parseResponseBody(
     }
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] error parsing body",
+      ESB_LOG_INFO_ERRNO(error, "[%s] error parsing response body",
                          _socket.logAddress());
       return error;  // remove from multiplexer
     }
@@ -631,8 +632,9 @@ ESB::Error HttpClientSocket::parseResponseBody(
           _handler.receiveResponseBody(_stack, _transaction, &byte, 0);
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
-        ESB_LOG_DEBUG("[%s] handler aborting connection after last body chunk",
-                      _socket.logAddress());
+        ESB_LOG_DEBUG(
+            "[%s] handler aborting connection after last response body chunk",
+            _socket.logAddress());
         return ESB_INTR;
       }
 
@@ -648,7 +650,8 @@ ESB::Error HttpClientSocket::parseResponseBody(
              chunkSize > (int)sizeof(buffer) ? sizeof(buffer) : chunkSize);
       buffer[chunkSize > (int)sizeof(buffer) ? sizeof(buffer) : chunkSize] = 0;
 
-      ESB_LOG_DEBUG("[%s] read chunk: %s", _socket.logAddress(), buffer);
+      ESB_LOG_DEBUG("[%s] read response chunk: %s", _socket.logAddress(),
+                    buffer);
     }
 
     HttpClientHandler::Result result;
@@ -658,8 +661,9 @@ ESB::Error HttpClientSocket::parseResponseBody(
         chunkSize);
 
     if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
-      ESB_LOG_DEBUG("[%s] handler aborting connection before last body chunk",
-                    _socket.logAddress());
+      ESB_LOG_DEBUG(
+          "[%s] handler aborting connection before last response body chunk",
+          _socket.logAddress());
       return ESB_INTR;
     }
   }
@@ -673,18 +677,18 @@ ESB::Error HttpClientSocket::formatRequestHeaders(
       _sendBuffer, _transaction->request());
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[%s] partially formatted response headers",
+    ESB_LOG_DEBUG("[%s] partially formatted request headers",
                   _socket.logAddress());
     return ESB_AGAIN;  // keep in multiplexer
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting response header",
+    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request header",
                        _socket.logAddress());
     return error;
   }
 
-  ESB_LOG_DEBUG("[%s] formatted response headers", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] formatted request headers", _socket.logAddress());
   _state &= ~FORMATTING_HEADERS;
 
   if (FlushRequestHeaders) {
@@ -709,7 +713,7 @@ ESB::Error HttpClientSocket::formatRequestBody(
 
     if (0 > requestedSize) {
       ESB_LOG_DEBUG(
-          "[%s] handler aborted connection while sending response body",
+          "[%s] handler aborted connection while sending request body",
           _socket.logAddress());
       return ESB_INTR;  // remove from multiplexer
     }
@@ -722,13 +726,13 @@ ESB::Error HttpClientSocket::formatRequestBody(
                                                      &availableSize);
 
     if (ESB_AGAIN == error) {
-      ESB_LOG_DEBUG("[%s] partially formatted response body",
+      ESB_LOG_DEBUG("[%s] partially formatted request body",
                     _socket.logAddress());
       return ESB_AGAIN;  // keep in multiplexer
     }
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting response body",
+      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request body",
                          _socket.logAddress());
       return error;  // remove from multiplexer
     }
@@ -745,15 +749,15 @@ ESB::Error HttpClientSocket::formatRequestBody(
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + availableSize);
     _bodyBytesWritten += availableSize;
 
-    ESB_LOG_DEBUG("[%s] formatted chunk of size %d", _socket.logAddress(),
-                  availableSize);
+    ESB_LOG_DEBUG("[%s] formatted request chunk of size %d",
+                  _socket.logAddress(), availableSize);
 
     // beginBlock reserves space for this operation
 
     error = _transaction->getFormatter()->endBlock(_sendBuffer);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] cannot format end block",
+      ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk end block",
                          _socket.logAddress());
       return error;  // remove from multiplexer
     }
@@ -779,12 +783,12 @@ ESB::Error HttpClientSocket::formatRequestBody(
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last chunk",
+    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last request chunk",
                        _socket.logAddress());
     return error;  // remove from multiplexer
   }
 
-  ESB_LOG_DEBUG("[%s] finshed formatting body", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] finshed formatting request body", _socket.logAddress());
 
   _state &= ~FORMATTING_BODY;
   _state |= FLUSHING_BODY;
@@ -793,10 +797,10 @@ ESB::Error HttpClientSocket::formatRequestBody(
 }
 
 ESB::Error HttpClientSocket::flushBuffer(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_DEBUG("[%s] flushing output buffer", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] flushing request output buffer", _socket.logAddress());
 
   if (!_sendBuffer->isReadable()) {
-    ESB_LOG_INFO("[%s] formatter jammed", _socket.logAddress());
+    ESB_LOG_INFO("[%s] request formatter jammed", _socket.logAddress());
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
@@ -807,7 +811,7 @@ ESB::Error HttpClientSocket::flushBuffer(ESB::SocketMultiplexer &multiplexer) {
 
     if (0 > bytesSent) {
       if (ESB_AGAIN == bytesSent) {
-        ESB_LOG_DEBUG("[%s] would block flushing output buffer",
+        ESB_LOG_DEBUG("[%s] would block flushing request output buffer",
                       _socket.logAddress());
         return ESB_AGAIN;  // keep in multiplexer
       }
@@ -817,13 +821,13 @@ ESB::Error HttpClientSocket::flushBuffer(ESB::SocketMultiplexer &multiplexer) {
         _state |= RETRY_STALE_CONNECTION;
       }
 
-      ESB_LOG_INFO_ERRNO(bytesSent, "[%s] error flushing output buffer",
+      ESB_LOG_INFO_ERRNO(bytesSent, "[%s] error flushing request output buffer",
                          _socket.logAddress());
       return bytesSent;  // remove from multiplexer
     }
 
     _state &= ~FIRST_USE_AFTER_REUSE;
-    ESB_LOG_DEBUG("[%s] flushed %ld bytes from output buffer",
+    ESB_LOG_DEBUG("[%s] flushed %ld bytes from request output buffer",
                   _socket.logAddress(), bytesSent);
   }
 

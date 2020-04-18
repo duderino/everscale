@@ -151,7 +151,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
 
   struct epoll_event event;
   memset(&event, 0, sizeof(event));
-  event.events = EPOLLERR | EPOLLET;
+  event.events = EPOLLERR | EPOLLET | EPOLLONESHOT;
 
   if (socket->wantAccept()) {
     event.events |= EPOLLIN;
@@ -166,7 +166,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
     }
   }
 
-  if ((EPOLLERR | EPOLLET) == event.events) {
+  if ((EPOLLERR | EPOLLET | EPOLLONESHOT) == event.events) {
     // means wantAccept(), wantConnect(), wantRead() and wantWrite() all
     // returned false
     ESB_LOG_ERROR("[%d] Cannot add socket, socket wants nothing", fd);
@@ -224,7 +224,7 @@ Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
 
   struct epoll_event event;
   memset(&event, 0, sizeof(event));
-  event.events = EPOLLERR | EPOLLET;
+  event.events = EPOLLERR;
 
   if (socket->wantAccept()) {
     event.events |= EPOLLIN;
@@ -240,7 +240,7 @@ Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
     }
   }
 
-  if ((EPOLLERR | EPOLLET) == event.events) {
+  if ((EPOLLERR) == event.events) {
     // means wantAccept(), wantConnect(), wantRead() and wantWrite() all
     // returned false
     ESB_LOG_ERROR("[%d] Cannot update socket, socket wants nothing", fd);
@@ -256,9 +256,9 @@ Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
       return error;
     }
     _eventCache[fd]._interests = event.events;
+    ESB_LOG_DEBUG("[%d] Updated socket", fd);
   }
 
-  ESB_LOG_DEBUG("[%d] Updated socket", fd);
   return ESB_SUCCESS;
 }
 
@@ -432,8 +432,18 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           ESB_LOG_ERROR_ERRNO(error, "[%d] listening socket error", fd);
           keepInMultiplexer = socket->handleError(error, *this);
         } else if (_events[i].events & EPOLLIN) {
-          ESB_LOG_DEBUG("[%d] listening socket accept event", fd);
-          keepInMultiplexer = socket->handleAccept(*this);
+          while (keepInMultiplexer) {
+            ESB_LOG_DEBUG("[%d] listening socket accept event", fd);
+            ESB::Error error = socket->handleAccept(*this);
+            if (ESB_AGAIN == error) {
+              continue;
+            } else if (ESB_SUCCESS == error) {
+              break;
+            } else {
+              keepInMultiplexer = false;
+              break;
+            }
+          }
         } else {
           ESB_LOG_WARNING("[%d] listening socket unknown event %d", fd,
                           _events[i].events);
