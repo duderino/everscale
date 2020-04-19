@@ -49,8 +49,21 @@ class HttpServer {
    */
   ESB::Error push(HttpServerCommand *command, int idx = -1);
 
+  /**
+   * Add a bound listening socket to the http server.  This operation will
+   * create a duplicate socket descriptor for each multiplexer thread and
+   * call listen on it.
+   *
+   * @param listener A listening socket to add to each multiplexer thread
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
   ESB::Error addListener(ESB::ListeningTCPSocket &listener);
 
+  /**
+   * Get the number of multiplexer threads (1 multiplexer per thread).
+   *
+   * @return The number of multiplexers
+   */
   inline ESB::UInt32 threads() { return _threads; }
 
   ESB::Error initialize();

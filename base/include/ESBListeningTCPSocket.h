@@ -38,6 +38,13 @@ namespace ESB {
  */
 class ListeningTCPSocket : public TCPSocket {
  public:
+  enum SocketState { CLOSED = 0, BOUND = 1, LISTENING = 2 };
+
+  /**
+   * Constructor
+   */
+  ListeningTCPSocket();
+
   /** Construct a new ListeningTCPSocket instance.  This socket will
    *  listen on the specified port and let the kernel choose the IP address
    *  of the listening socket (INADDR_ANY).
@@ -64,25 +71,8 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(SocketAddress &address, int backlog,
+  ListeningTCPSocket(const SocketAddress &address, int backlog,
                      bool isBlocking = false);
-
-  /**
-   * Duplicate an existing bound and listening socket by creating a new file
-   * descriptor bound to the same port as the original.
-   *
-   * @param socket The socket to duplicate
-   */
-  ListeningTCPSocket(const ListeningTCPSocket &socket);
-
-  /**
-   * Duplicate an existing bound and listening socket by creating a new file
-   * descriptor bound to the same port as the original.
-   *
-   * @param socket The socket to duplicate
-   * @return this
-   */
-  ListeningTCPSocket &operator=(const ListeningTCPSocket &socket);
 
   /**
    * Duplicate an existing bound and listening socket by creating a new file
@@ -132,11 +122,19 @@ class ListeningTCPSocket : public TCPSocket {
    */
   Error accept(State *data);
 
+  /** Close the socket.
+   */
+  virtual void close();
+
   /** Get the socket address of the listening socket.
    *
    *  @return the listening socket's address.
    */
   const SocketAddress &listeningAddress() const;
+
+  inline int backlog() const { return _backlog; }
+
+  inline SocketState state() const { return _state; }
 
   /** Placement new.
    *
@@ -149,7 +147,12 @@ class ListeningTCPSocket : public TCPSocket {
   }
 
  private:
+  // disabled
+  ListeningTCPSocket(const ListeningTCPSocket &socket);
+  ListeningTCPSocket &operator=(const ListeningTCPSocket &socket);
+
   int _backlog;
+  SocketState _state;
   SocketAddress _listeningAddress;
   char _logAddress[ESB_LOG_ADDRESS_SIZE];
 };

@@ -94,15 +94,28 @@ ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addServerSocket(
 ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addListeningSocket(
     ESB::ListeningTCPSocket &socket) {
   HttpListeningSocket *listener = new (_allocator)
-      HttpListeningSocket(socket, *this, _handler, _allocator.cleanupHandler());
+      HttpListeningSocket(*this, _handler, _allocator.cleanupHandler());
 
   if (!listener) {
+    ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create listener on %s",
+                        socket.logAddress());
     return ESB_OUT_OF_MEMORY;
   }
 
-  ESB::Error error = _multiplexer.addMultiplexedSocket(listener);
+  ESB::Error error = listener->initialize(socket);
 
   if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize listener on %s",
+                        socket.logAddress());
+    _allocator.cleanupHandler().destroy(listener);
+    return error;
+  }
+
+  error = _multiplexer.addMultiplexedSocket(listener);
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot add listener on %s to multiplexer",
+                        socket.logAddress());
     _allocator.cleanupHandler().destroy(listener);
     return error;
   }

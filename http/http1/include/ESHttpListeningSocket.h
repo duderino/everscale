@@ -25,8 +25,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
    */
-  HttpListeningSocket(ESB::ListeningTCPSocket &socket, HttpServerStack &stack,
-                      HttpServerHandler &handler,
+  HttpListeningSocket(HttpServerStack &stack, HttpServerHandler &handler,
                       ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
@@ -172,6 +171,8 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
    * @return The multiplexer's name
    */
   virtual const char *getName() const;
+
+  ESB::Error initialize(ESB::ListeningTCPSocket &socket);
 
   /** Placement new.
    *

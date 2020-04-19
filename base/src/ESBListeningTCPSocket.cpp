@@ -24,16 +24,28 @@
 
 namespace ESB {
 
+ListeningTCPSocket::ListeningTCPSocket()
+    : TCPSocket(),
+      _backlog(42),
+      _state(SocketState::CLOSED),
+      _listeningAddress() {}
+
 ListeningTCPSocket::ListeningTCPSocket(UInt16 port, int backlog,
                                        bool isBlocking)
-    : TCPSocket(isBlocking), _backlog(backlog), _listeningAddress() {
+    : TCPSocket(isBlocking),
+      _backlog(backlog),
+      _state(SocketState::CLOSED),
+      _listeningAddress() {
   _listeningAddress.setPort(port);
   _listeningAddress.setType(SocketAddress::TCP);
 }
 
-ListeningTCPSocket::ListeningTCPSocket(SocketAddress &address, int backlog,
-                                       bool isBlocking)
-    : TCPSocket(isBlocking), _backlog(backlog), _listeningAddress(address) {}
+ListeningTCPSocket::ListeningTCPSocket(const SocketAddress &address,
+                                       int backlog, bool isBlocking)
+    : TCPSocket(isBlocking),
+      _backlog(backlog),
+      _state(SocketState::CLOSED),
+      _listeningAddress(address) {}
 
 ListeningTCPSocket::~ListeningTCPSocket() {}
 
@@ -69,10 +81,11 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
     return error;
   }
 #elif defined HAVE_DUP
+  _state = socket._state;
   _sockFd = dup(socket._sockFd);
 
   if (0 > _sockFd) {
-    error = LastError();
+    ESB::Error error = LastError();
     ESB_LOG_ERROR_ERRNO(error, "Cannot duplicate listening socket on port %u",
                         _listeningAddress.port());
     _sockFd = INVALID_SOCKET;
@@ -89,8 +102,8 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 }
 
 Error ListeningTCPSocket::bind() {
-  if (INVALID_SOCKET != _sockFd) {
-    close();
+  if (SocketState::CLOSED != _state) {
+    return ESB_SUCCESS;
   }
 
 #ifdef HAVE_SOCKET
@@ -141,6 +154,7 @@ Error ListeningTCPSocket::bind() {
 #endif
 
   if (0 != _listeningAddress.port()) {
+    _state = SocketState::BOUND;
     return ESB_SUCCESS;
   }
 
@@ -170,30 +184,41 @@ Error ListeningTCPSocket::bind() {
     _listeningAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
   }
 
+  _state = SocketState::BOUND;
   return ESB_SUCCESS;
 }
 
 Error ListeningTCPSocket::listen() {
-  if (INVALID_SOCKET == _sockFd) {
-    assert(0 == "Attempted to listen on an invalid socket.");
-    return ESB_INVALID_STATE;
+  switch (_state) {
+    case BOUND:
+      break;
+    case LISTENING:
+      return ESB_SUCCESS;
+    case CLOSED:
+    default:
+      return ESB_INVALID_STATE;
   }
 
 #ifdef HAVE_LISTEN
-
   if (SOCKET_ERROR == ::listen(_sockFd, _backlog)) {
     return LastError();
   }
-
-  return ESB_SUCCESS;
-
 #else
 #error "listen or equivalent is required."
 #endif
+
+  _state = SocketState::LISTENING;
+
+  return ESB_SUCCESS;
+}
+
+void ListeningTCPSocket::close() {
+  TCPSocket::close();
+  _state = SocketState::CLOSED;
 }
 
 Error ListeningTCPSocket::accept(State *data) {
-  if (INVALID_SOCKET == _sockFd) {
+  if (SocketState::LISTENING != _state) {
     assert(0 == "Attempted to accept on an invalid socket.");
     return ESB_INVALID_STATE;
   }

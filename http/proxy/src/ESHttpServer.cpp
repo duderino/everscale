@@ -78,6 +78,18 @@ ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
 }
 
 ESB::Error HttpServer::addListener(ESB::ListeningTCPSocket &listener) {
+  if (ESB::ListeningTCPSocket::SocketState::BOUND != listener.state()) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+#ifndef HAVE_SO_REUSEPORT
+  ESB::Error error = listener.listen();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on %s", listener.logAddress());
+    return error;
+  }
+#endif
+
   for (int i = 0; i < _threads; ++i) {
     AddListeningSocketCommand *command =
         new (ESB::SystemAllocator::Instance()) AddListeningSocketCommand(

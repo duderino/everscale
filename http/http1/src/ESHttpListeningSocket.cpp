@@ -18,11 +18,10 @@ namespace ES {
 
 // TODO add performance counters
 
-HttpListeningSocket::HttpListeningSocket(ESB::ListeningTCPSocket &socket,
-                                         HttpServerStack &stack,
+HttpListeningSocket::HttpListeningSocket(HttpServerStack &stack,
                                          HttpServerHandler &handler,
                                          ESB::CleanupHandler &cleanupHandler)
-    : _socket(socket),  // this duplicates the listening socket
+    : _socket(),
       _stack(stack),
       _handler(handler),
       _cleanupHandler(cleanupHandler) {}
@@ -31,9 +30,12 @@ HttpListeningSocket::~HttpListeningSocket() {
   ESB_LOG_DEBUG("HttpListeningSocket destroyed");
 }
 
+ESB::Error HttpListeningSocket::initialize(ESB::ListeningTCPSocket &socket) {
+  return _socket.duplicate(socket);
+}
+
 bool HttpListeningSocket::wantAccept() {
   // todo return false if at max sockets...
-
   return true;
 }
 

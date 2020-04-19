@@ -164,14 +164,6 @@ int main(int argc, char **argv) {
 
   ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
 
-  error = listener.listen();
-
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %u",
-                           listener.listeningAddress().port());
-    return -3;
-  }
-
   //
   // Init client and server
   //
@@ -213,10 +205,6 @@ int main(int argc, char **argv) {
   if (ESB_SUCCESS != error) {
     return -7;
   }
-
-  // Close the listening socket, the server has duplicated it and we don't
-  // want it to receive any connections if SO_REUSEPORT is active.
-  listener.close();
 
   error = client.start();
 

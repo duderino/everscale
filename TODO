@@ -8,6 +8,7 @@ connection pool rework:
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 
 code health:
+ - reduce log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
  - add noexcept and allocator references to all uses of placement new
  - use allocator cleanup handlers in embedded list test and more widely
