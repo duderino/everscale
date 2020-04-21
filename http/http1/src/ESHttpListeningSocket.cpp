@@ -66,7 +66,7 @@ ESB::Error HttpListeningSocket::handleAccept(
     return error;
   }
 
-  _stack.counters().getTotalConnections()->inc();
+  _stack.serverCounters().getTotalConnections()->inc();
 
   HttpServerHandler::Result result =
       _handler.acceptConnection(_stack, &state.peerAddress());

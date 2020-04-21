@@ -18,6 +18,7 @@ set(SOURCE_FILES
         src/ESHttpListeningSocket.cpp
         src/ESHttpMessageFormatter.cpp
         src/ESHttpMessageParser.cpp
+        src/ESHttpProxyHandler.cpp
         src/ESHttpRequestFormatter.cpp
         src/ESHttpRequestParser.cpp
         src/ESHttpRequestUriFormatter.cpp

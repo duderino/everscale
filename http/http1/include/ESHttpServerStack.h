@@ -39,7 +39,7 @@ class HttpServerStack {
 
   virtual bool isRunning() = 0;
 
-  virtual HttpServerTransaction *createTransaction() = 0;
+  virtual HttpServerTransaction *createServerTransaction() = 0;
 
   virtual void destroyTransaction(HttpServerTransaction *transaction) = 0;
 
@@ -52,7 +52,7 @@ class HttpServerStack {
    */
   virtual void releaseBuffer(ESB::Buffer *buffer) = 0;
 
-  virtual HttpServerCounters &counters() = 0;
+  virtual HttpServerCounters &serverCounters() = 0;
 
   /**
    * Construct a new server socket and immediately add it to a multiplexer.

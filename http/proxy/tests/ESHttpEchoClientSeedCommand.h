@@ -39,7 +39,7 @@ class HttpEchoClientSeedCommand : public HttpClientCommand {
         break;
       }
 
-      HttpClientTransaction *transaction = stack.createTransaction();
+      HttpClientTransaction *transaction = stack.createClientTransaction();
       assert(transaction);
 
       // Create the request context
@@ -56,7 +56,7 @@ class HttpEchoClientSeedCommand : public HttpClientCommand {
           _host, _port, _absPath, _method, _contentType, transaction);
       assert(ESB_SUCCESS == error);
 
-      error = stack.executeClientTransaction(transaction);
+      error = stack.executeTransaction(transaction);
       assert(ESB_SUCCESS == error);
     }
 

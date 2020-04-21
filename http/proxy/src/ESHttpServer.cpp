@@ -8,31 +8,6 @@
 
 namespace ES {
 
-class AddListeningSocketCommand : public HttpServerCommand {
- public:
-  AddListeningSocketCommand(ESB::ListeningTCPSocket &socket,
-                            ESB::CleanupHandler &cleanupHandler)
-      : _socket(socket), _cleanupHandler(cleanupHandler) {}
-
-  virtual ~AddListeningSocketCommand(){};
-
-  virtual ESB::Error run(HttpServerStack &stack) {
-    return stack.addListeningSocket(_socket);
-  }
-
-  virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
-
-  virtual const char *name() { return "AddListeningSocket"; }
-
- private:
-  // Disabled
-  AddListeningSocketCommand(const AddListeningSocketCommand &);
-  AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
-
-  ESB::ListeningTCPSocket &_socket;
-  ESB::CleanupHandler &_cleanupHandler;
-};
-
 HttpServer::HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
                        ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
@@ -67,7 +42,7 @@ ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
   HttpServerMultiplexer *multiplexer =
       (HttpServerMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
-  ESB::Error error = multiplexer->push(command);
+  ESB::Error error = multiplexer->pushServerCommand(command);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
@@ -120,12 +95,8 @@ ESB::Error HttpServer::start() {
     return error;
   }
 
-  ESB::UInt32 maxSockets = ESB::SystemConfig::Instance().socketSoftMax();
-  ESB_LOG_DEBUG("Maximum sockets %u", maxSockets);
-
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
-    ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpServerMultiplexer(maxSockets, _serverHandler, _serverCounters);
+    ESB::SocketMultiplexer *multiplexer = createMultiplexer();
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
@@ -170,12 +141,21 @@ void HttpServer::destroy() {
 
   for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
        it = it.next()) {
-    HttpServerMultiplexer *multiplexer = (HttpServerMultiplexer *)it.value();
-    multiplexer->~HttpServerMultiplexer();
-    _allocator.deallocate(multiplexer);
+    destroyMultiplexer((HttpServerMultiplexer *)it.value());
   }
 
   _multiplexers.clear();
+}
+
+ESB::SocketMultiplexer *HttpServer::createMultiplexer() {
+  return new (_allocator)
+      HttpServerMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(),
+                            _serverHandler, _serverCounters);
+}
+
+void HttpServer::destroyMultiplexer(ESB::SocketMultiplexer *multiplexer) {
+  multiplexer->~SocketMultiplexer();
+  _allocator.deallocate(multiplexer);
 }
 
 }  // namespace ES

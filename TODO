@@ -1,3 +1,10 @@
+proxy:
+ - Ensure HttpClientSocket and HttpServerSocket can simultaneously stream request and response bodies - and test with existing client and server test case
+ - Add backpressure / ability to pause receipt of request/response bodies
+ - Implement proxy handler and proxy context.  Pass in ephemeral destination port.  Copy from inbound to outbound and vice versa.
+ - Route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
+ - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
+
 performance:
  - compare performance of RELEASE vs RELEASENOPOOL vs. RELEASENOPOOL+tcmalloc on bare metal.  If allocators aren't the best option, limit their use to HttpTransaction and use standard new/delete/new[]/delete[] everywhere else.
  - redo all prior perf comparisons on bare metal
@@ -8,7 +15,7 @@ connection pool rework:
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 
 code health:
- - reduce log levels.  just error, warning, info, debug
+ - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
  - add noexcept and allocator references to all uses of placement new
  - use allocator cleanup handlers in embedded list test and more widely
@@ -16,14 +23,6 @@ code health:
  - Split HttpServerStack into two interfaces: one for HttpServerSocket (call it HttpServerInternals)  and one for HttpListeningSocket+HttpServerHandler
  - Split HttpClientStack into two interfaces: one for HttpClientSocket (call it HttpClientInternals) and one for HttpClientHandler
  - reduce the number of name() and getName() functions
-
-proxy impl:
- - proxy stack/multiplexer/handler
- - pause/resume for http server sockets
- - pause/resume for http client sockets
- - proxy handler that implements both server and client handlers and uses pause/resume appropriately.  initially copy data from server recv to client send buffers and from client recv to server send buffers.
- - route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
- - reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
 
 router:
  - create async router infra.  How can the async response be relayed?  callback function?
@@ -35,11 +34,10 @@ router:
 load shedding:
  - pause/resome for http listening sockets (overloaded use case).  support PAUSE returns from HttpServerHandler::acceptConnection
 multiplex socket
- - SO_REUSE_PORT
  - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers?  woudl ahve to ensure that no more than num max fds will be used in a multiplexer - don't accept new connections unless you have 2 fd free (1 fd for server connection, 1 fd for client connection)
 
 http stack test
- - support many hostnames in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
+ - support many virtual IPs in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
  - pin threads / fe-be connection alignment / packet steering
 
 server:
@@ -73,6 +71,7 @@ docs:
  - fix license - 3 levels of derivation
 
 async dns client:
+ - cares
  - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
  - common caching code.  intial async impl can use threadpool and gethostbyname
 
@@ -87,7 +86,7 @@ http stuff
  - max header size option
  - max body size option
  - save don't skip trailer
- - slow loris defense
+ - slow loris defense - not just idle time, also max transaction latency
  - https support
  - h2 support, move parsing and formatting state from sockets to transactions
  - perfect forward secrecy

@@ -18,7 +18,7 @@ class HttpClientStack {
 
   virtual bool isRunning() = 0;
 
-  virtual HttpClientTransaction *createTransaction() = 0;
+  virtual HttpClientTransaction *createClientTransaction() = 0;
 
   /**
    * Execute the client transaction.  If this method returns ESB_SUCCESS, then
@@ -31,8 +31,7 @@ class HttpClientStack {
    * error code otherwise.  If error, cleanup the transaction with the
    * destroyTransaction function.
    */
-  virtual ESB::Error executeClientTransaction(
-      HttpClientTransaction *transaction) = 0;
+  virtual ESB::Error executeTransaction(HttpClientTransaction *transaction) = 0;
 
   virtual void destroyTransaction(HttpClientTransaction *transaction) = 0;
 

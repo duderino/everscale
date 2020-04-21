@@ -47,16 +47,11 @@ class HttpClientMultiplexer : public HttpMultiplexer {
    * @param command The command to execute
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  inline ESB::Error push(HttpClientCommand *command) {
-    return _commandSocket.push(command);
+  inline ESB::Error pushClientCommand(HttpClientCommand *command) {
+    return _clientCommandSocket.push(command);
   }
 
- private:
-  // disabled
-  HttpClientMultiplexer(const HttpClientMultiplexer &);
-  void operator=(const HttpClientMultiplexer &);
-
-  // This is what the client multiplexer exposes to client sockets
+  // This is what the HttpClientMultiplexer exposes to HttpClientHandler
   class HttpClientStackImpl : public HttpClientStack {
    public:
     HttpClientStackImpl(ESB::EpollMultiplexer &multiplexer,
@@ -65,10 +60,9 @@ class HttpClientMultiplexer : public HttpMultiplexer {
                         ESB::BufferPool &bufferPool);
     virtual ~HttpClientStackImpl();
 
-    virtual HttpClientTransaction *createTransaction();
+    virtual HttpClientTransaction *createClientTransaction();
     virtual bool isRunning();
-    virtual ESB::Error executeClientTransaction(
-        HttpClientTransaction *transaction);
+    virtual ESB::Error executeTransaction(HttpClientTransaction *transaction);
     virtual void destroyTransaction(HttpClientTransaction *transaction);
     virtual ESB::Buffer *acquireBuffer();
     virtual void releaseBuffer(ESB::Buffer *buffer);
@@ -84,10 +78,15 @@ class HttpClientMultiplexer : public HttpMultiplexer {
     HttpClientTransactionFactory &_clientTransactionFactory;
   };
 
+ private:
+  // disabled
+  HttpClientMultiplexer(const HttpClientMultiplexer &);
+  void operator=(const HttpClientMultiplexer &);
+
   HttpClientSocketFactory _clientSocketFactory;
   HttpClientTransactionFactory _clientTransactionFactory;
   HttpClientStackImpl _clientStack;
-  HttpClientCommandSocket _commandSocket;
+  HttpClientCommandSocket _clientCommandSocket;
 };
 
 }  // namespace ES

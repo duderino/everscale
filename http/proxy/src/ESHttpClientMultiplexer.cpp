@@ -13,14 +13,14 @@ HttpClientMultiplexer::HttpClientMultiplexer(ESB::UInt32 maxSockets,
       _clientTransactionFactory(_factoryAllocator),
       _clientStack(_multiplexer, _clientSocketFactory,
                    _clientTransactionFactory, _ioBufferPool),
-      _commandSocket(_clientStack) {
+      _clientCommandSocket(_clientStack) {
   _clientSocketFactory.setStack(_clientStack);
 }
 
 HttpClientMultiplexer::~HttpClientMultiplexer() {}
 
 bool HttpClientMultiplexer::run(ESB::SharedInt *isRunning) {
-  ESB::Error error = _multiplexer.addMultiplexedSocket(&_commandSocket);
+  ESB::Error error = _multiplexer.addMultiplexedSocket(&_clientCommandSocket);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot add command socket to multiplexer");
@@ -51,11 +51,11 @@ bool HttpClientMultiplexer::HttpClientStackImpl::isRunning() {
 }
 
 HttpClientTransaction *
-HttpClientMultiplexer::HttpClientStackImpl::createTransaction() {
+HttpClientMultiplexer::HttpClientStackImpl::createClientTransaction() {
   return _clientTransactionFactory.create();
 }
 
-ESB::Error HttpClientMultiplexer::HttpClientStackImpl::executeClientTransaction(
+ESB::Error HttpClientMultiplexer::HttpClientStackImpl::executeTransaction(
     HttpClientTransaction *transaction) {
   return _clientSocketFactory.executeClientTransaction(transaction);
 }

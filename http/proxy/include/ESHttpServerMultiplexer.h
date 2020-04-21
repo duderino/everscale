@@ -71,8 +71,8 @@ class HttpServerMultiplexer : public HttpMultiplexer {
    * @param command The command to execute
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  inline ESB::Error push(HttpServerCommand *command) {
-    return _commandSocket.push(command);
+  inline ESB::Error pushServerCommand(HttpServerCommand *command) {
+    return _serverCommandSocket.push(command);
   }
 
  private:
@@ -80,7 +80,7 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   HttpServerMultiplexer(const HttpServerMultiplexer &);
   void operator=(const HttpServerMultiplexer &);
 
-  // This is what the server multiplexer exposes to server sockets
+  // This is what the HttpServerMultiplexer exposes to HttpServerHandler
   class HttpServerStackImpl : public HttpServerStack {
    public:
     HttpServerStackImpl(ESB::Allocator &allocator,
@@ -91,13 +91,13 @@ class HttpServerMultiplexer : public HttpMultiplexer {
                         HttpServerSocketFactory &socketFactory);
     virtual ~HttpServerStackImpl();
     virtual bool isRunning();
-    virtual HttpServerTransaction *createTransaction();
+    virtual HttpServerTransaction *createServerTransaction();
     virtual void destroyTransaction(HttpServerTransaction *transaction);
     virtual ESB::Buffer *acquireBuffer();
     virtual void releaseBuffer(ESB::Buffer *buffer);
     virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state);
     virtual ESB::Error addListeningSocket(ESB::ListeningTCPSocket &socket);
-    virtual HttpServerCounters &counters();
+    virtual HttpServerCounters &serverCounters();
 
    private:
     // Disabled
@@ -116,7 +116,9 @@ class HttpServerMultiplexer : public HttpMultiplexer {
   HttpServerSocketFactory _serverSocketFactory;
   HttpServerTransactionFactory _serverTransactionFactory;
   HttpServerStackImpl _serverStack;
-  HttpServerCommandSocket _commandSocket;
+
+ protected:
+  HttpServerCommandSocket _serverCommandSocket;
 };
 
 }  // namespace ES

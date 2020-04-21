@@ -362,7 +362,8 @@ int main(int argc, char **argv) {
     return -4;
   }
 
-  client.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  client.clientCounters().log(ESB::Logger::Instance(),
+                              ESB::Logger::Severity::Notice);
   client.destroy();
 
   return ESB_SUCCESS;

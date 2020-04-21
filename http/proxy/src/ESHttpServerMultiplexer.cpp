@@ -13,14 +13,14 @@ HttpServerMultiplexer::HttpServerMultiplexer(ESB::UInt32 maxSockets,
       _serverStack(_factoryAllocator, _multiplexer, _ioBufferPool,
                    serverHandler, serverCounters, _serverTransactionFactory,
                    _serverSocketFactory),
-      _commandSocket(_serverStack) {
+      _serverCommandSocket(_serverStack) {
   _serverSocketFactory.setStack(_serverStack);
 }
 
 HttpServerMultiplexer::~HttpServerMultiplexer() {}
 
 bool HttpServerMultiplexer::run(ESB::SharedInt *isRunning) {
-  ESB::Error error = _multiplexer.addMultiplexedSocket(&_commandSocket);
+  ESB::Error error = _multiplexer.addMultiplexedSocket(&_serverCommandSocket);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot add command socket to multiplexer");
@@ -55,7 +55,7 @@ bool HttpServerMultiplexer::HttpServerStackImpl::isRunning() {
 }
 
 HttpServerTransaction *
-HttpServerMultiplexer::HttpServerStackImpl::createTransaction() {
+HttpServerMultiplexer::HttpServerStackImpl::createServerTransaction() {
   return _transactionFactory.create();
 }
 
@@ -123,7 +123,8 @@ ESB::Error HttpServerMultiplexer::HttpServerStackImpl::addListeningSocket(
   return ESB_SUCCESS;
 }
 
-HttpServerCounters &HttpServerMultiplexer::HttpServerStackImpl::counters() {
+HttpServerCounters &
+HttpServerMultiplexer::HttpServerStackImpl::serverCounters() {
   return _counters;
 }
 

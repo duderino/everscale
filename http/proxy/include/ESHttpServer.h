@@ -74,12 +74,39 @@ class HttpServer {
 
   void destroy();
 
-  inline const HttpServerCounters &counters() const { return _serverCounters; }
+  inline const HttpServerCounters &serverCounters() const {
+    return _serverCounters;
+  }
 
- private:
-  // disabled
-  HttpServer(const HttpServer &);
-  void operator=(const HttpServer &);
+  class AddListeningSocketCommand : public HttpServerCommand {
+   public:
+    AddListeningSocketCommand(ESB::ListeningTCPSocket &socket,
+                              ESB::CleanupHandler &cleanupHandler)
+        : _socket(socket), _cleanupHandler(cleanupHandler) {}
+
+    virtual ~AddListeningSocketCommand(){};
+
+    virtual ESB::Error run(HttpServerStack &stack) {
+      return stack.addListeningSocket(_socket);
+    }
+
+    virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
+
+    virtual const char *name() { return "AddListeningSocket"; }
+
+   private:
+    // Disabled
+    AddListeningSocketCommand(const AddListeningSocketCommand &);
+    AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
+
+    ESB::ListeningTCPSocket &_socket;
+    ESB::CleanupHandler &_cleanupHandler;
+  };
+
+ protected:
+  virtual ESB::SocketMultiplexer *createMultiplexer();
+
+  virtual void destroyMultiplexer(ESB::SocketMultiplexer *multiplexer);
 
   typedef enum {
     ES_HTTP_SERVER_IS_INITIALIZED = 0,
@@ -96,6 +123,11 @@ class HttpServer {
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
   HttpServerSimpleCounters _serverCounters;
+
+ private:
+  // disabled
+  HttpServer(const HttpServer &);
+  void operator=(const HttpServer &);
 };
 
 }  // namespace ES

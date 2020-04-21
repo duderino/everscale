@@ -59,7 +59,9 @@ class HttpClient {
 
   void destroy();
 
-  inline const HttpClientCounters &counters() const { return _clientCounters; }
+  inline const HttpClientCounters &clientCounters() const {
+    return _clientCounters;
+  }
 
  private:
   // disabled

@@ -248,12 +248,15 @@ int main(int argc, char **argv) {
 
   // Dump performance metrics
 
-  client.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
-  server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  client.clientCounters().log(ESB::Logger::Instance(),
+                              ESB::Logger::Severity::Notice);
+  server.serverCounters().log(ESB::Logger::Instance(),
+                              ESB::Logger::Severity::Notice);
 
   const ESB::UInt32 totalSuccesses =
-      client.counters().getSuccesses()->queries();
-  const ESB::UInt32 totalFailures = client.counters().getFailures()->queries();
+      client.clientCounters().getSuccesses()->queries();
+  const ESB::UInt32 totalFailures =
+      client.clientCounters().getFailures()->queries();
 
   //
   // Destroy client and server

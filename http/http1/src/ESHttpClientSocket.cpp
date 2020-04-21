@@ -505,7 +505,7 @@ bool HttpClientSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
     assert(_transaction);
     ESB_LOG_DEBUG("[%s] connection stale, retrying transaction",
                   _socket.logAddress());
-    ESB::Error error = _stack.executeClientTransaction(_transaction);
+    ESB::Error error = _stack.executeTransaction(_transaction);
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "[%s] Cannot retry transaction",

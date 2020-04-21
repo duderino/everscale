@@ -128,7 +128,7 @@ void HttpEchoClientHandler::endClientTransaction(
     return;
   }
 
-  HttpClientTransaction *newTransaction = stack.createTransaction();
+  HttpClientTransaction *newTransaction = stack.createClientTransaction();
 
   if (!newTransaction) {
     ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create new transaction");
@@ -153,7 +153,7 @@ void HttpEchoClientHandler::endClientTransaction(
     return;
   }
 
-  error = stack.executeClientTransaction(newTransaction);
+  error = stack.executeTransaction(newTransaction);
 
   if (ESB_SUCCESS != error) {
     stack.destroyTransaction(newTransaction);

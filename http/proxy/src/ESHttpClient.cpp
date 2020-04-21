@@ -38,7 +38,7 @@ ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
   HttpClientMultiplexer *multiplexer =
       (HttpClientMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
-  ESB::Error error = multiplexer->push(command);
+  ESB::Error error = multiplexer->pushClientCommand(command);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");

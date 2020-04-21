@@ -190,7 +190,8 @@ int main(int argc, char **argv) {
     return -7;
   }
 
-  server.counters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  server.serverCounters().log(ESB::Logger::Instance(),
+                              ESB::Logger::Severity::Notice);
   server.destroy();
 
   return 0;

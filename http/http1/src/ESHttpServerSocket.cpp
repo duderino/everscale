@@ -141,7 +141,7 @@ bool HttpServerSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
 
   if (!_transaction) {
     assert(_state & TRANSACTION_BEGIN);
-    _transaction = _stack.createTransaction();
+    _transaction = _stack.createServerTransaction();
     if (!_transaction) {
       _stack.releaseBuffer(_recvBuffer);
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create server trans",
