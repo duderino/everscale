@@ -18,12 +18,30 @@ HttpClientSocketFactory::SocketAddressCallbacks::SocketAddressCallbacks(
 
 int HttpClientSocketFactory::SocketAddressCallbacks::compare(
     const void *f, const void *s) const {
-  ESB::SocketAddress *first = (ESB::SocketAddress *)f;
-  ESB::SocketAddress *second = (ESB::SocketAddress *)s;
+	  ESB::SocketAddress::Address *first = ((ESB::SocketAddress *)f)->primitiveAddress();
+  ESB::SocketAddress::Address *second = ((ESB::SocketAddress *)s)->primitiveAddress();
 
   // TODO not IPv6 safe
-  return memcmp(first->primitiveAddress(), second->primitiveAddress(),
-                sizeof(ESB::SocketAddress::Address));
+
+  if (first->sin_port > second->sin_port) {
+    return 1;
+  } else if (second->sin_port > first->sin_port) {
+    return -1;
+  }
+
+  if (first->sin_addr.s_addr > second->sin_addr.s_addr) {
+    return 1;
+  } else if (second->sin_addr.s_addr > first->sin_addr.s_addr) {
+    return -1;
+  }
+
+  if (first->sin_family > second->sin_family) {
+    return 1;
+  } else if (second->sin_family > first->sin_family) {
+    return -1;
+  }
+
+  return 0;
 }
 
 ESB::UInt32 HttpClientSocketFactory::SocketAddressCallbacks::hash(
