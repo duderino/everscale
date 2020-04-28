@@ -92,8 +92,7 @@ void SimplePerformanceCounter::log(Logger &logger,
   }
 
   ESB_LOG(logger, severity,
-          "%s: QPS=%.2lf, N=%u, LATENCY MSEC MEAN=%.2lf, VAR=%.2f, MIN=%.2lf, "
-          "MAX=%.2lf",
+          "%s: %.2lf, %u, %.4lf, %.4f, %.4lf, %.4f",
           _name, qps, queries, meanMSec, varianceMSec, minMSec, maxMSec);
 }
 
