@@ -151,7 +151,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
 
   struct epoll_event event;
   memset(&event, 0, sizeof(event));
-  event.events = EPOLLERR | EPOLLET | EPOLLONESHOT;
+  event.events = EPOLLERR | EPOLLET;
 
   if (socket->wantAccept()) {
     event.events |= EPOLLIN;
@@ -164,13 +164,6 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
     if (socket->wantRead()) {
       event.events |= EPOLLIN | EPOLLHUP;
     }
-  }
-
-  if ((EPOLLERR | EPOLLET | EPOLLONESHOT) == event.events) {
-    // means wantAccept(), wantConnect(), wantRead() and wantWrite() all
-    // returned false
-    ESB_LOG_ERROR("[%d] Cannot add socket, socket wants nothing", fd);
-    return ESB_INVALID_ARGUMENT;
   }
 
   int currentSocketCount = _currentSocketCount.inc();
@@ -201,6 +194,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   }
 
   _eventCache[fd]._interests = event.events;
+  socket->attachMultiplexer(this);
 
   ESB_LOG_DEBUG("[%d] Added socket", fd);
   return ESB_SUCCESS;
@@ -238,13 +232,6 @@ Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
     if (socket->wantRead()) {
       event.events |= EPOLLIN | EPOLLHUP;
     }
-  }
-
-  if ((EPOLLERR) == event.events) {
-    // means wantAccept(), wantConnect(), wantRead() and wantWrite() all
-    // returned false
-    ESB_LOG_ERROR("[%d] Cannot update socket, socket wants nothing", fd);
-    return ESB_INVALID_ARGUMENT;
   }
 
   event.data.ptr = socket;
@@ -302,7 +289,10 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket,
 
   ESB_LOG_DEBUG("[%d] Removed socket", fd);
 
-  if (socket->handleRemove(*this)) {
+  bool cleanup = socket->handleRemove();
+  socket->detachMultiplexer();
+
+  if (cleanup) {
     CleanupHandler *cleanupHandler = socket->cleanupHandler();
     if (cleanupHandler) {
       cleanupHandler->destroy(socket);
@@ -430,11 +420,11 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         if (_events[i].events & EPOLLERR) {
           error = TCPSocket::LastSocketError(fd);
           ESB_LOG_ERROR_ERRNO(error, "[%d] listening socket error", fd);
-          keepInMultiplexer = socket->handleError(error, *this);
+          keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLIN) {
           while (keepInMultiplexer) {
             ESB_LOG_DEBUG("[%d] listening socket accept event", fd);
-            ESB::Error error = socket->handleAccept(*this);
+            ESB::Error error = socket->handleAccept();
             if (ESB_AGAIN == error) {
               continue;
             } else if (ESB_SUCCESS == error) {
@@ -469,27 +459,27 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         if (_events[i].events & EPOLLERR) {
           error = TCPSocket::LastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "[%d] connecting socket error", fd);
-          keepInMultiplexer = socket->handleError(error, *this);
+          keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLHUP) {
           ESB_LOG_INFO("[%d] connected socket remote close", fd);
-          keepInMultiplexer = socket->handleRemoteClose(*this);
+          keepInMultiplexer = socket->handleRemoteClose();
         } else if (_events[i].events & EPOLLIN) {
           int bytesReadable = ConnectedTCPSocket::BytesReadable(fd);
 
           if (0 > bytesReadable) {
             error = TCPSocket::LastSocketError(fd);
             ESB_LOG_INFO_ERRNO(error, "[%d] connecting socket error", fd);
-            keepInMultiplexer = socket->handleError(error, *this);
+            keepInMultiplexer = socket->handleError(error);
           } else if (0 == bytesReadable) {
             ESB_LOG_INFO("[%d] connecting socket remote close", fd);
-            keepInMultiplexer = socket->handleRemoteClose(*this);
+            keepInMultiplexer = socket->handleRemoteClose();
           } else {
             ESB_LOG_INFO("[%d] socket connected", fd);
-            keepInMultiplexer = socket->handleConnect(*this);
+            keepInMultiplexer = socket->handleConnect();
           }
         } else if (_events[i].events & EPOLLOUT) {
           ESB_LOG_INFO("[%d] socket connected", fd);
-          keepInMultiplexer = socket->handleConnect(*this);
+          keepInMultiplexer = socket->handleConnect();
         } else {
           ESB_LOG_WARNING("[%d] connecting socket unknown event %d", fd,
                           _events[i].events);
@@ -518,20 +508,20 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         if (_events[i].events & EPOLLERR) {
           error = TCPSocket::LastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "[%d] connected socket error", fd);
-          keepInMultiplexer = socket->handleError(error, *this);
+          keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLHUP) {
           ESB_LOG_INFO("[%d] connected socket remote close", fd);
-          keepInMultiplexer = socket->handleRemoteClose(*this);
+          keepInMultiplexer = socket->handleRemoteClose();
         } else {
           if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
             ESB_LOG_DEBUG("[%d] connected socket read event", fd);
-            keepInMultiplexer = socket->handleReadable(*this);
+            keepInMultiplexer = socket->handleReadable();
           }
 
           if (keepInMultiplexer && socket->wantWrite() &&
               (_events[i].events & EPOLLOUT)) {
             ESB_LOG_DEBUG("[%d] connected socket write event", fd);
-            keepInMultiplexer = socket->handleWritable(*this);
+            keepInMultiplexer = socket->handleWritable();
           }
         }
       }
@@ -577,7 +567,7 @@ Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
     if (current->isIdle()) {
       ESB_LOG_DEBUG("[%d] socket is idle", current->socketDescriptor());
 
-      if (current->handleIdle(*this)) {
+      if (current->handleIdle()) {
         updateMultiplexedSocket(current);
       } else {
         removeMultiplexedSocket(current, false);

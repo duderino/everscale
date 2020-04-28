@@ -12,6 +12,8 @@
 
 #ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
 #include <ESHttpEchoClientRequestBuilder.h>
+#include "ESHttpEchoClientHandler.h"
+
 #endif
 
 namespace ES {
@@ -30,33 +32,25 @@ HttpEchoClientHandler::HttpEchoClientHandler(const char *absPath,
 
 HttpEchoClientHandler::~HttpEchoClientHandler() {}
 
-int HttpEchoClientHandler::reserveRequestChunk(
-    HttpClientStack &stack, HttpClientTransaction *transaction) {
-  assert(transaction);
-
-  HttpEchoClientContext *context =
-      (HttpEchoClientContext *)transaction->context();
-
+ESB::UInt32 HttpEchoClientHandler::reserveRequestChunk(HttpClientStack &stack,
+                                                       HttpStream &stream) {
+  HttpEchoClientContext *context = (HttpEchoClientContext *)stream.context();
   assert(context);
-
   return _bodySize - context->bytesSent();
 }
 
 void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
-                                             HttpClientTransaction *transaction,
+                                             HttpStream &stream,
                                              unsigned char *chunk,
-                                             unsigned int chunkSize) {
-  assert(transaction);
+                                             ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
 
-  HttpEchoClientContext *context =
-      (HttpEchoClientContext *)transaction->context();
-
+  HttpEchoClientContext *context = (HttpEchoClientContext *)stream.context();
   assert(context);
 
-  unsigned int totalBytesRemaining = _bodySize - context->bytesSent();
-  unsigned int bytesToSend =
+  ESB::UInt32 totalBytesRemaining = _bodySize - context->bytesSent();
+  ESB::UInt32 bytesToSend =
       chunkSize > totalBytesRemaining ? totalBytesRemaining : chunkSize;
 
   memcpy(chunk, _body + context->bytesSent(), bytesToSend);
@@ -65,15 +59,18 @@ void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
 }
 
 HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
-    HttpClientStack &stack, HttpClientTransaction *transaction) {
-  assert(transaction);
+    HttpClientStack &stack, HttpStream &stream) {
   return HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
-    HttpClientStack &stack, HttpClientTransaction *transaction,
-    unsigned const char *chunk, unsigned int chunkSize) {
-  assert(transaction);
+ESB::UInt32 HttpEchoClientHandler::reserveResponseChunk(HttpClientStack &stack,
+                                                        HttpStream &stream) {
+  return ESB_UINT32_MAX;
+}
+
+HttpClientHandler::Result HttpEchoClientHandler::receiveResponseChunk(
+    HttpClientStack &stack, HttpStream &stream, unsigned const char *chunk,
+    ESB::UInt32 chunkSize) {
   assert(chunk);
 
   if (0U == chunkSize) {
@@ -83,11 +80,10 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseBody(
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-void HttpEchoClientHandler::endClientTransaction(
-    HttpClientStack &stack, HttpClientTransaction *transaction, State state) {
-  assert(transaction);
-  HttpEchoClientContext *context =
-      (HttpEchoClientContext *)transaction->context();
+void HttpEchoClientHandler::endClientTransaction(HttpClientStack &stack,
+                                                 HttpStream &stream,
+                                                 State state) {
+  HttpEchoClientContext *context = (HttpEchoClientContext *)stream.context();
   assert(context);
 
   switch (state) {
@@ -124,7 +120,7 @@ void HttpEchoClientHandler::endClientTransaction(
   if (0 > remainingIterations) {
     ESB::CleanupHandler &cleanupHandler = context->cleanupHandler();
     cleanupHandler.destroy(context);
-    transaction->setContext(NULL);
+    stream.setContext(NULL);
     return;
   }
 
@@ -138,14 +134,14 @@ void HttpEchoClientHandler::endClientTransaction(
   context->setBytesSent(0U);
 
   newTransaction->setContext(context);
-  transaction->setContext(NULL);
+  stream.setContext(NULL);
 
   char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-  transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
+  stream.peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
 
   ESB::Error error = HttpEchoClientRequestBuilder(
-      dottedIP, transaction->peerAddress().port(), _absPath, _method,
-      _contentType, newTransaction);
+      dottedIP, stream.peerAddress().port(), _absPath, _method, _contentType,
+      newTransaction);
 
   if (ESB_SUCCESS != error) {
     stack.destroyTransaction(newTransaction);
@@ -163,6 +159,10 @@ void HttpEchoClientHandler::endClientTransaction(
 
   ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
                 remainingIterations);
+}
+void HttpEchoClientHandler::receivePaused(HttpClientStack &stack,
+                                          HttpStream &stream) {
+  assert(0 == "HttpEchoClientHandler should not be paused");
 }
 
 }  // namespace ES

@@ -71,11 +71,12 @@ class HttpMessageParser {
    * @param chunkSize If ESB_SUCCESS is returned, this will be set to the number
    * of bytes that can be read after the starting position.  If 0, then there is
    * no more data left in the body.
+   * @param maxChunkSize but read no more than this even if data is available.
    * @return ESB_SUCCESS if successful, ESB_AGAIN if the buffer needs to be
    *  compacted and filled, another error code otherwise.
    */
-  ESB::Error parseBody(ESB::Buffer *inputBuffer, int *startingPosition,
-                       int *chunkSize);
+  ESB::Error parseBody(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition,
+                       ESB::UInt32 *chunkSize, ESB::UInt32 maxChunkSize);
 
   /**
    * Skips any body trailer.  Necessary only if the connection will be reused.
@@ -119,8 +120,9 @@ class HttpMessageParser {
   //                  last-chunk
   //                  trailer
   //                  CRLF
-  ESB::Error parseChunkedBody(ESB::Buffer *inputBuffer, int *startingPosition,
-                              int *chunkSize);
+  ESB::Error parseChunkedBody(ESB::Buffer *inputBuffer,
+                              ESB::UInt32 *startingPosition,
+                              ESB::UInt32 *chunkSize, ESB::UInt32 maxChunkSize);
 
   // chunk-size     = 1*HEX
   ESB::Error parseChunkSize(ESB::Buffer *inputBuffer);
@@ -132,17 +134,20 @@ class HttpMessageParser {
   ESB::Error parseChunkExtension(ESB::Buffer *inputBuffer);
 
   // chunk-data     = chunk-size(OCTET)
-  ESB::Error parseChunkData(ESB::Buffer *inputBuffer, int *startingPosition,
-                            int *chunkSize);
+  ESB::Error parseChunkData(ESB::Buffer *inputBuffer,
+                            ESB::UInt32 *startingPosition,
+                            ESB::UInt32 *chunkSize, ESB::UInt32 maxChunkSize);
 
   // chunk          = ... CRLF
   ESB::Error parseEndChunk(ESB::Buffer *inputBuffer);
 
-  ESB::Error parseMultipartBody(ESB::Buffer *inputBuffer, int *startingPosition,
-                                int *chunkSize);
+  ESB::Error parseMultipartBody(ESB::Buffer *inputBuffer,
+                                ESB::UInt32 *startingPosition,
+                                ESB::UInt32 *chunkSize);
 
-  ESB::Error parseUnencodedBody(ESB::Buffer *inputBuffer, int *startingPosition,
-                                int *chunkSize);
+  ESB::Error parseUnencodedBody(ESB::Buffer *inputBuffer,
+                                ESB::UInt32 *startingPosition,
+                                ESB::UInt32 *chunkSize);
 
   ESB::Error postParse(HttpMessage &message);
 };

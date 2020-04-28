@@ -10,6 +10,7 @@ set(SOURCE_FILES
         src/ESHttpTransaction.cpp
         src/ESHttpUtil.cpp
         src/ESHttpConfig.cpp
+        src/ESHttpStream.cpp
         )
 
 add_library(http-common STATIC ${SOURCE_FILES})

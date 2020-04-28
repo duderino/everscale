@@ -310,7 +310,7 @@ ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
             return ES_HTTP_BAD_REQUEST_URI_QUERY;
         }
 
-        _workingBuffer->putNext(octet);
+        _parseBuffer->putNext(octet);
         continue;
     }*/
 
@@ -393,7 +393,7 @@ ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer,
             return ES_HTTP_BAD_REQUEST_URI_QUERY;
         }
 
-        _workingBuffer->putNext(octet);
+        _parseBuffer->putNext(octet);
         continue;
     }*/
 

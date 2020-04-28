@@ -71,68 +71,70 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
    * threads may not actually be able to accept a new connection when this is
    * called.  This is not an error condition.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return ESB_SUCCESS will keep in multiplexer, ESB_AGAIN will call again,
    * and any other error code will remove socket from multiplexer.
    * Implementations should not close the socket descriptor until handleRemove
    * is called.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual ESB::Error handleAccept(ESB::SocketMultiplexer &multiplexer);
+  virtual ESB::Error handleAccept();
 
   /**  connected socket has connected to the peer endpoint.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleConnect(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleConnect();
 
   /** Data is ready to be read.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleReadable(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleReadable();
 
   /** There is free space in the outgoing socket buffer.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleWritable(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleWritable();
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
    *
    * @param errorCode The error code.
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemove to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleError(ESB::Error errorCode,
-                           ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleError(ESB::Error errorCode);
 
   /** The socket's connection was closed.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleRemoteClose(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleRemoteClose();
+
+  /** The socket's connection was closed by this process.
+   *
+   * @return If true keep in the multiplexer, if false remove from the
+   * multiplexer. Do not close the socket descriptor until after the socket has
+   * been removed.
+   * @see handleRemoveEvent to close the socket descriptor
+   */
+  virtual bool handleLocalClose();
 
   /** The socket's connection has been idle for too long
    *
@@ -142,14 +144,13 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
    * been removed.
    * @see handleRemove to close the socket descriptor
    */
-  virtual bool handleIdle(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleIdle();
 
   /** The socket has been removed from the multiplexer
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemove(ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleRemove();
 
   /** Get the socket's socket descriptor.
    *

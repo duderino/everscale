@@ -1,12 +1,12 @@
 #ifndef ES_HTTP_CLIENT_HANDLER_H
 #define ES_HTTP_CLIENT_HANDLER_H
 
-#ifndef ES_HTTP_CLIENT_TRANSACTION_H
-#include <ESHttpClientTransaction.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_STACK_H
 #include <ESHttpClientStack.h>
+#endif
+
+#ifndef ES_HTTP_STREAM_H
+#include <ESHttpStream.h>
 #endif
 
 namespace ES {
@@ -51,37 +51,60 @@ class HttpClientHandler {
    * the underlying tcp buffers.  Don't deduct the amount requested from the
    * remaining amount until fillRequestChunk is called.
    *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
+   * @param stack A subset API for the thread's multiplexer
+   * @param stream The client stream, including request and response objects
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveRequestChunk(HttpClientStack &stack,
-                                  HttpClientTransaction *transaction) = 0;
+  virtual ESB::UInt32 reserveRequestChunk(HttpClientStack &stack,
+                                          HttpStream &stream) = 0;
 
   /**
    * Fill a request body chunk with data.
    *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
+   * @param stack A subset API for the thread's multiplexer
+   * @param stream The client stream, including request and response objects
    * @param chunk A buffer to fill
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
    */
-  virtual void fillRequestChunk(HttpClientStack &stack,
-                                HttpClientTransaction *transaction,
+  virtual void fillRequestChunk(HttpClientStack &stack, HttpStream &stream,
                                 unsigned char *chunk,
-                                unsigned int chunkSize) = 0;
+                                ESB::UInt32 chunkSize) = 0;
 
   /**
    * Process a request's HTTP headers.
    *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
+   * @param stack A subset API for the thread's multiplexer
+   * @param transaction The http transaction - contains request and response.
    * @return a result code
    */
   virtual Result receiveResponseHeaders(HttpClientStack &stack,
-                                        HttpClientTransaction *transaction) = 0;
+                                        HttpStream &stream) = 0;
+
+  /**
+   * Reserve space for the response body.  This will be called 0+ times as the
+   * response's HTTP body is received (0 times if the response has no body).
+   *
+   * @param stack A subset API for the thread's multiplexer
+   * @param stream The client stream, including request and response objects
+   * @return The max bytes the handler can receive.  If the calling socket has
+   * received more bytes than can be read, the calling socket will have to be
+   * resumed by the handler later.
+   */
+  virtual ESB::UInt32 reserveResponseChunk(HttpClientStack &stack,
+                                           HttpStream &stream) = 0;
+
+  /**
+   * If the handler cannot keep up with the received data, the stack will
+   * pause the receiving socket.   The handler should call resume() on the
+   * paused stream once it's ready to receive more data.  Alternately the
+   * handler can call close() on the paused stream.
+   *
+   * @param stack A subset API for the thread's multiplexer
+   * @param stream The server stream, including request and response objects
+   */
+  virtual void receivePaused(HttpClientStack &stack, HttpStream &stream) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -89,31 +112,30 @@ class HttpClientHandler {
    * 0 is passed to the callback.  If there is no body, this callback will still
    * be called once with a chunk_size of 0.
    *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
+   * @param stack A subset API for the thread's multiplexer
+   * @param stream The client stream, including request and response objects
    * @param chunk A buffer to drain
    * @param chunkSize The size of the buffer to drain, or 0 if the body is
    * finished.
    * @return a result code
    */
-  virtual Result receiveResponseBody(HttpClientStack &stack,
-                                     HttpClientTransaction *transaction,
-                                     unsigned const char *chunk,
-                                     unsigned int chunkSize) = 0;
+  virtual Result receiveResponseChunk(HttpClientStack &stack,
+                                      HttpStream &stream,
+                                      unsigned const char *chunk,
+                                      ESB::UInt32 chunkSize) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the
    * transaction's success or failure.  Put your cleanup code here.
    *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc
+   * @param stack A subset API for the thread's multiplexer
+   * @param stream The client stream, including request and response objects
    * @param state The state at which the transaction ended.
    * ES_HTTP_CLIENT_HANDLER_END means the transaction was successfully
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endClientTransaction(HttpClientStack &stack,
-                                    HttpClientTransaction *transaction,
+  virtual void endClientTransaction(HttpClientStack &stack, HttpStream &stream,
                                     State state) = 0;
 
  private:

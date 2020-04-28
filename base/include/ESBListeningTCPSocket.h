@@ -93,7 +93,7 @@ class ListeningTCPSocket : public TCPSocket {
    *
    * @return The presentation address.
    */
-  virtual const char *logAddress();
+  virtual const char *logAddress() const;
 
   /** Bind the socket to its IP address and port.
    *
@@ -154,7 +154,7 @@ class ListeningTCPSocket : public TCPSocket {
   int _backlog;
   SocketState _state;
   SocketAddress _listeningAddress;
-  char _logAddress[ESB_LOG_ADDRESS_SIZE];
+  mutable char _logAddress[ESB_LOG_ADDRESS_SIZE];
 };
 
 }  // namespace ESB

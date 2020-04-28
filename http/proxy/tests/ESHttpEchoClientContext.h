@@ -17,9 +17,9 @@ class HttpEchoClientContext : public ESB::Object {
 
   virtual ~HttpEchoClientContext();
 
-  inline unsigned int bytesSent() { return _bytesSent; }
+  inline ESB::UInt32 bytesSent() { return _bytesSent; }
 
-  inline void setBytesSent(unsigned int bytesSent) { _bytesSent = bytesSent; }
+  inline void setBytesSent(ESB::UInt32 bytesSent) { _bytesSent = bytesSent; }
 
   inline ESB::CleanupHandler &cleanupHandler() const { return _cleanupHandler; }
 
@@ -59,7 +59,7 @@ class HttpEchoClientContext : public ESB::Object {
   HttpEchoClientContext(const HttpEchoClientContext &context);
   void operator=(const HttpEchoClientContext &context);
 
-  unsigned int _bytesSent;
+  ESB::UInt32 _bytesSent;
   ESB::CleanupHandler &_cleanupHandler;
   static volatile int _TotalIterations;
   static ESB::SharedInt _RemainingIterations;

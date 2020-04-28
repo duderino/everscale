@@ -60,7 +60,7 @@ ConnectedTCPSocket::ConnectedTCPSocket(const State &state)
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
 
-const char *ConnectedTCPSocket::logAddress() {
+const char *ConnectedTCPSocket::logAddress() const {
   if (!_logAddress[0]) {
     _peerAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
   }

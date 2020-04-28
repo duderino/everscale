@@ -17,13 +17,13 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler &cleanupHandler)
                      ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                  ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                  ESB::SystemAllocator::Instance(), true),
-      _appContext(NULL),
+      _context(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),
       _peerAddress(),
       _request(),
       _response(),
-      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
+      _parseBuffer(_parseBufferStorage, sizeof(_parseBufferStorage)) {}
 
 HttpTransaction::HttpTransaction(const ESB::SocketAddress *peerAddress,
                                  ESB::CleanupHandler &cleanupHandler)
@@ -31,18 +31,18 @@ HttpTransaction::HttpTransaction(const ESB::SocketAddress *peerAddress,
                      ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                  ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                  ESB::SystemAllocator::Instance()),
-      _appContext(NULL),
+      _context(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),
       _peerAddress(*peerAddress),
       _request(),
       _response(),
-      _workingBuffer(_workingBufferStorage, sizeof(_workingBufferStorage)) {}
+      _parseBuffer(_parseBufferStorage, sizeof(_parseBufferStorage)) {}
 
 HttpTransaction::~HttpTransaction() {}
 
 void HttpTransaction::reset() {
-  _appContext = 0;
+  _context = 0;
 
   ESB::SocketAddress peerAddress;
 
@@ -51,7 +51,7 @@ void HttpTransaction::reset() {
   _allocator.reset();
   _request.reset();
   _response.reset();
-  _workingBuffer.clear();
+  _parseBuffer.clear();
   _start = 0;
 }
 

@@ -4,6 +4,8 @@
 
 #ifndef ES_HTTP_ECHO_SERVER_CONTEXT_H
 #include <ESHttpEchoServerContext.h>
+#include "ESHttpEchoServerHandler.h"
+
 #endif
 
 #define BODY                                                                \
@@ -35,40 +37,32 @@ HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
-    HttpServerStack &stack, HttpServerTransaction *transaction) {
-  assert(transaction);
-  ESB::Allocator &allocator = transaction->allocator();
+    HttpServerStack &stack, HttpStream &stream) {
+  ESB::Allocator &allocator = stream.allocator();
   HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
 
   if (!context) {
-    if (ESB_WARNING_LOGGABLE) {
-      char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-      transaction->peerAddress().presentationAddress(dottedIP,
-                                                     sizeof(dottedIP));
-      ESB_LOG_WARNING("Cannot allocate new transaction for %s:%u", dottedIP,
-                      transaction->peerAddress().port());
-    }
+    ESB_LOG_WARNING("[%s] Cannot allocate new transaction",
+                    stream.logAddress());
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
-  assert(!transaction->context());
-  transaction->setContext(context);
+  assert(!stream.context());
+  stream.setContext(context);
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
 HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
-    HttpServerStack &stack, HttpServerTransaction *transaction) {
-  assert(transaction);
+    HttpServerStack &stack, HttpStream &stream) {
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
-    HttpServerStack &stack, HttpServerTransaction *transaction,
-    unsigned const char *chunk, unsigned int chunkSize) {
-  assert(transaction);
+HttpServerHandler::Result HttpEchoServerHandler::receiveRequestChunk(
+    HttpServerStack &stack, HttpStream &stream, unsigned const char *chunk,
+    ESB::UInt32 chunkSize) {
   assert(chunk);
 
-  HttpResponse &response = transaction->response();
+  HttpResponse &response = stream.response();
 
   if (0U == chunkSize) {
     response.setStatusCode(200);
@@ -79,22 +73,20 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestBody(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-int HttpEchoServerHandler::reserveResponseChunk(
-    HttpServerStack &stack, HttpServerTransaction *transaction) {
-  HttpEchoServerContext *context =
-      (HttpEchoServerContext *)transaction->context();
+int HttpEchoServerHandler::reserveResponseChunk(HttpServerStack &stack,
+                                                HttpStream &stream) {
+  HttpEchoServerContext *context = (HttpEchoServerContext *)stream.context();
   assert(context);
   return BodySize - context->getBytesSent();
 }
 
-void HttpEchoServerHandler::fillResponseChunk(
-    HttpServerStack &stack, HttpServerTransaction *transaction,
-    unsigned char *chunk, unsigned int chunkSize) {
-  assert(transaction);
+void HttpEchoServerHandler::fillResponseChunk(HttpServerStack &stack,
+                                              HttpStream &stream,
+                                              unsigned char *chunk,
+                                              ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
-  HttpEchoServerContext *context =
-      (HttpEchoServerContext *)transaction->context();
+  HttpEchoServerContext *context = (HttpEchoServerContext *)stream.context();
   assert(context);
 
   unsigned int totalBytesRemaining = BodySize - context->getBytesSent();
@@ -106,18 +98,16 @@ void HttpEchoServerHandler::fillResponseChunk(
   context->addBytesSent(bytesToSend);
 }
 
-void HttpEchoServerHandler::endServerTransaction(
-    HttpServerStack &stack, HttpServerTransaction *transaction,
-    HttpServerHandler::State state) {
-  assert(transaction);
-  HttpEchoServerContext *context =
-      (HttpEchoServerContext *)transaction->context();
+void HttpEchoServerHandler::endServerTransaction(HttpServerStack &stack,
+                                                 HttpStream &stream,
+                                                 State state) {
+  HttpEchoServerContext *context = (HttpEchoServerContext *)stream.context();
   assert(context);
-  ESB::Allocator &allocator = transaction->allocator();
+  ESB::Allocator &allocator = stream.allocator();
 
   context->~HttpEchoServerContext();
   allocator.deallocate(context);
-  transaction->setContext(0);
+  stream.setContext(NULL);
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
@@ -140,6 +130,16 @@ void HttpEchoServerHandler::endServerTransaction(
     default:
       ESB_LOG_WARNING("Transaction failed at unknown state");
   }
+}
+
+ESB::UInt32 HttpEchoServerHandler::reserveRequestChunk(HttpServerStack &stack,
+                                                       HttpStream &stream) {
+  return ESB_UINT32_MAX;
+}
+
+void HttpEchoServerHandler::receivePaused(HttpServerStack &stack,
+                                          HttpStream &stream) {
+  assert(0 == "HttpEchoServerHandler should not be paused");
 }
 
 }  // namespace ES

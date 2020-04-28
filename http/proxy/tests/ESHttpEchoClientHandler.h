@@ -27,77 +27,30 @@ class HttpEchoClientHandler : public HttpClientHandler {
 
   virtual ~HttpEchoClientHandler();
 
-  /**
-   * Request a buffer of up to n bytes to fill with request body data.  The
-   * stack will subsequently call fillRequestChunk with the actual size of the
-   * buffer available.  The actual size of the buffer may be less than the
-   * requested size.
-   *
-   * A good implementation will always return the known size of remaining body
-   * data.  This function may be called multiple times before fillRequestChunk
-   * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't deduct the amount requested from the
-   * remaining amount until fillRequestChunk is called.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @return The buffer size requested.  Returning 0 ends the body.  Returning
-   * -1 or less immediately closes the connection
-   */
-  virtual int reserveRequestChunk(HttpClientStack &stack,
-                                  HttpClientTransaction *transaction);
+  //
+  // ES::HttpClientHandler
+  //
 
-  /**
-   * Fill a request body chunk with data.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @param chunk A buffer to fill
-   * @param chunkSize The size of the buffer to fill.  This may be less than the
-   * size requested by the requestRequestChunk method.
-   */
-  virtual void fillRequestChunk(HttpClientStack &stack,
-                                HttpClientTransaction *transaction,
+  virtual ESB::UInt32 reserveRequestChunk(HttpClientStack &stack,
+                                          HttpStream &stream);
+
+  virtual void fillRequestChunk(HttpClientStack &stack, HttpStream &stream,
                                 unsigned char *chunk, unsigned int chunkSize);
 
-  /**
-   * Process a request's HTTP headers.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @return a result code
-   */
   virtual Result receiveResponseHeaders(HttpClientStack &stack,
-                                        HttpClientTransaction *transaction);
+                                        HttpStream &stream);
 
-  /**
-   * Incrementally process a response body.  This will be called 1+ times as the
-   * HTTP response body is received.  The body is finished when a chunk_size of
-   * 0 is passed to the callback.  If there is no body, this callback will still
-   * be called once with a chunk_size of 0.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @param chunk A buffer to drain
-   * @param chunkSize The size of the buffer to drain, or 0 if the body is
-   * finished.
-   * @return a result code
-   */
-  virtual Result receiveResponseBody(HttpClientStack &stack,
-                                     HttpClientTransaction *transaction,
-                                     unsigned const char *chunk,
-                                     unsigned int chunkSize);
+  virtual ESB::UInt32 reserveResponseChunk(HttpClientStack &stack,
+                                           HttpStream &stream);
 
-  /**
-   * Handle the end of a transaction.  This is called regardless of the
-   * transaction's success or failure.  Put your cleanup code here.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc
-   * @param state The state at which the transaction ended
-   */
-  virtual void endClientTransaction(HttpClientStack &stack,
-                                    HttpClientTransaction *transaction,
+  virtual void receivePaused(HttpClientStack &stack, HttpStream &stream);
+
+  virtual Result receiveResponseChunk(HttpClientStack &stack,
+                                      HttpStream &stream,
+                                      unsigned const char *chunk,
+                                      ESB::UInt32 chunkSize);
+
+  virtual void endClientTransaction(HttpClientStack &stack, HttpStream &stream,
                                     State state);
 
  private:

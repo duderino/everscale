@@ -27,13 +27,12 @@ bool HttpCommandSocket::wantWrite() { return false; }
 
 bool HttpCommandSocket::isIdle() { return false; }
 
-ESB::Error HttpCommandSocket::handleAccept(
-    ESB::SocketMultiplexer &multiplexer) {
+ESB::Error HttpCommandSocket::handleAccept() {
   ESB_LOG_ERROR("Event sockets cannot handle accept");
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-bool HttpCommandSocket::handleConnect(ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleConnect() {
   ESB_LOG_ERROR("Event sockets cannot handle connect");
   return true;  // keep in multiplexer
 }
@@ -64,7 +63,7 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
 }
 
 // This code runs in the multiplexer's thread
-bool HttpCommandSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleReadable() {
   ESB_LOG_DEBUG("[%d] command socket event", _eventSocket.socketDescriptor());
 
   ESB::UInt64 value = 0;
@@ -100,32 +99,37 @@ bool HttpCommandSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
   return true;  // keep in multiplexer
 }
 
-bool HttpCommandSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleWritable() {
   ESB_LOG_ERROR("[%d] command sockets cannot handle writable",
                 _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool HttpCommandSocket::handleError(ESB::Error errorCode,
-                                    ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleError(ESB::Error errorCode) {
   ESB_LOG_ERROR_ERRNO(errorCode, "[%d] command socket had error",
                       _eventSocket.socketDescriptor());
   return false;  // remove from multiplexer
 }
 
-bool HttpCommandSocket::handleRemoteClose(ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleRemoteClose() {
   ESB_LOG_ERROR("[%d] command sockets cannot handle remote close",
                 _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool HttpCommandSocket::handleIdle(ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleLocalClose() {
+  ESB_LOG_ERROR("[%d] command socket closed by this process",
+                _eventSocket.socketDescriptor());
+  return false;  // remove from multiplexer
+}
+
+bool HttpCommandSocket::handleIdle() {
   ESB_LOG_ERROR("[%d] command sockets cannot handle idle",
                 _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
 }
 
-bool HttpCommandSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
+bool HttpCommandSocket::handleRemove() {
   ESB_LOG_NOTICE("[%d] command socket removed from multiplexer",
                  _eventSocket.socketDescriptor());
 

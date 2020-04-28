@@ -288,8 +288,8 @@ ESB::Error HttpMessageFormatter::formatFieldValue(
 }
 
 ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer,
-                                            int requestedSize,
-                                            int *availableSize) {
+                                            ESB::UInt32 requestedSize,
+                                            ESB::UInt32 *availableSize) {
   if (!outputBuffer || !availableSize) {
     return ESB_NULL_POINTER;
   }
@@ -373,8 +373,8 @@ ESB::Error HttpMessageFormatter::endBody(ESB::Buffer *outputBuffer) {
 }
 
 ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer,
-                                            int requestedSize,
-                                            int *availableSize) {
+                                            ESB::UInt32 requestedSize,
+                                            ESB::UInt32 *availableSize) {
   // chunk          = chunk-size [ chunk-extension ] CRLF
   //                  ...
   // chunk-size     = 1*HEX
@@ -388,11 +388,11 @@ ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer,
   // + 2 for the CRLF in the chunk-size production + 2 for the CRLF after
   // the chunk data.
 
-  if (0 >= ((int)outputBuffer->writable()) - 12) {
+  if (0 >= outputBuffer->writable() - 12) {
     return ESB_AGAIN;
   }
 
-  *availableSize = MIN(requestedSize, ((int)outputBuffer->writable()) - 12);
+  *availableSize = MIN(requestedSize, outputBuffer->writable() - 12);
 
   assert(0 < *availableSize);
 
@@ -429,9 +429,9 @@ ESB::Error HttpMessageFormatter::endChunk(ESB::Buffer *outputBuffer) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer,
-                                                     int requestedSize,
-                                                     int *availableSize) {
+ESB::Error HttpMessageFormatter::beginUnencodedBlock(
+    ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
+    ESB::UInt32 *availableSize) {
   assert(ES_FORMATTING_UNENCODED_BODY & _state);
   assert(0 < requestedSize);
   assert(availableSize);
@@ -440,7 +440,7 @@ ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer,
     return ESB_AGAIN;
   }
 
-  *availableSize = MIN((unsigned int)requestedSize, outputBuffer->writable());
+  *availableSize = MIN(requestedSize, outputBuffer->writable());
 
   return ESB_SUCCESS;
 }

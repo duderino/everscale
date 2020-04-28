@@ -47,8 +47,7 @@ bool HttpListeningSocket::wantWrite() { return false; }
 
 bool HttpListeningSocket::isIdle() { return false; }
 
-ESB::Error HttpListeningSocket::handleAccept(
-    ESB::SocketMultiplexer &multiplexer) {
+ESB::Error HttpListeningSocket::handleAccept() {
   assert(!_socket.isBlocking());
 
   ESB::TCPSocket::State state;
@@ -97,40 +96,44 @@ ESB::Error HttpListeningSocket::handleAccept(
   return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
 }
 
-bool HttpListeningSocket::handleConnect(ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleConnect() {
   ESB_LOG_ERROR("[%s] Cannot handle connect events", _socket.logAddress());
   return true;
 }
 
-bool HttpListeningSocket::handleReadable(ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleReadable() {
   ESB_LOG_ERROR("[%s] Cannot handle readable events", _socket.logAddress());
   return true;
 }
 
-bool HttpListeningSocket::handleWritable(ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleWritable() {
   ESB_LOG_ERROR("[%s] Cannot handle writable events", _socket.logAddress());
   return true;
 }
 
-bool HttpListeningSocket::handleError(ESB::Error error,
-                                      ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleError(ESB::Error error) {
   ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket error",
                       _socket.logAddress());
   return true;
 }
 
-bool HttpListeningSocket::handleRemoteClose(
-    ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleRemoteClose() {
   ESB_LOG_ERROR("[%s] Cannot handle eof events", _socket.logAddress());
   return true;
 }
 
-bool HttpListeningSocket::handleIdle(ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleLocalClose() {
+  ESB_LOG_ERROR("[%s] This process closed listening socket",
+                _socket.logAddress());
+  return false;  // remove from multiplexer
+}
+
+bool HttpListeningSocket::handleIdle() {
   ESB_LOG_ERROR("[%s] Cannot handle idle events", _socket.logAddress());
   return true;
 }
 
-bool HttpListeningSocket::handleRemove(ESB::SocketMultiplexer &multiplexer) {
+bool HttpListeningSocket::handleRemove() {
   ESB_LOG_INFO("[%s] Removed from multiplexer", _socket.logAddress());
   return true;  // call cleanup handler on us after this returns
 }

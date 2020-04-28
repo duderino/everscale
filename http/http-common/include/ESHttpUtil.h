@@ -50,7 +50,7 @@ class HttpUtil {
    * @return ESB_AGAIN if a CRLF wasn't found in the buffer, ESB_SUCCESS
    * otherwise
    */
-  static ESB::Error SkipLine(ESB::Buffer *buffer, int *bytesSkipped);
+  static ESB::Error SkipLine(ESB::Buffer *buffer, ESB::UInt32 *bytesSkipped);
 
   /**
    * Skips ' ', '\t', and line continuations ([CRLF] 1*( SP | HT ))

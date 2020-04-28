@@ -202,6 +202,13 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_CLEANUP (-25)
 
+/**
+ * Operation has been paused
+ *
+ * @ingroup error
+ */
+#define ESB_PAUSE (-26)
+
 }  // namespace ESB
 
 #endif

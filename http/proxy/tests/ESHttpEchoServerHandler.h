@@ -13,99 +13,26 @@ class HttpEchoServerHandler : public HttpServerHandler {
 
   virtual ~HttpEchoServerHandler();
 
-  /**
-   * Accept a new connection.
-   *
-   * @param address The IP address and port of the client.
-   * @return a result code
-   */
+  //
+  // ES::HttpServerHandler
+  //
+
   virtual Result acceptConnection(HttpServerStack &stack,
                                   ESB::SocketAddress *address);
-
-  /**
-   * Handle the beginning of a transaction.  This will be called 1+ times after
-   * a connection has been accepted (>1 when connections are reused).  Put your
-   * initialization code here.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc
-   * @return a result code
-   */
   virtual Result beginServerTransaction(HttpServerStack &stack,
-                                        HttpServerTransaction *transaction);
-
-  /**
-   * Process a request's HTTP headers.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @return a result code
-   */
+                                        HttpStream &stream);
   virtual Result receiveRequestHeaders(HttpServerStack &stack,
-                                       HttpServerTransaction *transaction);
-
-  /**
-   * Incrementally process a request's body.  This will be called 1+ times as
-   * the request's HTTP body is received.  The body is finished when a
-   * chunk_size of 0 is passed to the callback.  If there is no body, this
-   * callback will still be called once with a chunk_size of 0.  The HTTP
-   * response object must be populated before the chunk_size 0 call returns.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @param chunk A buffer to drain
-   * @param chunkSize The size of the buffer to drain, or 0 if the body is
-   * finished.
-   * @return a result code
-   */
-  virtual Result receiveRequestBody(HttpServerStack &stack,
-                                    HttpServerTransaction *transaction,
-                                    unsigned const char *chunk,
-                                    unsigned int chunkSize);
-
-  /**
-   * Request a buffer of up to n bytes to fill with response body data.  The
-   * stack will subsequently call fillResponseChunk with the actual size of the
-   * buffer available.  The actual size of the buffer may be less than the
-   * requested size.
-   *
-   * A good implementation will always return the known size of remaining body
-   * data.  This function may be called multiple times before fillResponseChunk
-   * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't deduct the amount requested from the
-   * remaining amount until fillResponseChunk is called.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @return The buffer size requested.  Returning 0 ends the body.  Returning
-   * -1 or less immediately closes the connection
-   */
-  virtual int reserveResponseChunk(HttpServerStack &stack,
-                                   HttpServerTransaction *transaction);
-
-  /**
-   * Fill a response body chunk with data.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc.
-   * @param chunk A buffer to fill
-   * @param chunkSize The size of the buffer to fill.  This may be less than the
-   * size requested by the requestResponseChunk method.
-   */
-  virtual void fillResponseChunk(HttpServerStack &stack,
-                                 HttpServerTransaction *transaction,
-                                 unsigned char *chunk, unsigned int chunkSize);
-
-  /**
-   * Handle the end of a transaction.  This is called regardless of the
-   * transaction's success or failure.  Put your cleanup code here.
-   *
-   * @param transaction The http transaction - contains request and response
-   * objects, etc
-   * @param state The state at which the transaction ended
-   */
-  virtual void endServerTransaction(HttpServerStack &stack,
-                                    HttpServerTransaction *transaction,
+                                       HttpStream &stream);
+  virtual ESB::UInt32 reserveRequestChunk(HttpServerStack &stack,
+                                          HttpStream &stream);
+  virtual Result receiveRequestChunk(HttpServerStack &stack, HttpStream &stream,
+                                     unsigned const char *chunk,
+                                     ESB::UInt32 chunkSize);
+  virtual void receivePaused(HttpServerStack &stack, HttpStream &stream);
+  virtual int reserveResponseChunk(HttpServerStack &stack, HttpStream &stream);
+  virtual void fillResponseChunk(HttpServerStack &stack, HttpStream &stream,
+                                 unsigned char *chunk, ESB::UInt32 chunkSize);
+  virtual void endServerTransaction(HttpServerStack &stack, HttpStream &stream,
                                     State state);
 
  private:

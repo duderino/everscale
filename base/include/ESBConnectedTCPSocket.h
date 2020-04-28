@@ -72,7 +72,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *
    * @return The peer's presentation address.
    */
-  virtual const char *logAddress();
+  virtual const char *logAddress() const;
 
   /** Reset a tcp socket.  If the socket is currently open, this will close
    *  it as a side-effect.
@@ -222,7 +222,7 @@ class ConnectedTCPSocket : public TCPSocket {
   bool _isConnected;
   SocketAddress _listenerAddress;
   SocketAddress _peerAddress;
-  char _logAddress[ESB_LOG_ADDRESS_SIZE];
+  mutable char _logAddress[ESB_LOG_ADDRESS_SIZE];
 };
 
 }  // namespace ESB

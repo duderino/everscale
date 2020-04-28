@@ -89,7 +89,7 @@ bool ParseRequest(const char *inputFileName) {
   }
 
   ssize_t result;
-  int bytesToRead;
+  ESB::UInt32 bytesToRead;
   ESB::Error error;
   HttpRequest request;
   HttpHeader *header = 0;
@@ -267,14 +267,14 @@ bool ParseRequest(const char *inputFileName) {
   // Simultaneously parse & format request body - each flush becomes a chunk
   //
 
-  int startingPosition = 0;
-  int chunkSize = 0;
-  int availableSize = 0;
-  int bytesWritten = 0;
+  ESB::UInt32 startingPosition = 0;
+  ESB::UInt32 chunkSize = 0;
+  ESB::UInt32 availableSize = 0;
+  ESB::UInt32 bytesWritten = 0;
 
   while (true) {
-    error =
-        RequestParser.parseBody(&InputBuffer, &startingPosition, &chunkSize);
+    error = RequestParser.parseBody(&InputBuffer, &startingPosition, &chunkSize,
+                                    ESB_UINT32_MAX);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)
@@ -583,7 +583,7 @@ bool ParseResponse(const char *inputFileName) {
   }
 
   ssize_t result;
-  int bytesToRead;
+  ESB::UInt32 bytesToRead;
   ESB::Error error;
   HttpResponse response;
   HttpHeader *header = 0;
@@ -723,14 +723,14 @@ bool ParseResponse(const char *inputFileName) {
   // Simultaneously parse & format response body - each flush becomes a chunk
   //
 
-  int startingPosition = 0;
-  int chunkSize = 0;
-  int availableSize = 0;
-  int bytesWritten = 0;
+  ESB::UInt32 startingPosition = 0;
+  ESB::UInt32 chunkSize = 0;
+  ESB::UInt32 availableSize = 0;
+  ESB::UInt32 bytesWritten = 0;
 
   while (true) {
-    error =
-        ResponseParser.parseBody(&InputBuffer, &startingPosition, &chunkSize);
+    error = ResponseParser.parseBody(&InputBuffer, &startingPosition,
+                                     &chunkSize, ESB_UINT32_MAX);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)

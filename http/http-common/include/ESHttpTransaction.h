@@ -9,10 +9,6 @@
 #include <ESBDiscardAllocator.h>
 #endif
 
-#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
-#include <ESBEmbeddedListElement.h>
-#endif
-
 #ifndef ESB_BUFFER_H
 #include <ESBBuffer.h>
 #endif
@@ -39,12 +35,10 @@
 
 namespace ES {
 
-#ifndef ES_HTTP_WORKING_BUFFER_SIZE
-#define ES_HTTP_WORKING_BUFFER_SIZE 2048
+#ifndef ES_HTTP_PARSE_BUFFER_SIZE
+#define ES_HTTP_PARSE_BUFFER_SIZE 2048
 #endif
 
-// TODO buffers should not be exposed here.  Move to a subclass that is not
-// visible to the client and server handlers.
 class HttpTransaction : public ESB::EmbeddedListElement {
  public:
   HttpTransaction(ESB::CleanupHandler &cleanupHandler);
@@ -64,10 +58,6 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   virtual void reset();
 
-  inline unsigned char *duplicate(unsigned char *value) {
-    return HttpUtil::Duplicate(&_allocator, value);
-  }
-
   inline ESB::Allocator &allocator() { return _allocator; }
 
   inline const HttpRequest &request() const { return _request; }
@@ -78,15 +68,13 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   inline HttpResponse &response() { return _response; }
 
-  inline void setContext(void *appContext) { _appContext = appContext; }
+  inline void setContext(void *context) { _context = context; }
 
-  inline void *context() { return _appContext; }
+  inline void *context() { return _context; }
 
-  inline const void *context() const { return _appContext; }
+  inline const void *context() const { return _context; }
 
-  inline ESB::Buffer *getWorkingBuffer() { return &_workingBuffer; }
-
-  inline const ESB::Buffer *getWorkingBuffer() const { return &_workingBuffer; }
+  inline ESB::Buffer *parseBuffer() { return &_parseBuffer; };
 
   /** Return an optional handler that can destroy the element.
    *
@@ -94,6 +82,10 @@ class HttpTransaction : public ESB::EmbeddedListElement {
    * be destroyed.
    */
   virtual ESB::CleanupHandler *cleanupHandler();
+
+  inline unsigned char *duplicate(unsigned char *value) {
+    return HttpUtil::Duplicate(&_allocator, value);
+  }
 
   inline void setStartTime() { _start = ESB::Date::Now(); }
 
@@ -107,14 +99,14 @@ class HttpTransaction : public ESB::EmbeddedListElement {
   HttpTransaction(const HttpTransaction &transaction);
   void operator=(const HttpTransaction &transaction);
 
-  void *_appContext;
+  void *_context;
   ESB::CleanupHandler &_cleanupHandler;
   ESB::Date _start;
   ESB::SocketAddress _peerAddress;
   HttpRequest _request;
   HttpResponse _response;
-  ESB::Buffer _workingBuffer;
-  unsigned char _workingBufferStorage[ES_HTTP_WORKING_BUFFER_SIZE];
+  ESB::Buffer _parseBuffer;
+  unsigned char _parseBufferStorage[ES_HTTP_PARSE_BUFFER_SIZE];
 };
 
 }  // namespace ES

@@ -7,7 +7,7 @@ namespace ES {
 HttpServerTransaction::HttpServerTransaction(
     ESB::CleanupHandler &cleanupHandler)
     : HttpTransaction(cleanupHandler),
-      _parser(getWorkingBuffer(), _allocator),
+      _parser(parseBuffer(), _allocator),
       _formatter() {}
 
 HttpServerTransaction::~HttpServerTransaction() {}

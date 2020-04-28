@@ -124,7 +124,7 @@ class TCPSocket {
    *
    * @return The presentation address.
    */
-  virtual const char *logAddress() = 0;
+  virtual const char *logAddress() const = 0;
 
   /** Close a socket descriptor
    *

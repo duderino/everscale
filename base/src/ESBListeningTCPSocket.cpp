@@ -266,7 +266,7 @@ const SocketAddress &ListeningTCPSocket::listeningAddress() const {
   return _listeningAddress;
 }
 
-const char *ListeningTCPSocket::logAddress() {
+const char *ListeningTCPSocket::logAddress() const {
   if (!_logAddress[0]) {
     _listeningAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
   }

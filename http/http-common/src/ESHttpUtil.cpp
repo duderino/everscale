@@ -224,19 +224,19 @@ void HttpUtil::SkipWhitespace(ESB::Buffer *buffer) {
   }
 }
 
-ESB::Error HttpUtil::SkipLine(ESB::Buffer *buffer, int *bytesSkipped) {
+ESB::Error HttpUtil::SkipLine(ESB::Buffer *buffer, ESB::UInt32 *bytesSkipped) {
   // The line terminator for message-header fields is the sequence CRLF.
   // However, we recommend that applications, when parsing such headers,
   // recognize a single LF as a line terminator and ignore the leading CR.
 
-  int position = buffer->readPosition();
+  ESB::UInt32 position = buffer->readPosition();
   bool foundCarriageReturn = false;
   unsigned char octet;
 
   *bytesSkipped = 0;
 
   while (true) {
-    if (false == buffer->isReadable()) {
+    if (!buffer->isReadable()) {
       buffer->setReadPosition(position);
       return ESB_AGAIN;
     }
@@ -284,7 +284,7 @@ ESB::Error HttpUtil::SkipLWS(ESB::Buffer *buffer, int depth) {
   bool foundCRLF = false;
 
   while (true) {
-    if (false == buffer->isReadable()) {
+    if (!buffer->isReadable()) {
       buffer->setReadPosition(mark);
       return ESB_AGAIN;
     }
@@ -422,7 +422,7 @@ ESB::Error HttpUtil::ParseInteger(unsigned const char *str,
   *integer = 0;
 
   for (unsigned const char *p = str; *p; ++p) {
-    if (false == IsDigit(*p)) {
+    if (!IsDigit(*p)) {
       return ES_HTTP_BAD_INTEGER;
     }
 
@@ -443,7 +443,7 @@ ESB::Error HttpUtil::FormatInteger(ESB::Buffer *buffer, ESB::UInt64 integer,
   }
 
   if (0 == integer) {
-    if (false == buffer->isWritable()) {
+    if (!buffer->isWritable()) {
       return ESB_AGAIN;
     }
 

@@ -1,7 +1,33 @@
+http:
+ - implement resume and cancel for server and client sockets
+ - add test and support for http pipelining.
+ - fix regression caused by switch from rb tree to hash table for connection pool.  https://docs.google.com/spreadsheets/d/1UOR-96YUOYD5poKrTPQv_GthBPWZb_fJzd6D4k0aNIk/edit#gid=2084099544
+ - implement idle check - and make it work with paused sockets
+ - move HttpServerHandler, HttpClientHandler, and their deps into http-common.
+ - do not wait to receive entire request body before sending response body.  Instead stream them concurrently
+ - add stress tests:
+   - proxy: backpressure works for clients that read response body slowly
+   - proxy: backpressure works for servers that read request body slowly
+   - server: idle timeout for slow loris clients
+   - client: idle timeout for slow loris servers
+   - server: mangled http client
+   - client: mangled http server
+   - proxy/client: servers that listen but never accept connections
+
 proxy:
+ - add reserveRequestBody to server handler and reserveResponseBody to client handler.  
+ - modify HttpMessageParser::parseChunkData to take an extra argument - max bytes to read.  Pass in result of reserveRequestBody and reserveResponse body to that
+ - server socket call reserveRequestBody.  client socket call reserveResponseBody.  Pass to parse chunk data to constrain bytes read
+ - decide when to pause connection... when reserve bytes returns 0?
+ - server and client socket support local close.  this should remove from multiplexer, call handleLocalClose, but not close socket - handleRemove should do taht
+ - http stream interface with pause, resume, and close.  implement with client and server sockets.  pass to handlers
+ - http transaction, not http server or http client transaction down to handler
  - Ensure HttpClientSocket and HttpServerSocket can simultaneously stream request and response bodies - and test with existing client and server test case
- - Add backpressure / ability to pause receipt of request/response bodies
  - Implement proxy handler and proxy context.  Pass in ephemeral destination port.  Copy from inbound to outbound and vice versa.
+ - proxy handler should remember inbound and outbound streams...  and pause and resume and close them appropriately.  
+ - close would be called when relaying a remote close from the other stream.  must take care to ensure subsequent events from the same event loop are discarded...  can we set _events[i].data.ptr; to NULL and then skip in the event loop?
+  - handleRead and handleWrite should be prepared to be called when closed (local or remote) but not removed
+  - sockets to be removed should be added to a epoll to be removed list.  removals should be called at the end of the event loop before calling epoll_wait again.
  - Route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
  - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
 
@@ -15,6 +41,7 @@ connection pool rework:
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 
 code health:
+ - rename src dirs to source
  - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
  - add noexcept and allocator references to all uses of placement new

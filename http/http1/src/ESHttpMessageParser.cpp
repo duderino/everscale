@@ -341,7 +341,9 @@ ESB::Error HttpMessageParser::parseFieldValue(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpMessageParser::parseBody(ESB::Buffer *inputBuffer,
-                                        int *startingPosition, int *chunkSize) {
+                                        ESB::UInt32 *startingPosition,
+                                        ESB::UInt32 *chunkSize,
+                                        ESB::UInt32 maxChunkSize) {
   if (!inputBuffer || !startingPosition || !chunkSize) {
     return ESB_NULL_POINTER;
   }
@@ -353,7 +355,8 @@ ESB::Error HttpMessageParser::parseBody(ESB::Buffer *inputBuffer,
   }
 
   if (ES_PARSING_CHUNKED_BODY & _state) {
-    return parseChunkedBody(inputBuffer, startingPosition, chunkSize);
+    return parseChunkedBody(inputBuffer, startingPosition, chunkSize,
+                            maxChunkSize);
   }
 
   if (ES_PARSING_MULTIPART_BODY & _state) {
@@ -364,8 +367,8 @@ ESB::Error HttpMessageParser::parseBody(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpMessageParser::parseUnencodedBody(ESB::Buffer *inputBuffer,
-                                                 int *startingPosition,
-                                                 int *chunkSize) {
+                                                 ESB::UInt32 *startingPosition,
+                                                 ESB::UInt32 *chunkSize) {
   // chunk-data     = chunk-size(OCTET)
 
   if (ES_BODY_PARSE_COMPLETE & _state) {
@@ -382,7 +385,8 @@ ESB::Error HttpMessageParser::parseUnencodedBody(ESB::Buffer *inputBuffer,
     return ESB_AGAIN;
   }
 
-  int bytesRemaining = MIN(_bodyBytesRemaining, inputBuffer->readable());
+  ESB::UInt32 bytesRemaining =
+      MIN(_bodyBytesRemaining, inputBuffer->readable());
 
   *startingPosition = inputBuffer->readPosition();
   *chunkSize = bytesRemaining;
@@ -400,8 +404,9 @@ ESB::Error HttpMessageParser::parseUnencodedBody(ESB::Buffer *inputBuffer,
 }
 
 ESB::Error HttpMessageParser::parseChunkedBody(ESB::Buffer *inputBuffer,
-                                               int *startingPosition,
-                                               int *chunkSize) {
+                                               ESB::UInt32 *startingPosition,
+                                               ESB::UInt32 *chunkSize,
+                                               ESB::UInt32 maxChunkSize) {
   // Chunked-Body   = *chunk
   //                  last-chunk
   //                  trailer
@@ -464,7 +469,8 @@ ESB::Error HttpMessageParser::parseChunkedBody(ESB::Buffer *inputBuffer,
   }
 
   if (ES_PARSING_CHUNK_DATA & _state) {
-    error = parseChunkData(inputBuffer, startingPosition, chunkSize);
+    error =
+        parseChunkData(inputBuffer, startingPosition, chunkSize, maxChunkSize);
 
     if (ESB_SUCCESS != error) {
       return error;
@@ -498,7 +504,7 @@ ESB::Error HttpMessageParser::skipTrailer(ESB::Buffer *inputBuffer) {
     return ESB_NULL_POINTER;
   }
 
-  int bytesSkipped = 0;
+  ESB::UInt32 bytesSkipped = 0;
   ESB::Error error;
 
   while (true) {
@@ -559,15 +565,14 @@ ESB::Error HttpMessageParser::parseChunkExtension(ESB::Buffer *inputBuffer) {
   // chunk-ext-val  = token | quoted-string
 
   assert(ES_PARSING_CHUNK_EXTENSION & _state);
-
-  int bytesSkipped = 0;
-
+  ESB::UInt32 bytesSkipped = 0;
   return HttpUtil::SkipLine(inputBuffer, &bytesSkipped);
 }
 
 ESB::Error HttpMessageParser::parseChunkData(ESB::Buffer *inputBuffer,
-                                             int *startingPosition,
-                                             int *chunkSize) {
+                                             ESB::UInt32 *startingPosition,
+                                             ESB::UInt32 *chunkSize,
+                                             ESB::UInt32 maxChunkSize) {
   // chunk-data     = chunk-size(OCTET)
 
   assert(ES_PARSING_CHUNK_DATA & _state);
@@ -577,7 +582,9 @@ ESB::Error HttpMessageParser::parseChunkData(ESB::Buffer *inputBuffer,
     return ESB_AGAIN;
   }
 
-  int bytesRemaining = MIN(_bodyBytesRemaining, inputBuffer->readable());
+  ESB::UInt32 bytesRemaining =
+      MIN(_bodyBytesRemaining, inputBuffer->readable());
+  bytesRemaining = MIN(bytesRemaining, maxChunkSize);
 
   *startingPosition = inputBuffer->readPosition();
   *chunkSize = bytesRemaining;
@@ -592,15 +599,13 @@ ESB::Error HttpMessageParser::parseEndChunk(ESB::Buffer *inputBuffer) {
   // chunk          = ... CRLF
 
   assert(ES_PARSING_END_CHUNK & _state);
-
-  int bytesSkipped = 0;
-
+  ESB::UInt32 bytesSkipped = 0;
   return HttpUtil::SkipLine(inputBuffer, &bytesSkipped);
 }
 
 ESB::Error HttpMessageParser::parseMultipartBody(ESB::Buffer *inputBuffer,
-                                                 int *startingPosition,
-                                                 int *chunkSize) {
+                                                 ESB::UInt32 *startingPosition,
+                                                 ESB::UInt32 *chunkSize) {
   //
   // The multipart/byteranges media type includes two or more parts, each
   // with its own Content-Type and Content-Range fields. The required

@@ -73,67 +73,70 @@ class MultiplexedSocket : public EmbeddedMapElement {
    * threads may not actually be able to accept a new connection when this is
    * called.  This is not an error condition.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return ESB_SUCCESS will keep in multiplexer, ESB_AGAIN will call again,
    * and any other error code will remove socket from multiplexer.
    * Implementations should not close the socket descriptor until handleRemove
    * is called.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual Error handleAccept(SocketMultiplexer &multiplexer) = 0;
+  virtual Error handleAccept() = 0;
 
   /** Client connected socket has connected to the peer endpoint.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleConnect(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleConnect() = 0;
 
   /** Data is ready to be read.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleReadable(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleReadable() = 0;
 
   /** There is free space in the outgoing socket buffer.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleWritable(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleWritable() = 0;
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
    *
    * @param errorCode The error code.
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleError(Error errorCode, SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleError(Error errorCode) = 0;
 
-  /** The socket's connection was closed.
+  /** The socket's connection was closed by the remote peer.
    *
-   * @param multiplexer The multiplexer managing this socket.
    * @return If true keep in the multiplexer, if false remove from the
    * multiplexer. Do not close the socket descriptor until after the socket has
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleRemoteClose(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleRemoteClose() = 0;
+
+  /** The socket's connection was closed by this process.
+   *
+   * @return If true keep in the multiplexer, if false remove from the
+   * multiplexer. Do not close the socket descriptor until after the socket has
+   * been removed.
+   * @see handleRemoveEvent to close the socket descriptor
+   */
+  virtual bool handleLocalClose() = 0;
 
   /** The socket's connection has been idle for too long
    *
@@ -143,14 +146,28 @@ class MultiplexedSocket : public EmbeddedMapElement {
    * been removed.
    * @see handleRemoveEvent to close the socket descriptor
    */
-  virtual bool handleIdle(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleIdle() = 0;
 
   /** The socket has been removed from the multiplexer
    *
    * @param multiplexer The multiplexer managing this socket.
    * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemove(SocketMultiplexer &multiplexer) = 0;
+  virtual bool handleRemove() = 0;
+
+  /**
+   * The socket has been added to a multiplexer
+   *
+   * @param multiplexer The multiplexer the socket has been added to.
+   */
+  inline void attachMultiplexer(SocketMultiplexer *multiplexer) {
+    _multiplexer = multiplexer;
+  }
+
+  /**
+   * The socket has been removed from a multiplexer
+   */
+  inline void detachMultiplexer() { _multiplexer = NULL; }
 
   /** Get the socket's socket descriptor.
    *
@@ -167,6 +184,9 @@ class MultiplexedSocket : public EmbeddedMapElement {
   inline void *operator new(size_t size, Allocator &allocator) noexcept {
     return allocator.allocate(size);
   }
+
+ protected:
+  SocketMultiplexer *_multiplexer;
 
  private:
   // Disabled
