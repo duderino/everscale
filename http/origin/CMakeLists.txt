@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.5)
+project(origin VERSION ${VERSION} LANGUAGES CXX)
+
+set(SOURCE_FILES
+source/ESHttpEchoServerContext.cpp
+source/ESHttpEchoServerHandler.cpp
+        )
+
+add_library(origin STATIC ${SOURCE_FILES})
+
+target_include_directories(origin PRIVATE
+        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http1/include"
+        "${PROJECT_SOURCE_DIR}/../multiplexers/include"
+        )
+
+target_include_directories(origin PUBLIC
+        "${PROJECT_SOURCE_DIR}/include"
+        )
+
+target_compile_options(origin PUBLIC ${CPP_FLAGS})
+
+add_executable(http-origin source/ESHttpEchoServerMain.cpp)
+target_compile_options(http-origin PUBLIC ${CPP_FLAGS})
+target_link_libraries(http-origin -pthread unit-tf origin multiplexers http1 http-common base)
+target_include_directories(http-origin PRIVATE
+        "${PROJECT_SOURCE_DIR}/tests"
+        "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http1/include"
+        "${PROJECT_SOURCE_DIR}/../multiplexers/include"
+        "${PROJECT_SOURCE_DIR}/include"
+        )

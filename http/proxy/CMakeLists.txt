@@ -1,63 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(http_stack VERSION ${VERSION} LANGUAGES CXX)
-
-set(SOURCE_FILES
-src/ESHttpClient.cpp
-src/ESHttpClientMultiplexer.cpp
-src/ESHttpMultiplexer.cpp
-src/ESHttpProxy.cpp
-src/ESHttpProxyMultiplexer.cpp
-src/ESHttpServer.cpp
-src/ESHttpServerMultiplexer.cpp
-        )
-
-add_library(http_stack STATIC ${SOURCE_FILES})
-
-target_include_directories(http_stack PRIVATE
-        "${PROJECT_SOURCE_DIR}/src"
-        "${PROJECT_SOURCE_DIR}/../../base/include"
-        "${PROJECT_SOURCE_DIR}/../http-common/include"
-        "${PROJECT_SOURCE_DIR}/../http1/include"
-        )
-
-target_include_directories(http_stack PUBLIC
-        "${PROJECT_SOURCE_DIR}/include"
-        )
-
-target_compile_options(http_stack PUBLIC ${CPP_FLAGS})
-
-set(CLIENT_FILES
-        tests/ESHttpEchoClientContext.cpp
-        tests/ESHttpEchoClientHandler.cpp
-        tests/ESHttpEchoClientRequestBuilder.cpp
-        )
-
-add_executable(http_client.exe ${CLIENT_FILES} tests/ESHttpEchoClientMain.cpp)
-target_compile_options(http_client.exe PUBLIC ${CPP_FLAGS})
-target_link_libraries(http_client.exe -pthread unit-tf http_stack http1 http-common base)
-target_include_directories(http_client.exe PRIVATE
-        "${PROJECT_SOURCE_DIR}/tests"
-        "${PROJECT_SOURCE_DIR}/../../base/include"
-        "${PROJECT_SOURCE_DIR}/../http-common/include"
-        "${PROJECT_SOURCE_DIR}/../http1/include"
-        "${PROJECT_SOURCE_DIR}/../stack/include"
-        )
-
-set(SERVER_FILES
-        tests/ESHttpEchoServerContext.cpp
-        tests/ESHttpEchoServerHandler.cpp
-        )
-
-add_executable(http_server.exe ${SERVER_FILES} tests/ESHttpEchoServerMain.cpp)
-target_compile_options(http_server.exe PUBLIC ${CPP_FLAGS})
-target_link_libraries(http_server.exe -pthread unit-tf http_stack http1 http-common base)
-target_include_directories(http_server.exe PRIVATE
-        "${PROJECT_SOURCE_DIR}/tests"
-        "${PROJECT_SOURCE_DIR}/../../base/include"
-        "${PROJECT_SOURCE_DIR}/../http-common/include"
-        "${PROJECT_SOURCE_DIR}/../http1/include"
-        "${PROJECT_SOURCE_DIR}/../stack/include"
-        )
+project(proxy VERSION ${VERSION} LANGUAGES CXX)
 
 # Unit tests
 
@@ -66,14 +8,19 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../http-common/include"
         "${PROJECT_SOURCE_DIR}/../http1/include"
-        "${PROJECT_SOURCE_DIR}/../stack/include"
+        "${PROJECT_SOURCE_DIR}/../multiplexers/include"
+        "${PROJECT_SOURCE_DIR}/../loadgen/include"
+        "${PROJECT_SOURCE_DIR}/../origin/include"
+        "${PROJECT_SOURCE_DIR}/include"
         )
 
 #        -ltcmalloc
 set(TEST_LIBS
         -pthread
         unit-tf
-        http_stack
+        loadgen
+        origin
+        multiplexers
         http1
         http-common
         base
