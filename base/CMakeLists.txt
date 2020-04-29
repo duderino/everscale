@@ -2,66 +2,66 @@ cmake_minimum_required(VERSION 3.5)
 project(base VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-        src/ESBAllocator.cpp
-        src/ESBBuddyAllocator.cpp
-        src/ESBBuffer.cpp
-        src/ESBBufferPool.cpp
-        src/ESBCommand.cpp
-        src/ESBCommandThread.cpp
-        src/ESBComparator.cpp
-        src/ESBSimpleFileLogger.cpp
-        src/ESBConnectedTCPSocket.cpp
-        src/ESBCountingSemaphore.cpp
-        src/ESBDate.cpp
-        src/ESBEmbeddedListElement.cpp
-        src/ESBEmbeddedList.cpp
-        src/ESBError.cpp
-        src/ESBFixedAllocator.cpp
-        src/ESBList.cpp
-        src/ESBListeningTCPSocket.cpp
-        src/ESBLockable.cpp
-        src/ESBLogger.cpp
-        src/ESBMap.cpp
-        src/ESBMutex.cpp
-        src/ESBMultiplexedSocket.cpp
-        src/ESBNullLock.cpp
-        src/ESBNullLogger.cpp
-        src/ESBRand.cpp
-        src/ESBReadWriteLock.cpp
-        src/ESBReferenceCount.cpp
-        src/ESBSharedAllocator.cpp
-        src/ESBSharedInt.cpp
-        src/ESBSharedEmbeddedQueue.cpp
-        src/ESBSharedQueue.cpp
-        src/ESBSmartPointer.cpp
-        src/ESBSmartPointerDebugger.cpp
-        src/ESBSocketMultiplexer.cpp
-        src/ESBSocketMultiplexerFactory.cpp
-        src/ESBSystemAllocator.cpp
-        src/ESBThread.cpp
-        src/ESBThreadPool.cpp
-        src/ESBSocketAddress.cpp
-        src/ESBTCPSocket.cpp
-        src/ESBDiscardAllocator.cpp
-        src/ESBEpollMultiplexer.cpp
-        src/ESBEpollMultiplexerFactory.cpp
-        src/ESBDnsClient.cpp
-        src/ESBSystemDnsClient.cpp
-        src/ESBAveragingCounter.cpp
-        src/ESBPerformanceCounter.cpp
-        src/ESBTimeSeries.cpp
-        src/ESBSimplePerformanceCounter.cpp
-        src/ESBTime.cpp
-        src/ESBSharedAveragingCounter.cpp
-        src/ESBSystemConfig.cpp
-        src/ESBEmbeddedMapElement.cpp
-        src/ESBSharedEmbeddedMap.cpp
-        src/ESBEventSocket.cpp
+        source/ESBAllocator.cpp
+        source/ESBBuddyAllocator.cpp
+        source/ESBBuffer.cpp
+        source/ESBBufferPool.cpp
+        source/ESBCommand.cpp
+        source/ESBCommandThread.cpp
+        source/ESBComparator.cpp
+        source/ESBSimpleFileLogger.cpp
+        source/ESBConnectedTCPSocket.cpp
+        source/ESBCountingSemaphore.cpp
+        source/ESBDate.cpp
+        source/ESBEmbeddedListElement.cpp
+        source/ESBEmbeddedList.cpp
+        source/ESBError.cpp
+        source/ESBFixedAllocator.cpp
+        source/ESBList.cpp
+        source/ESBListeningTCPSocket.cpp
+        source/ESBLockable.cpp
+        source/ESBLogger.cpp
+        source/ESBMap.cpp
+        source/ESBMutex.cpp
+        source/ESBMultiplexedSocket.cpp
+        source/ESBNullLock.cpp
+        source/ESBNullLogger.cpp
+        source/ESBRand.cpp
+        source/ESBReadWriteLock.cpp
+        source/ESBReferenceCount.cpp
+        source/ESBSharedAllocator.cpp
+        source/ESBSharedInt.cpp
+        source/ESBSharedEmbeddedQueue.cpp
+        source/ESBSharedQueue.cpp
+        source/ESBSmartPointer.cpp
+        source/ESBSmartPointerDebugger.cpp
+        source/ESBSocketMultiplexer.cpp
+        source/ESBSocketMultiplexerFactory.cpp
+        source/ESBSystemAllocator.cpp
+        source/ESBThread.cpp
+        source/ESBThreadPool.cpp
+        source/ESBSocketAddress.cpp
+        source/ESBTCPSocket.cpp
+        source/ESBDiscardAllocator.cpp
+        source/ESBEpollMultiplexer.cpp
+        source/ESBEpollMultiplexerFactory.cpp
+        source/ESBDnsClient.cpp
+        source/ESBSystemDnsClient.cpp
+        source/ESBAveragingCounter.cpp
+        source/ESBPerformanceCounter.cpp
+        source/ESBTimeSeries.cpp
+        source/ESBSimplePerformanceCounter.cpp
+        source/ESBTime.cpp
+        source/ESBSharedAveragingCounter.cpp
+        source/ESBSystemConfig.cpp
+        source/ESBEmbeddedMapElement.cpp
+        source/ESBSharedEmbeddedMap.cpp
+        source/ESBEventSocket.cpp
         )
 add_library(base STATIC ${SOURCE_FILES})
 
 target_include_directories(base PRIVATE
-        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/source"
         )
 
 target_include_directories(base PUBLIC
@@ -74,7 +74,7 @@ target_include_directories(base PUBLIC
 
 set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/include"
-        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/source"
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../unit-tf/include"
         )

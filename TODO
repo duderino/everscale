@@ -1,7 +1,5 @@
-http:
- - implement resume and cancel for server and client sockets
+proxy:
  - add test and support for http pipelining.
- - fix regression caused by switch from rb tree to hash table for connection pool.  https://docs.google.com/spreadsheets/d/1UOR-96YUOYD5poKrTPQv_GthBPWZb_fJzd6D4k0aNIk/edit#gid=2084099544
  - implement idle check - and make it work with paused sockets
  - move HttpServerHandler, HttpClientHandler, and their deps into http-common.
  - do not wait to receive entire request body before sending response body.  Instead stream them concurrently
@@ -13,16 +11,6 @@ http:
    - server: mangled http client
    - client: mangled http server
    - proxy/client: servers that listen but never accept connections
-
-proxy:
- - add reserveRequestBody to server handler and reserveResponseBody to client handler.  
- - modify HttpMessageParser::parseChunkData to take an extra argument - max bytes to read.  Pass in result of reserveRequestBody and reserveResponse body to that
- - server socket call reserveRequestBody.  client socket call reserveResponseBody.  Pass to parse chunk data to constrain bytes read
- - decide when to pause connection... when reserve bytes returns 0?
- - server and client socket support local close.  this should remove from multiplexer, call handleLocalClose, but not close socket - handleRemove should do taht
- - http stream interface with pause, resume, and close.  implement with client and server sockets.  pass to handlers
- - http transaction, not http server or http client transaction down to handler
- - Ensure HttpClientSocket and HttpServerSocket can simultaneously stream request and response bodies - and test with existing client and server test case
  - Implement proxy handler and proxy context.  Pass in ephemeral destination port.  Copy from inbound to outbound and vice versa.
  - proxy handler should remember inbound and outbound streams...  and pause and resume and close them appropriately.  
  - close would be called when relaying a remote close from the other stream.  must take care to ensure subsequent events from the same event loop are discarded...  can we set _events[i].data.ptr; to NULL and then skip in the event loop?
@@ -30,18 +18,18 @@ proxy:
   - sockets to be removed should be added to a epoll to be removed list.  removals should be called at the end of the event loop before calling epoll_wait again.
  - Route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
  - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
+ - Http origin ctor should take the size of response to send and get rid of that xml string literal thing.
 
 performance:
  - compare performance of RELEASE vs RELEASENOPOOL vs. RELEASENOPOOL+tcmalloc on bare metal.  If allocators aren't the best option, limit their use to HttpTransaction and use standard new/delete/new[]/delete[] everywhere else.
- - redo all prior perf comparisons on bare metal
  - try https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=70da268b569d32a9fddeea85dc18043de9d89f89
 
 connection pool rework:
+ - fix regression caused by switch from rb tree to hash table for connection pool.  https://docs.google.com/spreadsheets/d/1UOR-96YUOYD5poKrTPQv_GthBPWZb_fJzd6D4k0aNIk/edit#gid=2084099544
  - create option of global or per-silo connection pool and set default to better performing option.
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 
 code health:
- - rename src dirs to source
  - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
  - add noexcept and allocator references to all uses of placement new
@@ -59,8 +47,7 @@ router:
  - create simple DNS based async router impl.  Threadpool + synchronous DNS system resolver + local TTL and LRU-based cache.
 
 load shedding:
- - pause/resome for http listening sockets (overloaded use case).  support PAUSE returns from HttpServerHandler::acceptConnection
-multiplex socket
+ - pause/resume for http listening sockets (overloaded use case).  support PAUSE returns from HttpServerHandler::acceptConnection
  - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers?  woudl ahve to ensure that no more than num max fds will be used in a multiplexer - don't accept new connections unless you have 2 fd free (1 fd for server connection, 1 fd for client connection)
 
 http stack test
@@ -134,10 +121,12 @@ bootstrap config
  - xds agent could just regenerate this, serializing updates and using atomic moves
  - could potentially break into multiple files for scalability, but then need cross-file atomic update mechanism.
  - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid filling disk
+
 xds support
  - protobuf stubs
 
 logging
  - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
+
 perf counters
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio

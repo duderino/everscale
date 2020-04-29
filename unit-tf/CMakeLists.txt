@@ -2,21 +2,21 @@ cmake_minimum_required(VERSION 3.5)
 project(unit-tf VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-        src/ESTFDate.cpp
-        src/ESTFConcurrencyDecorator.cpp
-        src/ESTFConcurrencyComposite.cpp
-        src/ESTFComponentThread.cpp
-        src/ESTFComposite.cpp
-        src/ESTFRandomizedDecorator.cpp
-        src/ESTFRepetitionDecorator.cpp
-        src/ESTFResultCollector.cpp
-        src/ESTFThread.cpp
+        source/ESTFDate.cpp
+        source/ESTFConcurrencyDecorator.cpp
+        source/ESTFConcurrencyComposite.cpp
+        source/ESTFComponentThread.cpp
+        source/ESTFComposite.cpp
+        source/ESTFRandomizedDecorator.cpp
+        source/ESTFRepetitionDecorator.cpp
+        source/ESTFResultCollector.cpp
+        source/ESTFThread.cpp
         )
 
 add_library(unit-tf STATIC ${SOURCE_FILES})
 
 target_include_directories(unit-tf PRIVATE
-        "${PROJECT_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/source"
         )
 
 target_include_directories(unit-tf PUBLIC
