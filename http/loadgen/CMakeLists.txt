@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 project(loadgen VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-source/ESHttpEchoClientContext.cpp
-source/ESHttpEchoClientHandler.cpp
-source/ESHttpEchoClientRequestBuilder.cpp
+source/ESHttpLoadgenContext.cpp
+source/ESHttpLoadgenHandler.cpp
+source/ESHttpLoadgenRequestBuilder.cpp
         )
 
 add_library(loadgen STATIC ${SOURCE_FILES})
@@ -23,7 +23,7 @@ target_include_directories(loadgen PUBLIC
 
 target_compile_options(loadgen PUBLIC ${CPP_FLAGS})
 
-add_executable(http-loadgen source/ESHttpEchoClientMain.cpp)
+add_executable(http-loadgen source/ESHttpLoadgen.cpp)
 target_compile_options(http-loadgen PUBLIC ${CPP_FLAGS})
 target_link_libraries(http-loadgen -pthread unit-tf loadgen multiplexers http1 http-common base)
 target_include_directories(http-loadgen PRIVATE

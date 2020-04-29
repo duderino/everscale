@@ -1,5 +1,5 @@
-#ifndef ES_HTTP_ECHO_CLIENT_HANDLER_H
-#define ES_HTTP_ECHO_CLIENT_HANDLER_H
+#ifndef ES_HTTP_LOADGEN_HANDLER_H
+#define ES_HTTP_LOADGEN_HANDLER_H
 
 #ifndef ESB_SHARED_INT_H
 #include <ESBSharedInt.h>
@@ -19,13 +19,13 @@
 
 namespace ES {
 
-class HttpEchoClientHandler : public HttpClientHandler {
+class HttpLoadgenHandler : public HttpClientHandler {
  public:
-  HttpEchoClientHandler(const char *absPath, const char *method,
-                        const char *contentType, const unsigned char *body,
-                        int bodySize);
+  HttpLoadgenHandler(const char *absPath, const char *method,
+                     const char *contentType, const unsigned char *body,
+                     int bodySize);
 
-  virtual ~HttpEchoClientHandler();
+  virtual ~HttpLoadgenHandler();
 
   //
   // ES::HttpClientHandler
@@ -55,8 +55,8 @@ class HttpEchoClientHandler : public HttpClientHandler {
 
  private:
   // Disabled
-  HttpEchoClientHandler(const HttpEchoClientHandler &clientHandler);
-  void operator=(const HttpEchoClientHandler &clientHandler);
+  HttpLoadgenHandler(const HttpLoadgenHandler &clientHandler);
+  void operator=(const HttpLoadgenHandler &clientHandler);
 
   const char *_absPath;
   const char *_method;

@@ -1,5 +1,5 @@
-#ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
-#define ES_HTTP_ECHO_SERVER_HANDLER_H
+#ifndef ES_HTTP_ORIGIN_HANDLER_H
+#define ES_HTTP_ORIGIN_HANDLER_H
 
 #ifndef ES_HTTP_SERVER_HANDLER_H
 #include <ESHttpServerHandler.h>
@@ -7,11 +7,11 @@
 
 namespace ES {
 
-class HttpEchoServerHandler : public HttpServerHandler {
+class HttpOriginHandler : public HttpServerHandler {
  public:
-  HttpEchoServerHandler();
+  HttpOriginHandler();
 
-  virtual ~HttpEchoServerHandler();
+  virtual ~HttpOriginHandler();
 
   //
   // ES::HttpServerHandler
@@ -37,8 +37,8 @@ class HttpEchoServerHandler : public HttpServerHandler {
 
  private:
   // Disabled
-  HttpEchoServerHandler(const HttpEchoServerHandler &serverHandler);
-  void operator=(const HttpEchoServerHandler &serverHandler);
+  HttpOriginHandler(const HttpOriginHandler &serverHandler);
+  void operator=(const HttpOriginHandler &serverHandler);
 };
 
 }  // namespace ES

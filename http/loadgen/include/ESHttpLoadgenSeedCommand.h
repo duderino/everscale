@@ -1,27 +1,26 @@
-#ifndef ES_HTTP_ECHO_CLIENT_SEED_COMMAND_H
-#define ES_HTTP_ECHO_CLIENT_SEED_COMMAND_H
+#ifndef ES_HTTP_LOADGEN_SEED_COMMAND_H
+#define ES_HTTP_LOADGEN_SEED_COMMAND_H
 
 #ifndef ES_HTTP_CLIENT_COMMAND_H
 #include <ESHttpClientCommand.h>
 #endif
 
-#ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
-#include <ESHttpEchoClientContext.h>
+#ifndef ES_HTTP_LOADGEN_CONTEXT_H
+#include <ESHttpLoadgenContext.h>
 #endif
 
-#ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
-#include <ESHttpEchoClientRequestBuilder.h>
+#ifndef ES_HTTP_LOADGEN_REQUEST_BUILDER_H
+#include <ESHttpLoadgenRequestBuilder.h>
 #endif
 
 namespace ES {
 
-class HttpEchoClientSeedCommand : public HttpClientCommand {
+class HttpLoadgenSeedCommand : public HttpClientCommand {
  public:
-  HttpEchoClientSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations,
-                            ESB::Int32 port, const char *host,
-                            const char *absPath, const char *method,
-                            const char *contentType,
-                            ESB::CleanupHandler &cleanupHandler)
+  HttpLoadgenSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations,
+                         ESB::Int32 port, const char *host, const char *absPath,
+                         const char *method, const char *contentType,
+                         ESB::CleanupHandler &cleanupHandler)
       : _connections(connections),
         _iterations(iterations),
         _port(port),
@@ -31,11 +30,11 @@ class HttpEchoClientSeedCommand : public HttpClientCommand {
         _contentType(contentType),
         _cleanupHandler(cleanupHandler) {}
 
-  virtual ~HttpEchoClientSeedCommand() {}
+  virtual ~HttpLoadgenSeedCommand() {}
 
   virtual ESB::Error run(HttpClientStack &stack) {
     for (ESB::UInt32 i = 0; i < _connections; ++i) {
-      if (0 > HttpEchoClientContext::DecRemainingIterations()) {
+      if (0 > HttpLoadgenContext::DecRemainingIterations()) {
         break;
       }
 
@@ -43,16 +42,15 @@ class HttpEchoClientSeedCommand : public HttpClientCommand {
       assert(transaction);
 
       // Create the request context
-      HttpEchoClientContext *context =
-          new (ESB::SystemAllocator::Instance()) HttpEchoClientContext(
-              ESB::SystemAllocator::Instance().cleanupHandler());
+      HttpLoadgenContext *context = new (ESB::SystemAllocator::Instance())
+          HttpLoadgenContext(ESB::SystemAllocator::Instance().cleanupHandler());
       assert(context);
 
       transaction->setContext(context);
 
       // Build the request
 
-      ESB::Error error = HttpEchoClientRequestBuilder(
+      ESB::Error error = HttpLoadgenRequestBuilder(
           _host, _port, _absPath, _method, _contentType, transaction);
       assert(ESB_SUCCESS == error);
 
@@ -69,8 +67,8 @@ class HttpEchoClientSeedCommand : public HttpClientCommand {
 
  private:
   // Disabled
-  HttpEchoClientSeedCommand(const HttpEchoClientSeedCommand &);
-  HttpEchoClientSeedCommand &operator=(const HttpEchoClientSeedCommand &);
+  HttpLoadgenSeedCommand(const HttpLoadgenSeedCommand &);
+  HttpLoadgenSeedCommand &operator=(const HttpLoadgenSeedCommand &);
 
   const ESB::UInt32 _connections;
   const ESB::UInt32 _iterations;

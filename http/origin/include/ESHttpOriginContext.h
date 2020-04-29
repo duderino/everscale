@@ -1,5 +1,5 @@
-#ifndef ES_HTTP_ECHO_SERVER_CONTEXT_H
-#define ES_HTTP_ECHO_SERVER_CONTEXT_H
+#ifndef ES_HTTP_ORIGIN_CONTEXT_H
+#define ES_HTTP_ORIGIN_CONTEXT_H
 
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
@@ -7,11 +7,11 @@
 
 namespace ES {
 
-class HttpEchoServerContext {
+class HttpOriginContext {
  public:
-  HttpEchoServerContext();
+  HttpOriginContext();
 
-  virtual ~HttpEchoServerContext();
+  virtual ~HttpOriginContext();
 
   inline unsigned int getBytesSent() { return _bytesSent; }
 
@@ -29,8 +29,8 @@ class HttpEchoServerContext {
 
  private:
   // Disabled
-  HttpEchoServerContext(const HttpEchoServerContext &state);
-  void operator=(const HttpEchoServerContext &state);
+  HttpOriginContext(const HttpOriginContext &state);
+  void operator=(const HttpOriginContext &state);
 
   unsigned int _bytesSent;
 };

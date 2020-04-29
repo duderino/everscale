@@ -1,11 +1,9 @@
-#ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
-#include <ESHttpEchoServerHandler.h>
+#ifndef ES_HTTP_ORIGIN_HANDLER_H
+#include <ESHttpOriginHandler.h>
 #endif
 
-#ifndef ES_HTTP_ECHO_SERVER_CONTEXT_H
-#include <ESHttpEchoServerContext.h>
-#include "ESHttpEchoServerHandler.h"
-
+#ifndef ES_HTTP_ORIGIN_CONTEXT_H
+#include <ESHttpOriginContext.h>
 #endif
 
 #define BODY                                                                \
@@ -27,19 +25,19 @@ namespace ES {
 
 static unsigned int BodySize = (sizeof(BODY) - 1);
 
-HttpEchoServerHandler::HttpEchoServerHandler() {}
+HttpOriginHandler::HttpOriginHandler() {}
 
-HttpEchoServerHandler::~HttpEchoServerHandler() {}
+HttpOriginHandler::~HttpOriginHandler() {}
 
-HttpServerHandler::Result HttpEchoServerHandler::acceptConnection(
+HttpServerHandler::Result HttpOriginHandler::acceptConnection(
     HttpServerStack &stack, ESB::SocketAddress *address) {
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
+HttpServerHandler::Result HttpOriginHandler::beginServerTransaction(
     HttpServerStack &stack, HttpStream &stream) {
   ESB::Allocator &allocator = stream.allocator();
-  HttpEchoServerContext *context = new (allocator) HttpEchoServerContext();
+  HttpOriginContext *context = new (allocator) HttpOriginContext();
 
   if (!context) {
     ESB_LOG_WARNING("[%s] Cannot allocate new transaction",
@@ -52,12 +50,12 @@ HttpServerHandler::Result HttpEchoServerHandler::beginServerTransaction(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-HttpServerHandler::Result HttpEchoServerHandler::receiveRequestHeaders(
+HttpServerHandler::Result HttpOriginHandler::receiveRequestHeaders(
     HttpServerStack &stack, HttpStream &stream) {
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-HttpServerHandler::Result HttpEchoServerHandler::receiveRequestChunk(
+HttpServerHandler::Result HttpOriginHandler::receiveRequestChunk(
     HttpServerStack &stack, HttpStream &stream, unsigned const char *chunk,
     ESB::UInt32 chunkSize) {
   assert(chunk);
@@ -73,20 +71,20 @@ HttpServerHandler::Result HttpEchoServerHandler::receiveRequestChunk(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-int HttpEchoServerHandler::reserveResponseChunk(HttpServerStack &stack,
-                                                HttpStream &stream) {
-  HttpEchoServerContext *context = (HttpEchoServerContext *)stream.context();
+int HttpOriginHandler::reserveResponseChunk(HttpServerStack &stack,
+                                            HttpStream &stream) {
+  HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   return BodySize - context->getBytesSent();
 }
 
-void HttpEchoServerHandler::fillResponseChunk(HttpServerStack &stack,
-                                              HttpStream &stream,
-                                              unsigned char *chunk,
-                                              ESB::UInt32 chunkSize) {
+void HttpOriginHandler::fillResponseChunk(HttpServerStack &stack,
+                                          HttpStream &stream,
+                                          unsigned char *chunk,
+                                          ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
-  HttpEchoServerContext *context = (HttpEchoServerContext *)stream.context();
+  HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
 
   unsigned int totalBytesRemaining = BodySize - context->getBytesSent();
@@ -98,14 +96,13 @@ void HttpEchoServerHandler::fillResponseChunk(HttpServerStack &stack,
   context->addBytesSent(bytesToSend);
 }
 
-void HttpEchoServerHandler::endServerTransaction(HttpServerStack &stack,
-                                                 HttpStream &stream,
-                                                 State state) {
-  HttpEchoServerContext *context = (HttpEchoServerContext *)stream.context();
+void HttpOriginHandler::endServerTransaction(HttpServerStack &stack,
+                                             HttpStream &stream, State state) {
+  HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   ESB::Allocator &allocator = stream.allocator();
 
-  context->~HttpEchoServerContext();
+  context->~HttpOriginContext();
   allocator.deallocate(context);
   stream.setContext(NULL);
 
@@ -132,14 +129,14 @@ void HttpEchoServerHandler::endServerTransaction(HttpServerStack &stack,
   }
 }
 
-ESB::UInt32 HttpEchoServerHandler::reserveRequestChunk(HttpServerStack &stack,
-                                                       HttpStream &stream) {
+ESB::UInt32 HttpOriginHandler::reserveRequestChunk(HttpServerStack &stack,
+                                                   HttpStream &stream) {
   return ESB_UINT32_MAX;
 }
 
-void HttpEchoServerHandler::receivePaused(HttpServerStack &stack,
-                                          HttpStream &stream) {
-  assert(0 == "HttpEchoServerHandler should not be paused");
+void HttpOriginHandler::receivePaused(HttpServerStack &stack,
+                                      HttpStream &stream) {
+  assert(0 == "HttpOriginHandler should not be paused");
 }
 
 }  // namespace ES

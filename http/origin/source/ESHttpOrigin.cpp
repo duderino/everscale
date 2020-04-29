@@ -6,8 +6,8 @@
 #include <ESHttpServer.h>
 #endif
 
-#ifndef ES_HTTP_ECHO_SERVER_HANDLER_H
-#include <ESHttpEchoServerHandler.h>
+#ifndef ES_HTTP_ORIGIN_HANDLER_H
+#include <ESHttpOriginHandler.h>
 #endif
 
 #ifndef ESB_SYSTEM_DNS_CLIENT_H
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
 
   // Init
 
-  HttpEchoServerHandler handler;
+  HttpOriginHandler handler;
   HttpServer server(threads, handler);
 
   error = server.initialize();
@@ -197,4 +197,4 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void HttpEchoServerSignalHandler(int signal) { IsRunning = 0; }
+void HttpOriginSignalHandler(int signal) { IsRunning = 0; }

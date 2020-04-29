@@ -1,13 +1,13 @@
-#ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
-#include <ESHttpEchoClientRequestBuilder.h>
+#ifndef ES_HTTP_LOADGEN_REQUEST_BUILDER_H
+#include <ESHttpLoadgenRequestBuilder.h>
 #endif
 
 namespace ES {
 
-ESB::Error HttpEchoClientRequestBuilder(const char *host, int port,
-                                        const char *absPath, const char *method,
-                                        const char *contentType,
-                                        HttpClientTransaction *transaction) {
+ESB::Error HttpLoadgenRequestBuilder(const char *host, int port,
+                                     const char *absPath, const char *method,
+                                     const char *contentType,
+                                     HttpClientTransaction *transaction) {
   if (0 == host || 0 == absPath || 0 == method || 0 == transaction) {
     return ESB_NULL_POINTER;
   }
@@ -45,7 +45,7 @@ ESB::Error HttpEchoClientRequestBuilder(const char *host, int port,
     return error;
   }
 
-  // Body is hardcoded in HttpEchoClientHandler.cpp
+  // Body is hardcoded in HttpLoadgenHandler.cpp
 
   return ESB_SUCCESS;
 }

@@ -1,28 +1,24 @@
-#ifndef ES_HTTP_ECHO_CLIENT_HANDLER_H
-#include <ESHttpEchoClientHandler.h>
+#ifndef ES_HTTP_LOADGEN_HANDLER_H
+#include <ESHttpLoadgenHandler.h>
 #endif
 
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
 
-#ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
-#include <ESHttpEchoClientContext.h>
+#ifndef ES_HTTP_LOADGEN_CONTEXT_H
+#include <ESHttpLoadgenContext.h>
 #endif
 
-#ifndef ES_HTTP_ECHO_CLIENT_REQUEST_BUILDER_H
-#include <ESHttpEchoClientRequestBuilder.h>
-#include "ESHttpEchoClientHandler.h"
-
+#ifndef ES_HTTP_LOADGEN_REQUEST_BUILDER_H
+#include <ESHttpLoadgenRequestBuilder.h>
 #endif
 
 namespace ES {
 
-HttpEchoClientHandler::HttpEchoClientHandler(const char *absPath,
-                                             const char *method,
-                                             const char *contentType,
-                                             const unsigned char *body,
-                                             int bodySize)
+HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method,
+                                       const char *contentType,
+                                       const unsigned char *body, int bodySize)
     : _absPath(absPath),
       _method(method),
       _contentType(contentType),
@@ -30,23 +26,23 @@ HttpEchoClientHandler::HttpEchoClientHandler(const char *absPath,
       _bodySize(bodySize),
       _completedTransactions() {}
 
-HttpEchoClientHandler::~HttpEchoClientHandler() {}
+HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
-ESB::UInt32 HttpEchoClientHandler::reserveRequestChunk(HttpClientStack &stack,
-                                                       HttpStream &stream) {
-  HttpEchoClientContext *context = (HttpEchoClientContext *)stream.context();
+ESB::UInt32 HttpLoadgenHandler::reserveRequestChunk(HttpClientStack &stack,
+                                                    HttpStream &stream) {
+  HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
   return _bodySize - context->bytesSent();
 }
 
-void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
-                                             HttpStream &stream,
-                                             unsigned char *chunk,
-                                             ESB::UInt32 chunkSize) {
+void HttpLoadgenHandler::fillRequestChunk(HttpClientStack &stack,
+                                          HttpStream &stream,
+                                          unsigned char *chunk,
+                                          ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
 
-  HttpEchoClientContext *context = (HttpEchoClientContext *)stream.context();
+  HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
 
   ESB::UInt32 totalBytesRemaining = _bodySize - context->bytesSent();
@@ -58,17 +54,17 @@ void HttpEchoClientHandler::fillRequestChunk(HttpClientStack &stack,
   context->setBytesSent(context->bytesSent() + bytesToSend);
 }
 
-HttpClientHandler::Result HttpEchoClientHandler::receiveResponseHeaders(
+HttpClientHandler::Result HttpLoadgenHandler::receiveResponseHeaders(
     HttpClientStack &stack, HttpStream &stream) {
   return HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-ESB::UInt32 HttpEchoClientHandler::reserveResponseChunk(HttpClientStack &stack,
-                                                        HttpStream &stream) {
+ESB::UInt32 HttpLoadgenHandler::reserveResponseChunk(HttpClientStack &stack,
+                                                     HttpStream &stream) {
   return ESB_UINT32_MAX;
 }
 
-HttpClientHandler::Result HttpEchoClientHandler::receiveResponseChunk(
+HttpClientHandler::Result HttpLoadgenHandler::receiveResponseChunk(
     HttpClientStack &stack, HttpStream &stream, unsigned const char *chunk,
     ESB::UInt32 chunkSize) {
   assert(chunk);
@@ -80,10 +76,9 @@ HttpClientHandler::Result HttpEchoClientHandler::receiveResponseChunk(
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-void HttpEchoClientHandler::endClientTransaction(HttpClientStack &stack,
-                                                 HttpStream &stream,
-                                                 State state) {
-  HttpEchoClientContext *context = (HttpEchoClientContext *)stream.context();
+void HttpLoadgenHandler::endClientTransaction(HttpClientStack &stack,
+                                              HttpStream &stream, State state) {
+  HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
 
   switch (state) {
@@ -113,9 +108,9 @@ void HttpEchoClientHandler::endClientTransaction(HttpClientStack &stack,
       ESB_LOG_WARNING("Transaction failed at unknown state");
   }
 
-  HttpEchoClientContext::IncCompletedIterations();
+  HttpLoadgenContext::IncCompletedIterations();
   // returns the value pre-decrement
-  int remainingIterations = HttpEchoClientContext::DecRemainingIterations();
+  int remainingIterations = HttpLoadgenContext::DecRemainingIterations();
 
   if (0 > remainingIterations) {
     ESB::CleanupHandler &cleanupHandler = context->cleanupHandler();
@@ -139,9 +134,9 @@ void HttpEchoClientHandler::endClientTransaction(HttpClientStack &stack,
   char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
   stream.peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
 
-  ESB::Error error = HttpEchoClientRequestBuilder(
-      dottedIP, stream.peerAddress().port(), _absPath, _method, _contentType,
-      newTransaction);
+  ESB::Error error =
+      HttpLoadgenRequestBuilder(dottedIP, stream.peerAddress().port(), _absPath,
+                                _method, _contentType, newTransaction);
 
   if (ESB_SUCCESS != error) {
     stack.destroyTransaction(newTransaction);
@@ -160,9 +155,9 @@ void HttpEchoClientHandler::endClientTransaction(HttpClientStack &stack,
   ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
                 remainingIterations);
 }
-void HttpEchoClientHandler::receivePaused(HttpClientStack &stack,
-                                          HttpStream &stream) {
-  assert(0 == "HttpEchoClientHandler should not be paused");
+void HttpLoadgenHandler::receivePaused(HttpClientStack &stack,
+                                       HttpStream &stream) {
+  assert(0 == "HttpLoadgenHandler should not be paused");
 }
 
 }  // namespace ES

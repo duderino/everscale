@@ -1,3 +1,15 @@
+#ifndef ES_HTTP_LOADGEN_CONTEXT_H
+#include <ESHttpLoadgenContext.h>
+#endif
+
+#ifndef ES_HTTP_LOADGEN_HANDLER_H
+#include <ESHttpLoadgenHandler.h>
+#endif
+
+#ifndef ES_HTTP_LOADGEN_SEED_COMMAND_H
+#include <ESHttpLoadgenSeedCommand.h>
+#endif
+
 #ifndef ESB_SIMPLE_FILE_LOGGER_H
 #include <ESBSimpleFileLogger.h>
 #endif
@@ -12,18 +24,6 @@
 
 #ifndef ES_HTTP_CLIENT_H
 #include <ESHttpClient.h>
-#endif
-
-#ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
-#include <ESHttpEchoClientContext.h>
-#endif
-
-#ifndef ES_HTTP_ECHO_CLIENT_HANDLER_H
-#include <ESHttpEchoClientHandler.h>
-#endif
-
-#ifndef ES_HTTP_ECHO_CLIENT_SEED_COMMAND_H
-#include <ESHttpEchoClientSeedCommand.h>
 #endif
 
 #ifndef ESB_LOGGER_H
@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  HttpEchoClientContext::SetTotalIterations(connections * iterations);
+  HttpLoadgenContext::SetTotalIterations(connections * iterations);
 
   ESB::Time::Instance().start();
   ESB::SimpleFileLogger logger(stdout);
@@ -308,8 +308,8 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  HttpEchoClientHandler clientHandler(absPath, method, contentType, body,
-                                      sizeof(body));
+  HttpLoadgenHandler clientHandler(absPath, method, contentType, body,
+                                   sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
   HttpClient client(threads, clientHandler);
 
@@ -336,8 +336,8 @@ int main(int argc, char **argv) {
   }
 
   for (int i = 0; i < client.threads(); ++i) {
-    HttpEchoClientSeedCommand *command =
-        new (ESB::SystemAllocator::Instance()) HttpEchoClientSeedCommand(
+    HttpLoadgenSeedCommand *command =
+        new (ESB::SystemAllocator::Instance()) HttpLoadgenSeedCommand(
             connections / threads, iterations, port, host, absPath, method,
             contentType, ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
@@ -347,7 +347,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  while (IsRunning && !HttpEchoClientContext::IsFinished()) {
+  while (IsRunning && !HttpLoadgenContext::IsFinished()) {
     sleep(1);
   }
 

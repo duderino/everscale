@@ -1,5 +1,5 @@
-#ifndef ES_HTTP_ECHO_CLIENT_CONTEXT_H
-#define ES_HTTP_ECHO_CLIENT_CONTEXT_H
+#ifndef ES_HTTP_LOADGEN_CONTEXT_H
+#define ES_HTTP_LOADGEN_CONTEXT_H
 
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
@@ -11,11 +11,11 @@
 
 namespace ES {
 
-class HttpEchoClientContext : public ESB::Object {
+class HttpLoadgenContext : public ESB::Object {
  public:
-  HttpEchoClientContext(ESB::CleanupHandler &cleanupHandler);
+  HttpLoadgenContext(ESB::CleanupHandler &cleanupHandler);
 
-  virtual ~HttpEchoClientContext();
+  virtual ~HttpLoadgenContext();
 
   inline ESB::UInt32 bytesSent() { return _bytesSent; }
 
@@ -56,8 +56,8 @@ class HttpEchoClientContext : public ESB::Object {
 
  private:
   // Disabled
-  HttpEchoClientContext(const HttpEchoClientContext &context);
-  void operator=(const HttpEchoClientContext &context);
+  HttpLoadgenContext(const HttpLoadgenContext &context);
+  void operator=(const HttpLoadgenContext &context);
 
   ESB::UInt32 _bytesSent;
   ESB::CleanupHandler &_cleanupHandler;

@@ -19,3 +19,5 @@ unit-tf/include/ESTFConfig.h
 _deps
 *_include.cmake
 *_tests.cmake
+http-loadgen
+http-origin
