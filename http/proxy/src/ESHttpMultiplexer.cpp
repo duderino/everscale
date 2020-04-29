@@ -31,6 +31,16 @@ ESB::Error HttpMultiplexer::addMultiplexedSocket(
   return _multiplexer.addMultiplexedSocket(multiplexedSocket);
 }
 
+ESB::Error HttpMultiplexer::updateMultiplexedSocket(
+    ESB::MultiplexedSocket *socket) {
+  return _multiplexer.updateMultiplexedSocket(socket);
+}
+
+ESB::Error HttpMultiplexer::removeMultiplexedSocket(
+    ESB::MultiplexedSocket *socket, bool removeFromList) {
+  return _multiplexer.removeMultiplexedSocket(socket, removeFromList);
+}
+
 int HttpMultiplexer::currentSockets() const {
   return _multiplexer.currentSockets();
 }

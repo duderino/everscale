@@ -406,12 +406,6 @@ bool HttpClientSocket::handleRemoteClose() {
   return false;  // remove from multiplexer
 }
 
-bool HttpClientSocket::handleLocalClose() {
-  assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] socket was closed locally", _socket.logAddress());
-  return false;  // remove from multiplexer
-}
-
 bool HttpClientSocket::handleIdle() {
   assert(!(HAS_BEEN_REMOVED & _state));
   ESB_LOG_INFO("[%s] socket is idle", _socket.logAddress());
@@ -830,13 +824,42 @@ const char *HttpClientSocket::logAddress() const {
 bool HttpClientSocket::isPaused() { return _state & RECV_PAUSED; }
 
 ESB::Error HttpClientSocket::resume() {
-  assert(0 == "NOT IMPLEMENTED");
-  return ESB_INVALID_STATE;
+  assert(_multiplexer);
+  assert(_state | RECV_PAUSED);
+  assert(!(HAS_BEEN_REMOVED & _state));
+
+  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED || !_multiplexer) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] resumed reading response body", _socket.logAddress());
+  _state &= ~RECV_PAUSED;
+
+  if (handleReadable()) {
+    _multiplexer->updateMultiplexedSocket(this);
+  } else {
+    _multiplexer->removeMultiplexedSocket(this);
+  }
+
+  return ESB_SUCCESS;
 }
 
 ESB::Error HttpClientSocket::cancel() {
-  assert(0 == "NOT IMPLEMENTED");
-  return ESB_INVALID_STATE;
+  assert(_multiplexer);
+  assert(_state | RECV_PAUSED);
+  assert(!(HAS_BEEN_REMOVED & _state));
+
+  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED || !_multiplexer) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] local close during paused response body read",
+                _socket.logAddress());
+  _state &= ~RECV_PAUSED;
+
+  _multiplexer->removeMultiplexedSocket(this);
+
+  return ESB_SUCCESS;
 }
 
 ESB::Allocator &HttpClientSocket::allocator() {

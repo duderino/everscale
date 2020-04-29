@@ -21,10 +21,22 @@ class HttpMultiplexer : public ESB::SocketMultiplexer {
 
   virtual ~HttpMultiplexer();
 
+  //
+  // ESB::SocketMultiplexer
+  //
+
   virtual ESB::Error addMultiplexedSocket(
       ESB::MultiplexedSocket *multiplexedSocket);
+
+  virtual ESB::Error updateMultiplexedSocket(ESB::MultiplexedSocket *socket);
+
+  virtual ESB::Error removeMultiplexedSocket(ESB::MultiplexedSocket *socket,
+                                             bool removeFromList);
+
   virtual int currentSockets() const;
+
   virtual int maximumSockets() const;
+
   virtual bool isRunning() const;
 
  private:

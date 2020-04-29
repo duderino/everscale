@@ -1,6 +1,7 @@
 #ifndef ES_HTTP_STREAM_H
 #define ES_HTTP_STREAM_H
 
+#include <ESBSocketMultiplexer.h>
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
 #endif
@@ -40,14 +41,18 @@ class HttpStream {
   virtual bool isPaused() = 0;
 
   /**
-   * Resumed a paused stream.
+   * Resumed a paused stream.  Note: your handler implementation must be
+   * reentrant if you call this function because calling this function may in
+   * turn call other handle* functions including handleRemove.
    *
    * @return ESB_SUCCESS if successfully resumed, another error code otherwise.
    */
   virtual ESB::Error resume() = 0;
 
   /**
-   * Cancel a paused stream.
+   * Cancel a paused stream.  Note: your handler implementation must be
+   * reentrant if you call this function because calling this function may in
+   * turn call other handle* functions including handleRemove.
    *
    * @return ESB_SUCCESS if successfully canceled, another error code otherwise.
    */

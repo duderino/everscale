@@ -129,15 +129,6 @@ class MultiplexedSocket : public EmbeddedMapElement {
    */
   virtual bool handleRemoteClose() = 0;
 
-  /** The socket's connection was closed by this process.
-   *
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
-   */
-  virtual bool handleLocalClose() = 0;
-
   /** The socket's connection has been idle for too long
    *
    * @param multiplexer The multiplexer managing this socket.

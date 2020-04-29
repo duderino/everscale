@@ -91,8 +91,6 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpStream {
 
   virtual bool handleRemoteClose();
 
-  virtual bool handleLocalClose();
-
   virtual bool handleIdle();
 
   virtual bool handleRemove();

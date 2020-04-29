@@ -517,13 +517,7 @@ bool HttpServerSocket::handleRemoteClose() {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
   assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] clien peer closed socket", _socket.logAddress());
-  return false;  // remove from multiplexer
-}
-
-bool HttpServerSocket::handleLocalClose() {
-  assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] this process closed socket", _socket.logAddress());
+  ESB_LOG_INFO("[%s] remote client closed socket", _socket.logAddress());
   return false;  // remove from multiplexer
 }
 
@@ -1033,13 +1027,42 @@ const char *HttpServerSocket::logAddress() const {
 bool HttpServerSocket::isPaused() { return _state & RECV_PAUSED; }
 
 ESB::Error HttpServerSocket::resume() {
-  assert(0 == "NOT IMPLEMENTED");
-  return ESB_INVALID_STATE;
+  assert(_multiplexer);
+  assert(_state | RECV_PAUSED);
+  assert(!(HAS_BEEN_REMOVED & _state));
+
+  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED || !_multiplexer) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] resumed reading request body", _socket.logAddress());
+  _state &= ~RECV_PAUSED;
+
+  if (handleReadable()) {
+    _multiplexer->updateMultiplexedSocket(this);
+  } else {
+    _multiplexer->removeMultiplexedSocket(this);
+  }
+
+  return ESB_SUCCESS;
 }
 
 ESB::Error HttpServerSocket::cancel() {
-  assert(0 == "NOT IMPLEMENTED");
-  return ESB_INVALID_STATE;
+  assert(_multiplexer);
+  assert(_state | RECV_PAUSED);
+  assert(!(HAS_BEEN_REMOVED & _state));
+
+  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED || !_multiplexer) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] local close during paused request body read",
+                _socket.logAddress());
+  _state &= ~RECV_PAUSED;
+
+  _multiplexer->removeMultiplexedSocket(this);
+
+  return ESB_SUCCESS;
 }
 
 ESB::Allocator &HttpServerSocket::allocator() {

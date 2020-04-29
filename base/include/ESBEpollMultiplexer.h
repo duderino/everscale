@@ -75,6 +75,20 @@ class EpollMultiplexer : public SocketMultiplexer {
    */
   virtual Error addMultiplexedSocket(MultiplexedSocket *socket);
 
+  /** Keep socket in epoll and socket list, but possibly change the readiness
+   *  events of interest.  This does not modify the _currentSocketCount.
+   *
+   * @param socket The multiplexedSocket
+   */
+  virtual Error updateMultiplexedSocket(MultiplexedSocket *socket);
+
+  /** Remove a multiplexed socket form the socket multiplexer
+   *
+   * @param socket The multiplexed socket to remove
+   */
+  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket,
+                                        bool removeFromList = true);
+
   /** Run the multiplexer's event loop until shutdown.
    *
    * @return If true, caller should destroy the command with the CleanupHandler.
@@ -119,20 +133,6 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    */
   void destroy();
-
-  /** Keep socket in epoll and socket list, but possibly change the readiness
-   *  events of interest.  This does not modify the _currentSocketCount.
-   *
-   * @param socket The multiplexedSocket
-   */
-  Error updateMultiplexedSocket(MultiplexedSocket *socket);
-
-  /** Remove a multiplexed socket form the socket multiplexer
-   *
-   * @param socket The multiplexed socket to remove
-   */
-  Error removeMultiplexedSocket(MultiplexedSocket *socket,
-                                bool removeFromList = true);
 
   /** Periodically check for any idle sockets and delete them.
    *
