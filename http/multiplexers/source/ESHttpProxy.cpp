@@ -6,8 +6,8 @@
 #include <ESBSystemConfig.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_H
-#include <ESHttpServer.h>
+#ifndef ES_HTTP_PROXY_MULTIPLEXER_H
+#include <ESHttpProxyMultiplexer.h>
 #endif
 
 namespace ES {
@@ -48,9 +48,9 @@ ESB::Error HttpProxy::push(HttpClientCommand *command, int idx) {
 }
 
 ESB::SocketMultiplexer *HttpProxy::createMultiplexer() {
-  return new (_allocator)
-      HttpProxyMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(),
-                           _proxyHandler, _clientCounters, _serverCounters);
+  return new (_allocator) HttpProxyMultiplexer(
+      ESB::SystemConfig::Instance().socketSoftMax(), _proxyHandler,
+      _proxyHandler, _clientCounters, _serverCounters);
 }
 
 }  // namespace ES

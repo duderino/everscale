@@ -1,12 +1,16 @@
 #ifndef ES_HTTP_SERVER_H
 #define ES_HTTP_SERVER_H
 
-#ifndef ES_HTTP_SERVER_MULTIPLEXER_H
-#include <ESHttpServerMultiplexer.h>
-#endif
-
 #ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
 #include <ESHttpServerSimpleCounters.h>
+#endif
+
+#ifndef ES_HTTP_SERVER_HANDLER_H
+#include <ESHttpServerHandler.h>
+#endif
+
+#ifndef ES_HTTP_SERVER_COMMAND_H
+#include <ESHttpServerCommand.h>
 #endif
 
 #ifndef ESB_SHARED_INT_H
@@ -86,8 +90,8 @@ class HttpServer {
 
     virtual ~AddListeningSocketCommand(){};
 
-    virtual ESB::Error run(HttpServerStack &stack) {
-      return stack.addListeningSocket(_socket);
+    virtual ESB::Error run(HttpMultiplexer &multiplexer) {
+      return multiplexer.addListeningSocket(_socket);
     }
 
     virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }

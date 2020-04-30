@@ -22,22 +22,22 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   //
 
   virtual HttpServerHandler::Result acceptConnection(
-      HttpServerStack &stack, ESB::SocketAddress *address);
+      HttpMultiplexer &stack, ESB::SocketAddress *address);
   virtual HttpServerHandler::Result beginServerTransaction(
-      HttpServerStack &stack, HttpStream &stream);
+      HttpMultiplexer &stack, HttpStream &stream);
   virtual HttpServerHandler::Result receiveRequestHeaders(
-      HttpServerStack &stack, HttpStream &stream);
-  virtual ESB::UInt32 reserveRequestChunk(HttpServerStack &stack,
+      HttpMultiplexer &stack, HttpStream &stream);
+  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
                                           HttpStream &stream);
   virtual HttpServerHandler::Result receiveRequestChunk(
-      HttpServerStack &stack, HttpStream &stream, unsigned const char *chunk,
+      HttpMultiplexer &stack, HttpStream &stream, unsigned const char *chunk,
       ESB::UInt32 chunkSize);
-  virtual void receivePaused(HttpServerStack &stack, HttpStream &stream);
-  virtual ESB::UInt32 reserveResponseChunk(HttpServerStack &stack,
+  virtual void receivePaused(HttpMultiplexer &stack, HttpStream &stream);
+  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
                                            HttpStream &stream);
-  virtual void fillResponseChunk(HttpServerStack &stack, HttpStream &stream,
+  virtual void fillResponseChunk(HttpMultiplexer &stack, HttpStream &stream,
                                  unsigned char *chunk, ESB::UInt32 chunkSize);
-  virtual void endServerTransaction(HttpServerStack &stack, HttpStream &stream,
+  virtual void endServerTransaction(HttpMultiplexer &stack, HttpStream &stream,
                                     HttpServerHandler::State state);
 
   //

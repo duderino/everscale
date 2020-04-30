@@ -1,7 +1,5 @@
 proxy:
- - Rename HttpServerStack HttpProxyStack and make it subclass HttpClientStack
- - Rename HttpServer HttpProxy and make it subclass HttpClient
- - Rename HttpServerMultiplexer HttpProxyMultiplexer and make it subclass HttpClientMultiplexer
+ - Split HttpMultiplexer into HttpMultiplexer and HttpMultiplexerExtended.  Use the latter internally.  Pass the former down to the http client and server handlers.
  - add test and support for http pipelining.
  - implement idle check - and make it work with paused sockets
  - move HttpServerHandler, HttpClientHandler, and their deps into http-common.
@@ -38,7 +36,7 @@ code health:
  - add noexcept and allocator references to all uses of placement new
  - use allocator cleanup handlers in embedded list test and more widely
  - use references instead of pointers when they shouldn't be NULL
- - Split HttpServerStack into two interfaces: one for HttpServerSocket (call it HttpServerInternals)  and one for HttpListeningSocket+HttpServerHandler
+ - Split HttpMultiplexer into two interfaces: one for HttpServerSocket (call it HttpServerInternals)  and one for HttpListeningSocket+HttpServerHandler
  - Split HttpClientStack into two interfaces: one for HttpClientSocket (call it HttpClientInternals) and one for HttpClientHandler
  - reduce the number of name() and getName() functions
 

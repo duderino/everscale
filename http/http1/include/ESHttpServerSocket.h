@@ -21,8 +21,8 @@
 #include <ESHttpServerCounters.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_STACK_H
-#include <ESHttpServerStack.h>
+#ifndef ES_HTTP_MULTIPLEXER_H
+#include <ESHttpMultiplexer.h>
 #endif
 
 #ifndef ES_HTTP_STREAM_H
@@ -39,7 +39,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpStream {
  public:
   /** Constructor
    */
-  HttpServerSocket(HttpServerHandler &handler, HttpServerStack &stack,
+  HttpServerSocket(HttpServerHandler &handler, HttpMultiplexer &multiplexer,
                    HttpServerCounters &counters,
                    ESB::CleanupHandler &cleanupHandler);
 
@@ -149,7 +149,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpStream {
   int _state;
   int _bodyBytesWritten;
   int _requestsPerConnection;
-  HttpServerStack &_stack;
+  HttpMultiplexer &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerTransaction *_transaction;
   HttpServerCounters &_counters;

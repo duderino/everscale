@@ -1,12 +1,16 @@
 #ifndef ES_HTTP_CLIENT_H
 #define ES_HTTP_CLIENT_H
 
-#ifndef ES_HTTP_CLIENT_MULTIPLEXER_H
-#include <ESHttpClientMultiplexer.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
 #include <ESHttpClientHistoricalCounters.h>
+#endif
+
+#ifndef ES_HTTP_CLIENT_HANDLER_H
+#include <ESHttpClientHandler.h>
+#endif
+
+#ifndef ES_HTTP_CLIENT_COMMAND_H
+#include <ESHttpClientCommand.h>
 #endif
 
 #ifndef ESB_SHARED_INT_H

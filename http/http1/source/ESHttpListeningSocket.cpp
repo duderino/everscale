@@ -18,11 +18,11 @@ namespace ES {
 
 // TODO add performance counters
 
-HttpListeningSocket::HttpListeningSocket(HttpServerStack &stack,
+HttpListeningSocket::HttpListeningSocket(HttpMultiplexer &stack,
                                          HttpServerHandler &handler,
                                          ESB::CleanupHandler &cleanupHandler)
     : _socket(),
-      _stack(stack),
+      _multiplexer(stack),
       _handler(handler),
       _cleanupHandler(cleanupHandler) {}
 
@@ -65,10 +65,10 @@ ESB::Error HttpListeningSocket::handleAccept() {
     return error;
   }
 
-  _stack.serverCounters().getTotalConnections()->inc();
+  _multiplexer.serverCounters().getTotalConnections()->inc();
 
   HttpServerHandler::Result result =
-      _handler.acceptConnection(_stack, &state.peerAddress());
+      _handler.acceptConnection(_multiplexer, &state.peerAddress());
 
   if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
     ESB_LOG_DEBUG("[%s] Handler rejected connection", _socket.logAddress());
@@ -76,7 +76,7 @@ ESB::Error HttpListeningSocket::handleAccept() {
     return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }
 
-  error = _stack.addServerSocket(state);
+  error = _multiplexer.addServerSocket(state);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error,

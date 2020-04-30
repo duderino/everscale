@@ -3,12 +3,9 @@ project(multiplexers VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
 source/ESHttpClient.cpp
-source/ESHttpClientMultiplexer.cpp
-source/ESHttpMultiplexer.cpp
 source/ESHttpProxy.cpp
 source/ESHttpProxyMultiplexer.cpp
 source/ESHttpServer.cpp
-source/ESHttpServerMultiplexer.cpp
         )
 
 add_library(multiplexers STATIC ${SOURCE_FILES})

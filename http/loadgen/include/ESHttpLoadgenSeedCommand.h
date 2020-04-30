@@ -32,13 +32,14 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
 
   virtual ~HttpLoadgenSeedCommand() {}
 
-  virtual ESB::Error run(HttpClientStack &stack) {
+  virtual ESB::Error run(HttpMultiplexer &multiplexer) {
     for (ESB::UInt32 i = 0; i < _connections; ++i) {
       if (0 > HttpLoadgenContext::DecRemainingIterations()) {
         break;
       }
 
-      HttpClientTransaction *transaction = stack.createClientTransaction();
+      HttpClientTransaction *transaction =
+          multiplexer.createClientTransaction();
       assert(transaction);
 
       // Create the request context
@@ -54,7 +55,7 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
           _host, _port, _absPath, _method, _contentType, transaction);
       assert(ESB_SUCCESS == error);
 
-      error = stack.executeTransaction(transaction);
+      error = multiplexer.executeTransaction(transaction);
       assert(ESB_SUCCESS == error);
     }
 

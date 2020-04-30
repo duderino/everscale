@@ -4,8 +4,8 @@
 
 namespace ES {
 
-HttpServerCommandSocket::HttpServerCommandSocket(HttpServerStack &stack)
-    : _stack(stack) {}
+HttpServerCommandSocket::HttpServerCommandSocket(HttpMultiplexer &stack)
+    : _multiplexer(stack) {}
 
 HttpServerCommandSocket::~HttpServerCommandSocket() {}
 
@@ -20,7 +20,7 @@ ESB::Error HttpServerCommandSocket::runCommand(
 
   ESB_LOG_DEBUG("Executing command '%s' in multiplexer",
                 ESB_SAFE_STR(command->name()));
-  ESB::Error error = command->run(_stack);
+  ESB::Error error = command->run(_multiplexer);
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_WARNING_ERRNO(error, "Failed executing command '%s in multiplexer",

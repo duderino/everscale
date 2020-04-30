@@ -6,6 +6,10 @@
 #include <ESHttpClient.h>
 #endif
 
+#ifndef ES_HTTP_CLIENT_SOCKET_H
+#include <ESHttpClientSocket.h>
+#endif
+
 #ifndef ESB_SIMPLE_FILE_LOGGER_H
 #include <ESBSimpleFileLogger.h>
 #endif

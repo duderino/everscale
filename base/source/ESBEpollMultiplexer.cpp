@@ -194,7 +194,6 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   }
 
   _eventCache[fd]._interests = event.events;
-  socket->attachMultiplexer(this);
 
   ESB_LOG_DEBUG("[%d] Added socket", fd);
   return ESB_SUCCESS;
@@ -290,7 +289,6 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket,
   ESB_LOG_DEBUG("[%d] Removed socket", fd);
 
   bool cleanup = socket->handleRemove();
-  socket->detachMultiplexer();
 
   if (cleanup) {
     CleanupHandler *cleanupHandler = socket->cleanupHandler();

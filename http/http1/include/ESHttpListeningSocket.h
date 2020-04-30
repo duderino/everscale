@@ -9,8 +9,8 @@
 #include <ESBListeningTCPSocket.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_STACK_H
-#include <ESHttpServerStack.h>
+#ifndef ES_HTTP_MULTIPLEXER_H
+#include <ESHttpMultiplexer.h>
 #endif
 
 #ifndef ES_HTTP_SERVER_HANDLER_H
@@ -25,7 +25,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
    */
-  HttpListeningSocket(HttpServerStack &stack, HttpServerHandler &handler,
+  HttpListeningSocket(HttpMultiplexer &stack, HttpServerHandler &handler,
                       ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
@@ -190,7 +190,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   HttpListeningSocket &operator=(const HttpListeningSocket &);
 
   ESB::ListeningTCPSocket _socket;
-  HttpServerStack &_stack;
+  HttpMultiplexer &_multiplexer;
   HttpServerHandler &_handler;
   ESB::CleanupHandler &_cleanupHandler;
 };

@@ -35,7 +35,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpStream {
  public:
   /** Constructor
    */
-  HttpClientSocket(HttpClientHandler &handler, HttpClientStack &stack,
+  HttpClientSocket(HttpClientHandler &handler, HttpMultiplexer &multiplexer,
                    ESB::SocketAddress &peerAddress,
                    HttpClientCounters &counters,
                    ESB::CleanupHandler &cleanupHandler);
@@ -160,7 +160,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpStream {
 
   int _state;
   int _bodyBytesWritten;
-  HttpClientStack &_stack;
+  HttpMultiplexer &_multiplexer;
   HttpClientHandler &_handler;
   HttpClientTransaction *_transaction;
   HttpClientCounters &_counters;

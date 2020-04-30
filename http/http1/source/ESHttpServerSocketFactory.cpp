@@ -12,10 +12,12 @@
 
 namespace ES {
 
-HttpServerSocketFactory::HttpServerSocketFactory(HttpServerHandler &handler,
+HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexer &multiplexer,
+                                                 HttpServerHandler &handler,
                                                  HttpServerCounters &counters,
                                                  ESB::Allocator &allocator)
-    : _handler(handler),
+    : _multiplexer(multiplexer),
+      _handler(handler),
       _counters(counters),
       _allocator(allocator),
       _sockets(),
@@ -34,15 +36,11 @@ HttpServerSocketFactory::~HttpServerSocketFactory() {
 
 HttpServerSocket *HttpServerSocketFactory::create(
     ESB::TCPSocket::State &state) {
-  if (!_stack) {
-    return NULL;
-  }
-
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   if (!socket) {
     socket = new (_allocator)
-        HttpServerSocket(_handler, *_stack, _counters, _cleanupHandler);
+        HttpServerSocket(_handler, _multiplexer, _counters, _cleanupHandler);
     if (!socket) {
       return NULL;
     }

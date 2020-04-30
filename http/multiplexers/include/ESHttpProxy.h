@@ -5,12 +5,16 @@
 #include <ESHttpServer.h>
 #endif
 
-#ifndef ES_HTTP_PROXY_MULTIPLEXER_H
-#include <ESHttpProxyMultiplexer.h>
+#ifndef ES_HTTP_PROXY_HANDLER_H
+#include <ESHttpProxyHandler.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
 #include <ESHttpClientHistoricalCounters.h>
+#endif
+
+#ifndef ES_HTTP_CLIENT_COMMAND_H
+#include <ESHttpClientCommand.h>
 #endif
 
 namespace ES {

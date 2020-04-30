@@ -2,6 +2,10 @@
 #include <ESHttpClient.h>
 #endif
 
+#ifndef ES_HTTP_PROXY_MULTIPLEXER_H
+#include <ESHttpProxyMultiplexer.h>
+#endif
+
 #ifndef ESB_SYSTEM_CONFIG_H
 #include <ESBSystemConfig.h>
 #endif
@@ -35,8 +39,8 @@ ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
     idx = _rand.generate(0, _threads - 1);
   }
 
-  HttpClientMultiplexer *multiplexer =
-      (HttpClientMultiplexer *)_multiplexers.index(idx);
+  HttpProxyMultiplexer *multiplexer =
+      (HttpProxyMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
   ESB::Error error = multiplexer->pushClientCommand(command);
 
@@ -69,7 +73,7 @@ ESB::Error HttpClient::start() {
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
     ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpClientMultiplexer(maxSockets, _clientHandler, _clientCounters);
+        HttpProxyMultiplexer(maxSockets, _clientHandler, _clientCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
@@ -114,8 +118,8 @@ void HttpClient::destroy() {
 
   for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
        it = it.next()) {
-    HttpClientMultiplexer *multiplexer = (HttpClientMultiplexer *)it.value();
-    multiplexer->~HttpClientMultiplexer();
+    HttpProxyMultiplexer *multiplexer = (HttpProxyMultiplexer *)it.value();
+    multiplexer->~HttpProxyMultiplexer();
     _allocator.deallocate(multiplexer);
   }
 

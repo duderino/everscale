@@ -10,7 +10,6 @@ set(SOURCE_FILES
         source/ESHttpClientSimpleCounters.cpp
         source/ESHttpClientSocket.cpp
         source/ESHttpClientSocketFactory.cpp
-        source/ESHttpClientStack.cpp
         source/ESHttpClientTransaction.cpp
         source/ESHttpClientTransactionFactory.cpp
         source/ESHttpCommandSocket.cpp
@@ -18,6 +17,7 @@ set(SOURCE_FILES
         source/ESHttpListeningSocket.cpp
         source/ESHttpMessageFormatter.cpp
         source/ESHttpMessageParser.cpp
+        source/ESHttpMultiplexer.cpp
         source/ESHttpProxyHandler.cpp
         source/ESHttpRequestFormatter.cpp
         source/ESHttpRequestParser.cpp
@@ -32,7 +32,6 @@ set(SOURCE_FILES
         source/ESHttpServerSimpleCounters.cpp
         source/ESHttpServerSocket.cpp
         source/ESHttpServerSocketFactory.cpp
-        source/ESHttpServerStack.cpp
         source/ESHttpServerTransaction.cpp
         source/ESHttpServerTransactionFactory.cpp
         )

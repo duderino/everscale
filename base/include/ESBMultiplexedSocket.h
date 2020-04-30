@@ -146,20 +146,6 @@ class MultiplexedSocket : public EmbeddedMapElement {
    */
   virtual bool handleRemove() = 0;
 
-  /**
-   * The socket has been added to a multiplexer
-   *
-   * @param multiplexer The multiplexer the socket has been added to.
-   */
-  inline void attachMultiplexer(SocketMultiplexer *multiplexer) {
-    _multiplexer = multiplexer;
-  }
-
-  /**
-   * The socket has been removed from a multiplexer
-   */
-  inline void detachMultiplexer() { _multiplexer = NULL; }
-
   /** Get the socket's socket descriptor.
    *
    *  @return the socket descriptor
@@ -175,9 +161,6 @@ class MultiplexedSocket : public EmbeddedMapElement {
   inline void *operator new(size_t size, Allocator &allocator) noexcept {
     return allocator.allocate(size);
   }
-
- protected:
-  SocketMultiplexer *_multiplexer;
 
  private:
   // Disabled

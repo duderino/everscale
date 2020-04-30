@@ -26,6 +26,10 @@
 #include <ESHttpClient.h>
 #endif
 
+#ifndef ES_HTTP_CLIENT_SOCKET_H
+#include <ESHttpClientSocket.h>
+#endif
+
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif

@@ -28,14 +28,14 @@ HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method,
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
-ESB::UInt32 HttpLoadgenHandler::reserveRequestChunk(HttpClientStack &stack,
-                                                    HttpStream &stream) {
+ESB::UInt32 HttpLoadgenHandler::reserveRequestChunk(
+    HttpMultiplexer &multiplexer, HttpStream &stream) {
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
   return _bodySize - context->bytesSent();
 }
 
-void HttpLoadgenHandler::fillRequestChunk(HttpClientStack &stack,
+void HttpLoadgenHandler::fillRequestChunk(HttpMultiplexer &multiplexer,
                                           HttpStream &stream,
                                           unsigned char *chunk,
                                           ESB::UInt32 chunkSize) {
@@ -55,18 +55,18 @@ void HttpLoadgenHandler::fillRequestChunk(HttpClientStack &stack,
 }
 
 HttpClientHandler::Result HttpLoadgenHandler::receiveResponseHeaders(
-    HttpClientStack &stack, HttpStream &stream) {
+    HttpMultiplexer &multiplexer, HttpStream &stream) {
   return HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-ESB::UInt32 HttpLoadgenHandler::reserveResponseChunk(HttpClientStack &stack,
-                                                     HttpStream &stream) {
+ESB::UInt32 HttpLoadgenHandler::reserveResponseChunk(
+    HttpMultiplexer &multiplexer, HttpStream &stream) {
   return ESB_UINT32_MAX;
 }
 
 HttpClientHandler::Result HttpLoadgenHandler::receiveResponseChunk(
-    HttpClientStack &stack, HttpStream &stream, unsigned const char *chunk,
-    ESB::UInt32 chunkSize) {
+    HttpMultiplexer &multiplexer, HttpStream &stream,
+    unsigned const char *chunk, ESB::UInt32 chunkSize) {
   assert(chunk);
 
   if (0U == chunkSize) {
@@ -76,7 +76,7 @@ HttpClientHandler::Result HttpLoadgenHandler::receiveResponseChunk(
   return ES_HTTP_CLIENT_HANDLER_CONTINUE;
 }
 
-void HttpLoadgenHandler::endClientTransaction(HttpClientStack &stack,
+void HttpLoadgenHandler::endClientTransaction(HttpMultiplexer &multiplexer,
                                               HttpStream &stream, State state) {
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
@@ -119,7 +119,7 @@ void HttpLoadgenHandler::endClientTransaction(HttpClientStack &stack,
     return;
   }
 
-  HttpClientTransaction *newTransaction = stack.createClientTransaction();
+  HttpClientTransaction *newTransaction = multiplexer.createClientTransaction();
 
   if (!newTransaction) {
     ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create new transaction");
@@ -139,15 +139,15 @@ void HttpLoadgenHandler::endClientTransaction(HttpClientStack &stack,
                                 _method, _contentType, newTransaction);
 
   if (ESB_SUCCESS != error) {
-    stack.destroyTransaction(newTransaction);
+    multiplexer.destroyTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "Cannot build request");
     return;
   }
 
-  error = stack.executeTransaction(newTransaction);
+  error = multiplexer.executeTransaction(newTransaction);
 
   if (ESB_SUCCESS != error) {
-    stack.destroyTransaction(newTransaction);
+    multiplexer.destroyTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "Cannot execute transaction");
     return;
   }
@@ -155,7 +155,7 @@ void HttpLoadgenHandler::endClientTransaction(HttpClientStack &stack,
   ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
                 remainingIterations);
 }
-void HttpLoadgenHandler::receivePaused(HttpClientStack &stack,
+void HttpLoadgenHandler::receivePaused(HttpMultiplexer &multiplexer,
                                        HttpStream &stream) {
   assert(0 == "HttpLoadgenHandler should not be paused");
 }

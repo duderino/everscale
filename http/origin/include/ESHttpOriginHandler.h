@@ -17,23 +17,23 @@ class HttpOriginHandler : public HttpServerHandler {
   // ES::HttpServerHandler
   //
 
-  virtual Result acceptConnection(HttpServerStack &stack,
+  virtual Result acceptConnection(HttpMultiplexer &stack,
                                   ESB::SocketAddress *address);
-  virtual Result beginServerTransaction(HttpServerStack &stack,
+  virtual Result beginServerTransaction(HttpMultiplexer &stack,
                                         HttpStream &stream);
-  virtual Result receiveRequestHeaders(HttpServerStack &stack,
+  virtual Result receiveRequestHeaders(HttpMultiplexer &stack,
                                        HttpStream &stream);
-  virtual ESB::UInt32 reserveRequestChunk(HttpServerStack &stack,
+  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
                                           HttpStream &stream);
-  virtual Result receiveRequestChunk(HttpServerStack &stack, HttpStream &stream,
+  virtual Result receiveRequestChunk(HttpMultiplexer &stack, HttpStream &stream,
                                      unsigned const char *chunk,
                                      ESB::UInt32 chunkSize);
-  virtual void receivePaused(HttpServerStack &stack, HttpStream &stream);
-  virtual ESB::UInt32 reserveResponseChunk(HttpServerStack &stack,
+  virtual void receivePaused(HttpMultiplexer &stack, HttpStream &stream);
+  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
                                            HttpStream &stream);
-  virtual void fillResponseChunk(HttpServerStack &stack, HttpStream &stream,
+  virtual void fillResponseChunk(HttpMultiplexer &stack, HttpStream &stream,
                                  unsigned char *chunk, ESB::UInt32 chunkSize);
-  virtual void endServerTransaction(HttpServerStack &stack, HttpStream &stream,
+  virtual void endServerTransaction(HttpMultiplexer &stack, HttpStream &stream,
                                     State state);
 
  private:

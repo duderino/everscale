@@ -30,12 +30,12 @@ HttpOriginHandler::HttpOriginHandler() {}
 HttpOriginHandler::~HttpOriginHandler() {}
 
 HttpServerHandler::Result HttpOriginHandler::acceptConnection(
-    HttpServerStack &stack, ESB::SocketAddress *address) {
+    HttpMultiplexer &stack, ESB::SocketAddress *address) {
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
 HttpServerHandler::Result HttpOriginHandler::beginServerTransaction(
-    HttpServerStack &stack, HttpStream &stream) {
+    HttpMultiplexer &stack, HttpStream &stream) {
   ESB::Allocator &allocator = stream.allocator();
   HttpOriginContext *context = new (allocator) HttpOriginContext();
 
@@ -51,12 +51,12 @@ HttpServerHandler::Result HttpOriginHandler::beginServerTransaction(
 }
 
 HttpServerHandler::Result HttpOriginHandler::receiveRequestHeaders(
-    HttpServerStack &stack, HttpStream &stream) {
+    HttpMultiplexer &stack, HttpStream &stream) {
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
 HttpServerHandler::Result HttpOriginHandler::receiveRequestChunk(
-    HttpServerStack &stack, HttpStream &stream, unsigned const char *chunk,
+    HttpMultiplexer &stack, HttpStream &stream, unsigned const char *chunk,
     ESB::UInt32 chunkSize) {
   assert(chunk);
 
@@ -71,14 +71,14 @@ HttpServerHandler::Result HttpOriginHandler::receiveRequestChunk(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-ESB::UInt32 HttpOriginHandler::reserveResponseChunk(HttpServerStack &stack,
+ESB::UInt32 HttpOriginHandler::reserveResponseChunk(HttpMultiplexer &stack,
                                                     HttpStream &stream) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   return BodySize - context->getBytesSent();
 }
 
-void HttpOriginHandler::fillResponseChunk(HttpServerStack &stack,
+void HttpOriginHandler::fillResponseChunk(HttpMultiplexer &stack,
                                           HttpStream &stream,
                                           unsigned char *chunk,
                                           ESB::UInt32 chunkSize) {
@@ -96,7 +96,7 @@ void HttpOriginHandler::fillResponseChunk(HttpServerStack &stack,
   context->addBytesSent(bytesToSend);
 }
 
-void HttpOriginHandler::endServerTransaction(HttpServerStack &stack,
+void HttpOriginHandler::endServerTransaction(HttpMultiplexer &stack,
                                              HttpStream &stream, State state) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
@@ -129,12 +129,12 @@ void HttpOriginHandler::endServerTransaction(HttpServerStack &stack,
   }
 }
 
-ESB::UInt32 HttpOriginHandler::reserveRequestChunk(HttpServerStack &stack,
+ESB::UInt32 HttpOriginHandler::reserveRequestChunk(HttpMultiplexer &stack,
                                                    HttpStream &stream) {
   return ESB_UINT32_MAX;
 }
 
-void HttpOriginHandler::receivePaused(HttpServerStack &stack,
+void HttpOriginHandler::receivePaused(HttpMultiplexer &stack,
                                       HttpStream &stream) {
   assert(0 == "HttpOriginHandler should not be paused");
 }

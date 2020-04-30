@@ -6,6 +6,10 @@
 #include <ESBSystemConfig.h>
 #endif
 
+#ifndef ES_HTTP_PROXY_MULTIPLEXER_H
+#include <ESHttpProxyMultiplexer.h>
+#endif
+
 namespace ES {
 
 HttpServer::HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
@@ -39,8 +43,8 @@ ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
     idx = _rand.generate(0, _threads - 1);
   }
 
-  HttpServerMultiplexer *multiplexer =
-      (HttpServerMultiplexer *)_multiplexers.index(idx);
+  HttpProxyMultiplexer *multiplexer =
+      (HttpProxyMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
   ESB::Error error = multiplexer->pushServerCommand(command);
 
@@ -141,7 +145,7 @@ void HttpServer::destroy() {
 
   for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
        it = it.next()) {
-    destroyMultiplexer((HttpServerMultiplexer *)it.value());
+    destroyMultiplexer((HttpProxyMultiplexer *)it.value());
   }
 
   _multiplexers.clear();
@@ -149,8 +153,8 @@ void HttpServer::destroy() {
 
 ESB::SocketMultiplexer *HttpServer::createMultiplexer() {
   return new (_allocator)
-      HttpServerMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(),
-                            _serverHandler, _serverCounters);
+      HttpProxyMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(),
+                           _serverHandler, _serverCounters);
 }
 
 void HttpServer::destroyMultiplexer(ESB::SocketMultiplexer *multiplexer) {

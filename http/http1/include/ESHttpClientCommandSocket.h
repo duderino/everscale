@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_CLIENT_COMMAND_SOCKET_H
 #define ES_HTTP_CLIENT_COMMAND_SOCKET_H
 
-#ifndef ES_HTTP_CLIENT_STACK_H
-#include <ESHttpClientStack.h>
+#ifndef ES_HTTP_MULTIPLEXER_H
+#include <ESHttpMultiplexer.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_COMMAND_H
@@ -21,7 +21,7 @@ class HttpClientCommandSocket : public HttpCommandSocket {
  public:
   /** Constructor
    */
-  HttpClientCommandSocket(HttpClientStack &stack);
+  HttpClientCommandSocket(HttpMultiplexer &stack);
 
   /** Destructor.
    */
@@ -55,7 +55,7 @@ class HttpClientCommandSocket : public HttpCommandSocket {
   HttpClientCommandSocket(const HttpClientCommandSocket &);
   HttpClientCommandSocket &operator=(const HttpClientCommandSocket &);
 
-  HttpClientStack &_stack;
+  HttpMultiplexer &_stack;
 };
 
 }  // namespace ES

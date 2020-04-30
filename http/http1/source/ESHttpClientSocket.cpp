@@ -43,13 +43,13 @@ namespace ES {
 bool HttpClientSocket::_ReuseConnections = true;
 
 HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
-                                   HttpClientStack &stack,
+                                   HttpMultiplexer &multiplexer,
                                    ESB::SocketAddress &peerAddress,
                                    HttpClientCounters &counters,
                                    ESB::CleanupHandler &cleanupHandler)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
-      _stack(stack),
+      _multiplexer(multiplexer),
       _handler(handler),
       _transaction(NULL),
       _counters(counters),
@@ -60,15 +60,15 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
 
 HttpClientSocket::~HttpClientSocket() {
   if (_recvBuffer) {
-    _stack.releaseBuffer(_recvBuffer);
+    _multiplexer.releaseBuffer(_recvBuffer);
     _recvBuffer = NULL;
   }
   if (_sendBuffer) {
-    _stack.releaseBuffer(_sendBuffer);
+    _multiplexer.releaseBuffer(_sendBuffer);
     _sendBuffer = NULL;
   }
   if (_transaction) {
-    _stack.destroyTransaction(_transaction);
+    _multiplexer.destroyTransaction(_transaction);
     _transaction = NULL;
   }
 }
@@ -151,10 +151,9 @@ bool HttpClientSocket::handleReadable() {
   assert(_socket.isConnected());
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(_transaction);
-  assert(_multiplexer);
 
   if (!_recvBuffer) {
-    _recvBuffer = _stack.acquireBuffer();
+    _recvBuffer = _multiplexer.acquireBuffer();
     if (!_recvBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer",
                           _socket.logAddress());
@@ -165,7 +164,7 @@ bool HttpClientSocket::handleReadable() {
   ESB::SSize result = 0;
   ESB::Error error = ESB_SUCCESS;
 
-  while (_multiplexer->isRunning()) {
+  while (!_multiplexer.shutdown()) {
     if (!_recvBuffer->isWritable()) {
       ESB_LOG_DEBUG("[%s] compacting input buffer", _socket.logAddress());
       if (!_recvBuffer->compact()) {
@@ -177,7 +176,7 @@ bool HttpClientSocket::handleReadable() {
     assert(_recvBuffer->isWritable());
     result = _socket.receive(_recvBuffer);
 
-    if (!_multiplexer->isRunning()) {
+    if (_multiplexer.shutdown()) {
       break;
     }
 
@@ -213,7 +212,7 @@ bool HttpClientSocket::handleReadable() {
       }
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
-          _handler.receiveResponseHeaders(_stack, *this)) {
+          _handler.receiveResponseHeaders(_multiplexer, *this)) {
         ESB_LOG_DEBUG("[%s] Client request header handler aborting connection",
                       _socket.logAddress());
         return false;  // remove from multiplexer
@@ -223,7 +222,7 @@ bool HttpClientSocket::handleReadable() {
         unsigned char byte = 0;
 
         if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
-            _handler.receiveResponseChunk(_stack, *this, &byte, 0)) {
+            _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0)) {
           ESB_LOG_DEBUG("[%s] Client body handler aborting connection",
                         _socket.logAddress());
           return false;  // remove from multiplexer
@@ -265,10 +264,9 @@ bool HttpClientSocket::handleWritable() {
   assert(_socket.isConnected());
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(_transaction);
-  assert(_multiplexer);
 
   if (!_sendBuffer) {
-    _sendBuffer = _stack.acquireBuffer();
+    _sendBuffer = _multiplexer.acquireBuffer();
     if (!_sendBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer",
                           _socket.logAddress());
@@ -298,7 +296,7 @@ bool HttpClientSocket::handleWritable() {
     _state |= FORMATTING_HEADERS;
   }
 
-  while (_multiplexer->isRunning()) {
+  while (!_multiplexer.shutdown()) {
     if (FORMATTING_HEADERS & _state) {
       error = formatRequestHeaders();
 
@@ -417,11 +415,11 @@ bool HttpClientSocket::handleRemove() {
   ESB_LOG_INFO("[%s] socket has been removed", _socket.logAddress());
 
   if (_sendBuffer) {
-    _stack.releaseBuffer(_sendBuffer);
+    _multiplexer.releaseBuffer(_sendBuffer);
     _sendBuffer = NULL;
   }
   if (_recvBuffer) {
-    _stack.releaseBuffer(_recvBuffer);
+    _multiplexer.releaseBuffer(_recvBuffer);
     _recvBuffer = NULL;
   }
 
@@ -433,42 +431,42 @@ bool HttpClientSocket::handleRemove() {
                                     ESB::Date::Now());
 
     _handler.endClientTransaction(
-        _stack, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+        _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
     _handler.endClientTransaction(
-        _stack, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+        _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
     _handler.endClientTransaction(
-        _stack, *this,
+        _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
     _handler.endClientTransaction(
-        _stack, *this,
+        _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
     _handler.endClientTransaction(
-        _stack, *this,
+        _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
     _handler.endClientTransaction(
-        _stack, *this,
+        _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
     assert(_transaction);
@@ -490,12 +488,12 @@ bool HttpClientSocket::handleRemove() {
     }
 
     _handler.endClientTransaction(
-        _stack, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
+        _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
   } else if (_state & RETRY_STALE_CONNECTION) {
     assert(_transaction);
     ESB_LOG_DEBUG("[%s] connection stale, retrying transaction",
                   _socket.logAddress());
-    ESB::Error error = _stack.executeTransaction(_transaction);
+    ESB::Error error = _multiplexer.executeTransaction(_transaction);
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "[%s] Cannot retry transaction",
@@ -504,13 +502,13 @@ bool HttpClientSocket::handleRemove() {
       _state |= TRANSACTION_BEGIN;
 
       _handler.endClientTransaction(
-          _stack, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+          _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
     }
   }
 
   if (0x00 == (_state & RETRY_STALE_CONNECTION)) {
     if (_transaction) {
-      _stack.destroyTransaction(_transaction);
+      _multiplexer.destroyTransaction(_transaction);
       _transaction = NULL;
     }
   }
@@ -587,13 +585,14 @@ ESB::Error HttpClientSocket::parseResponseBody() {
   ESB::UInt32 chunkSize = 0;
   ESB::Error error = ESB_SUCCESS;
 
-  while (_multiplexer->isRunning()) {
-    ESB::UInt32 maxChunkSize = _handler.reserveResponseChunk(_stack, *this);
+  while (!_multiplexer.shutdown()) {
+    ESB::UInt32 maxChunkSize =
+        _handler.reserveResponseChunk(_multiplexer, *this);
 
     if (0 == maxChunkSize) {
       ESB_LOG_DEBUG("[%s] pausing response body recv", _socket.logAddress());
       _state |= RECV_PAUSED;
-      _handler.receivePaused(_stack, *this);
+      _handler.receivePaused(_multiplexer, *this);
       return ESB_PAUSE;
     }
 
@@ -625,7 +624,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
       ESB_LOG_DEBUG("[%s] parsed body", _socket.logAddress());
       unsigned char byte = 0;
       HttpClientHandler::Result result =
-          _handler.receiveResponseChunk(_stack, *this, &byte, 0);
+          _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0);
 
       if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
         ESB_LOG_DEBUG(
@@ -653,7 +652,8 @@ ESB::Error HttpClientSocket::parseResponseBody() {
     HttpClientHandler::Result result;
 
     result = _handler.receiveResponseChunk(
-        _stack, *this, _recvBuffer->buffer() + startingPosition, chunkSize);
+        _multiplexer, *this, _recvBuffer->buffer() + startingPosition,
+        chunkSize);
 
     if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
       ESB_LOG_DEBUG(
@@ -694,10 +694,10 @@ ESB::Error HttpClientSocket::formatRequestBody() {
   ESB::UInt32 availableSize = 0;
   ESB::UInt32 requestedSize = 0;
 
-  while (_multiplexer->isRunning()) {
+  while (!_multiplexer.shutdown()) {
     availableSize = 0;
 
-    requestedSize = _handler.reserveRequestChunk(_stack, *this);
+    requestedSize = _handler.reserveRequestChunk(_multiplexer, *this);
 
     if (0 > requestedSize) {
       ESB_LOG_DEBUG(
@@ -732,8 +732,8 @@ ESB::Error HttpClientSocket::formatRequestBody() {
     // write the body data
 
     _handler.fillRequestChunk(
-        _stack, *this, _sendBuffer->buffer() + _sendBuffer->writePosition(),
-        availableSize);
+        _multiplexer, *this,
+        _sendBuffer->buffer() + _sendBuffer->writePosition(), availableSize);
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + availableSize);
     _bodyBytesWritten += availableSize;
 
@@ -751,7 +751,7 @@ ESB::Error HttpClientSocket::formatRequestBody() {
     }
   }
 
-  if (!_multiplexer->isRunning()) {
+  if (_multiplexer.shutdown()) {
     return ESB_SHUTDOWN;
   }
 
@@ -789,7 +789,7 @@ ESB::Error HttpClientSocket::flushBuffer() {
 
   ESB::SSize bytesSent;
 
-  while (_multiplexer->isRunning() && _sendBuffer->isReadable()) {
+  while (!_multiplexer.shutdown() && _sendBuffer->isReadable()) {
     bytesSent = _socket.send(_sendBuffer);
 
     if (0 > bytesSent) {
@@ -824,11 +824,10 @@ const char *HttpClientSocket::logAddress() const {
 bool HttpClientSocket::isPaused() { return _state & RECV_PAUSED; }
 
 ESB::Error HttpClientSocket::resume() {
-  assert(_multiplexer);
   assert(_state | RECV_PAUSED);
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED || !_multiplexer) {
+  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED) {
     return ESB_INVALID_STATE;
   }
 
@@ -836,20 +835,19 @@ ESB::Error HttpClientSocket::resume() {
   _state &= ~RECV_PAUSED;
 
   if (handleReadable()) {
-    _multiplexer->updateMultiplexedSocket(this);
+    _multiplexer.multiplexer().updateMultiplexedSocket(this);
   } else {
-    _multiplexer->removeMultiplexedSocket(this);
+    _multiplexer.multiplexer().removeMultiplexedSocket(this);
   }
 
   return ESB_SUCCESS;
 }
 
 ESB::Error HttpClientSocket::cancel() {
-  assert(_multiplexer);
   assert(_state | RECV_PAUSED);
   assert(!(HAS_BEEN_REMOVED & _state));
 
-  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED || !_multiplexer) {
+  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED) {
     return ESB_INVALID_STATE;
   }
 
@@ -857,7 +855,7 @@ ESB::Error HttpClientSocket::cancel() {
                 _socket.logAddress());
   _state &= ~RECV_PAUSED;
 
-  _multiplexer->removeMultiplexedSocket(this);
+  _multiplexer.multiplexer().removeMultiplexedSocket(this);
 
   return ESB_SUCCESS;
 }

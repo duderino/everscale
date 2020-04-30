@@ -21,8 +21,8 @@
 #include <ESBBufferPool.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_STACK_H
-#include <ESHttpServerStack.h>
+#ifndef ES_HTTP_MULTIPLEXER_H
+#include <ESHttpMultiplexer.h>
 #endif
 
 namespace ES {
@@ -31,11 +31,10 @@ namespace ES {
  */
 class HttpServerSocketFactory {
  public:
-  HttpServerSocketFactory(HttpServerHandler &handler,
+  HttpServerSocketFactory(HttpMultiplexer &multiplexer,
+                          HttpServerHandler &handler,
                           HttpServerCounters &counters,
                           ESB::Allocator &allocator);
-  /** Must be called after constructor */
-  inline void setStack(HttpServerStack &stack) { _stack = &stack; }
 
   virtual ~HttpServerSocketFactory();
 
@@ -82,7 +81,7 @@ class HttpServerSocketFactory {
     HttpServerSocketFactory &_factory;
   };
 
-  HttpServerStack *_stack;
+  HttpMultiplexer &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerCounters &_counters;
   ESB::Allocator &_allocator;

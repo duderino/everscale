@@ -43,9 +43,10 @@ void HttpClientSocketFactory::SocketAddressCallbacks::cleanup(
   _allocator.deallocate(element);
 }
 
-HttpClientSocketFactory::HttpClientSocketFactory(
-    ESB::SocketMultiplexer &multiplexer, HttpClientHandler &handler,
-    HttpClientCounters &counters, ESB::Allocator &allocator)
+HttpClientSocketFactory::HttpClientSocketFactory(HttpMultiplexer &multiplexer,
+                                                 HttpClientHandler &handler,
+                                                 HttpClientCounters &counters,
+                                                 ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
       _handler(handler),
       _counters(counters),
@@ -68,7 +69,7 @@ HttpClientSocketFactory::~HttpClientSocketFactory() {
 
 HttpClientSocket *HttpClientSocketFactory::create(
     HttpClientTransaction *transaction) {
-  if (!transaction || !_stack) {
+  if (!transaction) {
     return NULL;
   }
 
@@ -99,8 +100,8 @@ HttpClientSocket *HttpClientSocketFactory::create(
   }
 
   socket = new (_allocator)
-      HttpClientSocket(_handler, *_stack, transaction->peerAddress(), _counters,
-                       _cleanupHandler);
+      HttpClientSocket(_handler, _multiplexer, transaction->peerAddress(),
+                       _counters, _cleanupHandler);
 
   if (!socket) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
@@ -199,7 +200,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
     }
   }
 
-  error = _multiplexer.addMultiplexedSocket(socket);
+  error = _multiplexer.multiplexer().addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
     _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
