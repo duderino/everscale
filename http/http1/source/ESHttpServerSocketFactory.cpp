@@ -12,10 +12,9 @@
 
 namespace ES {
 
-HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexer &multiplexer,
-                                                 HttpServerHandler &handler,
-                                                 HttpServerCounters &counters,
-                                                 ESB::Allocator &allocator)
+HttpServerSocketFactory::HttpServerSocketFactory(
+    HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
+    HttpServerCounters &counters, ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
       _handler(handler),
       _counters(counters),

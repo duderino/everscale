@@ -18,7 +18,7 @@ namespace ES {
 
 // TODO add performance counters
 
-HttpListeningSocket::HttpListeningSocket(HttpMultiplexer &stack,
+HttpListeningSocket::HttpListeningSocket(HttpMultiplexerExtended &stack,
                                          HttpServerHandler &handler,
                                          ESB::CleanupHandler &cleanupHandler)
     : _socket(),

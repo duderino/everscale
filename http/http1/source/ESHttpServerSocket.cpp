@@ -38,7 +38,7 @@ namespace ES {
 static bool CloseAfterErrorResponse = true;
 
 HttpServerSocket::HttpServerSocket(HttpServerHandler &handler,
-                                   HttpMultiplexer &multiplexer,
+                                   HttpMultiplexerExtended &multiplexer,
                                    HttpServerCounters &counters,
                                    ESB::CleanupHandler &cleanupHandler)
     : _state(TRANSACTION_BEGIN),
@@ -63,7 +63,7 @@ HttpServerSocket::~HttpServerSocket() {
     _sendBuffer = NULL;
   }
   if (_transaction) {
-    _multiplexer.destroyTransaction(_transaction);
+    _multiplexer.destroyServerTransaction(_transaction);
     _transaction = NULL;
   }
 }
@@ -153,7 +153,7 @@ bool HttpServerSocket::handleReadable() {
     _state |= CLOSE_AFTER_RESPONSE_SENT;
     _transaction->setPeerAddress(_socket.peerAddress());
 
-    switch (_handler.beginServerTransaction(_multiplexer, *this)) {
+    switch (_handler.beginTransaction(_multiplexer, *this)) {
       case HttpServerHandler::ES_HTTP_SERVER_HANDLER_CLOSE:
         ESB_LOG_DEBUG("[%s] handler aborted connection", _socket.logAddress());
         return false;  // remove from multiplexer - immediately close
@@ -219,7 +219,7 @@ bool HttpServerSocket::handleReadable() {
       _state |= CLOSE_AFTER_RESPONSE_SENT;
       _transaction->setPeerAddress(_socket.peerAddress());
 
-      switch (_handler.beginServerTransaction(_multiplexer, *this)) {
+      switch (_handler.beginTransaction(_multiplexer, *this)) {
         case HttpServerHandler::ES_HTTP_SERVER_HANDLER_CLOSE:
           ESB_LOG_DEBUG("[%s] server handler aborted connection",
                         _socket.logAddress());
@@ -456,8 +456,8 @@ bool HttpServerSocket::handleWritable() {
     assert(_state & TRANSACTION_END);
 
     ++_requestsPerConnection;
-    _handler.endServerTransaction(
-        _multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_END);
+    _handler.endTransaction(_multiplexer, *this,
+                            HttpServerHandler::ES_HTTP_SERVER_HANDLER_END);
 
     if (CLOSE_AFTER_RESPONSE_SENT & _state) {
       return false;  // remove from multiplexer
@@ -491,7 +491,7 @@ bool HttpServerSocket::handleWritable() {
         _sendBuffer = NULL;
       }
 
-      _multiplexer.destroyTransaction(_transaction);
+      _multiplexer.destroyServerTransaction(_transaction);
       _transaction = NULL;
       return true;  // keep in multiplexer; but always yield after a http
                     // transaction
@@ -541,28 +541,28 @@ bool HttpServerSocket::handleRemove() {
 
   if (_state & PARSING_HEADERS) {
     assert(_transaction);
-    _handler.endServerTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS);
   } else if (_state & PARSING_BODY) {
     assert(_transaction);
-    _handler.endServerTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
     assert(_transaction);
-    _handler.endServerTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
     assert(_transaction);
-    _handler.endServerTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY);
   }
 
   if (_transaction) {
-    _multiplexer.destroyTransaction(_transaction);
+    _multiplexer.destroyServerTransaction(_transaction);
     _transaction = NULL;
   }
 

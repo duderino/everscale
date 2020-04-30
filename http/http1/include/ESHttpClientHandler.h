@@ -5,8 +5,8 @@
 #include <ESHttpMultiplexer.h>
 #endif
 
-#ifndef ES_HTTP_STREAM_H
-#include <ESHttpStream.h>
+#ifndef ES_HTTP_CLIENT_STREAM_H
+#include <ESHttpClientStream.h>
 #endif
 
 namespace ES {
@@ -57,7 +57,7 @@ class HttpClientHandler {
    * -1 or less immediately closes the connection
    */
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpStream &stream) = 0;
+                                          HttpClientStream &stream) = 0;
 
   /**
    * Fill a request body chunk with data.
@@ -69,7 +69,7 @@ class HttpClientHandler {
    * size requested by the requestRequestChunk method.
    */
   virtual void fillRequestChunk(HttpMultiplexer &multiplexer,
-                                HttpStream &stream, unsigned char *chunk,
+                                HttpClientStream &stream, unsigned char *chunk,
                                 ESB::UInt32 chunkSize) = 0;
 
   /**
@@ -80,7 +80,7 @@ class HttpClientHandler {
    * @return a result code
    */
   virtual Result receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                        HttpStream &stream) = 0;
+                                        HttpClientStream &stream) = 0;
 
   /**
    * Reserve space for the response body.  This will be called 0+ times as the
@@ -93,7 +93,7 @@ class HttpClientHandler {
    * resumed by the handler later.
    */
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
-                                           HttpStream &stream) = 0;
+                                           HttpClientStream &stream) = 0;
 
   /**
    * If the handler cannot keep up with the received data, the stack will
@@ -105,7 +105,7 @@ class HttpClientHandler {
    * @param stream The server stream, including request and response objects
    */
   virtual void receivePaused(HttpMultiplexer &multiplexer,
-                             HttpStream &stream) = 0;
+                             HttpClientStream &stream) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -121,7 +121,7 @@ class HttpClientHandler {
    * @return a result code
    */
   virtual Result receiveResponseChunk(HttpMultiplexer &multiplexer,
-                                      HttpStream &stream,
+                                      HttpClientStream &stream,
                                       unsigned const char *chunk,
                                       ESB::UInt32 chunkSize) = 0;
 
@@ -136,8 +136,8 @@ class HttpClientHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endClientTransaction(HttpMultiplexer &multiplexer,
-                                    HttpStream &stream, State state) = 0;
+  virtual void endTransaction(HttpMultiplexer &multiplexer,
+                              HttpClientStream &stream, State state) = 0;
 
  private:
   // Disabled

@@ -2,7 +2,7 @@ proxy:
  - Split HttpMultiplexer into HttpMultiplexer and HttpMultiplexerExtended.  Use the latter internally.  Pass the former down to the http client and server handlers.
  - add test and support for http pipelining.
  - implement idle check - and make it work with paused sockets
- - move HttpServerHandler, HttpClientHandler, and their deps into http-common.
+ - move HttpServerHandler, HttpClientHandler, HttpMultiplexer and their deps into http-common.  Leave HttpMultiplexerExtended in http1
  - do not wait to receive entire request body before sending response body.  Instead stream them concurrently
  - add stress tests:
    - proxy: backpressure works for clients that read response body slowly

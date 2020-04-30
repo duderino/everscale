@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_SERVER_COMMAND_H
 #define ES_HTTP_SERVER_COMMAND_H
 
-#ifndef ES_HTTP_MULTIPLEXER_H
-#include <ESHttpMultiplexer.h>
+#ifndef ES_HTTP_MULTIPLEXER_EXTENDED_H
+#include <ESHttpMultiplexerExtended.h>
 #endif
 
 #ifndef ESB_EMBEDDED_LIST_ELEMENT_H
@@ -23,7 +23,7 @@ class HttpServerCommand : public ESB::EmbeddedListElement {
    * @param multiplexer The API for the multiplexer thread.
    * @return ESB_SUCCESS if successful, another error code otherwise
    */
-  virtual ESB::Error run(HttpMultiplexer &multiplexer) = 0;
+  virtual ESB::Error run(HttpMultiplexerExtended &multiplexer) = 0;
 
   virtual const char *name() = 0;
 

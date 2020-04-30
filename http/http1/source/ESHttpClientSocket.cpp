@@ -43,7 +43,7 @@ namespace ES {
 bool HttpClientSocket::_ReuseConnections = true;
 
 HttpClientSocket::HttpClientSocket(HttpClientHandler &handler,
-                                   HttpMultiplexer &multiplexer,
+                                   HttpMultiplexerExtended &multiplexer,
                                    ESB::SocketAddress &peerAddress,
                                    HttpClientCounters &counters,
                                    ESB::CleanupHandler &cleanupHandler)
@@ -68,7 +68,7 @@ HttpClientSocket::~HttpClientSocket() {
     _sendBuffer = NULL;
   }
   if (_transaction) {
-    _multiplexer.destroyTransaction(_transaction);
+    _multiplexer.destroyClientTransaction(_transaction);
     _transaction = NULL;
   }
 }
@@ -430,42 +430,42 @@ bool HttpClientSocket::handleRemove() {
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
-    _handler.endClientTransaction(
-        _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+    _handler.endTransaction(_multiplexer, *this,
+                            HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
   } else if (_state & CONNECTING) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
-    _handler.endClientTransaction(
-        _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+    _handler.endTransaction(_multiplexer, *this,
+                            HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
   } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
 
-    _handler.endClientTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
-    _handler.endClientTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
   } else if (_state & PARSING_HEADERS) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
-    _handler.endClientTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
   } else if (_state & PARSING_BODY) {
     assert(_transaction);
     _counters.getFailures()->record(_transaction->startTime(),
                                     ESB::Date::Now());
-    _handler.endClientTransaction(
+    _handler.endTransaction(
         _multiplexer, *this,
         HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
   } else if (_state & TRANSACTION_END) {
@@ -487,13 +487,13 @@ bool HttpClientSocket::handleRemove() {
       reuseConnection = false;
     }
 
-    _handler.endClientTransaction(
-        _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
+    _handler.endTransaction(_multiplexer, *this,
+                            HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
   } else if (_state & RETRY_STALE_CONNECTION) {
     assert(_transaction);
     ESB_LOG_DEBUG("[%s] connection stale, retrying transaction",
                   _socket.logAddress());
-    ESB::Error error = _multiplexer.executeTransaction(_transaction);
+    ESB::Error error = _multiplexer.executeClientTransaction(_transaction);
 
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "[%s] Cannot retry transaction",
@@ -501,14 +501,14 @@ bool HttpClientSocket::handleRemove() {
       _state &= ~RETRY_STALE_CONNECTION;
       _state |= TRANSACTION_BEGIN;
 
-      _handler.endClientTransaction(
-          _multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+      _handler.endTransaction(_multiplexer, *this,
+                              HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
     }
   }
 
   if (0x00 == (_state & RETRY_STALE_CONNECTION)) {
     if (_transaction) {
-      _multiplexer.destroyTransaction(_transaction);
+      _multiplexer.destroyClientTransaction(_transaction);
       _transaction = NULL;
     }
   }

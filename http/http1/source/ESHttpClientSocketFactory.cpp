@@ -43,10 +43,9 @@ void HttpClientSocketFactory::SocketAddressCallbacks::cleanup(
   _allocator.deallocate(element);
 }
 
-HttpClientSocketFactory::HttpClientSocketFactory(HttpMultiplexer &multiplexer,
-                                                 HttpClientHandler &handler,
-                                                 HttpClientCounters &counters,
-                                                 ESB::Allocator &allocator)
+HttpClientSocketFactory::HttpClientSocketFactory(
+    HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
+    HttpClientCounters &counters, ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
       _handler(handler),
       _counters(counters),

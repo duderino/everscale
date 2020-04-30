@@ -9,8 +9,8 @@
 #include <ESHttpMultiplexer.h>
 #endif
 
-#ifndef ES_HTTP_STREAM_H
-#include <ESHttpStream.h>
+#ifndef ES_HTTP_SERVER_STREAM_H
+#include <ESHttpServerStream.h>
 #endif
 
 namespace ES {
@@ -59,8 +59,8 @@ class HttpServerHandler {
    * @param stream The server stream, including request and response objects
    * @return a result code
    */
-  virtual Result beginServerTransaction(HttpMultiplexer &multiplexer,
-                                        HttpStream &stream) = 0;
+  virtual Result beginTransaction(HttpMultiplexer &multiplexer,
+                                  HttpServerStream &stream) = 0;
 
   /**
    * Process a request's HTTP headers.
@@ -70,7 +70,7 @@ class HttpServerHandler {
    * @return a result code
    */
   virtual Result receiveRequestHeaders(HttpMultiplexer &multiplexer,
-                                       HttpStream &stream) = 0;
+                                       HttpServerStream &stream) = 0;
 
   /**
    * Reserve space for the request body.  This will be called 0+ times as the
@@ -83,7 +83,7 @@ class HttpServerHandler {
    * resumed by the handler later.
    */
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpStream &stream) = 0;
+                                          HttpServerStream &stream) = 0;
 
   /**
    * Incrementally process a request's body.  This will be called 1+ times as
@@ -100,7 +100,7 @@ class HttpServerHandler {
    * @return a result code
    */
   virtual Result receiveRequestChunk(HttpMultiplexer &multiplexer,
-                                     HttpStream &stream,
+                                     HttpServerStream &stream,
                                      unsigned const char *chunk,
                                      ESB::UInt32 chunkSize) = 0;
 
@@ -114,7 +114,7 @@ class HttpServerHandler {
    * @param stream The server stream, including request and response objects
    */
   virtual void receivePaused(HttpMultiplexer &multiplexer,
-                             HttpStream &stream) = 0;
+                             HttpServerStream &stream) = 0;
 
   /**
    * Request a buffer of up to n bytes to fill with response body data.  The
@@ -134,7 +134,7 @@ class HttpServerHandler {
    * -1 or less immediately closes the connection
    */
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
-                                           HttpStream &stream) = 0;
+                                           HttpServerStream &stream) = 0;
 
   /**
    * Fill a response body chunk with data.
@@ -146,7 +146,7 @@ class HttpServerHandler {
    * size requested by the requestResponseChunk method.
    */
   virtual void fillResponseChunk(HttpMultiplexer &multiplexer,
-                                 HttpStream &stream, unsigned char *chunk,
+                                 HttpServerStream &stream, unsigned char *chunk,
                                  ESB::UInt32 chunkSize) = 0;
 
   /**
@@ -160,8 +160,8 @@ class HttpServerHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endServerTransaction(HttpMultiplexer &multiplexer,
-                                    HttpStream &stream, State state) = 0;
+  virtual void endTransaction(HttpMultiplexer &multiplexer,
+                              HttpServerStream &stream, State state) = 0;
 
  private:
   // Disabled

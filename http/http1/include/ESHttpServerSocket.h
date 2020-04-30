@@ -21,12 +21,12 @@
 #include <ESHttpServerCounters.h>
 #endif
 
-#ifndef ES_HTTP_MULTIPLEXER_H
-#include <ESHttpMultiplexer.h>
+#ifndef ES_HTTP_MULTIPLEXER_EXTENDED_H
+#include <ESHttpMultiplexerExtended.h>
 #endif
 
-#ifndef ES_HTTP_STREAM_H
-#include <ESHttpStream.h>
+#ifndef ES_HTTP_SERVER_STREAM_H
+#include <ESHttpServerStream.h>
 #endif
 
 namespace ES {
@@ -35,11 +35,13 @@ namespace ES {
  *
  * TODO implement idle check
  */
-class HttpServerSocket : public ESB::MultiplexedSocket, public HttpStream {
+class HttpServerSocket : public ESB::MultiplexedSocket,
+                         public HttpServerStream {
  public:
   /** Constructor
    */
-  HttpServerSocket(HttpServerHandler &handler, HttpMultiplexer &multiplexer,
+  HttpServerSocket(HttpServerHandler &handler,
+                   HttpMultiplexerExtended &multiplexer,
                    HttpServerCounters &counters,
                    ESB::CleanupHandler &cleanupHandler);
 
@@ -149,7 +151,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpStream {
   int _state;
   int _bodyBytesWritten;
   int _requestsPerConnection;
-  HttpMultiplexer &_multiplexer;
+  HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerTransaction *_transaction;
   HttpServerCounters &_counters;

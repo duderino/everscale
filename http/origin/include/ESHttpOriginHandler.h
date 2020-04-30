@@ -19,22 +19,24 @@ class HttpOriginHandler : public HttpServerHandler {
 
   virtual Result acceptConnection(HttpMultiplexer &stack,
                                   ESB::SocketAddress *address);
-  virtual Result beginServerTransaction(HttpMultiplexer &stack,
-                                        HttpStream &stream);
+  virtual Result beginTransaction(HttpMultiplexer &stack,
+                                  HttpServerStream &stream);
   virtual Result receiveRequestHeaders(HttpMultiplexer &stack,
-                                       HttpStream &stream);
+                                       HttpServerStream &stream);
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
-                                          HttpStream &stream);
-  virtual Result receiveRequestChunk(HttpMultiplexer &stack, HttpStream &stream,
+                                          HttpServerStream &stream);
+  virtual Result receiveRequestChunk(HttpMultiplexer &stack,
+                                     HttpServerStream &stream,
                                      unsigned const char *chunk,
                                      ESB::UInt32 chunkSize);
-  virtual void receivePaused(HttpMultiplexer &stack, HttpStream &stream);
+  virtual void receivePaused(HttpMultiplexer &stack, HttpServerStream &stream);
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
-                                           HttpStream &stream);
-  virtual void fillResponseChunk(HttpMultiplexer &stack, HttpStream &stream,
-                                 unsigned char *chunk, ESB::UInt32 chunkSize);
-  virtual void endServerTransaction(HttpMultiplexer &stack, HttpStream &stream,
-                                    State state);
+                                           HttpServerStream &stream);
+  virtual void fillResponseChunk(HttpMultiplexer &stack,
+                                 HttpServerStream &stream, unsigned char *chunk,
+                                 ESB::UInt32 chunkSize);
+  virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
+                              State state);
 
  private:
   // Disabled

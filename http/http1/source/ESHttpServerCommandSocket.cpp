@@ -4,7 +4,7 @@
 
 namespace ES {
 
-HttpServerCommandSocket::HttpServerCommandSocket(HttpMultiplexer &stack)
+HttpServerCommandSocket::HttpServerCommandSocket(HttpMultiplexerExtended &stack)
     : _multiplexer(stack) {}
 
 HttpServerCommandSocket::~HttpServerCommandSocket() {}

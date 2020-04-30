@@ -17,7 +17,8 @@ set(SOURCE_FILES
         source/ESHttpListeningSocket.cpp
         source/ESHttpMessageFormatter.cpp
         source/ESHttpMessageParser.cpp
-        source/ESHttpMultiplexer.cpp
+	source/ESHttpMultiplexer.cpp
+	source/ESHttpMultiplexerExtended.cpp
         source/ESHttpProxyHandler.cpp
         source/ESHttpRequestFormatter.cpp
         source/ESHttpRequestParser.cpp

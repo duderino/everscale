@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_PROXY_MULTIPLEXER_H
 #define ES_HTTP_PROXY_MULTIPLEXER_H
 
-#ifndef ES_HTTP_MULTIPLEXER_H
-#include <ESHttpMultiplexer.h>
+#ifndef ES_HTTP_MULTIPLEXER_EXTENDED_H
+#include <ESHttpMultiplexerExtended.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_HANDLER_H
@@ -64,7 +64,7 @@
 namespace ES {
 
 class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
-                             public HttpMultiplexer {
+                             public HttpMultiplexerExtended {
  public:
   /**
    * Create a proxy-mode (client + server) multiplexer.
@@ -157,11 +157,12 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
   virtual void releaseBuffer(ESB::Buffer *buffer);
 
   virtual HttpClientTransaction *createClientTransaction();
-  virtual ESB::Error executeTransaction(HttpClientTransaction *transaction);
-  virtual void destroyTransaction(HttpClientTransaction *transaction);
+  virtual ESB::Error executeClientTransaction(
+      HttpClientTransaction *transaction);
+  virtual void destroyClientTransaction(HttpClientTransaction *transaction);
 
   virtual HttpServerTransaction *createServerTransaction();
-  virtual void destroyTransaction(HttpServerTransaction *transaction);
+  virtual void destroyServerTransaction(HttpServerTransaction *transaction);
 
   virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state);
   virtual ESB::Error addListeningSocket(ESB::ListeningTCPSocket &socket);

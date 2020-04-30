@@ -1,7 +1,6 @@
 #ifndef ES_HTTP_STREAM_H
 #define ES_HTTP_STREAM_H
 
-#include <ESBSocketMultiplexer.h>
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
 #endif

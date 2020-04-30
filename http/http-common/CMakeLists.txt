@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(http-common VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
+	source/ESHttpClientStream.cpp
         source/ESHttpHeader.cpp
         source/ESHttpMessage.cpp
         source/ESHttpRequest.cpp
@@ -10,6 +11,7 @@ set(SOURCE_FILES
         source/ESHttpTransaction.cpp
         source/ESHttpUtil.cpp
         source/ESHttpConfig.cpp
+	source/ESHttpServerStream.cpp
         source/ESHttpStream.cpp
         )
 

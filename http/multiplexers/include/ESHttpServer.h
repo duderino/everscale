@@ -90,7 +90,7 @@ class HttpServer {
 
     virtual ~AddListeningSocketCommand(){};
 
-    virtual ESB::Error run(HttpMultiplexer &multiplexer) {
+    virtual ESB::Error run(HttpMultiplexerExtended &multiplexer) {
       return multiplexer.addListeningSocket(_socket);
     }
 

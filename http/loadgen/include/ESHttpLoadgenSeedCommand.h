@@ -32,7 +32,7 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
 
   virtual ~HttpLoadgenSeedCommand() {}
 
-  virtual ESB::Error run(HttpMultiplexer &multiplexer) {
+  virtual ESB::Error run(HttpMultiplexerExtended &multiplexer) {
     for (ESB::UInt32 i = 0; i < _connections; ++i) {
       if (0 > HttpLoadgenContext::DecRemainingIterations()) {
         break;
@@ -55,7 +55,7 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
           _host, _port, _absPath, _method, _contentType, transaction);
       assert(ESB_SUCCESS == error);
 
-      error = multiplexer.executeTransaction(transaction);
+      error = multiplexer.executeClientTransaction(transaction);
       assert(ESB_SUCCESS == error);
     }
 

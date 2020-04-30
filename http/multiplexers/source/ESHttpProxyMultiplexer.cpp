@@ -11,43 +11,44 @@ namespace ES {
 class HttpNullClientHandler : public HttpClientHandler {
  public:
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpStream &stream) {
+                                          HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
     return 0;
   }
 
   virtual void fillRequestChunk(HttpMultiplexer &multiplexer,
-                                HttpStream &stream, unsigned char *chunk,
+                                HttpClientStream &stream, unsigned char *chunk,
                                 ESB::UInt32 chunkSize) {
     assert(0 == "HttpNullClientHandler called");
   }
 
   virtual Result receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                        HttpStream &stream) {
+                                        HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
     return ES_HTTP_CLIENT_HANDLER_CLOSE;
   }
 
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
-                                           HttpStream &stream) {
+                                           HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
     return 0;
   }
 
-  virtual void receivePaused(HttpMultiplexer &multiplexer, HttpStream &stream) {
+  virtual void receivePaused(HttpMultiplexer &multiplexer,
+                             HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
   }
 
   virtual Result receiveResponseChunk(HttpMultiplexer &multiplexer,
-                                      HttpStream &stream,
+                                      HttpClientStream &stream,
                                       unsigned const char *chunk,
                                       ESB::UInt32 chunkSize) {
     assert(0 == "HttpNullClientHandler called");
     return ES_HTTP_CLIENT_HANDLER_CLOSE;
   }
 
-  virtual void endClientTransaction(HttpMultiplexer &multiplexer,
-                                    HttpStream &stream, State state) {
+  virtual void endTransaction(HttpMultiplexer &multiplexer,
+                              HttpClientStream &stream, State state) {
     assert(0 == "HttpNullClientHandler called");
   }
 };
@@ -60,48 +61,50 @@ class HttpNullServerHandler : public HttpServerHandler {
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
-  virtual Result beginServerTransaction(HttpMultiplexer &stack,
-                                        HttpStream &stream) {
+  virtual Result beginTransaction(HttpMultiplexer &stack,
+                                  HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
   virtual Result receiveRequestHeaders(HttpMultiplexer &stack,
-                                       HttpStream &stream) {
+                                       HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
-                                          HttpStream &stream) {
+                                          HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return 0;
   }
 
-  virtual Result receiveRequestChunk(HttpMultiplexer &stack, HttpStream &stream,
+  virtual Result receiveRequestChunk(HttpMultiplexer &stack,
+                                     HttpServerStream &stream,
                                      unsigned const char *chunk,
                                      ESB::UInt32 chunkSize) {
     assert(0 == "HttpNullServerHandler called");
     return ES_HTTP_SERVER_HANDLER_CLOSE;
   }
 
-  virtual void receivePaused(HttpMultiplexer &stack, HttpStream &stream) {
+  virtual void receivePaused(HttpMultiplexer &stack, HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
   }
 
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
-                                           HttpStream &stream) {
+                                           HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return 0;
   }
 
-  virtual void fillResponseChunk(HttpMultiplexer &stack, HttpStream &stream,
-                                 unsigned char *chunk, ESB::UInt32 chunkSize) {
+  virtual void fillResponseChunk(HttpMultiplexer &stack,
+                                 HttpServerStream &stream, unsigned char *chunk,
+                                 ESB::UInt32 chunkSize) {
     assert(0 == "HttpNullServerHandler called");
   }
 
-  virtual void endServerTransaction(HttpMultiplexer &stack, HttpStream &stream,
-                                    State state) {
+  virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
+                              State state) {
     assert(0 == "HttpNullServerHandler called");
   }
 };
@@ -401,12 +404,12 @@ HttpClientTransaction *HttpProxyMultiplexer::createClientTransaction() {
   return _clientTransactionFactory.create();
 }
 
-ESB::Error HttpProxyMultiplexer::executeTransaction(
+ESB::Error HttpProxyMultiplexer::executeClientTransaction(
     HttpClientTransaction *transaction) {
   return _clientSocketFactory.executeClientTransaction(transaction);
 }
 
-void HttpProxyMultiplexer::destroyTransaction(
+void HttpProxyMultiplexer::destroyClientTransaction(
     HttpClientTransaction *transaction) {
   return _clientTransactionFactory.release(transaction);
 }
@@ -476,7 +479,7 @@ HttpServerTransaction *HttpProxyMultiplexer::createServerTransaction() {
   return _serverTransactionFactory.create();
 }
 
-void HttpProxyMultiplexer::destroyTransaction(
+void HttpProxyMultiplexer::destroyServerTransaction(
     HttpServerTransaction *transaction) {
   _serverTransactionFactory.release(transaction);
 }

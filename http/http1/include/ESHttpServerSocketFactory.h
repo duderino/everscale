@@ -21,8 +21,8 @@
 #include <ESBBufferPool.h>
 #endif
 
-#ifndef ES_HTTP_MULTIPLEXER_H
-#include <ESHttpMultiplexer.h>
+#ifndef ES_HTTP_MULTIPLEXER_EXTENDED_H
+#include <ESHttpMultiplexerExtended.h>
 #endif
 
 namespace ES {
@@ -31,7 +31,7 @@ namespace ES {
  */
 class HttpServerSocketFactory {
  public:
-  HttpServerSocketFactory(HttpMultiplexer &multiplexer,
+  HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer,
                           HttpServerHandler &handler,
                           HttpServerCounters &counters,
                           ESB::Allocator &allocator);
@@ -81,7 +81,7 @@ class HttpServerSocketFactory {
     HttpServerSocketFactory &_factory;
   };
 
-  HttpMultiplexer &_multiplexer;
+  HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerCounters &_counters;
   ESB::Allocator &_allocator;

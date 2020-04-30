@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_CLIENT_SOCKET_FACTORY_H
 #define ES_HTTP_CLIENT_SOCKET_FACTORY_H
 
-#ifndef ES_HTTP_MULTIPLEXER_H
-#include <ESHttpMultiplexer.h>
+#ifndef ES_HTTP_MULTIPLEXER_EXTENDED_H
+#include <ESHttpMultiplexerExtended.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_TRANSACTION_H
@@ -46,7 +46,7 @@ class HttpClientSocketFactory {
   /** Constructor
    *
    */
-  HttpClientSocketFactory(HttpMultiplexer &multiplexer,
+  HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer,
                           HttpClientHandler &handler,
                           HttpClientCounters &counters,
                           ESB::Allocator &allocator);
@@ -120,7 +120,7 @@ class HttpClientSocketFactory {
     ESB::Allocator &_allocator;
   };
 
-  HttpMultiplexer &_multiplexer;
+  HttpMultiplexerExtended &_multiplexer;
   HttpClientHandler &_handler;
   HttpClientCounters &_counters;
   ESB::Allocator &_allocator;

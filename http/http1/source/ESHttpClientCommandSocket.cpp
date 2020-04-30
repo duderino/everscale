@@ -4,7 +4,7 @@
 
 namespace ES {
 
-HttpClientCommandSocket::HttpClientCommandSocket(HttpMultiplexer &stack)
+HttpClientCommandSocket::HttpClientCommandSocket(HttpMultiplexerExtended &stack)
     : _stack(stack) {}
 
 HttpClientCommandSocket::~HttpClientCommandSocket() {}
