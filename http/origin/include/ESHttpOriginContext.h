@@ -29,8 +29,8 @@ class HttpOriginContext {
 
  private:
   // Disabled
-  HttpOriginContext(const HttpOriginContext &state);
-  void operator=(const HttpOriginContext &state);
+  HttpOriginContext(const HttpOriginContext &);
+  void operator=(const HttpOriginContext &);
 
   unsigned int _bytesSent;
 };

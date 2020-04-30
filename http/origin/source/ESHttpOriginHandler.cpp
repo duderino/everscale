@@ -71,8 +71,8 @@ HttpServerHandler::Result HttpOriginHandler::receiveRequestChunk(
   return ES_HTTP_SERVER_HANDLER_CONTINUE;
 }
 
-int HttpOriginHandler::reserveResponseChunk(HttpServerStack &stack,
-                                            HttpStream &stream) {
+ESB::UInt32 HttpOriginHandler::reserveResponseChunk(HttpServerStack &stack,
+                                                    HttpStream &stream) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   return BodySize - context->getBytesSent();

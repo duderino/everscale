@@ -51,8 +51,7 @@ class SocketAddress {
     NONE = 0,
     UDP = 1, /**< UDP transport. */
     TCP = 2, /**< TCP transport. */
-    TLS = 3
-    /**< TLS transport. */
+    TLS = 3  /**< TLS transport. */
   } TransportType;
 
   /** Default constructor.  Suitable for creating an uninitialized address.
@@ -60,20 +59,15 @@ class SocketAddress {
    */
   SocketAddress();
 
-  /** Construct a new SocketAddress given a dotted-decimal IP address
-   *  (e.g., "192.168.0.0"), port, and transport type.
+  /** Construct a new SocketAddress with an address in presentation format
+   * (e.g., "192.168.0.0"), port, and transport type.
    *
-   *  If the address is known only by hostname, the default constructor
-   *  should be used to construct the instance and the resolve method should
-   *  be used to set the instance's values.  It's done this way because the
-   *  hostname resolution can fail and we don't want to throw exceptions.
-   *
-   *  @param dottedIp The address's dotted IP address.
+   *  @param presentation The address in presentation format
    *  @param port The address's port number.  Host byte order.
    *  @param transport The address's transport type.
    *  @see resolve.
    */
-  SocketAddress(const char *dottedIp, UInt16 port, TransportType transport);
+  SocketAddress(const char *presentation, UInt16 port, TransportType transport);
 
   /** Copy constructor.
    *
@@ -128,6 +122,14 @@ class SocketAddress {
    */
   void logAddress(char *address, int size, int fd) const;
 
+  /** Update the IP address with an address in presentation format (e.g.,
+   * "192.168.0.0").
+   *
+   *  @param presentation The address in presentation format
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  ESB::Error setAddress(const char *presentation);
+
   /** Get the port of the SocketAddress.
    *
    *  @return the port.  Host byte order
@@ -152,14 +154,6 @@ class SocketAddress {
    */
   void setType(TransportType transport);
 
-  /** Determine whether the socket address is valid (i.e., ip address and
-   *  port number fall within valid range, transport type is set to
-   *  one of the values in the TransportType enum except NONE).
-   *
-   *  @return true if the address is valid, false otherwise.
-   */
-  bool isValid();
-
   /** Placement new.
    *
    *  @param size The size of the object.
@@ -173,7 +167,6 @@ class SocketAddress {
  private:
   Address _address;
   TransportType _transport;
-  UInt8 _magic;
 };
 
 }  // namespace ESB

@@ -55,8 +55,8 @@ class HttpLoadgenHandler : public HttpClientHandler {
 
  private:
   // Disabled
-  HttpLoadgenHandler(const HttpLoadgenHandler &clientHandler);
-  void operator=(const HttpLoadgenHandler &clientHandler);
+  HttpLoadgenHandler(const HttpLoadgenHandler &);
+  void operator=(const HttpLoadgenHandler &);
 
   const char *_absPath;
   const char *_method;

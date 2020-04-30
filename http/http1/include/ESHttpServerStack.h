@@ -5,8 +5,8 @@
 #include <ESHttpServerTransaction.h>
 #endif
 
-#ifndef ESB_MULTIPLEXED_SOCKET_H
-#include <ESBMultiplexedSocket.h>
+#ifndef ES_HTTP_SERVER_COUNTERS_H
+#include <ESHttpServerCounters.h>
 #endif
 
 #ifndef ESB_BUFFER_H
@@ -15,10 +15,6 @@
 
 #ifndef ESB_TCP_SOCKET_H
 #include <ESBTCPSocket.h>
-#endif
-
-#ifndef ES_HTTP_SERVER_COUNTERS_H
-#include <ESHttpServerCounters.h>
 #endif
 
 #ifndef ESB_LISTENING_TCP_SOCKET_H

@@ -131,8 +131,8 @@ class HttpServerHandler {
    * @return The buffer size requested.  Returning 0 ends the body.  Returning
    * -1 or less immediately closes the connection
    */
-  virtual int reserveResponseChunk(HttpServerStack &stack,
-                                   HttpStream &stream) = 0;
+  virtual ESB::UInt32 reserveResponseChunk(HttpServerStack &stack,
+                                           HttpStream &stream) = 0;
 
   /**
    * Fill a response body chunk with data.

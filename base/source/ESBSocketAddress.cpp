@@ -36,7 +36,7 @@
 
 namespace ESB {
 
-SocketAddress::SocketAddress() : _magic(0) {
+SocketAddress::SocketAddress() {
 #ifdef HAVE_MEMSET
   memset(&_address, 0, sizeof(Address));
 #else
@@ -59,62 +59,23 @@ SocketAddress::SocketAddress() : _magic(0) {
   _transport = NONE;
 }
 
-SocketAddress::SocketAddress(const char *dottedIp, UInt16 port,
-                             TransportType transport)
-    : _magic(0) {
+SocketAddress::SocketAddress(const char *presentation, UInt16 port,
+                             TransportType transport) {
 #ifdef HAVE_MEMSET
   memset(&_address, 0, sizeof(Address));
 #else
 #error "memset equivalent is required."
 #endif
 
-  _magic = ESB_MAGIC;
-
 #ifdef HAVE_STRUCT_SOCKADDR_IN
-
   _address.sin_family = AF_INET;
-
-#if defined HAVE_INET_PTON
-
-  if (1 != inet_pton(AF_INET, dottedIp, &_address.sin_addr)) {
-    _magic = 0;
-  }
-
-#elif defined HAVE_INET_ADDR && defined HAVE_INADDR_NONE
-
-  UInt32 ip = inet_addr(dottedIp);
-
-  if (INADDR_NONE == ip) {
-    _magic = 0;
-  } else {
-    _address.sin_addr.s_addr = ip;
-  }
-
 #else
-#error "inet_pton equivalent is required."
-#endif
-
-#else /* ! HAVE_STRUCT_SOCKADDR_IN */
 #error "sockaddr_in or equivalent is required"
 #endif
 
-#ifdef HAVE_HTONS
-  _address.sin_port = htons(port);
-#else
-#error "htons equivalent is required."
-#endif
-
-  _transport = transport;
-
-  switch (transport) {
-    case TCP:
-    case UDP:
-    case TLS:
-      break;
-
-    default:
-      _magic = 0;
-  }
+  setAddress(presentation);
+  setPort(port);
+  setType(transport);
 }
 
 SocketAddress::SocketAddress(const SocketAddress &address) {
@@ -125,7 +86,6 @@ SocketAddress::SocketAddress(const SocketAddress &address) {
 #endif
 
   _transport = address._transport;
-  _magic = address._magic;
 }
 
 SocketAddress &SocketAddress::operator=(const SocketAddress &address) {
@@ -136,7 +96,6 @@ SocketAddress &SocketAddress::operator=(const SocketAddress &address) {
 #endif
 
   _transport = address._transport;
-  _magic = address._magic;
 
   return *this;
 }
@@ -205,21 +164,7 @@ void SocketAddress::setPort(UInt16 port) {
 
 SocketAddress::TransportType SocketAddress::type() const { return _transport; }
 
-void SocketAddress::setType(TransportType transport) {
-  _transport = transport;
-
-  switch (_transport) {
-    case TCP:
-    case UDP:
-    case TLS:
-      break;
-
-    default:
-      _magic = 0;
-  }
-}
-
-bool SocketAddress::isValid() { return ESB_MAGIC == _magic; }
+void SocketAddress::setType(TransportType transport) { _transport = transport; }
 
 bool SocketAddress::operator<(const SocketAddress &address) const {
   if (0 > ::memcmp(&_address, &address._address, sizeof(_address))) {
@@ -235,6 +180,30 @@ void SocketAddress::updatePrimitiveAddress(SocketAddress::Address *address) {
   }
 
   memcpy(&_address, address, sizeof(_address));
+}
+
+ESB::Error SocketAddress::setAddress(const char *presentation) {
+#if defined HAVE_INET_PTON
+
+  if (1 != inet_pton(AF_INET, presentation, &_address.sin_addr)) {
+    return LastError();
+  }
+
+#elif defined HAVE_INET_ADDR && defined HAVE_INADDR_NONE
+
+  UInt32 ip = inet_addr(dottedIp);
+
+  if (INADDR_NONE == ip) {
+    return LastError();
+  } else {
+    _address.sin_addr.s_addr = ip;
+  }
+
+#else
+#error "inet_pton equivalent is required."
+#endif
+
+  return ESB_SUCCESS;
 }
 
 }  // namespace ESB

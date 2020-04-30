@@ -29,7 +29,8 @@ class HttpOriginHandler : public HttpServerHandler {
                                      unsigned const char *chunk,
                                      ESB::UInt32 chunkSize);
   virtual void receivePaused(HttpServerStack &stack, HttpStream &stream);
-  virtual int reserveResponseChunk(HttpServerStack &stack, HttpStream &stream);
+  virtual ESB::UInt32 reserveResponseChunk(HttpServerStack &stack,
+                                           HttpStream &stream);
   virtual void fillResponseChunk(HttpServerStack &stack, HttpStream &stream,
                                  unsigned char *chunk, ESB::UInt32 chunkSize);
   virtual void endServerTransaction(HttpServerStack &stack, HttpStream &stream,
@@ -37,8 +38,8 @@ class HttpOriginHandler : public HttpServerHandler {
 
  private:
   // Disabled
-  HttpOriginHandler(const HttpOriginHandler &serverHandler);
-  void operator=(const HttpOriginHandler &serverHandler);
+  HttpOriginHandler(const HttpOriginHandler &);
+  void operator=(const HttpOriginHandler &);
 };
 
 }  // namespace ES

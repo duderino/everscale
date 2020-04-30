@@ -1,4 +1,7 @@
 proxy:
+ - Rename HttpServerStack HttpProxyStack and make it subclass HttpClientStack
+ - Rename HttpServer HttpProxy and make it subclass HttpClient
+ - Rename HttpServerMultiplexer HttpProxyMultiplexer and make it subclass HttpClientMultiplexer
  - add test and support for http pipelining.
  - implement idle check - and make it work with paused sockets
  - move HttpServerHandler, HttpClientHandler, and their deps into http-common.

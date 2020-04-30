@@ -1,6 +1,31 @@
 cmake_minimum_required(VERSION 3.5)
 project(proxy VERSION ${VERSION} LANGUAGES CXX)
 
+set(SOURCE_FILES
+        source/ESHttpRouter.cpp
+        )
+
+#source/ESHttpRoutingProxyContext.cpp
+#source/ESHttpRoutingProxyHandler.cpp
+
+add_library(proxy STATIC ${SOURCE_FILES})
+
+target_include_directories(proxy PRIVATE
+        "${PROJECT_SOURCE_DIR}/source"
+        "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http1/include"
+        "${PROJECT_SOURCE_DIR}/../multiplexers/include"
+        "${PROJECT_SOURCE_DIR}/../loadgen/include"
+        "${PROJECT_SOURCE_DIR}/../origin/include"
+        )
+
+target_include_directories(proxy PUBLIC
+        "${PROJECT_SOURCE_DIR}/include"
+        )
+
+target_compile_options(proxy PUBLIC ${CPP_FLAGS})
+
 # Unit tests
 
 set(TEST_INCS
@@ -18,6 +43,7 @@ set(TEST_INCS
 set(TEST_LIBS
         -pthread
         unit-tf
+        proxy
         loadgen
         origin
         multiplexers

@@ -56,8 +56,8 @@ class HttpLoadgenContext : public ESB::Object {
 
  private:
   // Disabled
-  HttpLoadgenContext(const HttpLoadgenContext &context);
-  void operator=(const HttpLoadgenContext &context);
+  HttpLoadgenContext(const HttpLoadgenContext &);
+  void operator=(const HttpLoadgenContext &);
 
   ESB::UInt32 _bytesSent;
   ESB::CleanupHandler &_cleanupHandler;
