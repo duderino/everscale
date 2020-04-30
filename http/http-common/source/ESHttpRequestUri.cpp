@@ -6,12 +6,15 @@
 #include <ESBConfig.h>
 #endif
 
+#ifndef ES_HTTP_UTIL_H
+#include <ESHttpUtil.h>
+#endif
+
 namespace ES {
 
 HttpRequestUri::HttpRequestUri(UriType type)
     : _type(type),
       _port(-1),
-      _username(NULL),
       _host(NULL),
       _absPath(NULL),
       _query(NULL),
@@ -21,7 +24,6 @@ HttpRequestUri::HttpRequestUri(UriType type)
 HttpRequestUri::HttpRequestUri()
     : _type(ES_URI_HTTP),
       _port(-1),
-      _username(NULL),
       _host(NULL),
       _absPath(NULL),
       _query(NULL),
@@ -33,12 +35,78 @@ HttpRequestUri::~HttpRequestUri() {}
 void HttpRequestUri::reset() {
   _type = ES_URI_HTTP;
   _port = -1;
-  _username = NULL;
   _host = NULL;
   _absPath = NULL;
   _query = NULL;
   _fragment = NULL;
   _other = NULL;
+}
+
+ESB::Error HttpRequestUri::copy(const HttpRequestUri *other,
+                                ESB::Allocator &allocator) {
+  if (!other) {
+    return ESB_NULL_POINTER;
+  }
+
+  _type = other->type();
+  _port = other->port();
+
+  if (other->host()) {
+    _host = HttpUtil::Duplicate(&allocator, other->host());
+    if (!_host) {
+      return ESB_OUT_OF_MEMORY;
+    }
+  }
+
+  if (other->absPath()) {
+    _absPath = HttpUtil::Duplicate(&allocator, other->absPath());
+    if (!_absPath) {
+      allocator.deallocate((void *)_host);
+      _host = NULL;
+      return ESB_OUT_OF_MEMORY;
+    }
+  }
+
+  if (other->query()) {
+    _query = HttpUtil::Duplicate(&allocator, other->query());
+    if (!_query) {
+      allocator.deallocate((void *)_host);
+      allocator.deallocate((void *)_absPath);
+      _host = NULL;
+      _absPath = NULL;
+      return ESB_OUT_OF_MEMORY;
+    }
+  }
+
+  if (other->fragment()) {
+    _fragment = HttpUtil::Duplicate(&allocator, other->fragment());
+    if (!_fragment) {
+      allocator.deallocate((void *)_host);
+      allocator.deallocate((void *)_absPath);
+      allocator.deallocate((void *)_query);
+      _host = NULL;
+      _absPath = NULL;
+      _query = NULL;
+      return ESB_OUT_OF_MEMORY;
+    }
+  }
+
+  if (other->other()) {
+    _other = HttpUtil::Duplicate(&allocator, other->other());
+    if (!_other) {
+      allocator.deallocate((void *)_host);
+      allocator.deallocate((void *)_absPath);
+      allocator.deallocate((void *)_query);
+      allocator.deallocate((void *)_fragment);
+      _host = NULL;
+      _absPath = NULL;
+      _query = NULL;
+      _fragment = NULL;
+      return ESB_OUT_OF_MEMORY;
+    }
+  }
+
+  return ESB_SUCCESS;
 }
 
 int HttpRequestUri::Compare(const HttpRequestUri *r1,

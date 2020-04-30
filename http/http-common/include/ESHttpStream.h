@@ -65,7 +65,7 @@ class HttpStream {
   virtual ESB::Allocator &allocator() = 0;
 
   /**
-   * Get the stream's request object.  This may or may not be populated
+   * Get the stream's request headers.  This may or may not be populated
    * depending on the stream's state.
    *
    * @return The stream's request object
@@ -73,7 +73,7 @@ class HttpStream {
   virtual const HttpRequest &request() const = 0;
 
   /**
-   * Get the stream's request object.  This may or may not be populated
+   * Get the stream's request headers.  This may or may not be populated
    * depending on the stream's state.
    *
    * @return The stream's request object
@@ -81,7 +81,7 @@ class HttpStream {
   virtual HttpRequest &request() = 0;
 
   /**
-   * Get the stream's response object.  This may or may not be populated
+   * Get the stream's response headers.  This may or may not be populated
    * depending on the stream's state.
    *
    * @return The stream's response object
@@ -89,7 +89,7 @@ class HttpStream {
   virtual const HttpResponse &response() const = 0;
 
   /**
-   * Get the stream's response object.  This may or may not be populated
+   * Get the stream's response headers.  This may or may not be populated
    * depending on the stream's state.
    *
    * @return The stream's response object

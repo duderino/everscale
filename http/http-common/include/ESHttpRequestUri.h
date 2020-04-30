@@ -5,6 +5,14 @@
 #include <ESBTypes.h>
 #endif
 
+#ifndef ESB_ERROR_H
+#include <ESBError.h>
+#endif
+
+#ifndef ESB_ALLOCATOR_H
+#include <ESBAllocator.h>
+#endif
+
 namespace ES {
 
 /**
@@ -29,6 +37,8 @@ class HttpRequestUri {
   void reset();
 
   virtual ~HttpRequestUri();
+
+  ESB::Error copy(const HttpRequestUri *other, ESB::Allocator &allocator);
 
   /**
    * Get the Request-URI's type
@@ -227,12 +237,12 @@ class HttpRequestUri {
 
   UriType _type;
   ESB::Int32 _port;
-  const unsigned char *_username;
   const unsigned char *_host;
   const unsigned char *_absPath;
   const unsigned char *_query;
   const unsigned char *_fragment;
   const unsigned char *_other;
+  char _pad[8];
 };
 
 }  // namespace ES

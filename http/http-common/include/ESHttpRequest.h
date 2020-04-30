@@ -22,6 +22,8 @@ class HttpRequest : public HttpMessage {
 
   void reset();
 
+  ESB::Error copy(const HttpRequest *other, ESB::Allocator &allocator);
+
   inline const unsigned char *method() const { return _method; }
 
   inline void setMethod(const unsigned char *method) { _method = method; }

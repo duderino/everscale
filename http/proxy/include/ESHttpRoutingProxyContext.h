@@ -1,8 +1,12 @@
 #ifndef ES_HTTP_PROXY_CONTEXT_H
 #define ES_HTTP_PROXY_CONTEXT_H
 
-#ifndef ES_HTTP_STREAM_H
-#include <ESHttpStream.h>
+#ifndef ES_HTTP_SERVER_STREAM_H
+#include <ESHttpServerStream.h>
+#endif
+
+#ifndef ES_HTTP_CLIENT_STREAM_H
+#include <ESHttpClientStream.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
@@ -13,20 +17,43 @@ namespace ES {
 
 class HttpRoutingProxyContext {
  public:
+  enum class State {
+    SERVER_REQUEST_WAIT = 0,
+    CLIENT_RESPONSE_WAIT = 1,
+    STREAMING = 2,
+    FINISHED = 3
+  };
+
   HttpRoutingProxyContext();
 
   virtual ~HttpRoutingProxyContext();
 
-  inline HttpStream *inboundStream() { return _inboundStream; }
+  inline State state() { return _state; }
+  inline HttpServerStream *serverStream() { return _serverStream; }
+  inline HttpClientStream *clientStream() { return _clientStream; }
 
-  inline void setInboundStream(HttpStream *inboundStream) {
-    _inboundStream = inboundStream;
+  inline void setState(State state) {
+#ifndef NDEBUG
+    switch (state) {
+      case State::CLIENT_RESPONSE_WAIT:
+        assert(State::SERVER_REQUEST_WAIT == _state);
+        break;
+      case State::STREAMING:
+        assert(State::CLIENT_RESPONSE_WAIT == _state);
+        break;
+      default:
+        break;
+    }
+#endif
+    _state = state;
   }
 
-  inline HttpStream *outboundStream() { return _outboundStream; }
+  inline void setServerStream(HttpServerStream *serverStream) {
+    _serverStream = serverStream;
+  }
 
-  inline void setOutboundStream(HttpStream *outboundStream) {
-    _outboundStream = outboundStream;
+  inline void setClientStream(HttpClientStream *clientStream) {
+    _clientStream = clientStream;
   }
 
   /** Placement new.
@@ -44,8 +71,9 @@ class HttpRoutingProxyContext {
   HttpRoutingProxyContext(const HttpRoutingProxyContext &);
   void operator=(const HttpRoutingProxyContext &);
 
-  HttpStream *_inboundStream;
-  HttpStream *_outboundStream;
+  State _state;
+  HttpServerStream *_serverStream;
+  HttpClientStream *_clientStream;
 };
 
 }  // namespace ES

@@ -92,7 +92,10 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Shutdown in progress",
                                           "Partial success",
                                           "Cleanup",
-                                          "Paused"};
+                                          "Paused",
+                                          "Response must be sent",
+                                          "Must be closed",
+                                          "Not implemented"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

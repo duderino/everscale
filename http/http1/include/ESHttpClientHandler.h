@@ -14,12 +14,6 @@ namespace ES {
 class HttpClientHandler {
  public:
   typedef enum {
-    ES_HTTP_CLIENT_HANDLER_CONTINUE = 0, /**< Continue processing the request */
-    ES_HTTP_CLIENT_HANDLER_CLOSE =
-        1 /**< Immediately close the socket / abort the request */
-  } Result;
-
-  typedef enum {
     ES_HTTP_CLIENT_HANDLER_BEGIN = 0,   /**< Transaction starting */
     ES_HTTP_CLIENT_HANDLER_RESOLVE = 1, /**< Trying to resolve client address */
     ES_HTTP_CLIENT_HANDLER_CONNECT = 2, /**< Trying to connect to client */
@@ -67,20 +61,24 @@ class HttpClientHandler {
    * @param chunk A buffer to fill
    * @param chunkSize The size of the buffer to fill.  This may be less than the
    * size requested by the requestRequestChunk method.
+   * @return ESB_SUCCESS to continue processing or any other value to
+   * immediately close the socket.
    */
-  virtual void fillRequestChunk(HttpMultiplexer &multiplexer,
-                                HttpClientStream &stream, unsigned char *chunk,
-                                ESB::UInt32 chunkSize) = 0;
+  virtual ESB::Error fillRequestChunk(HttpMultiplexer &multiplexer,
+                                      HttpClientStream &stream,
+                                      unsigned char *chunk,
+                                      ESB::UInt32 chunkSize) = 0;
 
   /**
    * Process a request's HTTP headers.
    *
    * @param multiplexer An API for the thread's multiplexer
    * @param transaction The http transaction - contains request and response.
-   * @return a result code
+   * @return ESB_SUCCESS to continue processing or any other value to
+   * immediately close the socket.
    */
-  virtual Result receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                        HttpClientStream &stream) = 0;
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
+                                            HttpClientStream &stream) = 0;
 
   /**
    * Reserve space for the response body.  This will be called 0+ times as the
@@ -118,12 +116,13 @@ class HttpClientHandler {
    * @param chunk A buffer to drain
    * @param chunkSize The size of the buffer to drain, or 0 if the body is
    * finished.
-   * @return a result code
+   * @return ESB_SUCCESS to continue processing or any other value to
+   * immediately close the socket.
    */
-  virtual Result receiveResponseChunk(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
-                                      unsigned const char *chunk,
-                                      ESB::UInt32 chunkSize) = 0;
+  virtual ESB::Error receiveResponseChunk(HttpMultiplexer &multiplexer,
+                                          HttpClientStream &stream,
+                                          unsigned const char *chunk,
+                                          ESB::UInt32 chunkSize) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the

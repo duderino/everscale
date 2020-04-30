@@ -30,6 +30,12 @@ class HttpMessage {
 
   const HttpHeader *findHeader(const char *fieldName) const;
 
+  inline ESB::Error addHeader(const HttpHeader *header,
+                              ESB::Allocator &allocator) {
+    return addHeader((const char *)header->fieldName(),
+                     (const char *)header->fieldValue(), allocator);
+  }
+
   ESB::Error addHeader(const char *fieldName, const char *fieldValue,
                        ESB::Allocator &allocator);
 
@@ -89,6 +95,11 @@ class HttpMessage {
   inline bool send100Continue() {
     return _flags & ES_HTTP_MESSAGE_SEND_100_CONTINUE;
   }
+
+ protected:
+  inline int flags() const { return _flags; }
+
+  inline void setFlags(int flags) { _flags = flags; }
 
  private:
   // Disabled

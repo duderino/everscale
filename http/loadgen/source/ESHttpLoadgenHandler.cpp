@@ -35,10 +35,10 @@ ESB::UInt32 HttpLoadgenHandler::reserveRequestChunk(
   return _bodySize - context->bytesSent();
 }
 
-void HttpLoadgenHandler::fillRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream,
-                                          unsigned char *chunk,
-                                          ESB::UInt32 chunkSize) {
+ESB::Error HttpLoadgenHandler::fillRequestChunk(HttpMultiplexer &multiplexer,
+                                                HttpClientStream &stream,
+                                                unsigned char *chunk,
+                                                ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
 
@@ -52,11 +52,13 @@ void HttpLoadgenHandler::fillRequestChunk(HttpMultiplexer &multiplexer,
   memcpy(chunk, _body + context->bytesSent(), bytesToSend);
 
   context->setBytesSent(context->bytesSent() + bytesToSend);
+
+  return ESB_SUCCESS;
 }
 
-HttpClientHandler::Result HttpLoadgenHandler::receiveResponseHeaders(
+ESB::Error HttpLoadgenHandler::receiveResponseHeaders(
     HttpMultiplexer &multiplexer, HttpClientStream &stream) {
-  return HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONTINUE;
+  return ESB_SUCCESS;
 }
 
 ESB::UInt32 HttpLoadgenHandler::reserveResponseChunk(
@@ -64,16 +66,16 @@ ESB::UInt32 HttpLoadgenHandler::reserveResponseChunk(
   return ESB_UINT32_MAX;
 }
 
-HttpClientHandler::Result HttpLoadgenHandler::receiveResponseChunk(
+ESB::Error HttpLoadgenHandler::receiveResponseChunk(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
     unsigned const char *chunk, ESB::UInt32 chunkSize) {
   assert(chunk);
 
   if (0U == chunkSize) {
-    return ES_HTTP_CLIENT_HANDLER_CONTINUE;
+    return ESB_SUCCESS;
   }
 
-  return ES_HTTP_CLIENT_HANDLER_CONTINUE;
+  return ESB_SUCCESS;
 }
 
 void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,

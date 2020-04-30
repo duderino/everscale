@@ -6,58 +6,45 @@
 #include <ESHttpRoutingProxyContext.h>
 #endif
 
-#define BODY                                                                \
-  "<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope "           \
-  "xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" "           \
-  "xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" "           \
-  "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "                \
-  "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "                         \
-  "xmlns:ns2=\"http://schemas.xmlsoap.org/ws/2002/07/secext\" "             \
-  "xmlns:ns3=\"urn:yahoo:ysm:aws\" "                                        \
-  "xmlns:ns1=\"urn:yahoo:ysm:aws:echo\"><SOAP-ENV:Header><ns2:Security><"   \
-  "UsernameToken><Username>foo</Username><Password>bar</Password></"        \
-  "UsernameToken></ns2:Security><ns3:licensekey>baz</ns3:licensekey></"     \
-  "SOAP-ENV:Header><SOAP-ENV:Body><ns1:EchoResponseElement><Message>box10." \
-  "burbank.corp.yahoo.com:8029:0xb7fddbb0</Message></"                      \
-  "ns1:EchoResponseElement></SOAP-ENV:Body></SOAP-ENV:Envelope>"
-
 namespace ES {
-
-static unsigned int BodySize = (sizeof(BODY) - 1);
 
 HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router)
     : _router(router) {}
 
 HttpRoutingProxyHandler::~HttpRoutingProxyHandler() {}
 
-HttpServerHandler::Result HttpRoutingProxyHandler::acceptConnection(
-    HttpServerStack &stack, ESB::SocketAddress *address) {
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+ESB::Error HttpRoutingProxyHandler::acceptConnection(
+    HttpMultiplexer &multiplexer, ESB::SocketAddress *address) {
+  return ESB_SUCCESS;
 }
 
-HttpServerHandler::Result HttpRoutingProxyHandler::beginServerTransaction(
-    HttpServerStack &stack, HttpStream &stream) {
+ESB::Error HttpRoutingProxyHandler::beginServerTransaction(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
   HttpRoutingProxyContext *context =
       new (stream.allocator()) HttpRoutingProxyContext();
 
   if (!context) {
     ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create proxy context",
                           stream.logAddress());
-    return ES_HTTP_SERVER_HANDLER_CLOSE;
+    return ESB_OUT_OF_MEMORY;
   }
 
   assert(!stream.context());
   stream.setContext(context);
-  context->setInboundStream(&stream);
+  context->setServerStream(&stream);
 
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+  return ESB_SUCCESS;
 }
 
-HttpServerHandler::Result HttpRoutingProxyHandler::receiveRequestHeaders(
-    HttpServerStack &stack, HttpStream &stream) {
+ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
+  HttpRoutingProxyContext *context =
+      (HttpRoutingProxyContext *)stream.context();
+  assert(context);
+
   // TODO validate headers
 
-  HttpClientTransaction *transaction = stack.createClientTransaction();
+  HttpClientTransaction *transaction = multiplexer.createClientTransaction();
 
   if (!transaction) {
     ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY,
@@ -67,7 +54,7 @@ HttpServerHandler::Result HttpRoutingProxyHandler::receiveRequestHeaders(
   }
 
   ESB::SocketAddress destination;
-  ESB::Error error = _router.route(stream, transaction, destination);
+  ESB::Error error = _router.route(stream, *transaction, destination);
 
   if (ESB_SUCCESS != error) {
     switch (error) {
@@ -86,79 +73,96 @@ HttpServerHandler::Result HttpRoutingProxyHandler::receiveRequestHeaders(
     }
   }
 
-  transaction->setContext(stream.context());
-
-  char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-  stream.peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
-
-  error = stack.executeTransaction(transaction);
+  transaction->setContext(context);
+  error =
+      transaction->request().copy(&stream.request(), transaction->allocator());
 
   if (ESB_SUCCESS != error) {
-    stack.destroyTransaction(transaction);
-    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot execute transaction",
+    multiplexer.destroyClientTransaction(transaction);
+    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot populate client transaction",
                           stream.logAddress());
     return sendResponse(stream, 500, "Internal Server Error");
   }
 
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+  error = multiplexer.executeClientTransaction(transaction);
+
+  if (ESB_SUCCESS != error) {
+    multiplexer.destroyClientTransaction(transaction);
+    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot execute client transaction",
+                          stream.logAddress());
+    return sendResponse(stream, 500, "Internal Server Error");
+  }
+
+  context->setState(HttpRoutingProxyContext::State::CLIENT_RESPONSE_WAIT);
+
+  return ESB_SUCCESS;
 }
 
-ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(HttpServerStack &stack,
-                                                         HttpStream &stream) {
-  // TODO return 0 until we get a OK response from upstream.  When we get
-  // that response from upstream, resume the inbound stream if it is paused.
-  // Alt, if we have a bad upstream interaction, close the stream.  Make sure
-  // close works even if stream isn't paused.
-  // TODO maybe stream.resume and stream.cancel should just work even if not
-  // paused
-  return ESB_UINT32_MAX;
+ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
+  HttpRoutingProxyContext *context =
+      (HttpRoutingProxyContext *)stream.context();
+  assert(context);
+
+  switch (context->state()) {
+    case HttpRoutingProxyContext::State::CLIENT_RESPONSE_WAIT:
+      // Wait until we the upstream response before accepting body data.  This
+      // will pause the server socket
+      return 0U;
+    case HttpRoutingProxyContext::State::STREAMING:
+      assert(context->clientStream());
+      assert(0 ==
+             "TODO modify HttpStream to return remaining space in the ssend "
+             "buffer");
+    default:
+      assert(0 == "reserveRequestChunk in invalid state");
+      ESB_LOG_ERROR("[%s] transaction in invalid state", stream.logAddress());
+      return 0U;
+  }
 }
 
-HttpServerHandler::Result HttpRoutingProxyHandler::receiveRequestChunk(
-    HttpServerStack &stack, HttpStream &stream, unsigned const char *chunk,
-    ESB::UInt32 chunkSize) {
+ESB::Error HttpRoutingProxyHandler::receiveRequestChunk(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream,
+    unsigned const char *chunk, ESB::UInt32 chunkSize) {
   assert(chunk);
+  HttpRoutingProxyContext *context =
+      (HttpRoutingProxyContext *)stream.context();
+  assert(context);
+
+  assert(0 == "TODO modify HttpStream to expose subset of formatRequestBody");
 
   HttpResponse &response = stream.response();
 
   if (0U == chunkSize) {
     response.setStatusCode(200);
     response.setReasonPhrase("OK");
-    return ES_HTTP_SERVER_HANDLER_SEND_RESPONSE;
+    return ESB_SEND_RESPONSE;
   }
 
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+  return ESB_SUCCESS;
 }
 
 ESB::UInt32 HttpRoutingProxyHandler::reserveResponseChunk(
-    HttpServerStack &stack, HttpStream &stream) {
+    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
-  return BodySize - context->getBytesSent();
+  return 0;
 }
 
-void HttpRoutingProxyHandler::fillResponseChunk(HttpServerStack &stack,
-                                                HttpStream &stream,
-                                                unsigned char *chunk,
-                                                ESB::UInt32 chunkSize) {
+ESB::Error HttpRoutingProxyHandler::fillResponseChunk(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream,
+    unsigned char *chunk, ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
-
-  unsigned int totalBytesRemaining = BodySize - context->getBytesSent();
-  unsigned int bytesToSend =
-      chunkSize > totalBytesRemaining ? totalBytesRemaining : chunkSize;
-
-  memcpy(chunk, ((unsigned char *)BODY) + context->getBytesSent(), bytesToSend);
-
-  context->addBytesSent(bytesToSend);
+  return ESB_NOT_IMPLEMENTED;
 }
 
 void HttpRoutingProxyHandler::endServerTransaction(
-    HttpServerStack &stack, HttpStream &stream,
+    HttpMultiplexer &multiplexer, HttpServerStream &stream,
     HttpServerHandler::State state) {
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
@@ -192,42 +196,52 @@ void HttpRoutingProxyHandler::endServerTransaction(
   }
 }
 
-void HttpRoutingProxyHandler::receivePaused(HttpServerStack &stack,
-                                            HttpStream &stream) {
+void HttpRoutingProxyHandler::receivePaused(HttpMultiplexer &multiplexer,
+                                            HttpServerStream &stream) {
   assert(0 == "HttpProxy should not be paused");
 }
-ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(HttpClientStack &stack,
-                                                         HttpStream &stream) {
+
+ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   return 0;
 }
-void HttpRoutingProxyHandler::fillRequestChunk(HttpClientStack &stack,
-                                               HttpStream &stream,
-                                               unsigned char *chunk,
-                                               ESB::UInt32 chunkSize) {}
-HttpClientHandler::Result HttpRoutingProxyHandler::receiveResponseHeaders(
-    HttpClientStack &stack, HttpStream &stream) {
-  return ES_HTTP_CLIENT_HANDLER_CLOSE;
+
+ESB::Error HttpRoutingProxyHandler::fillRequestChunk(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
+    unsigned char *chunk, ESB::UInt32 chunkSize) {
+  return ESB_NOT_IMPLEMENTED;
 }
+
+ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
+  // TODO unpause or close server stream.  if not paused, just write?
+  return ESB_NOT_IMPLEMENTED;
+}
+
 ESB::UInt32 HttpRoutingProxyHandler::reserveResponseChunk(
-    HttpClientStack &stack, HttpStream &stream) {
+    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   return 0;
 }
-void HttpRoutingProxyHandler::receivePaused(HttpClientStack &stack,
-                                            HttpStream &stream) {}
-HttpClientHandler::Result HttpRoutingProxyHandler::receiveResponseChunk(
-    HttpClientStack &stack, HttpStream &stream, unsigned const char *chunk,
-    ESB::UInt32 chunkSize) {
-  return ES_HTTP_CLIENT_HANDLER_CLOSE;
+
+void HttpRoutingProxyHandler::receivePaused(HttpMultiplexer &multiplexer,
+                                            HttpClientStream &stream) {}
+
+ESB::Error HttpRoutingProxyHandler::receiveResponseChunk(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
+    unsigned const char *chunk, ESB::UInt32 chunkSize) {
+  return ESB_NOT_IMPLEMENTED;
 }
+
 void HttpRoutingProxyHandler::endClientTransaction(
-    HttpClientStack &stack, HttpStream &stream,
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
     HttpClientHandler::State state) {}
 
-HttpServerHandler::Result HttpRoutingProxyHandler::sendResponse(
-    HttpStream &stream, int statusCode, const char *reasonPhrase) {
+ESB::Error HttpRoutingProxyHandler::sendResponse(HttpServerStream &stream,
+                                                 int statusCode,
+                                                 const char *reasonPhrase) {
   stream.response().setStatusCode(500);
   stream.response().setReasonPhrase("Internal Server Error");
-  return ES_HTTP_SERVER_HANDLER_SEND_RESPONSE;
+  return ESB_SEND_RESPONSE;
 }
 
 }  // namespace ES

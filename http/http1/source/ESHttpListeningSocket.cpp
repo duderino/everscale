@@ -67,11 +67,11 @@ ESB::Error HttpListeningSocket::handleAccept() {
 
   _multiplexer.serverCounters().getTotalConnections()->inc();
 
-  HttpServerHandler::Result result =
-      _handler.acceptConnection(_multiplexer, &state.peerAddress());
+  error = _handler.acceptConnection(_multiplexer, &state.peerAddress());
 
-  if (HttpServerHandler::ES_HTTP_SERVER_HANDLER_CONTINUE != result) {
-    ESB_LOG_DEBUG("[%s] Handler rejected connection", _socket.logAddress());
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_INFO_ERRNO(error, "[%s] Handler rejected connection",
+                       _socket.logAddress());
     ESB::TCPSocket::Close(state.socketDescriptor());
     return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }

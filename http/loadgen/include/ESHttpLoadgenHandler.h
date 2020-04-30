@@ -34,12 +34,13 @@ class HttpLoadgenHandler : public HttpClientHandler {
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
                                           HttpClientStream &stream);
 
-  virtual void fillRequestChunk(HttpMultiplexer &multiplexer,
-                                HttpClientStream &stream, unsigned char *chunk,
-                                unsigned int chunkSize);
+  virtual ESB::Error fillRequestChunk(HttpMultiplexer &multiplexer,
+                                      HttpClientStream &stream,
+                                      unsigned char *chunk,
+                                      unsigned int chunkSize);
 
-  virtual Result receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                        HttpClientStream &stream);
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
+                                            HttpClientStream &stream);
 
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
                                            HttpClientStream &stream);
@@ -47,10 +48,10 @@ class HttpLoadgenHandler : public HttpClientHandler {
   virtual void receivePaused(HttpMultiplexer &multiplexer,
                              HttpClientStream &stream);
 
-  virtual Result receiveResponseChunk(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
-                                      unsigned const char *chunk,
-                                      ESB::UInt32 chunkSize);
+  virtual ESB::Error receiveResponseChunk(HttpMultiplexer &multiplexer,
+                                          HttpClientStream &stream,
+                                          unsigned const char *chunk,
+                                          ESB::UInt32 chunkSize);
 
   virtual void endTransaction(HttpMultiplexer &multiplexer,
                               HttpClientStream &stream, State state);

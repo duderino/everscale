@@ -3,10 +3,9 @@ project(proxy VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
         source/ESHttpRouter.cpp
+        source/ESHttpRoutingProxyContext.cpp
+        source/ESHttpRoutingProxyHandler.cpp
         )
-
-#source/ESHttpRoutingProxyContext.cpp
-#source/ESHttpRoutingProxyHandler.cpp
 
 add_library(proxy STATIC ${SOURCE_FILES})
 

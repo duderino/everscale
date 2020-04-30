@@ -209,6 +209,27 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_PAUSE (-26)
 
+/**
+ * Send a response immediately
+ *
+ * @ingroup error
+ */
+#define ESB_SEND_RESPONSE (-27)
+
+/**
+ * Close the socket immediately
+ *
+ * @ingroup error
+ */
+#define ESB_CLOSE_SOCKET (-28)
+
+/**
+ * Operation has not been implemented
+ *
+ * @ingroup error
+ */
+#define ESB_NOT_IMPLEMENTED (-29)
+
 }  // namespace ESB
 
 #endif

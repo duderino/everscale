@@ -17,24 +17,25 @@ class HttpOriginHandler : public HttpServerHandler {
   // ES::HttpServerHandler
   //
 
-  virtual Result acceptConnection(HttpMultiplexer &stack,
-                                  ESB::SocketAddress *address);
-  virtual Result beginTransaction(HttpMultiplexer &stack,
-                                  HttpServerStream &stream);
-  virtual Result receiveRequestHeaders(HttpMultiplexer &stack,
-                                       HttpServerStream &stream);
+  virtual ESB::Error acceptConnection(HttpMultiplexer &stack,
+                                      ESB::SocketAddress *address);
+  virtual ESB::Error beginTransaction(HttpMultiplexer &stack,
+                                      HttpServerStream &stream);
+  virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack,
+                                           HttpServerStream &stream);
   virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
                                           HttpServerStream &stream);
-  virtual Result receiveRequestChunk(HttpMultiplexer &stack,
-                                     HttpServerStream &stream,
-                                     unsigned const char *chunk,
-                                     ESB::UInt32 chunkSize);
+  virtual ESB::Error receiveRequestChunk(HttpMultiplexer &stack,
+                                         HttpServerStream &stream,
+                                         unsigned const char *chunk,
+                                         ESB::UInt32 chunkSize);
   virtual void receivePaused(HttpMultiplexer &stack, HttpServerStream &stream);
   virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
                                            HttpServerStream &stream);
-  virtual void fillResponseChunk(HttpMultiplexer &stack,
-                                 HttpServerStream &stream, unsigned char *chunk,
-                                 ESB::UInt32 chunkSize);
+  virtual ESB::Error fillResponseChunk(HttpMultiplexer &stack,
+                                       HttpServerStream &stream,
+                                       unsigned char *chunk,
+                                       ESB::UInt32 chunkSize);
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
                               State state);
 

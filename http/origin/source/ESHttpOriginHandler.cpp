@@ -29,35 +29,37 @@ HttpOriginHandler::HttpOriginHandler() {}
 
 HttpOriginHandler::~HttpOriginHandler() {}
 
-HttpServerHandler::Result HttpOriginHandler::acceptConnection(
-    HttpMultiplexer &stack, ESB::SocketAddress *address) {
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+ESB::Error HttpOriginHandler::acceptConnection(HttpMultiplexer &stack,
+                                               ESB::SocketAddress *address) {
+  return ESB_SUCCESS;
 }
 
-HttpServerHandler::Result HttpOriginHandler::beginTransaction(
-    HttpMultiplexer &stack, HttpServerStream &stream) {
+ESB::Error HttpOriginHandler::beginTransaction(HttpMultiplexer &stack,
+                                               HttpServerStream &stream) {
   ESB::Allocator &allocator = stream.allocator();
   HttpOriginContext *context = new (allocator) HttpOriginContext();
 
   if (!context) {
-    ESB_LOG_WARNING("[%s] Cannot allocate new transaction",
-                    stream.logAddress());
-    return ES_HTTP_SERVER_HANDLER_CLOSE;
+    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY,
+                          "[%s] Cannot allocate new transaction",
+                          stream.logAddress());
+    return ESB_OUT_OF_MEMORY;
   }
 
   assert(!stream.context());
   stream.setContext(context);
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+  return ESB_SUCCESS;
 }
 
-HttpServerHandler::Result HttpOriginHandler::receiveRequestHeaders(
-    HttpMultiplexer &stack, HttpServerStream &stream) {
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack,
+                                                    HttpServerStream &stream) {
+  return ESB_SUCCESS;
 }
 
-HttpServerHandler::Result HttpOriginHandler::receiveRequestChunk(
-    HttpMultiplexer &stack, HttpServerStream &stream,
-    unsigned const char *chunk, ESB::UInt32 chunkSize) {
+ESB::Error HttpOriginHandler::receiveRequestChunk(HttpMultiplexer &stack,
+                                                  HttpServerStream &stream,
+                                                  unsigned const char *chunk,
+                                                  ESB::UInt32 chunkSize) {
   assert(chunk);
 
   HttpResponse &response = stream.response();
@@ -65,10 +67,10 @@ HttpServerHandler::Result HttpOriginHandler::receiveRequestChunk(
   if (0U == chunkSize) {
     response.setStatusCode(200);
     response.setReasonPhrase("OK");
-    return ES_HTTP_SERVER_HANDLER_SEND_RESPONSE;
+    return ESB_SEND_RESPONSE;
   }
 
-  return ES_HTTP_SERVER_HANDLER_CONTINUE;
+  return ESB_SUCCESS;
 }
 
 ESB::UInt32 HttpOriginHandler::reserveResponseChunk(HttpMultiplexer &stack,
@@ -78,10 +80,10 @@ ESB::UInt32 HttpOriginHandler::reserveResponseChunk(HttpMultiplexer &stack,
   return BodySize - context->getBytesSent();
 }
 
-void HttpOriginHandler::fillResponseChunk(HttpMultiplexer &stack,
-                                          HttpServerStream &stream,
-                                          unsigned char *chunk,
-                                          ESB::UInt32 chunkSize) {
+ESB::Error HttpOriginHandler::fillResponseChunk(HttpMultiplexer &stack,
+                                                HttpServerStream &stream,
+                                                unsigned char *chunk,
+                                                ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
@@ -94,6 +96,8 @@ void HttpOriginHandler::fillResponseChunk(HttpMultiplexer &stack,
   memcpy(chunk, ((unsigned char *)BODY) + context->getBytesSent(), bytesToSend);
 
   context->addBytesSent(bytesToSend);
+
+  return ESB_SUCCESS;
 }
 
 void HttpOriginHandler::endTransaction(HttpMultiplexer &stack,

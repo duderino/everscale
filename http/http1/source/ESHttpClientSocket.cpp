@@ -211,20 +211,22 @@ bool HttpClientSocket::handleReadable() {
         return false;  // remove from multiplexer
       }
 
-      if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
-          _handler.receiveResponseHeaders(_multiplexer, *this)) {
-        ESB_LOG_DEBUG("[%s] Client request header handler aborting connection",
-                      _socket.logAddress());
+      error = _handler.receiveResponseHeaders(_multiplexer, *this);
+      if (ESB_SUCCESS != error) {
+        ESB_LOG_DEBUG_ERRNO(
+            error, "[%s] Client request header handler aborting connection",
+            _socket.logAddress());
         return false;  // remove from multiplexer
       }
 
       if (!_transaction->response().hasBody()) {
         unsigned char byte = 0;
 
-        if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE ==
-            _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0)) {
-          ESB_LOG_DEBUG("[%s] Client body handler aborting connection",
-                        _socket.logAddress());
+        error = _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0);
+        if (ESB_SUCCESS != error) {
+          ESB_LOG_DEBUG_ERRNO(error,
+                              "[%s] Client body handler aborting connection",
+                              _socket.logAddress());
           return false;  // remove from multiplexer
         }
 
@@ -623,11 +625,11 @@ ESB::Error HttpClientSocket::parseResponseBody() {
     if (0 == chunkSize) {
       ESB_LOG_DEBUG("[%s] parsed body", _socket.logAddress());
       unsigned char byte = 0;
-      HttpClientHandler::Result result =
-          _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0);
+      error = _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0);
 
-      if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
-        ESB_LOG_DEBUG(
+      if (ESB_SUCCESS != error) {
+        ESB_LOG_DEBUG_ERRNO(
+            error,
             "[%s] handler aborting connection after last response body chunk",
             _socket.logAddress());
         return ESB_INTR;
@@ -639,24 +641,15 @@ ESB::Error HttpClientSocket::parseResponseBody() {
       return ESB_SUCCESS;
     }
 
-    if (ESB_DEBUG_LOGGABLE) {
-      char buffer[4096];
-      memcpy(buffer, _recvBuffer->buffer() + startingPosition,
-             chunkSize > sizeof(buffer) ? sizeof(buffer) : chunkSize);
-      buffer[chunkSize > sizeof(buffer) ? sizeof(buffer) : chunkSize] = 0;
+    ESB_LOG_DEBUG("[%s] read response chunk of size %u", _socket.logAddress(),
+                  chunkSize);
 
-      ESB_LOG_DEBUG("[%s] read response chunk: %s", _socket.logAddress(),
-                    buffer);
-    }
-
-    HttpClientHandler::Result result;
-
-    result = _handler.receiveResponseChunk(
+    error = _handler.receiveResponseChunk(
         _multiplexer, *this, _recvBuffer->buffer() + startingPosition,
         chunkSize);
-
-    if (HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CLOSE == result) {
-      ESB_LOG_DEBUG(
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(
+          error,
           "[%s] handler aborting connection before last response body chunk",
           _socket.logAddress());
       return ESB_INTR;
@@ -731,11 +724,17 @@ ESB::Error HttpClientSocket::formatRequestBody() {
 
     // write the body data
 
-    _handler.fillRequestChunk(
+    error = _handler.fillRequestChunk(
         _multiplexer, *this,
         _sendBuffer->buffer() + _sendBuffer->writePosition(), availableSize);
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + availableSize);
     _bodyBytesWritten += availableSize;
+
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_INFO_ERRNO(error, "[%s] Cannot format request chunk of size %d",
+                         _socket.logAddress(), availableSize);
+      return error;  // remove from multiplexer
+    }
 
     ESB_LOG_DEBUG("[%s] formatted request chunk of size %d",
                   _socket.logAddress(), availableSize);
