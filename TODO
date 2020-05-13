@@ -1,4 +1,5 @@
 proxy:
+ - Consider compacting recvBuffer unconditionally for every ServerSocket and ClientSocket handleReadable event.  This would do more memmoves in exchange for fewer socket recvs.
  - Split HttpMultiplexer into HttpMultiplexer and HttpMultiplexerExtended.  Use the latter internally.  Pass the former down to the http client and server handlers.
  - add test and support for http pipelining.
  - implement idle check - and make it work with paused sockets
@@ -8,7 +9,7 @@ proxy:
    - proxy: backpressure works for clients that read response body slowly
    - proxy: backpressure works for servers that read request body slowly
    - server: idle timeout for slow loris clients
-   - client: idle timeout for slow loris servers
+   - client: idle timeout for slow loris servers - this and above may show that transmit pause/resume is needed with EPOLLET
    - server: mangled http client
    - client: mangled http server
    - proxy/client: servers that listen but never accept connections

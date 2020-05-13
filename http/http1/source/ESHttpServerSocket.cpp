@@ -125,6 +125,7 @@ bool HttpServerSocket::handleReadable() {
   assert(_state & (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY |
                    SKIPPING_TRAILER));
   assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(RECV_PAUSED & _state));
 
   if (!_recvBuffer) {
     assert(_state & TRANSACTION_BEGIN);
@@ -1023,29 +1024,7 @@ const char *HttpServerSocket::logAddress() const {
   return _socket.logAddress();
 }
 
-bool HttpServerSocket::isPaused() { return _state & RECV_PAUSED; }
-
-ESB::Error HttpServerSocket::resume() {
-  assert(_state | RECV_PAUSED);
-  assert(!(HAS_BEEN_REMOVED & _state));
-
-  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED) {
-    return ESB_INVALID_STATE;
-  }
-
-  ESB_LOG_DEBUG("[%s] resumed reading request body", _socket.logAddress());
-  _state &= ~RECV_PAUSED;
-
-  if (handleReadable()) {
-    _multiplexer.multiplexer().updateMultiplexedSocket(this);
-  } else {
-    _multiplexer.multiplexer().removeMultiplexedSocket(this);
-  }
-
-  return ESB_SUCCESS;
-}
-
-ESB::Error HttpServerSocket::cancel() {
+ESB::Error HttpServerSocket::abort() {
   assert(_state | RECV_PAUSED);
   assert(!(HAS_BEEN_REMOVED & _state));
 

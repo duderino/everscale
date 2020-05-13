@@ -107,11 +107,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   // ES::HttpStream
   //
 
-  virtual bool isPaused();
-
-  virtual ESB::Error resume();
-
-  virtual ESB::Error cancel();
+  virtual ESB::Error abort();
 
   virtual ESB::Allocator &allocator();
 

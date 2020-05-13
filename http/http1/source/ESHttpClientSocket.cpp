@@ -820,29 +820,7 @@ const char *HttpClientSocket::logAddress() const {
   return _socket.logAddress();
 }
 
-bool HttpClientSocket::isPaused() { return _state & RECV_PAUSED; }
-
-ESB::Error HttpClientSocket::resume() {
-  assert(_state | RECV_PAUSED);
-  assert(!(HAS_BEEN_REMOVED & _state));
-
-  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED) {
-    return ESB_INVALID_STATE;
-  }
-
-  ESB_LOG_DEBUG("[%s] resumed reading response body", _socket.logAddress());
-  _state &= ~RECV_PAUSED;
-
-  if (handleReadable()) {
-    _multiplexer.multiplexer().updateMultiplexedSocket(this);
-  } else {
-    _multiplexer.multiplexer().removeMultiplexedSocket(this);
-  }
-
-  return ESB_SUCCESS;
-}
-
-ESB::Error HttpClientSocket::cancel() {
+ESB::Error HttpClientSocket::abort() {
   assert(_state | RECV_PAUSED);
   assert(!(HAS_BEEN_REMOVED & _state));
 

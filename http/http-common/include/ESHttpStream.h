@@ -32,30 +32,13 @@ class HttpStream {
   virtual ~HttpStream();
 
   /**
-   * Is the stream paused?  Paused streams cannot receive more data until they
-   * are unpaused.
-   *
-   * @return true if the stream is paused, false otherwise.
-   */
-  virtual bool isPaused() = 0;
-
-  /**
-   * Resumed a paused stream.  Note: your handler implementation must be
-   * reentrant if you call this function because calling this function may in
-   * turn call other handle* functions including handleRemove.
-   *
-   * @return ESB_SUCCESS if successfully resumed, another error code otherwise.
-   */
-  virtual ESB::Error resume() = 0;
-
-  /**
-   * Cancel a paused stream.  Note: your handler implementation must be
+   * Abort a stream in any state.  Note: your handler implementation must be
    * reentrant if you call this function because calling this function may in
    * turn call other handle* functions including handleRemove.
    *
    * @return ESB_SUCCESS if successfully canceled, another error code otherwise.
    */
-  virtual ESB::Error cancel() = 0;
+  virtual ESB::Error abort() = 0;
 
   /**
    * Use the stream's memory allocator which is suitable for small allocations.
