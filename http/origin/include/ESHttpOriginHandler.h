@@ -23,16 +23,17 @@ class HttpOriginHandler : public HttpServerHandler {
                                       HttpServerStream &stream);
   virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack,
                                            HttpServerStream &stream);
-  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
-                                          HttpServerStream &stream);
+  virtual ESB::Error requestChunkCapacity(HttpMultiplexer &multiplexer,
+                                          HttpServerStream &stream,
+                                          ESB::UInt32 *maxChunkSize);
   virtual ESB::Error receiveRequestChunk(HttpMultiplexer &stack,
                                          HttpServerStream &stream,
                                          unsigned const char *chunk,
                                          ESB::UInt32 chunkSize);
-  virtual void receivePaused(HttpMultiplexer &stack, HttpServerStream &stream);
-  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
-                                           HttpServerStream &stream);
-  virtual ESB::Error fillResponseChunk(HttpMultiplexer &stack,
+  virtual ESB::Error offerResponseChunk(HttpMultiplexer &multiplexer,
+                                        HttpServerStream &stream,
+                                        ESB::UInt32 *maxChunkSize);
+  virtual ESB::Error takeResponseChunk(HttpMultiplexer &stack,
                                        HttpServerStream &stream,
                                        unsigned char *chunk,
                                        ESB::UInt32 chunkSize);

@@ -28,17 +28,20 @@ HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method,
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
-ESB::UInt32 HttpLoadgenHandler::reserveRequestChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
+ESB::Error HttpLoadgenHandler::offerRequestChunk(HttpMultiplexer &multiplexer,
+                                                 HttpClientStream &stream,
+                                                 ESB::UInt32 *maxChunkSize) {
+  assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
-  return _bodySize - context->bytesSent();
+  *maxChunkSize = _bodySize - context->bytesSent();
+  return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::fillRequestChunk(HttpMultiplexer &multiplexer,
-                                                HttpClientStream &stream,
-                                                unsigned char *chunk,
-                                                ESB::UInt32 chunkSize) {
+ESB::Error HttpLoadgenHandler::takeResponseChunk(HttpMultiplexer &multiplexer,
+                                                 HttpClientStream &stream,
+                                                 unsigned char *chunk,
+                                                 ESB::UInt32 chunkSize) {
   assert(chunk);
   assert(0 < chunkSize);
 
@@ -61,9 +64,12 @@ ESB::Error HttpLoadgenHandler::receiveResponseHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::UInt32 HttpLoadgenHandler::reserveResponseChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
-  return ESB_UINT32_MAX;
+ESB::Error HttpLoadgenHandler::responseChunkCapacity(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
+    ESB::UInt32 *maxChunkSize) {
+  assert(maxChunkSize);
+  *maxChunkSize = ESB_UINT32_MAX;
+  return ESB_SUCCESS;
 }
 
 ESB::Error HttpLoadgenHandler::receiveResponseChunk(
@@ -156,10 +162,6 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,
 
   ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
                 remainingIterations);
-}
-void HttpLoadgenHandler::receivePaused(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream) {
-  assert(0 == "HttpLoadgenHandler should not be paused");
 }
 
 }  // namespace ES

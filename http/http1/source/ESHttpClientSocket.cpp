@@ -33,6 +33,7 @@
 #define RETRY_STALE_CONNECTION (1 << 10)
 #define FIRST_USE_AFTER_REUSE (1 << 11)
 #define RECV_PAUSED (1 << 12)
+#define SEND_PAUSED (1 << 13)
 
 // TODO - max requests per connection option (1 disables keepalives)
 // TODO - max header size option
@@ -112,6 +113,10 @@ bool HttpClientSocket::wantRead() {
 }
 
 bool HttpClientSocket::wantWrite() {
+  if (_state & SEND_PAUSED) {
+    return false;
+  }
+
   return (_state & (TRANSACTION_BEGIN | FORMATTING_HEADERS | FLUSHING_HEADERS |
                     FORMATTING_BODY | FLUSHING_BODY)) != 0;
 }
@@ -250,6 +255,7 @@ bool HttpClientSocket::handleReadable() {
     }
 
     if (ESB_PAUSE == error) {
+      _state |= RECV_PAUSED;
       return true;  // keep in multiplexer, but remove from read interest set.
     }
 
@@ -265,6 +271,7 @@ bool HttpClientSocket::handleWritable() {
   assert(wantWrite());
   assert(_socket.isConnected());
   assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(SEND_PAUSED & _state));
   assert(_transaction);
 
   if (!_sendBuffer) {
@@ -358,6 +365,11 @@ bool HttpClientSocket::handleWritable() {
         }
 
         continue;
+      }
+
+      if (ESB_PAUSE == error) {
+        _state |= SEND_PAUSED;
+        return true;  // keep in multiplexer but remove from write interest
       }
 
       if (ESB_SUCCESS != error) {
@@ -583,56 +595,79 @@ ESB::Error HttpClientSocket::parseResponseHeaders() {
 }
 
 ESB::Error HttpClientSocket::parseResponseBody() {
+  assert(_transaction);
   ESB::UInt32 startingPosition = 0;
   ESB::UInt32 chunkSize = 0;
+  ESB::UInt32 maxChunkSize = 0;
   ESB::Error error = ESB_SUCCESS;
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt32 maxChunkSize =
-        _handler.reserveResponseChunk(_multiplexer, *this);
+    maxChunkSize = 0;
+    error = _handler.responseChunkCapacity(_multiplexer, *this, &maxChunkSize);
+
+    switch (error) {
+      case ESB_SUCCESS:
+        break;
+      case ESB_AGAIN:
+        ESB_LOG_DEBUG(
+            "[%s] pausing response body receive until handler is ready",
+            _socket.logAddress());
+        return ESB_PAUSE;
+      default:
+        ESB_LOG_DEBUG_ERRNO(
+            error, "[%s] handler cannot reserve space to receive response body",
+            _socket.logAddress());
+        return error;  // remove from multiplexer
+    }
 
     if (0 == maxChunkSize) {
-      ESB_LOG_DEBUG("[%s] pausing response body recv", _socket.logAddress());
-      _state |= RECV_PAUSED;
-      _handler.receivePaused(_multiplexer, *this);
+      ESB_LOG_DEBUG("[%s] pausing response body receive until handler is ready",
+                    _socket.logAddress());
       return ESB_PAUSE;
     }
 
+    // No more than maxChunkSize will be consumed.
     error = _transaction->getParser()->parseBody(_recvBuffer, &startingPosition,
                                                  &chunkSize, maxChunkSize);
+    assert(chunkSize <= maxChunkSize);
 
-    if (ESB_AGAIN == error) {
-      ESB_LOG_DEBUG("[%s] need more response body data from stream",
-                    _socket.logAddress());
-      if (!_recvBuffer->isWritable()) {
-        ESB_LOG_DEBUG("[%s] compacting response input buffer",
+    switch (error) {
+      case ESB_SUCCESS:
+        break;
+      case ESB_AGAIN:
+        ESB_LOG_DEBUG("[%s] need more response body data from stream",
                       _socket.logAddress());
-        if (!_recvBuffer->compact()) {
-          ESB_LOG_INFO("[%s] cannot parse response body: parser jammed",
-                       _socket.logAddress());
-          return ESB_OVERFLOW;  // remove from multiplexer
+        if (!_recvBuffer->isWritable()) {
+          ESB_LOG_DEBUG("[%s] compacting response input buffer",
+                        _socket.logAddress());
+          if (!_recvBuffer->compact()) {
+            ESB_LOG_INFO("[%s] cannot parse response body: parser jammed",
+                         _socket.logAddress());
+            return ESB_OVERFLOW;  // remove from multiplexer
+          }
         }
-      }
-      return ESB_AGAIN;  // keep in multiplexer
+        return ESB_AGAIN;  // keep in multiplexer
+      default:
+        ESB_LOG_INFO_ERRNO(error, "[%s] error parsing response body",
+                           _socket.logAddress());
+        return error;  // remove from multiplexer
     }
 
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] error parsing response body",
-                         _socket.logAddress());
-      return error;  // remove from multiplexer
-    }
+    // At this point chunkSize bytes of data has been consumed from the
+    // _recvBuffer so the handler must fully consume it.  Any error consuming it
+    // aborts the transaction.
 
     if (0 == chunkSize) {
-      ESB_LOG_DEBUG("[%s] parsed body", _socket.logAddress());
+      ESB_LOG_DEBUG("[%s] parsed response body", _socket.logAddress());
       unsigned char byte = 0;
-      error = _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0);
+      error = _handler.receiveResponseChunk(_multiplexer, *this, &byte, 0U);
 
       if (ESB_SUCCESS != error) {
         ESB_LOG_DEBUG_ERRNO(
             error,
             "[%s] handler aborting connection after last response body chunk",
             _socket.logAddress());
-        return ESB_INTR;
+        return ESB_AGAIN == error ? ESB_INTR : error;
       }
 
       _state &= ~PARSING_BODY;
@@ -652,7 +687,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
           error,
           "[%s] handler aborting connection before last response body chunk",
           _socket.logAddress());
-      return ESB_INTR;
+      return ESB_AGAIN == error ? ESB_INTR : error;
     }
   }
 
@@ -683,61 +718,71 @@ ESB::Error HttpClientSocket::formatRequestHeaders() {
 }
 
 ESB::Error HttpClientSocket::formatRequestBody() {
-  ESB::Error error;
-  ESB::UInt32 availableSize = 0;
-  ESB::UInt32 requestedSize = 0;
+  assert(_transaction);
+  ESB::Error error = ESB_SUCCESS;
+  ESB::UInt32 maxChunkSize = 0;
+  ESB::UInt32 offeredSize = 0;
 
   while (!_multiplexer.shutdown()) {
-    availableSize = 0;
+    maxChunkSize = 0;
+    offeredSize = 0;
 
-    requestedSize = _handler.reserveRequestChunk(_multiplexer, *this);
+    error = _handler.offerRequestChunk(_multiplexer, *this, &offeredSize);
 
-    if (0 > requestedSize) {
-      ESB_LOG_DEBUG(
-          "[%s] handler aborted connection while sending request body",
-          _socket.logAddress());
-      return ESB_INTR;  // remove from multiplexer
+    switch (error) {
+      case ESB_AGAIN:
+        ESB_LOG_DEBUG("[%s] handler cannot offer request chunk, pausing socket",
+                      _socket.logAddress());
+        return ESB_PAUSE;  // keep in multiplexer
+      case ESB_SUCCESS:
+        ESB_LOG_DEBUG("[%s] handler offers request chunk of %u bytes",
+                      _socket.logAddress(), offeredSize);
+        break;
+      default:
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler error offering request chunk",
+                            _socket.logAddress());
+        return error;  // remove from multiplexer
     }
 
-    if (0 == requestedSize) {
-      break;  // format last chunk
+    if (0 == offeredSize) {
+      // last chunk
+      break;
     }
 
-    error = _transaction->getFormatter()->beginBlock(_sendBuffer, requestedSize,
-                                                     &availableSize);
+    error = _transaction->getFormatter()->beginBlock(_sendBuffer, offeredSize,
+                                                     &maxChunkSize);
 
-    if (ESB_AGAIN == error) {
-      ESB_LOG_DEBUG("[%s] partially formatted request body",
-                    _socket.logAddress());
-      return ESB_AGAIN;  // keep in multiplexer
+    switch (error) {
+      case ESB_AGAIN:
+        ESB_LOG_DEBUG("[%s] partially formatted request body",
+                      _socket.logAddress());
+        return ESB_AGAIN;  // keep in multiplexer
+      case ESB_SUCCESS:
+        break;
+      default:
+        ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request body",
+                           _socket.logAddress());
+        return error;  // remove from multiplexer
     }
 
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request body",
-                         _socket.logAddress());
-      return error;  // remove from multiplexer
-    }
-
-    if (requestedSize < availableSize) {
-      availableSize = requestedSize;
-    }
+    ESB::UInt32 chunkSize = ESB_MIN(offeredSize, maxChunkSize);
 
     // write the body data
 
-    error = _handler.fillRequestChunk(
+    error = _handler.takeResponseChunk(
         _multiplexer, *this,
-        _sendBuffer->buffer() + _sendBuffer->writePosition(), availableSize);
-    _sendBuffer->setWritePosition(_sendBuffer->writePosition() + availableSize);
-    _bodyBytesWritten += availableSize;
+        _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize);
+    _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
+    _bodyBytesWritten += chunkSize;
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] Cannot format request chunk of size %d",
-                         _socket.logAddress(), availableSize);
+      ESB_LOG_INFO_ERRNO(error, "[%s] Cannot format request chunk of size %u",
+                         _socket.logAddress(), chunkSize);
       return error;  // remove from multiplexer
     }
 
-    ESB_LOG_DEBUG("[%s] formatted request chunk of size %d",
-                  _socket.logAddress(), availableSize);
+    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u",
+                  _socket.logAddress(), chunkSize);
 
     // beginBlock reserves space for this operation
 

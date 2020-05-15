@@ -288,13 +288,13 @@ ESB::Error HttpMessageFormatter::formatFieldValue(
 }
 
 ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer,
-                                            ESB::UInt32 requestedSize,
-                                            ESB::UInt32 *availableSize) {
-  if (!outputBuffer || !availableSize) {
+                                            ESB::UInt32 offeredSize,
+                                            ESB::UInt32 *maxChunkSize) {
+  if (!outputBuffer || !maxChunkSize) {
     return ESB_NULL_POINTER;
   }
 
-  if (0 == requestedSize) {
+  if (0 == offeredSize) {
     return ESB_INVALID_ARGUMENT;
   }
 
@@ -303,11 +303,11 @@ ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer,
   }
 
   if (ES_FORMATTING_CHUNKED_BODY & _state) {
-    return beginChunk(outputBuffer, requestedSize, availableSize);
+    return beginChunk(outputBuffer, offeredSize, maxChunkSize);
   }
 
   if (ES_FORMATTING_UNENCODED_BODY & _state) {
-    return beginUnencodedBlock(outputBuffer, requestedSize, availableSize);
+    return beginUnencodedBlock(outputBuffer, offeredSize, maxChunkSize);
   }
 
   return ESB_INVALID_STATE;

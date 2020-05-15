@@ -10,16 +10,17 @@ namespace ES {
 
 class HttpNullClientHandler : public HttpClientHandler {
  public:
-  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream) {
+  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       ESB::UInt32 *maxChunkSize) {
     assert(0 == "HttpNullClientHandler called");
-    return 0;
+    return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error fillRequestChunk(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
-                                      unsigned char *chunk,
-                                      ESB::UInt32 chunkSize) {
+  virtual ESB::Error takeResponseChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       unsigned char *chunk,
+                                       ESB::UInt32 chunkSize) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
@@ -30,15 +31,11 @@ class HttpNullClientHandler : public HttpClientHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
-                                           HttpClientStream &stream) {
+  virtual ESB::Error responseChunkCapacity(HttpMultiplexer &multiplexer,
+                                           HttpClientStream &stream,
+                                           ESB::UInt32 *maxChunkSize) {
     assert(0 == "HttpNullClientHandler called");
-    return 0;
-  }
-
-  virtual void receivePaused(HttpMultiplexer &multiplexer,
-                             HttpClientStream &stream) {
-    assert(0 == "HttpNullClientHandler called");
+    return ESB_NOT_IMPLEMENTED;
   }
 
   virtual ESB::Error receiveResponseChunk(HttpMultiplexer &multiplexer,
@@ -75,10 +72,11 @@ class HttpNullServerHandler : public HttpServerHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &stack,
-                                          HttpServerStream &stream) {
+  virtual ESB::Error requestChunkCapacity(HttpMultiplexer &stack,
+                                          HttpServerStream &stream,
+                                          ESB::UInt32 *maxChunkSize) {
     assert(0 == "HttpNullServerHandler called");
-    return 0;
+    return ESB_NOT_IMPLEMENTED;
   }
 
   virtual ESB::Error receiveRequestChunk(HttpMultiplexer &stack,
@@ -89,17 +87,14 @@ class HttpNullServerHandler : public HttpServerHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual void receivePaused(HttpMultiplexer &stack, HttpServerStream &stream) {
+  virtual ESB::Error offerResponseChunk(HttpMultiplexer &stack,
+                                        HttpServerStream &stream,
+                                        ESB::UInt32 *maxChunkSize) {
     assert(0 == "HttpNullServerHandler called");
+    return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &stack,
-                                           HttpServerStream &stream) {
-    assert(0 == "HttpNullServerHandler called");
-    return 0;
-  }
-
-  virtual ESB::Error fillResponseChunk(HttpMultiplexer &stack,
+  virtual ESB::Error takeResponseChunk(HttpMultiplexer &stack,
                                        HttpServerStream &stream,
                                        unsigned char *chunk,
                                        ESB::UInt32 chunkSize) {

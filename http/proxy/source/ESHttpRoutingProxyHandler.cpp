@@ -98,8 +98,9 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
+ESB::Error HttpRoutingProxyHandler::requestChunkCapacity(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream,
+    ESB::UInt32 *maxChunkSize) {
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
@@ -108,16 +109,16 @@ ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(
     case HttpRoutingProxyContext::State::CLIENT_RESPONSE_WAIT:
       // Wait until we the upstream response before accepting body data.  This
       // will pause the server socket
-      return 0U;
+      return ESB_NOT_IMPLEMENTED;
     case HttpRoutingProxyContext::State::STREAMING:
       assert(context->clientStream());
       assert(0 ==
              "TODO modify HttpStream to return remaining space in the ssend "
              "buffer");
     default:
-      assert(0 == "reserveRequestChunk in invalid state");
+      assert(0 == "offerRequestChunk in invalid state");
       ESB_LOG_ERROR("[%s] transaction in invalid state", stream.logAddress());
-      return 0U;
+      return ESB_NOT_IMPLEMENTED;
   }
 }
 
@@ -142,15 +143,16 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestChunk(
   return ESB_SUCCESS;
 }
 
-ESB::UInt32 HttpRoutingProxyHandler::reserveResponseChunk(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
+ESB::Error HttpRoutingProxyHandler::offerResponseChunk(
+    HttpMultiplexer &multiplexer, HttpServerStream &stream,
+    ESB::UInt32 *maxChunkSize) {
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
-  return 0;
+  return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::fillResponseChunk(
+ESB::Error HttpRoutingProxyHandler::takeResponseChunk(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
     unsigned char *chunk, ESB::UInt32 chunkSize) {
   assert(chunk);
@@ -196,17 +198,13 @@ void HttpRoutingProxyHandler::endServerTransaction(
   }
 }
 
-void HttpRoutingProxyHandler::receivePaused(HttpMultiplexer &multiplexer,
-                                            HttpServerStream &stream) {
-  assert(0 == "HttpProxy should not be paused");
+ESB::Error HttpRoutingProxyHandler::offerRequestChunk(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
+    ESB::UInt32 *maxChunkSize) {
+  return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::UInt32 HttpRoutingProxyHandler::reserveRequestChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
-  return 0;
-}
-
-ESB::Error HttpRoutingProxyHandler::fillRequestChunk(
+ESB::Error HttpRoutingProxyHandler::takeResponseChunk(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
     unsigned char *chunk, ESB::UInt32 chunkSize) {
   return ESB_NOT_IMPLEMENTED;
@@ -218,13 +216,11 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::UInt32 HttpRoutingProxyHandler::reserveResponseChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
-  return 0;
+ESB::Error HttpRoutingProxyHandler::responseChunkCapacity(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
+    ESB::UInt32 *maxChunkSize) {
+  return ESB_NOT_IMPLEMENTED;
 }
-
-void HttpRoutingProxyHandler::receivePaused(HttpMultiplexer &multiplexer,
-                                            HttpClientStream &stream) {}
 
 ESB::Error HttpRoutingProxyHandler::receiveResponseChunk(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,

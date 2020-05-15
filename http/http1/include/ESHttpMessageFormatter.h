@@ -67,16 +67,16 @@ class HttpMessageFormatter {
    * socket, clear buffer & goto (1)
    *
    * @param outputBuffer The buffer to fill
-   * @param requestedSize The number of bytes the caller would like to add to
+   * @param offeredSize The number of bytes the caller would like to add to
    * the body
-   * @param availableSize The number of bytes that can be added to the
+   * @param maxChunkSize The number of bytes that can be added to the
    * outputBuffer after this call returns.  Always less than or equal to
-   * requestedSize.
+   * offeredSize.
    * @return ESB_SUCCESS if successful, ESB_AGAIN if the buffer runs out of
    * space, another error code otherwise.
    */
-  ESB::Error beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
-                        ESB::UInt32 *availableSize);
+  ESB::Error beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 offeredSize,
+                        ESB::UInt32 *maxChunkSize);
 
   ESB::Error endBlock(ESB::Buffer *outputBuffer);
 

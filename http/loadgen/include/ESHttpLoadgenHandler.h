@@ -31,22 +31,21 @@ class HttpLoadgenHandler : public HttpClientHandler {
   // ES::HttpClientHandler
   //
 
-  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream);
+  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       ESB::UInt32 *maxChunkSize);
 
-  virtual ESB::Error fillRequestChunk(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
-                                      unsigned char *chunk,
-                                      unsigned int chunkSize);
+  virtual ESB::Error takeResponseChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       unsigned char *chunk,
+                                       unsigned int chunkSize);
 
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
                                             HttpClientStream &stream);
 
-  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
-                                           HttpClientStream &stream);
-
-  virtual void receivePaused(HttpMultiplexer &multiplexer,
-                             HttpClientStream &stream);
+  virtual ESB::Error responseChunkCapacity(HttpMultiplexer &multiplexer,
+                                           HttpClientStream &stream,
+                                           ESB::UInt32 *maxChunkSize);
 
   virtual ESB::Error receiveResponseChunk(HttpMultiplexer &multiplexer,
                                           HttpClientStream &stream,

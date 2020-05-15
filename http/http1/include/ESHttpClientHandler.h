@@ -34,24 +34,25 @@ class HttpClientHandler {
   virtual ~HttpClientHandler();
 
   /**
-   * Request a buffer of up to n bytes to fill with request body data.  The
-   * stack will subsequently call fillRequestChunk with the actual size of the
-   * buffer available.  The actual size of the buffer may be less than the
-   * requested size.
+   * Determine the max chunk size the handler can fill.  The stack will
+   * subsequently call fillRequestChunk with an empty buffer of size less than
+   * or equal to the max chunk size.   The handler may try to read or generate
+   * more chunk data as a side effect.
    *
-   * A good implementation will always return the known size of remaining body
-   * data.  This function may be called multiple times before fillRequestChunk
-   * actually writes the data to the buffer if there is insufficient space in
-   * the underlying tcp buffers.  Don't deduct the amount requested from the
-   * remaining amount until fillRequestChunk is called.
+   * Note: to finish the body/send the last chunk, the handler should return
+   * ESB_SUCCESS and set maxChunkSize to 0.
    *
    * @param multiplexer An API for the thread's multiplexer
    * @param stream The client stream, including request and response objects
-   * @return The buffer size requested.  Returning 0 ends the body.  Returning
-   * -1 or less immediately closes the connection
+   * @param offeredChunkSize The max chunk size the handler can generate should
+   * be written here.
+   * @return ESB_SUCCESS if successful, another error code otherwise.  Any
+   * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
+   * transaction.
    */
-  virtual ESB::UInt32 reserveRequestChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream) = 0;
+  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       ESB::UInt32 *offeredChunkSize) = 0;
 
   /**
    * Fill a request body chunk with data.
@@ -64,10 +65,10 @@ class HttpClientHandler {
    * @return ESB_SUCCESS to continue processing or any other value to
    * immediately close the socket.
    */
-  virtual ESB::Error fillRequestChunk(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
-                                      unsigned char *chunk,
-                                      ESB::UInt32 chunkSize) = 0;
+  virtual ESB::Error takeResponseChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       unsigned char *chunk,
+                                       ESB::UInt32 chunkSize) = 0;
 
   /**
    * Process a request's HTTP headers.
@@ -81,29 +82,23 @@ class HttpClientHandler {
                                             HttpClientStream &stream) = 0;
 
   /**
-   * Reserve space for the response body.  This will be called 0+ times as the
-   * response's HTTP body is received (0 times if the response has no body).
+   * Determine the max chunk size the handler is ready to receive.  The stack
+   * will subsequently call receiveRequestChunk with chunk data of size less
+   * than or equal to the max chunk size.   The handler may try to make more
+   * free space available as a side effect.
    *
    * @param multiplexer An API for the thread's multiplexer
    * @param stream The client stream, including request and response objects
-   * @return The max bytes the handler can receive.  If the calling socket has
-   * received more bytes than can be read, the calling socket will have to be
-   * resumed by the handler later.
+   * @param maxChunkSize The max chunk size the handler can receive should be
+   * written here.
+   * @return ESB_SUCCESS if successful, another error code otherwise (if, for
+   * instance, an error occurred flushing data to a socket to make more room).
+   * Any return value other than ESB_SUCCESS and ESB_AGAIN will abort the
+   * current transaction.
    */
-  virtual ESB::UInt32 reserveResponseChunk(HttpMultiplexer &multiplexer,
-                                           HttpClientStream &stream) = 0;
-
-  /**
-   * If the handler cannot keep up with the received data, the stack will
-   * pause the receiving socket.   The handler should call resume() on the
-   * paused stream once it's ready to receive more data.  Alternately the
-   * handler can call close() on the paused stream.
-   *
-   * @param multiplexer An API for the thread's multiplexer
-   * @param stream The server stream, including request and response objects
-   */
-  virtual void receivePaused(HttpMultiplexer &multiplexer,
-                             HttpClientStream &stream) = 0;
+  virtual ESB::Error responseChunkCapacity(HttpMultiplexer &multiplexer,
+                                           HttpClientStream &stream,
+                                           ESB::UInt32 *maxChunkSize) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the

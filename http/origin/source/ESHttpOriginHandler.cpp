@@ -73,14 +73,16 @@ ESB::Error HttpOriginHandler::receiveRequestChunk(HttpMultiplexer &stack,
   return ESB_SUCCESS;
 }
 
-ESB::UInt32 HttpOriginHandler::reserveResponseChunk(HttpMultiplexer &stack,
-                                                    HttpServerStream &stream) {
+ESB::Error HttpOriginHandler::offerResponseChunk(HttpMultiplexer &stack,
+                                                 HttpServerStream &stream,
+                                                 ESB::UInt32 *maxChunkSize) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  return BodySize - context->getBytesSent();
+  *maxChunkSize = BodySize - context->getBytesSent();
+  return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::fillResponseChunk(HttpMultiplexer &stack,
+ESB::Error HttpOriginHandler::takeResponseChunk(HttpMultiplexer &stack,
                                                 HttpServerStream &stream,
                                                 unsigned char *chunk,
                                                 ESB::UInt32 chunkSize) {
@@ -133,14 +135,12 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack,
   }
 }
 
-ESB::UInt32 HttpOriginHandler::reserveRequestChunk(HttpMultiplexer &stack,
-                                                   HttpServerStream &stream) {
-  return ESB_UINT32_MAX;
-}
-
-void HttpOriginHandler::receivePaused(HttpMultiplexer &stack,
-                                      HttpServerStream &stream) {
-  assert(0 == "HttpOriginHandler should not be paused");
+ESB::Error HttpOriginHandler::requestChunkCapacity(HttpMultiplexer &stack,
+                                                   HttpServerStream &stream,
+                                                   ESB::UInt32 *maxChunkSize) {
+  assert(maxChunkSize);
+  *maxChunkSize = ESB_UINT32_MAX;
+  return ESB_SUCCESS;
 }
 
 }  // namespace ES
