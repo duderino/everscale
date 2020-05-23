@@ -70,25 +70,6 @@ class HttpServerHandler {
                                            HttpServerStream &stream) = 0;
 
   /**
-   * Determine the max chunk size the handler is ready to receive.  The stack
-   * will subsequently call receiveRequestChunk with chunk data of size less
-   * than or equal to the max chunk size.   The handler may try to make more
-   * free space available as a side effect.
-   *
-   * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
-   * @param maxChunkSize The max chunk size the handler can receive should be
-   * written here.
-   * @return ESB_SUCCESS if successful, another error code otherwise (if, for
-   * instance, an error occurred flushing data to a socket to make more room).
-   * Any return value other than ESB_SUCCESS and ESB_AGAIN will abort the
-   * current transaction.
-   */
-  virtual ESB::Error requestChunkCapacity(HttpMultiplexer &multiplexer,
-                                          HttpServerStream &stream,
-                                          ESB::UInt32 *maxChunkSize) = 0;
-
-  /**
    * Incrementally process a request's body.  This will be called 1+ times as
    * the request's HTTP body is received.  The body is finished when a
    * chunk_size of 0 is passed to the callback.  If there is no body, this
@@ -100,50 +81,49 @@ class HttpServerHandler {
    * @param chunk A buffer to drain
    * @param chunkSize The size of the buffer to drain, or 0 if the body is
    * finished.
-   * @return ESB_SUCCESS to continue processing, ESB_SEND_RESPONSE to send
-   *  a HTTP response now, or any other value to immediately close the socket.
+   * @param bytesConsumed impl should write the number of bytes read from the
+   * buffer here.  Must be <= chunkSize.
+   * @return ESB_SUCCESS if successful, another error code otherwise.  Any
+   * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
+   * transaction.
    */
-  virtual ESB::Error receiveRequestChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error consumeRequestChunk(HttpMultiplexer &multiplexer,
                                          HttpServerStream &stream,
                                          unsigned const char *chunk,
-                                         ESB::UInt32 chunkSize) = 0;
+                                         ESB::UInt32 chunkSize,
+                                         ESB::UInt32 *bytesConsumed) = 0;
 
   /**
-   * Determine the max chunk size the handler can fill.  The stack will
-   * subsequently call fillRequestChunk with an empty buffer of size less than
-   * or equal to the max chunk size.   The handler may try to read or generate
-   * more chunk data as a side effect.
-   *
-   * Note: to finish the body/send the last chunk, the handler should return
-   * ESB_SUCCESS and set maxChunkSize to 0.
+   * Offer body bytes to the caller, if necessary producing more data as a
+   * side-effect.  Return ESB_SUCCESS + 0 bytesAvailable to end the body. Return
+   * ESB_AGAIN + 0 bytesAvailable to relay backpressure.
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
-   * @param offeredChunkSize The max chunk size the handler can generate should
-   * be written here.
+   * @param stream The server stream, including request and response objects
+   * @param bytesAvailable The bytes of body data that can be immediately
+   * consumed.
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
   virtual ESB::Error offerResponseChunk(HttpMultiplexer &multiplexer,
                                         HttpServerStream &stream,
-                                        ESB::UInt32 *offeredChunkSize) = 0;
-
+                                        ESB::UInt32 *bytesAvailable) = 0;
   /**
-   * Fill a response body chunk with data.
+   * Copy body bytes to the caller, which consumes it in the process.
    *
    * @param multiplexer An API for the thread's multiplexer
    * @param stream The server stream, including request and response objects
-   * @param chunk A buffer to fill
-   * @param chunkSize The size of the buffer to fill.  This may be less than the
-   * size requested by the requestResponseChunk method.
-   * @return ESB_SUCCESS to continue processing or any other value to
-   * immediately close the socket.
+   * @param chunk A buffer to fill with body data
+   * @param bytesRequested Fill the buffer with this many bytes of body data.
+   * bytesRequested will be <= result of offerResponseChunk().
+   * @return ESB_SUCCESS if successful, another error code otherwise.  Any
+   * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error takeResponseChunk(HttpMultiplexer &multiplexer,
-                                       HttpServerStream &stream,
-                                       unsigned char *chunk,
-                                       ESB::UInt32 chunkSize) = 0;
+  virtual ESB::Error produceResponseChunk(HttpMultiplexer &multiplexer,
+                                          HttpServerStream &stream,
+                                          unsigned char *chunk,
+                                          ESB::UInt32 bytesRequested) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the

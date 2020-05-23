@@ -38,24 +38,23 @@ ESB::Error HttpLoadgenHandler::offerRequestChunk(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::takeResponseChunk(HttpMultiplexer &multiplexer,
-                                                 HttpClientStream &stream,
-                                                 unsigned char *chunk,
-                                                 ESB::UInt32 chunkSize) {
+ESB::Error HttpLoadgenHandler::produceRequestChunk(HttpMultiplexer &multiplexer,
+                                                   HttpClientStream &stream,
+                                                   unsigned char *chunk,
+                                                   ESB::UInt32 bytesRequested) {
   assert(chunk);
-  assert(0 < chunkSize);
-
+  assert(0 < bytesRequested);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
+  assert(bytesRequested <= _bodySize - context->bytesSent());
 
   ESB::UInt32 totalBytesRemaining = _bodySize - context->bytesSent();
-  ESB::UInt32 bytesToSend =
-      chunkSize > totalBytesRemaining ? totalBytesRemaining : chunkSize;
+  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining
+                                ? totalBytesRemaining
+                                : bytesRequested;
 
   memcpy(chunk, _body + context->bytesSent(), bytesToSend);
-
   context->setBytesSent(context->bytesSent() + bytesToSend);
-
   return ESB_SUCCESS;
 }
 
@@ -64,23 +63,14 @@ ESB::Error HttpLoadgenHandler::receiveResponseHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::responseChunkCapacity(
+ESB::Error HttpLoadgenHandler::consumeResponseChunk(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    ESB::UInt32 *maxChunkSize) {
-  assert(maxChunkSize);
-  *maxChunkSize = ESB_UINT32_MAX;
-  return ESB_SUCCESS;
-}
-
-ESB::Error HttpLoadgenHandler::receiveResponseChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    unsigned const char *chunk, ESB::UInt32 chunkSize) {
+    const unsigned char *chunk, ESB::UInt32 chunkSize,
+    ESB::UInt32 *bytesConsumed) {
   assert(chunk);
+  assert(bytesConsumed);
 
-  if (0U == chunkSize) {
-    return ESB_SUCCESS;
-  }
-
+  *bytesConsumed = chunkSize;
   return ESB_SUCCESS;
 }
 

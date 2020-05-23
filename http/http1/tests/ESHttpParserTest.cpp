@@ -267,14 +267,13 @@ bool ParseRequest(const char *inputFileName) {
   // Simultaneously parse & format request body - each flush becomes a chunk
   //
 
-  ESB::UInt32 startingPosition = 0;
+  ESB::UInt32 bufferOffset = 0;
   ESB::UInt32 chunkSize = 0;
   ESB::UInt32 availableSize = 0;
   ESB::UInt32 bytesWritten = 0;
 
   while (true) {
-    error = RequestParser.parseBody(&InputBuffer, &startingPosition, &chunkSize,
-                                    ESB_UINT32_MAX);
+    error = RequestParser.parseBody(&InputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)
@@ -329,7 +328,7 @@ bool ParseRequest(const char *inputFileName) {
     if (Debug) {
       char buffer[sizeof(InputBufferStorage) + 1];
 
-      memcpy(buffer, InputBuffer.buffer() + startingPosition, chunkSize);
+      memcpy(buffer, InputBuffer.buffer() + bufferOffset, chunkSize);
       buffer[chunkSize] = 0;
 
       if (3 < Debug) fprintf(stderr, "read chunk:\n");
@@ -375,8 +374,7 @@ bool ParseRequest(const char *inputFileName) {
       }
 
       memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(),
-             InputBuffer.buffer() + startingPosition + bytesWritten,
-             availableSize);
+             InputBuffer.buffer() + bufferOffset + bytesWritten, availableSize);
 
       OutputBuffer.setWritePosition(OutputBuffer.writePosition() +
                                     availableSize);
@@ -421,6 +419,8 @@ bool ParseRequest(const char *inputFileName) {
         break;
       }
     }
+
+    RequestParser.consumeBody(&InputBuffer, chunkSize);
   }
 
   // format last chunk
@@ -723,14 +723,13 @@ bool ParseResponse(const char *inputFileName) {
   // Simultaneously parse & format response body - each flush becomes a chunk
   //
 
-  ESB::UInt32 startingPosition = 0;
+  ESB::UInt32 bufferOffset = 0;
   ESB::UInt32 chunkSize = 0;
   ESB::UInt32 availableSize = 0;
   ESB::UInt32 bytesWritten = 0;
 
   while (true) {
-    error = ResponseParser.parseBody(&InputBuffer, &startingPosition,
-                                     &chunkSize, ESB_UINT32_MAX);
+    error = ResponseParser.parseBody(&InputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
       if (1 < Debug)
@@ -767,7 +766,6 @@ bool ParseResponse(const char *inputFileName) {
       if (1 < Debug)
         fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
                 inputFileName);
-
       continue;
     }
 
@@ -778,14 +776,13 @@ bool ParseResponse(const char *inputFileName) {
 
     if (0 == chunkSize) {
       if (Debug) fprintf(stderr, "\nfinished reading body %s\n", inputFileName);
-
       break;
     }
 
     if (Debug) {
       char buffer[sizeof(InputBufferStorage) + 1];
 
-      memcpy(buffer, InputBuffer.buffer() + startingPosition, chunkSize);
+      memcpy(buffer, InputBuffer.buffer() + bufferOffset, chunkSize);
       buffer[chunkSize] = 0;
 
       if (3 < Debug) fprintf(stderr, "read chunk:\n");
@@ -831,8 +828,7 @@ bool ParseResponse(const char *inputFileName) {
       }
 
       memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(),
-             InputBuffer.buffer() + startingPosition + bytesWritten,
-             availableSize);
+             InputBuffer.buffer() + bufferOffset + bytesWritten, availableSize);
 
       OutputBuffer.setWritePosition(OutputBuffer.writePosition() +
                                     availableSize);
@@ -877,6 +873,8 @@ bool ParseResponse(const char *inputFileName) {
         break;
       }
     }
+
+    ResponseParser.consumeBody(&InputBuffer, chunkSize);
   }
 
   // format last chunk

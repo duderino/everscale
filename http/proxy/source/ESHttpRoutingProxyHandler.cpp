@@ -18,7 +18,7 @@ ESB::Error HttpRoutingProxyHandler::acceptConnection(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::beginServerTransaction(
+ESB::Error HttpRoutingProxyHandler::beginTransaction(
     HttpMultiplexer &multiplexer, HttpServerStream &stream) {
   HttpRoutingProxyContext *context =
       new (stream.allocator()) HttpRoutingProxyContext();
@@ -98,9 +98,10 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::requestChunkCapacity(
+ESB::Error HttpRoutingProxyHandler::consumeRequestChunk(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    ESB::UInt32 *maxChunkSize) {
+    unsigned const char *chunk, ESB::UInt32 chunkSize,
+    ESB::UInt32 *bytesConsumed) {
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
@@ -120,15 +121,6 @@ ESB::Error HttpRoutingProxyHandler::requestChunkCapacity(
       ESB_LOG_ERROR("[%s] transaction in invalid state", stream.logAddress());
       return ESB_NOT_IMPLEMENTED;
   }
-}
-
-ESB::Error HttpRoutingProxyHandler::receiveRequestChunk(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    unsigned const char *chunk, ESB::UInt32 chunkSize) {
-  assert(chunk);
-  HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)stream.context();
-  assert(context);
 
   assert(0 == "TODO modify HttpStream to expose subset of formatRequestBody");
 
@@ -145,18 +137,15 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestChunk(
 
 ESB::Error HttpRoutingProxyHandler::offerResponseChunk(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    ESB::UInt32 *maxChunkSize) {
-  HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)stream.context();
-  assert(context);
+    ESB::UInt32 *bytesAvailable) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::takeResponseChunk(
+ESB::Error HttpRoutingProxyHandler::produceResponseChunk(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    unsigned char *chunk, ESB::UInt32 chunkSize) {
+    unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
-  assert(0 < chunkSize);
+  assert(0 < bytesRequested);
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
@@ -198,33 +187,28 @@ void HttpRoutingProxyHandler::endServerTransaction(
   }
 }
 
-ESB::Error HttpRoutingProxyHandler::offerRequestChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    ESB::UInt32 *maxChunkSize) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
-ESB::Error HttpRoutingProxyHandler::takeResponseChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    unsigned char *chunk, ESB::UInt32 chunkSize) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
 ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(
     HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   // TODO unpause or close server stream.  if not paused, just write?
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::responseChunkCapacity(
+ESB::Error HttpRoutingProxyHandler::offerRequestChunk(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    ESB::UInt32 *maxChunkSize) {
+    ESB::UInt32 *bytesAvailable) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::receiveResponseChunk(
+ESB::Error HttpRoutingProxyHandler::produceRequestChunk(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    unsigned const char *chunk, ESB::UInt32 chunkSize) {
+    unsigned char *chunk, ESB::UInt32 bytesRequested) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
+ESB::Error HttpRoutingProxyHandler::consumeResponseChunk(
+    HttpMultiplexer &multiplexer, HttpClientStream &stream,
+    const unsigned char *chunk, ESB::UInt32 chunkSize,
+    ESB::UInt32 *bytesConsumed) {
   return ESB_NOT_IMPLEMENTED;
 }
 

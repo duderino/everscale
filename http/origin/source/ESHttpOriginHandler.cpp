@@ -56,12 +56,15 @@ ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::receiveRequestChunk(HttpMultiplexer &stack,
+ESB::Error HttpOriginHandler::consumeRequestChunk(HttpMultiplexer &multiplexer,
                                                   HttpServerStream &stream,
                                                   unsigned const char *chunk,
-                                                  ESB::UInt32 chunkSize) {
+                                                  ESB::UInt32 chunkSize,
+                                                  ESB::UInt32 *bytesConsumed) {
   assert(chunk);
+  assert(bytesConsumed);
 
+  *bytesConsumed = chunkSize;
   HttpResponse &response = stream.response();
 
   if (0U == chunkSize) {
@@ -73,32 +76,32 @@ ESB::Error HttpOriginHandler::receiveRequestChunk(HttpMultiplexer &stack,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::offerResponseChunk(HttpMultiplexer &stack,
+ESB::Error HttpOriginHandler::offerResponseChunk(HttpMultiplexer &multiplexer,
                                                  HttpServerStream &stream,
-                                                 ESB::UInt32 *maxChunkSize) {
+                                                 ESB::UInt32 *bytesAvailable) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  *maxChunkSize = BodySize - context->getBytesSent();
+  *bytesAvailable = BodySize - context->getBytesSent();
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::takeResponseChunk(HttpMultiplexer &stack,
-                                                HttpServerStream &stream,
-                                                unsigned char *chunk,
-                                                ESB::UInt32 chunkSize) {
+ESB::Error HttpOriginHandler::produceResponseChunk(HttpMultiplexer &multiplexer,
+                                                   HttpServerStream &stream,
+                                                   unsigned char *chunk,
+                                                   ESB::UInt32 bytesRequested) {
   assert(chunk);
-  assert(0 < chunkSize);
+  assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
+  assert(bytesRequested <= BodySize - context->getBytesSent());
 
-  unsigned int totalBytesRemaining = BodySize - context->getBytesSent();
-  unsigned int bytesToSend =
-      chunkSize > totalBytesRemaining ? totalBytesRemaining : chunkSize;
+  ESB::UInt32 totalBytesRemaining = BodySize - context->getBytesSent();
+  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining
+                                ? totalBytesRemaining
+                                : bytesRequested;
 
   memcpy(chunk, ((unsigned char *)BODY) + context->getBytesSent(), bytesToSend);
-
   context->addBytesSent(bytesToSend);
-
   return ESB_SUCCESS;
 }
 
@@ -133,14 +136,6 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack,
     default:
       ESB_LOG_WARNING("Transaction failed at unknown state");
   }
-}
-
-ESB::Error HttpOriginHandler::requestChunkCapacity(HttpMultiplexer &stack,
-                                                   HttpServerStream &stream,
-                                                   ESB::UInt32 *maxChunkSize) {
-  assert(maxChunkSize);
-  *maxChunkSize = ESB_UINT32_MAX;
-  return ESB_SUCCESS;
 }
 
 }  // namespace ES

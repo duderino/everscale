@@ -31,26 +31,23 @@ class HttpLoadgenHandler : public HttpClientHandler {
   // ES::HttpClientHandler
   //
 
-  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream,
-                                       ESB::UInt32 *maxChunkSize);
-
-  virtual ESB::Error takeResponseChunk(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream,
-                                       unsigned char *chunk,
-                                       unsigned int chunkSize);
-
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
                                             HttpClientStream &stream);
 
-  virtual ESB::Error responseChunkCapacity(HttpMultiplexer &multiplexer,
-                                           HttpClientStream &stream,
-                                           ESB::UInt32 *maxChunkSize);
+  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
+                                       HttpClientStream &stream,
+                                       ESB::UInt32 *bytesAvailable);
 
-  virtual ESB::Error receiveResponseChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error produceRequestChunk(HttpMultiplexer &multiplexer,
+                                         HttpClientStream &stream,
+                                         unsigned char *chunk,
+                                         ESB::UInt32 bytesRequested);
+
+  virtual ESB::Error consumeResponseChunk(HttpMultiplexer &multiplexer,
                                           HttpClientStream &stream,
-                                          unsigned const char *chunk,
-                                          ESB::UInt32 chunkSize);
+                                          const unsigned char *chunk,
+                                          ESB::UInt32 chunkSize,
+                                          ESB::UInt32 *bytesConsumed);
 
   virtual void endTransaction(HttpMultiplexer &multiplexer,
                               HttpClientStream &stream, State state);

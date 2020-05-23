@@ -76,7 +76,9 @@ class HttpMessageParser {
    *  compacted and filled, another error code otherwise.
    */
   ESB::Error parseBody(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition,
-                       ESB::UInt32 *chunkSize, ESB::UInt32 maxChunkSize);
+                       ESB::UInt32 *chunkSize);
+
+  ESB::Error consumeBody(ESB::Buffer *inputBuffer, ESB::UInt32 bytesConsumed);
 
   /**
    * Skips any body trailer.  Necessary only if the connection will be reused.
@@ -122,7 +124,7 @@ class HttpMessageParser {
   //                  CRLF
   ESB::Error parseChunkedBody(ESB::Buffer *inputBuffer,
                               ESB::UInt32 *startingPosition,
-                              ESB::UInt32 *chunkSize, ESB::UInt32 maxChunkSize);
+                              ESB::UInt32 *chunkSize);
 
   // chunk-size     = 1*HEX
   ESB::Error parseChunkSize(ESB::Buffer *inputBuffer);
@@ -136,7 +138,7 @@ class HttpMessageParser {
   // chunk-data     = chunk-size(OCTET)
   ESB::Error parseChunkData(ESB::Buffer *inputBuffer,
                             ESB::UInt32 *startingPosition,
-                            ESB::UInt32 *chunkSize, ESB::UInt32 maxChunkSize);
+                            ESB::UInt32 *chunkSize);
 
   // chunk          = ... CRLF
   ESB::Error parseEndChunk(ESB::Buffer *inputBuffer);

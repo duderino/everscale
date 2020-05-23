@@ -277,9 +277,10 @@ bool HttpServerSocket::handleReadable() {
 
       if (!_transaction->request().hasBody()) {
         unsigned char byte = 0;
+        ESB::UInt32 bytesWritten = 0;
 
-        switch (error = _handler.receiveRequestChunk(_multiplexer, *this, &byte,
-                                                     0)) {
+        switch (error = _handler.consumeRequestChunk(_multiplexer, *this, &byte,
+                                                     0, &bytesWritten)) {
           case ESB_SUCCESS:
           case ESB_SEND_RESPONSE:
             return sendResponse();
@@ -308,6 +309,7 @@ bool HttpServerSocket::handleReadable() {
       }
 
       if (ESB_PAUSE == error) {
+        _state |= RECV_PAUSED;
         return true;  // keep in multiplexer, but remove from read interest set.
       }
 
@@ -678,43 +680,14 @@ ESB::Error HttpServerSocket::parseRequestHeaders() {
 
 ESB::Error HttpServerSocket::parseRequestBody() {
   assert(_transaction);
-  ESB::UInt32 startingPosition = 0;
-  ESB::UInt32 chunkSize = 0;
-  ESB::UInt32 maxChunkSize = 0;
-  ESB::Error error = ESB_SUCCESS;
 
   while (!_multiplexer.shutdown()) {
-    maxChunkSize = 0;
-    error = _handler.requestChunkCapacity(_multiplexer, *this, &maxChunkSize);
+    ESB::UInt32 bufferOffset = 0U;
+    ESB::UInt32 bytesAvailable = 0U;
+    ESB::UInt32 bytesConsumed = 0U;
 
-    switch (error) {
-      case ESB_SUCCESS:
-        break;
-      case ESB_AGAIN:
-        ESB_LOG_DEBUG(
-            "[%s] pausing request body receive until handler is ready",
-            _socket.logAddress());
-        _state |= RECV_PAUSED;
-        return ESB_PAUSE;
-      default:
-        ESB_LOG_DEBUG_ERRNO(
-            error, "[%s] handler cannot reserve space to receive request body",
-            _socket.logAddress());
-        return error;  // remove from multiplexer
-    }
-
-    if (0 == maxChunkSize) {
-      ESB_LOG_DEBUG("[%s] pausing request body receive until handler is ready",
-                    _socket.logAddress());
-      _state |= RECV_PAUSED;
-      return ESB_PAUSE;
-    }
-
-    // No more than maxChunkSize will be consumed.
-    error = _transaction->getParser()->parseBody(_recvBuffer, &startingPosition,
-                                                 &chunkSize, maxChunkSize);
-    assert(chunkSize <= maxChunkSize);
-
+    ESB::Error error = _transaction->getParser()->parseBody(
+        _recvBuffer, &bufferOffset, &bytesAvailable);
     switch (error) {
       case ESB_SUCCESS:
         break;
@@ -737,14 +710,11 @@ ESB::Error HttpServerSocket::parseRequestBody() {
         return error;  // remove from multiplexer
     }
 
-    // At this point chunkSize bytes of data has been consumed from the
-    // _recvBuffer so the handler must fully consume it.  Any error consuming it
-    // aborts the transaction.
-
-    if (0 == chunkSize) {
+    if (0 == bytesAvailable) {
       ESB_LOG_DEBUG("[%s] parsed request body", _socket.logAddress());
       unsigned char byte = 0;
-      error = _handler.receiveRequestChunk(_multiplexer, *this, &byte, 0U);
+      error = _handler.consumeRequestChunk(_multiplexer, *this, &byte, 0U,
+                                           &bytesConsumed);
       _state &= ~PARSING_BODY;
 
       switch (error) {
@@ -762,16 +732,26 @@ ESB::Error HttpServerSocket::parseRequestBody() {
       }
     }
 
-    ESB_LOG_DEBUG("[%s] read request chunk of size: %u", _socket.logAddress(),
-                  chunkSize);
+    ESB_LOG_DEBUG("[%s] offering request chunk of size %u",
+                  _socket.logAddress(), bytesAvailable);
 
-    error = _handler.receiveRequestChunk(
-        _multiplexer, *this, _recvBuffer->buffer() + startingPosition,
-        chunkSize);
-
+    error = _handler.consumeRequestChunk(_multiplexer, *this,
+                                         _recvBuffer->buffer() + bufferOffset,
+                                         bytesAvailable, &bytesConsumed);
     switch (error) {
       case ESB_SUCCESS:
+        if (0 == bytesConsumed) {
+          ESB_LOG_DEBUG(
+              "[%s] pausing request body receive until handler is ready",
+              _socket.logAddress());
+          return ESB_PAUSE;
+        }
         break;
+      case ESB_AGAIN:
+        ESB_LOG_DEBUG(
+            "[%s] pausing request body receive until handler is ready",
+            _socket.logAddress());
+        return ESB_PAUSE;
       case ESB_SEND_RESPONSE:
         ESB_LOG_DEBUG(
             "[%s] handler sending response before last request body chunk",
@@ -788,6 +768,16 @@ ESB::Error HttpServerSocket::parseRequestBody() {
         _state |= TRANSACTION_END;
         return ESB_SUCCESS;
     }
+
+    error = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u request chunk bytes",
+                          _socket.logAddress(), bytesAvailable);
+      return error;  // remove from multiplexer
+    }
+
+    ESB_LOG_DEBUG("[%s] consumed %u out of %u response chunk bytes",
+                  _socket.logAddress(), bytesConsumed, bytesAvailable);
   }
 
   return ESB_SHUTDOWN;
@@ -892,7 +882,7 @@ ESB::Error HttpServerSocket::formatResponseBody() {
 
     // write the body data
 
-    error = _handler.takeResponseChunk(
+    error = _handler.produceResponseChunk(
         _multiplexer, *this,
         _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize);
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
