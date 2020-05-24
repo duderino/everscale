@@ -146,9 +146,7 @@ ESB::Error HttpRoutingProxyHandler::produceResponseChunk(
     unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
-  HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)stream.context();
-  assert(context);
+  assert(stream.context());
   return ESB_NOT_IMPLEMENTED;
 }
 
