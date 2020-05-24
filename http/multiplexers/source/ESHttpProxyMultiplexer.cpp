@@ -96,12 +96,6 @@ class HttpNullServerHandler : public HttpServerHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
-                                HttpServerStream &stream) {
-    assert(0 == "HttpNullServerHandler called");
-    return ESB_NOT_IMPLEMENTED;
-  }
-
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
                               State state) {
     assert(0 == "HttpNullServerHandler called");

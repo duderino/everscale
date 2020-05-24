@@ -39,9 +39,9 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
                                           HttpServerStream &stream,
                                           unsigned char *chunk,
                                           ESB::UInt32 bytesRequested);
-  virtual void endServerTransaction(HttpMultiplexer &multiplexer,
-                                    HttpServerStream &stream,
-                                    HttpServerHandler::State state);
+  virtual void endTransaction(HttpMultiplexer &multiplexer,
+                              HttpServerStream &stream,
+                              HttpServerHandler::State state);
 
   //
   // ES::HttpClientHandler via ES:HttpProxyHandler
@@ -61,9 +61,9 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
                                           const unsigned char *chunk,
                                           ESB::UInt32 chunkSize,
                                           ESB::UInt32 *bytesConsumed);
-  virtual void endClientTransaction(HttpMultiplexer &multiplexer,
-                                    HttpClientStream &stream,
-                                    HttpClientHandler::State state);
+  virtual void endTransaction(HttpMultiplexer &multiplexer,
+                              HttpClientStream &stream,
+                              HttpClientHandler::State state);
 
  private:
   // Disabled

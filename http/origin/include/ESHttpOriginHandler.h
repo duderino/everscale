@@ -35,8 +35,6 @@ class HttpOriginHandler : public HttpServerHandler {
                                           HttpServerStream &stream,
                                           unsigned char *chunk,
                                           ESB::UInt32 bytesRequested);
-  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
-                                HttpServerStream &stream);
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
                               State state);
 

@@ -150,9 +150,9 @@ ESB::Error HttpRoutingProxyHandler::produceResponseChunk(
   return ESB_NOT_IMPLEMENTED;
 }
 
-void HttpRoutingProxyHandler::endServerTransaction(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    HttpServerHandler::State state) {
+void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer,
+                                             HttpServerStream &stream,
+                                             HttpServerHandler::State state) {
   HttpRoutingProxyContext *context =
       (HttpRoutingProxyContext *)stream.context();
   assert(context);
@@ -210,9 +210,9 @@ ESB::Error HttpRoutingProxyHandler::consumeResponseChunk(
   return ESB_NOT_IMPLEMENTED;
 }
 
-void HttpRoutingProxyHandler::endClientTransaction(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    HttpClientHandler::State state) {}
+void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer,
+                                             HttpClientStream &stream,
+                                             HttpClientHandler::State state) {}
 
 ESB::Error HttpRoutingProxyHandler::sendResponse(HttpServerStream &stream,
                                                  int statusCode,

@@ -348,6 +348,16 @@ bool HttpClientSocket::handleWritable() {
         _state |= FORMATTING_BODY;
       } else {
         _state |= PARSING_HEADERS;
+
+        error = _handler.endRequest(_multiplexer, *this);
+        if (ESB_SUCCESS != error) {
+          ESB_LOG_DEBUG_ERRNO(error,
+                              "[%s] handler aborted transaction on request end",
+                              _socket.logAddress());
+          return false;  // remove from multiplexer
+        }
+
+        return handleReadable();
       }
     }
 
@@ -397,6 +407,14 @@ bool HttpClientSocket::handleWritable() {
 
     _state &= ~FLUSHING_BODY;
     _state |= PARSING_HEADERS;
+
+    error = _handler.endRequest(_multiplexer, *this);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error,
+                          "[%s] handler aborted transaction on request end",
+                          _socket.logAddress());
+      return false;  // remove from multiplexer
+    }
 
     return handleReadable();
   }
