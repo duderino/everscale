@@ -100,6 +100,18 @@ class HttpClientHandler {
                                           ESB::UInt32 *bytesConsumed) = 0;
 
   /**
+   * Handle the end of a request (request body has been fully sent)
+   *
+   * @param multiplexer An API for the thread's multiplexer
+   * @param stream The client stream, including request and response objects.
+   * @return ESB_SUCCESS if successful, another error code otherwise.  Any
+   * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
+   * transaction.
+   */
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
+                                HttpClientStream &stream) = 0;
+
+  /**
    * Handle the end of a transaction.  This is called regardless of the
    * transaction's success or failure.
    *

@@ -154,4 +154,9 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,
                 remainingIterations);
 }
 
+ESB::Error HttpLoadgenHandler::endRequest(HttpMultiplexer &multiplexer,
+                                          HttpClientStream &stream) {
+  return ESB_SUCCESS;
+}
+
 }  // namespace ES

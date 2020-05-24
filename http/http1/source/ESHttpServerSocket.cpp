@@ -1119,4 +1119,19 @@ const ESB::SocketAddress &HttpServerSocket::peerAddress() const {
   return _socket.peerAddress();
 }
 
+ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
+                                              ESB::UInt32 chunkSize,
+                                              ESB::UInt32 *bytesConsumed) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
+ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
+ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
+                                             ESB::UInt32 bytesRequested) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
 }  // namespace ES

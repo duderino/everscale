@@ -138,4 +138,9 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack,
   }
 }
 
+ESB::Error HttpOriginHandler::endRequest(HttpMultiplexer &multiplexer,
+                                         HttpServerStream &stream) {
+  return ESB_SUCCESS;
+}
+
 }  // namespace ES

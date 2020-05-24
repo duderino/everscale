@@ -929,4 +929,20 @@ const ESB::SocketAddress &HttpClientSocket::peerAddress() const {
   return _socket.peerAddress();
 }
 
+ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
+                                             ESB::UInt32 chunkSize,
+                                             ESB::UInt32 *bytesConsumed) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
+ESB::Error HttpClientSocket::responseBodyAvailable(
+    ESB::UInt32 *bytesAvailable) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
+ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk,
+                                              ESB::UInt32 bytesRequested) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
 }  // namespace ES

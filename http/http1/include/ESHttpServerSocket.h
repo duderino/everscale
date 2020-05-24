@@ -129,6 +129,17 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
 
   virtual const char *logAddress() const;
 
+  //
+  // ES::HttpServerStream
+  //
+
+  virtual ESB::Error sendResponseBody(unsigned const char *chunk,
+                                      ESB::UInt32 chunkSize,
+                                      ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error readRequestBody(unsigned char *chunk,
+                                     ESB::UInt32 bytesRequested);
+
  private:
   // Disabled
   HttpServerSocket(const HttpServerSocket &);

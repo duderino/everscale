@@ -49,6 +49,9 @@ class HttpLoadgenHandler : public HttpClientHandler {
                                           ESB::UInt32 chunkSize,
                                           ESB::UInt32 *bytesConsumed);
 
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
+                                HttpClientStream &stream);
+
   virtual void endTransaction(HttpMultiplexer &multiplexer,
                               HttpClientStream &stream, State state);
 

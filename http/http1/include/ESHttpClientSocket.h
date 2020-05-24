@@ -144,6 +144,17 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   virtual const char *logAddress() const;
 
   //
+  // ES::HttpClientStream
+  //
+
+  virtual ESB::Error sendRequestBody(unsigned const char *chunk,
+                                     ESB::UInt32 chunkSize,
+                                     ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error readResponseBody(unsigned char *chunk,
+                                      ESB::UInt32 bytesRequested);
+
+  //
   // ESB::EmbeddedMapElement (for connection pool lookups)
   //
 

@@ -40,6 +40,12 @@ class HttpNullClientHandler : public HttpClientHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
+                                HttpClientStream &stream) {
+    assert(0 == "HttpNullClientHandler called");
+    return ESB_NOT_IMPLEMENTED;
+  }
+
   virtual void endTransaction(HttpMultiplexer &multiplexer,
                               HttpClientStream &stream, State state) {
     assert(0 == "HttpNullClientHandler called");
@@ -86,6 +92,12 @@ class HttpNullServerHandler : public HttpServerHandler {
                                           HttpServerStream &stream,
                                           unsigned char *chunk,
                                           ESB::UInt32 bytesRequested) {
+    assert(0 == "HttpNullServerHandler called");
+    return ESB_NOT_IMPLEMENTED;
+  }
+
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
+                                HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
