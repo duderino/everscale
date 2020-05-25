@@ -121,7 +121,11 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   // ES::HttpStream
   //
 
-  virtual ESB::Error abort();
+  virtual ESB::Error abort(bool updateMultiplexer = true);
+  virtual ESB::Error pauseRecv(bool updateMultiplexer = true);
+  virtual ESB::Error resumeRecv(bool updateMultiplexer = true);
+  virtual ESB::Error pauseSend(bool updateMultiplexer = true);
+  virtual ESB::Error resumeSend(bool updateMultiplexer = true);
 
   virtual ESB::Allocator &allocator();
 

@@ -31,6 +31,7 @@ namespace ES {
 #define CLOSE_AFTER_RESPONSE_SENT (1 << 10)
 #define RECV_PAUSED (1 << 11)
 #define SEND_PAUSED (1 << 12)
+#define ABORTED (1 << 13)
 
 // TODO - max requests per connection option (1 disables keepalives)
 // TODO - max header size option
@@ -86,7 +87,7 @@ bool HttpServerSocket::wantAccept() { return false; }
 bool HttpServerSocket::wantConnect() { return false; }
 
 bool HttpServerSocket::wantRead() {
-  if (_state & RECV_PAUSED) {
+  if (_state & RECV_PAUSED || _state & ABORTED || _state & HAS_BEEN_REMOVED) {
     return false;
   }
 
@@ -95,7 +96,7 @@ bool HttpServerSocket::wantRead() {
 }
 
 bool HttpServerSocket::wantWrite() {
-  if (_state & SEND_PAUSED) {
+  if (_state & SEND_PAUSED || _state & ABORTED || _state & HAS_BEEN_REMOVED) {
     return false;
   }
 
@@ -105,7 +106,6 @@ bool HttpServerSocket::wantWrite() {
 
 bool HttpServerSocket::isIdle() {
   // TODO - implement idle timeout
-
   return false;
 }
 
@@ -122,15 +122,23 @@ bool HttpServerSocket::handleConnect() {
   return true;  // keep in multiplexer
 }
 
+ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
+                                              ESB::UInt32 chunkSize,
+                                              ESB::UInt32 *bytesConsumed) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
+ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
 bool HttpServerSocket::handleReadable() {
   // returning true will keep the socket in the multiplexer
   // returning false will remove the socket from the multiplexer and ultimately
   // close it.
 
-  assert(_state & (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY |
-                   SKIPPING_TRAILER));
-  assert(!(HAS_BEEN_REMOVED & _state));
-  assert(!(RECV_PAUSED & _state));
+  assert(wantRead());
+  assert(_socket.isConnected());
 
   if (!_recvBuffer) {
     assert(_state & TRANSACTION_BEGIN);
@@ -266,6 +274,15 @@ bool HttpServerSocket::handleReadable() {
       switch (error = _handler.receiveRequestHeaders(_multiplexer, *this)) {
         case ESB_SUCCESS:
           break;
+        case ESB_PAUSE:
+        case ESB_AGAIN:
+          error = pauseRecv(false);
+          if (ESB_SUCCESS != error) {
+            ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server receive",
+                                _socket.logAddress());
+            return false;  // remove from multiplexer
+          }
+          return true;  // keep in multiplexer but remove from read interest set
         case ESB_SEND_RESPONSE:
           return sendResponse();
         default:
@@ -284,6 +301,16 @@ bool HttpServerSocket::handleReadable() {
           case ESB_SUCCESS:
           case ESB_SEND_RESPONSE:
             return sendResponse();
+          case ESB_PAUSE:
+          case ESB_AGAIN:
+            error = pauseRecv(false);
+            if (ESB_SUCCESS != error) {
+              ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server receive",
+                                  _socket.logAddress());
+              return false;  // remove from multiplexer
+            }
+            return true;  // keep in multiplexer but remove from read interest
+                          // set
           default:
             ESB_LOG_DEBUG_ERRNO(error,
                                 "[%s] server body handler aborted connection",
@@ -309,8 +336,7 @@ bool HttpServerSocket::handleReadable() {
       }
 
       if (ESB_PAUSE == error) {
-        _state |= RECV_PAUSED;
-        return true;  // keep in multiplexer, but remove from read interest set.
+        return true;  // keep in multiplexer but remove from read interest set
       }
 
       if (ESB_SUCCESS != error) {
@@ -360,10 +386,14 @@ bool HttpServerSocket::handleReadable() {
   return false;  // remove from multiplexer
 }
 
+ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
+                                             ESB::UInt32 bytesRequested) {
+  return ESB_NOT_IMPLEMENTED;
+}
+
 bool HttpServerSocket::handleWritable() {
-  assert(_state & (FORMATTING_HEADERS | FORMATTING_BODY));
-  assert(!(HAS_BEEN_REMOVED & _state));
-  assert(!(SEND_PAUSED & _state));
+  assert(wantWrite());
+  assert(_socket.isConnected());
   assert(_transaction);
 
   if (!_sendBuffer) {
@@ -444,8 +474,7 @@ bool HttpServerSocket::handleWritable() {
       }
 
       if (ESB_PAUSE == error) {
-        _state |= SEND_PAUSED;
-        return true;  // keep in multiplexer but remove from write interest
+        return true;  // keep in multiplexer but remove from write interest set
       }
 
       if (ESB_SUCCESS != error) {
@@ -710,47 +739,65 @@ ESB::Error HttpServerSocket::parseRequestBody() {
         return error;  // remove from multiplexer
     }
 
+    // if last chunk
     if (0 == bytesAvailable) {
       ESB_LOG_DEBUG("[%s] parsed request body", _socket.logAddress());
       unsigned char byte = 0;
-      error = _handler.consumeRequestChunk(_multiplexer, *this, &byte, 0U,
-                                           &bytesConsumed);
-      _state &= ~PARSING_BODY;
-
-      switch (error) {
+      switch (error = _handler.consumeRequestChunk(_multiplexer, *this, &byte,
+                                                   0U, &bytesConsumed)) {
         case ESB_SUCCESS:
         case ESB_SEND_RESPONSE:
           _state |= SKIPPING_TRAILER;
+          _state &= ~PARSING_BODY;
+          assert(wantRead());
           return ESB_SUCCESS;
+        case ESB_PAUSE:
+        case ESB_AGAIN:
+          error = pauseRecv(false);
+          if (ESB_SUCCESS != error) {
+            ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server receive",
+                                _socket.logAddress());
+            return error;
+          }
+          return ESB_PAUSE;
         default:
           ESB_LOG_DEBUG_ERRNO(
               error,
               "[%s] handler aborting connection after last request body chunk",
               _socket.logAddress());
           _state |= TRANSACTION_END;
-          return ESB_AGAIN == error ? ESB_INTR : error;
+          return error;
       }
     }
 
     ESB_LOG_DEBUG("[%s] offering request chunk of size %u",
                   _socket.logAddress(), bytesAvailable);
 
-    error = _handler.consumeRequestChunk(_multiplexer, *this,
-                                         _recvBuffer->buffer() + bufferOffset,
-                                         bytesAvailable, &bytesConsumed);
-    switch (error) {
+    switch (error = _handler.consumeRequestChunk(
+                _multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
+                bytesAvailable, &bytesConsumed)) {
       case ESB_SUCCESS:
         if (0 == bytesConsumed) {
           ESB_LOG_DEBUG(
               "[%s] pausing request body receive until handler is ready",
               _socket.logAddress());
+          error = pauseRecv(false);
+          if (ESB_SUCCESS != error) {
+            ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server receive",
+                                _socket.logAddress());
+            return error;
+          }
           return ESB_PAUSE;
         }
         break;
       case ESB_AGAIN:
-        ESB_LOG_DEBUG(
-            "[%s] pausing request body receive until handler is ready",
-            _socket.logAddress());
+      case ESB_PAUSE:
+        error = pauseRecv(false);
+        if (ESB_SUCCESS != error) {
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server receive",
+                              _socket.logAddress());
+          return error;
+        }
         return ESB_PAUSE;
       case ESB_SEND_RESPONSE:
         ESB_LOG_DEBUG(
@@ -839,14 +886,18 @@ ESB::Error HttpServerSocket::formatResponseBody() {
 
   while (!_multiplexer.shutdown()) {
     maxChunkSize = 0;
-    error = _handler.offerResponseChunk(_multiplexer, *this, &offeredSize);
 
-    switch (error) {
+    switch (error = _handler.offerResponseChunk(_multiplexer, *this,
+                                                &offeredSize)) {
       case ESB_AGAIN:
-        ESB_LOG_DEBUG(
-            "[%s] handler cannot offer response chunk, pausing socket",
-            _socket.logAddress());
-        return ESB_PAUSE;  // keep in multiplexer
+      case ESB_PAUSE:
+        error = pauseSend(false);
+        if (ESB_SUCCESS != error) {
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server send",
+                              _socket.logAddress());
+          return error;
+        }
+        return ESB_PAUSE;
       case ESB_SUCCESS:
         ESB_LOG_DEBUG("[%s] handler offers response chunk of %u bytes",
                       _socket.logAddress(), offeredSize);
@@ -862,10 +913,8 @@ ESB::Error HttpServerSocket::formatResponseBody() {
       break;
     }
 
-    error = _transaction->getFormatter()->beginBlock(_sendBuffer, offeredSize,
-                                                     &maxChunkSize);
-
-    switch (error) {
+    switch (error = _transaction->getFormatter()->beginBlock(
+                _sendBuffer, offeredSize, &maxChunkSize)) {
       case ESB_AGAIN:
         ESB_LOG_DEBUG("[%s] partially formatted response body",
                       _socket.logAddress());
@@ -882,18 +931,30 @@ ESB::Error HttpServerSocket::formatResponseBody() {
 
     // write the body data
 
-    error = _handler.produceResponseChunk(
-        _multiplexer, *this,
-        _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize);
-    _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
-    _bodyBytesWritten += chunkSize;
-
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response chunk of size %u",
-                         _socket.logAddress(), chunkSize);
-      return error;  // remove from multiplexer
+    switch (error = _handler.produceResponseChunk(
+                _multiplexer, *this,
+                _sendBuffer->buffer() + _sendBuffer->writePosition(),
+                chunkSize)) {
+      case ESB_SUCCESS:
+        break;
+      case ESB_AGAIN:
+      case ESB_PAUSE:
+        error = pauseSend(false);
+        if (ESB_SUCCESS != error) {
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server send",
+                              _socket.logAddress());
+          return error;
+        }
+        return ESB_PAUSE;
+      default:
+        ESB_LOG_INFO_ERRNO(error,
+                           "[%s] cannot format response chunk of size %u",
+                           _socket.logAddress(), chunkSize);
+        return error;  // remove from multiplexer
     }
 
+    _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
+    _bodyBytesWritten += chunkSize;
     ESB_LOG_DEBUG("[%s] formatted response chunk of size %u",
                   _socket.logAddress(), chunkSize);
 
@@ -956,10 +1017,11 @@ ESB::Error HttpServerSocket::flushBuffer() {
         return ESB_AGAIN;  // keep in multiplexer
       }
 
-      ESB_LOG_INFO_ERRNO(bytesSent,
-                         "[%s] error flushing response output buffer",
+      ESB::Error error = ESB::LastError();
+      assert(ESB_SUCCESS != error);
+      ESB_LOG_INFO_ERRNO(error, "[%s] error flushing response output buffer",
                          _socket.logAddress());
-      return bytesSent;  // remove from multiplexer
+      return error;  // remove from multiplexer
     }
 
     ESB_LOG_DEBUG("[%s] flushed %ld bytes from response output buffer",
@@ -970,6 +1032,8 @@ ESB::Error HttpServerSocket::flushBuffer() {
 }
 
 bool HttpServerSocket::sendResponse() {
+  assert(!(_state & SEND_PAUSED));
+
   if (0 == _transaction->response().statusCode()) {
     ESB_LOG_INFO(
         "[%s] server handler failed to build response, sending 500 Internal "
@@ -1058,19 +1122,97 @@ const char *HttpServerSocket::logAddress() const {
   return _socket.logAddress();
 }
 
-ESB::Error HttpServerSocket::abort() {
-  assert(_state | RECV_PAUSED);
+ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
-
-  if (!(_state | RECV_PAUSED) || _state | HAS_BEEN_REMOVED) {
+  assert(!(ABORTED & _state));
+  if (_state | HAS_BEEN_REMOVED || _state | ABORTED) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] local close during paused request body read",
-                _socket.logAddress());
-  _state &= ~RECV_PAUSED;
+  ESB_LOG_DEBUG("[%s] connection aborted", _socket.logAddress());
 
-  _multiplexer.multiplexer().removeMultiplexedSocket(this);
+  _state |= ABORTED;
+  if (updateMultiplexer) {
+    return _multiplexer.multiplexer().removeMultiplexedSocket(this);
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerSocket::pauseRecv(bool updateMultiplexer) {
+  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(ABORTED & _state));
+  assert(!(RECV_PAUSED & _state));
+  if (_state | HAS_BEEN_REMOVED || _state | ABORTED || _state | RECV_PAUSED) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] connection paused during server request body receive",
+                _socket.logAddress());
+
+  _state |= RECV_PAUSED;
+  if (updateMultiplexer) {
+    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
+  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(ABORTED & _state));
+  assert(RECV_PAUSED & _state);
+  if (_state | HAS_BEEN_REMOVED || _state | ABORTED ||
+      !(_state | RECV_PAUSED)) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] connection resumed during server request body receive",
+                _socket.logAddress());
+
+  _state &= ~RECV_PAUSED;
+  if (updateMultiplexer) {
+    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerSocket::pauseSend(bool updateMultiplexer) {
+  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(ABORTED & _state));
+  assert(!(SEND_PAUSED & _state));
+  if (_state | HAS_BEEN_REMOVED || _state | ABORTED || _state | SEND_PAUSED) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] connection paused during server response body send",
+                _socket.logAddress());
+
+  _state |= SEND_PAUSED;
+  if (updateMultiplexer) {
+    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
+  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(ABORTED & _state));
+  assert(SEND_PAUSED & _state);
+  if (_state | HAS_BEEN_REMOVED || _state | ABORTED ||
+      !(_state | SEND_PAUSED)) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB_LOG_DEBUG("[%s] connection resumed during server response body send",
+                _socket.logAddress());
+
+  _state &= ~SEND_PAUSED;
+  if (updateMultiplexer) {
+    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+  }
 
   return ESB_SUCCESS;
 }
@@ -1117,21 +1259,6 @@ const void *HttpServerSocket::context() const {
 
 const ESB::SocketAddress &HttpServerSocket::peerAddress() const {
   return _socket.peerAddress();
-}
-
-ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
-                                              ESB::UInt32 chunkSize,
-                                              ESB::UInt32 *bytesConsumed) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
-ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
-ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
-                                             ESB::UInt32 bytesRequested) {
-  return ESB_NOT_IMPLEMENTED;
 }
 
 }  // namespace ES

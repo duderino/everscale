@@ -36,9 +36,41 @@ class HttpStream {
    * reentrant if you call this function because calling this function may in
    * turn call other handle* functions including handleRemove.
    *
-   * @return ESB_SUCCESS if successfully canceled, another error code otherwise.
+   * @param updateMultiplexer Immediately update registration in the multiplexer
+   * @return ESB_SUCCESS if successful, another error code otherwise.   */
+  virtual ESB::Error abort(bool updateMultiplexer = true) = 0;
+
+  /**
+   * Stop receiving more data on this stream, ultimately applying backpressure
+   * to the peer.
+   *
+   * @param updateMultiplexer Immediately update registration in the multiplexer
+   * @return ESB_SUCCESS if successful, another error code otherwise.   */
+  virtual ESB::Error pauseRecv(bool updateMultiplexer = true) = 0;
+
+  /**
+   * Resume receiving data on this stream.
+   *
+   * @param updateMultiplexer Immediately update registration in the multiplexer
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   * */
+  virtual ESB::Error resumeRecv(bool updateMultiplexer = true) = 0;
+
+  /**
+   * Stop sending more data on this stream.
+   *
+   * @param updateMultiplexer Immediately update registration in the multiplexer
+   * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  virtual ESB::Error abort() = 0;
+  virtual ESB::Error pauseSend(bool updateMultiplexer = true) = 0;
+
+  /**
+   * Resume receiving data on this stream.
+   *
+   * @param updateMultiplexer Immediately update registration in the multiplexer
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  virtual ESB::Error resumeSend(bool updateMultiplexer = true) = 0;
 
   /**
    * Use the stream's memory allocator which is suitable for small allocations.
