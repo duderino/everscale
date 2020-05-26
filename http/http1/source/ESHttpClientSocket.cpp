@@ -349,17 +349,15 @@ bool HttpClientSocket::handleWritable() {
       error = formatRequestHeaders();
 
       if (ESB_AGAIN == error) {
-        error = flushBuffer();
-
-        if (ESB_AGAIN == error) {
-          return true;  // keep in multiplexer, wait for socket to become
-                        // writable
+        switch (error = flushSendBuffer()) {
+          case ESB_SUCCESS:
+            break;
+          case ESB_AGAIN:
+            return true;  // keep in multiplexer, wait for socket to become
+            // writable
+          default:
+            return false;  // remove from multiplexer
         }
-
-        if (ESB_SUCCESS != error) {
-          return false;  // remove from multiplexer
-        }
-
         continue;
       }
 
@@ -369,14 +367,14 @@ bool HttpClientSocket::handleWritable() {
     }
 
     if (FLUSHING_HEADERS & _state) {
-      error = flushBuffer();
-
-      if (ESB_AGAIN == error) {
-        return true;  // keep in multiplexer, wait for socket to become writable
-      }
-
-      if (ESB_SUCCESS != error) {
-        return false;  // remove from multiplexer
+      switch (error = flushSendBuffer()) {
+        case ESB_SUCCESS:
+          break;
+        case ESB_AGAIN:
+          return true;  // keep in multiplexer, wait for socket to become
+          // writable
+        default:
+          return false;  // remove from multiplexer
       }
 
       _state &= ~FLUSHING_HEADERS;
@@ -402,7 +400,7 @@ bool HttpClientSocket::handleWritable() {
       error = formatRequestBody();
 
       if (ESB_AGAIN == error) {
-        error = flushBuffer();
+        error = flushSendBuffer();
 
         if (ESB_AGAIN == error) {
           return true;  // keep in multiplexer, wait for socket to become
@@ -431,7 +429,7 @@ bool HttpClientSocket::handleWritable() {
 
     assert(FLUSHING_BODY & _state);
 
-    error = flushBuffer();
+    error = flushSendBuffer();
 
     if (ESB_AGAIN == error) {
       return true;  // keep in multiplexer
@@ -912,7 +910,7 @@ ESB::Error HttpClientSocket::formatRequestBody() {
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-ESB::Error HttpClientSocket::flushBuffer() {
+ESB::Error HttpClientSocket::flushSendBuffer() {
   ESB_LOG_DEBUG("[%s] flushing request output buffer", _socket.logAddress());
 
   if (!_sendBuffer->isReadable()) {
@@ -981,8 +979,7 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection paused during client response body receive",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] pausing client response receive", _socket.logAddress());
 
   _state |= RECV_PAUSED;
   if (updateMultiplexer) {
@@ -1001,8 +998,7 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection resumed during client response body receive",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] resuming client response receive", _socket.logAddress());
 
   _state &= ~RECV_PAUSED;
   if (updateMultiplexer) {
@@ -1020,8 +1016,7 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection paused during client request body send",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] pausing client request send", _socket.logAddress());
 
   _state |= SEND_PAUSED;
   if (updateMultiplexer) {
@@ -1040,8 +1035,7 @@ ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection resumed during client request body send",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] resuming client request send", _socket.logAddress());
 
   _state &= ~SEND_PAUSED;
   if (updateMultiplexer) {

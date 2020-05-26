@@ -221,7 +221,7 @@ extern void DescribeError(Error error, char *buffer, int size);
  *
  * @ingroup error
  */
-#define ESB_CLOSE_SOCKET (-28)
+#define ESB_CLOSED (-28)
 
 /**
  * Operation has not been implemented

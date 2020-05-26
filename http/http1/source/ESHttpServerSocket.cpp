@@ -28,7 +28,7 @@ namespace ES {
 #define FLUSHING_BODY (1 << 7)
 #define TRANSACTION_BEGIN (1 << 8)
 #define TRANSACTION_END (1 << 9)
-#define CLOSE_AFTER_RESPONSE_SENT (1 << 10)
+#define CANNOT_REUSE_CONNECTION (1 << 10)
 #define RECV_PAUSED (1 << 11)
 #define SEND_PAUSED (1 << 12)
 #define ABORTED (1 << 13)
@@ -122,13 +122,23 @@ bool HttpServerSocket::handleConnect() {
   return true;  // keep in multiplexer
 }
 
-ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
-                                              ESB::UInt32 chunkSize,
-                                              ESB::UInt32 *bytesConsumed) {
-  return ESB_NOT_IMPLEMENTED;
+ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+  if (!bytesAvailable) {
+    return ESB_NULL_POINTER;
+  }
+
+  ESB::Error error = fillReceiveBuffer();
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  assert(_recvBuffer->isReadable());
+  *bytesAvailable = _recvBuffer->readable();
+  return ESB_SUCCESS;
 }
 
-ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
+                                             ESB::UInt32 bytesRequested) {
   return ESB_NOT_IMPLEMENTED;
 }
 
@@ -164,9 +174,9 @@ bool HttpServerSocket::handleReadable() {
   ESB::Error error = ESB_SUCCESS;
 
   if (_state & TRANSACTION_BEGIN) {
-    // If we send a response before fully reading the request, we can't reuse
-    // the socket
-    _state |= CLOSE_AFTER_RESPONSE_SENT;
+    // If we don't fully read the request we can't reuse the socket.  Unset
+    // this flag once the request has been fully read.
+    _state |= CANNOT_REUSE_CONNECTION;
     _transaction->setPeerAddress(_socket.peerAddress());
 
     switch (error = _handler.beginTransaction(_multiplexer, *this)) {
@@ -184,70 +194,16 @@ bool HttpServerSocket::handleReadable() {
     _state |= PARSING_HEADERS;
   }
 
-  ESB::SSize result = 0;
-
   while (!_multiplexer.shutdown()) {
-    // If there is no data in the recv buffer, read some more from the socket
-    if (!_recvBuffer->isReadable()) {
-      // If there is no space left in the recv buffer, make room if possible
-      if (!_recvBuffer->isWritable()) {
-        ESB_LOG_DEBUG("[%s] compacting input buffer", _socket.logAddress());
-        if (!_recvBuffer->compact()) {
-          ESB_LOG_INFO("[%s] parser jammed", _socket.logAddress());
-          return sendBadRequestResponse();
-        }
-      }
-
-      // And read from the socket
-      assert(_recvBuffer->isWritable());
-      result = _socket.receive(_recvBuffer);
-
-      if (_multiplexer.shutdown()) {
+    switch (error = fillReceiveBuffer()) {
+      case ESB_SUCCESS:
         break;
-      }
-
-      if (0 > result) {
-        error = ESB::LastError();
-
-        if (ESB_AGAIN == error) {
-          ESB_LOG_DEBUG("[%s] not ready for read", _socket.logAddress());
-          return true;  // keep in multiplexer
-        }
-
-        if (ESB_INTR == error) {
-          ESB_LOG_DEBUG("[%s] interrupted", _socket.logAddress());
-          continue;  // try _socket.receive again
-        }
-
-        return handleError(error);
-      }
-
-      if (0 == result) {
+      case ESB_AGAIN:
+        return true;  // keep in multiplexer
+      case ESB_CLOSED:
         return handleRemoteClose();
-      }
-
-      ESB_LOG_DEBUG("[%s] Read %ld bytes", _socket.logAddress(), result);
-    }
-
-    if (_state & TRANSACTION_BEGIN) {
-      // If we send a response before fully reading the request, we can't reuse
-      // the socket
-      _state |= CLOSE_AFTER_RESPONSE_SENT;
-      _transaction->setPeerAddress(_socket.peerAddress());
-
-      switch (error = _handler.beginTransaction(_multiplexer, *this)) {
-        case ESB_SUCCESS:
-          break;
-        case ESB_SEND_RESPONSE:
-          return sendResponse();
-        default:
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] server handler aborted connection",
-                              _socket.logAddress());
-          return false;  // remove from multiplexer - immediately close
-      }
-
-      _state &= ~TRANSACTION_BEGIN;
-      _state |= PARSING_HEADERS;
+      default:
+        return handleError(error);
     }
 
     if (PARSING_HEADERS & _state) {
@@ -266,7 +222,7 @@ bool HttpServerSocket::handleReadable() {
       }
 
       if (!_transaction->request().hasBody()) {
-        _state &= ~CLOSE_AFTER_RESPONSE_SENT;
+        _state &= ~CANNOT_REUSE_CONNECTION;
       }
 
       // TODO - check Expect header and maybe send a 100 Continue
@@ -332,7 +288,7 @@ bool HttpServerSocket::handleReadable() {
       }
 
       if (ESB_SHUTDOWN == error) {
-        continue;
+        continue;  // break out of the outer while loop
       }
 
       if (ESB_PAUSE == error) {
@@ -354,7 +310,7 @@ bool HttpServerSocket::handleReadable() {
 
       if (_state & FORMATTING_HEADERS) {
         // server handler decided to send response before finishing body
-        assert(_state & CLOSE_AFTER_RESPONSE_SENT);
+        assert(_state & CANNOT_REUSE_CONNECTION);
         return sendResponse();
       }
 
@@ -373,11 +329,16 @@ bool HttpServerSocket::handleReadable() {
       return false;  // remove from multiplexer
     }
 
-    _state &= ~CLOSE_AFTER_RESPONSE_SENT;
+    // Request has been fully read, so we can reuse the connection, but don't
+    // start reading the next request until the response has been fully sent.
+
+    _state &= ~CANNOT_REUSE_CONNECTION;
+    if (ESB_SUCCESS != (error = pauseRecv(false))) {
+      return false;  // remove from multiplexer
+    }
 
     // server handler should have populated the response object in
     // parseRequestBody()
-
     return sendResponse();
   }
 
@@ -386,8 +347,9 @@ bool HttpServerSocket::handleReadable() {
   return false;  // remove from multiplexer
 }
 
-ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
-                                             ESB::UInt32 bytesRequested) {
+ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
+                                              ESB::UInt32 chunkSize,
+                                              ESB::UInt32 *bytesConsumed) {
   return ESB_NOT_IMPLEMENTED;
 }
 
@@ -412,17 +374,15 @@ bool HttpServerSocket::handleWritable() {
       error = formatResponseHeaders();
 
       if (ESB_AGAIN == error) {
-        error = flushBuffer();
-
-        if (ESB_AGAIN == error) {
-          return true;  // keep in multiplexer, wait for socket to become
-                        // writable
+        switch (error = flushSendBuffer()) {
+          case ESB_SUCCESS:
+            break;
+          case ESB_AGAIN:
+            return true;  // keep in multiplexer, wait for socket to become
+            // writable
+          default:
+            return false;  // remove from multiplexer
         }
-
-        if (ESB_SUCCESS != error) {
-          return false;  // remove from multiplexer
-        }
-
         continue;
       }
 
@@ -432,14 +392,14 @@ bool HttpServerSocket::handleWritable() {
     }
 
     if (FLUSHING_HEADERS & _state) {
-      error = flushBuffer();
-
-      if (ESB_AGAIN == error) {
-        return true;  // keep in multiplexer, wait for socket to become writable
-      }
-
-      if (ESB_SUCCESS != error) {
-        return false;  // remove from multiplexer
+      switch (error = flushSendBuffer()) {
+        case ESB_SUCCESS:
+          break;
+        case ESB_AGAIN:
+          return true;  // keep in multiplexer, wait for socket to become
+          // writable
+        default:
+          return false;  // remove from multiplexer
       }
 
       _state &= ~FLUSHING_HEADERS;
@@ -459,15 +419,14 @@ bool HttpServerSocket::handleWritable() {
       }
 
       if (ESB_AGAIN == error) {
-        error = flushBuffer();
-
-        if (ESB_AGAIN == error) {
-          return true;  // keep in multiplexer, wait for socket to become
-                        // writable
-        }
-
-        if (ESB_SUCCESS != error) {
-          return false;  // remove from multiplexer
+        switch (error = flushSendBuffer()) {
+          case ESB_SUCCESS:
+            break;
+          case ESB_AGAIN:
+            return true;  // keep in multiplexer, wait for socket to become
+            // writable
+          default:
+            return false;  // remove from multiplexer
         }
 
         continue;
@@ -487,14 +446,14 @@ bool HttpServerSocket::handleWritable() {
     }
 
     if (FLUSHING_BODY & _state) {
-      error = flushBuffer();
-
-      if (ESB_AGAIN == error) {
-        return true;  // keep in multiplexer
-      }
-
-      if (ESB_SUCCESS != error) {
-        return false;  // remove from multiplexer
+      switch (error = flushSendBuffer()) {
+        case ESB_SUCCESS:
+          break;
+        case ESB_AGAIN:
+          return true;  // keep in multiplexer, wait for socket to become
+          // writable
+        default:
+          return false;  // remove from multiplexer
       }
 
       _state &= ~FLUSHING_BODY;
@@ -507,7 +466,7 @@ bool HttpServerSocket::handleWritable() {
     _handler.endTransaction(_multiplexer, *this,
                             HttpServerHandler::ES_HTTP_SERVER_HANDLER_END);
 
-    if (CLOSE_AFTER_RESPONSE_SENT & _state) {
+    if (CANNOT_REUSE_CONNECTION & _state) {
       return false;  // remove from multiplexer
     }
 
@@ -518,34 +477,38 @@ bool HttpServerSocket::handleWritable() {
 
     // TODO - close connection if max requests sent on connection
 
-    if (_transaction->request().reuseConnection()) {
-      _state = TRANSACTION_BEGIN;
-      _bodyBytesWritten = 0;
-
-      if (_recvBuffer) {
-        if (_recvBuffer->isReadable()) {
-          // sometimes there is data for the next transaction sitting in the
-          // recv buffer.  If there is, handle the next transaction right now.
-          _transaction->reset();
-          return handleReadable();
-        }
-
-        _multiplexer.releaseBuffer(_recvBuffer);
-        _recvBuffer = NULL;
-      }
-
-      if (_sendBuffer) {
-        _multiplexer.releaseBuffer(_sendBuffer);
-        _sendBuffer = NULL;
-      }
-
-      _multiplexer.destroyServerTransaction(_transaction);
-      _transaction = NULL;
-      return true;  // keep in multiplexer; but always yield after a http
-                    // transaction
-    } else {
+    if (!_transaction->request().reuseConnection()) {
       return false;  // remove from multiplexer
     }
+
+    if (ESB_SUCCESS != (error = resumeRecv(false))) {
+      return error;
+    }
+
+    _state = TRANSACTION_BEGIN;
+    _bodyBytesWritten = 0;
+
+    if (_recvBuffer) {
+      if (_recvBuffer->isReadable()) {
+        // sometimes there is data for the next transaction sitting in the
+        // recv buffer.  If there is, handle the next transaction right now.
+        _transaction->reset();
+        return handleReadable();
+      }
+
+      _multiplexer.releaseBuffer(_recvBuffer);
+      _recvBuffer = NULL;
+    }
+
+    if (_sendBuffer) {
+      _multiplexer.releaseBuffer(_sendBuffer);
+      _sendBuffer = NULL;
+    }
+
+    _multiplexer.destroyServerTransaction(_transaction);
+    _transaction = NULL;
+    return true;  // keep in multiplexer; but always yield after a http
+                  // transaction
   }
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in format state",
@@ -996,7 +959,50 @@ ESB::Error HttpServerSocket::formatResponseBody() {
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-ESB::Error HttpServerSocket::flushBuffer() {
+ESB::Error HttpServerSocket::fillReceiveBuffer() {
+  if (!_recvBuffer || !_transaction) {
+    return ESB_INVALID_STATE;
+  }
+
+  // TODO introduce high/low watermark behavior?
+
+  if (_recvBuffer->isReadable()) {
+    return ESB_SUCCESS;
+  }
+
+  // If there is no data in the recv buffer, read some more from the socket
+  // If there is no space left in the recv buffer, make room if possible
+  if (!_recvBuffer->isWritable()) {
+    ESB_LOG_DEBUG("[%s] compacting input buffer", _socket.logAddress());
+    if (!_recvBuffer->compact()) {
+      ESB_LOG_INFO("[%s] parser jammed", _socket.logAddress());
+      return ESB_OVERFLOW;
+    }
+  }
+
+  // And read from the socket
+  assert(_recvBuffer->isWritable());
+  ESB::SSize result = _socket.receive(_recvBuffer);
+
+  if (0 > result) {
+    ESB::Error error = ESB::LastError();
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot refill server recv buffer",
+                        _socket.logAddress());
+    return error;
+  }
+
+  if (0 == result) {
+    ESB_LOG_DEBUG("[%s] connection closed during server recv buffer refill",
+                  _socket.logAddress());
+    return ESB_CLOSED;
+  }
+
+  ESB_LOG_DEBUG("[%s] read %ld bytes into server recv buffer",
+                _socket.logAddress(), result);
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerSocket::flushSendBuffer() {
   assert(_transaction);
   assert(_sendBuffer);
 
@@ -1147,8 +1153,7 @@ ESB::Error HttpServerSocket::pauseRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection paused during server request body receive",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] pausing server request receive", _socket.logAddress());
 
   _state |= RECV_PAUSED;
   if (updateMultiplexer) {
@@ -1167,8 +1172,7 @@ ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection resumed during server request body receive",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] resuming server request receive", _socket.logAddress());
 
   _state &= ~RECV_PAUSED;
   if (updateMultiplexer) {
@@ -1186,8 +1190,7 @@ ESB::Error HttpServerSocket::pauseSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection paused during server response body send",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] pausing server response send", _socket.logAddress());
 
   _state |= SEND_PAUSED;
   if (updateMultiplexer) {
@@ -1206,8 +1209,7 @@ ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection resumed during server response body send",
-                _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] resuming server request send", _socket.logAddress());
 
   _state &= ~SEND_PAUSED;
   if (updateMultiplexer) {
