@@ -1,10 +1,14 @@
 proxy:
- - Consider compacting recvBuffer unconditionally for every ServerSocket and ClientSocket handleReadable event.  This would do more memmoves in exchange for fewer socket recvs.
- - Split HttpMultiplexer into HttpMultiplexer and HttpMultiplexerExtended.  Use the latter internally.  Pass the former down to the http client and server handlers.
+ - relay error codes to handler.endTransaction().  Instead of returning true|false in handleRead(), etc, return ESB::Error to the multiplexer and pass these back to the handlers.
  - add test and support for http pipelining.
  - implement idle check - and make it work with paused sockets
  - move HttpServerHandler, HttpClientHandler, HttpMultiplexer and their deps into http-common.  Leave HttpMultiplexerExtended in http1
  - do not wait to receive entire request body before sending response body.  Instead stream them concurrently
+ - add protocol coverage/interoperability tests:
+   - (no request body, unencoded request body, chunked request body) X (client,server) X (request,response)
+   - pipelining client that doesn't wait for the current transaction to complete before sending the next request
+   - concurrent request/response streaming
+   - correct handling when the server sends a response early... when shoudl it close the connection before finishing the response?
  - add stress tests:
    - proxy: backpressure works for clients that read response body slowly
    - proxy: backpressure works for servers that read request body slowly
@@ -13,6 +17,7 @@ proxy:
    - server: mangled http client
    - client: mangled http server
    - proxy/client: servers that listen but never accept connections
+   - use netem to simulate lots of tiny reads, packet loss, etc.
  - Implement proxy handler and proxy context.  Pass in ephemeral destination port.  Copy from inbound to outbound and vice versa.
  - proxy handler should remember inbound and outbound streams...  and pause and resume and close them appropriately.  
  - close would be called when relaying a remote close from the other stream.  must take care to ensure subsequent events from the same event loop are discarded...  can we set _events[i].data.ptr; to NULL and then skip in the event loop?
@@ -22,7 +27,11 @@ proxy:
  - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
  - Http origin ctor should take the size of response to send and get rid of that xml string literal thing.
 
-performance:
+performance and efficiency:
+ - Consider compacting recvBuffer unconditionally for every ServerSocket and ClientSocket handleReadable event.  This would do more memmoves in exchange for fewer socket recvs.
+ - Server socket:  release send and recv buffers in between transactions unless there's data for the next transaction in the app or socket recv buffs.
+ - Consider always registering for read and write events and just discard events we don't care about / avoid a bunch of epollctl MOD calls.
+ - Consider filling the recv buffer with data for the next transaction but not processing it until the current transaction completes.
  - compare performance of RELEASE vs RELEASENOPOOL vs. RELEASENOPOOL+tcmalloc on bare metal.  If allocators aren't the best option, limit their use to HttpTransaction and use standard new/delete/new[]/delete[] everywhere else.
  - try https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=70da268b569d32a9fddeea85dc18043de9d89f89
 

@@ -106,7 +106,7 @@ bool HttpClientSocket::wantAccept() { return false; }
 bool HttpClientSocket::wantConnect() { return (_state & CONNECTING) != 0; }
 
 bool HttpClientSocket::wantRead() {
-  if (_state & RECV_PAUSED || _state & ABORTED || _state & HAS_BEEN_REMOVED) {
+  if (_state & (RECV_PAUSED | ABORTED | HAS_BEEN_REMOVED)) {
     return false;
   }
 
@@ -114,7 +114,7 @@ bool HttpClientSocket::wantRead() {
 }
 
 bool HttpClientSocket::wantWrite() {
-  if (_state & SEND_PAUSED || _state & ABORTED || _state & HAS_BEEN_REMOVED) {
+  if (_state & (SEND_PAUSED | ABORTED | HAS_BEEN_REMOVED)) {
     return false;
   }
 
@@ -957,7 +957,7 @@ const char *HttpClientSocket::logAddress() const {
 ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -975,7 +975,7 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(!(RECV_PAUSED & _state));
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED || _state | RECV_PAUSED) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED | RECV_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -993,8 +993,7 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(RECV_PAUSED & _state);
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED ||
-      !(_state | RECV_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & RECV_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1012,7 +1011,7 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(!(SEND_PAUSED & _state));
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED || _state | SEND_PAUSED) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED | SEND_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1030,8 +1029,7 @@ ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(SEND_PAUSED & _state);
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED ||
-      !(_state | SEND_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & SEND_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 

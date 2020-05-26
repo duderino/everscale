@@ -87,7 +87,7 @@ bool HttpServerSocket::wantAccept() { return false; }
 bool HttpServerSocket::wantConnect() { return false; }
 
 bool HttpServerSocket::wantRead() {
-  if (_state & RECV_PAUSED || _state & ABORTED || _state & HAS_BEEN_REMOVED) {
+  if (_state & (RECV_PAUSED | ABORTED | HAS_BEEN_REMOVED)) {
     return false;
   }
 
@@ -96,7 +96,7 @@ bool HttpServerSocket::wantRead() {
 }
 
 bool HttpServerSocket::wantWrite() {
-  if (_state & SEND_PAUSED || _state & ABORTED || _state & HAS_BEEN_REMOVED) {
+  if (_state & (SEND_PAUSED | ABORTED | HAS_BEEN_REMOVED)) {
     return false;
   }
 
@@ -481,34 +481,18 @@ bool HttpServerSocket::handleWritable() {
       return false;  // remove from multiplexer
     }
 
+    // Resume receiving and immediately start processing the next request.
+
     if (ESB_SUCCESS != (error = resumeRecv(false))) {
-      return error;
+      return false;  // remove from multiplexer
     }
+
+    // TODO release buffers in between transactions
 
     _state = TRANSACTION_BEGIN;
     _bodyBytesWritten = 0;
-
-    if (_recvBuffer) {
-      if (_recvBuffer->isReadable()) {
-        // sometimes there is data for the next transaction sitting in the
-        // recv buffer.  If there is, handle the next transaction right now.
-        _transaction->reset();
-        return handleReadable();
-      }
-
-      _multiplexer.releaseBuffer(_recvBuffer);
-      _recvBuffer = NULL;
-    }
-
-    if (_sendBuffer) {
-      _multiplexer.releaseBuffer(_sendBuffer);
-      _sendBuffer = NULL;
-    }
-
-    _multiplexer.destroyServerTransaction(_transaction);
-    _transaction = NULL;
-    return true;  // keep in multiplexer; but always yield after a http
-                  // transaction
+    _transaction->reset();
+    return handleReadable();
   }
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in format state",
@@ -733,7 +717,7 @@ ESB::Error HttpServerSocket::parseRequestBody() {
       }
     }
 
-    ESB_LOG_DEBUG("[%s] offering request chunk of size %u",
+    ESB_LOG_DEBUG("[%s] server socket offering request chunk of size %u",
                   _socket.logAddress(), bytesAvailable);
 
     switch (error = _handler.consumeRequestChunk(
@@ -786,7 +770,7 @@ ESB::Error HttpServerSocket::parseRequestBody() {
       return error;  // remove from multiplexer
     }
 
-    ESB_LOG_DEBUG("[%s] consumed %u out of %u response chunk bytes",
+    ESB_LOG_DEBUG("[%s] handler consumed %u out of %u response chunk bytes",
                   _socket.logAddress(), bytesConsumed, bytesAvailable);
   }
 
@@ -1131,7 +1115,7 @@ const char *HttpServerSocket::logAddress() const {
 ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1149,7 +1133,7 @@ ESB::Error HttpServerSocket::pauseRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(!(RECV_PAUSED & _state));
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED || _state | RECV_PAUSED) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED | RECV_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1167,8 +1151,7 @@ ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(RECV_PAUSED & _state);
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED ||
-      !(_state | RECV_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & RECV_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1186,7 +1169,7 @@ ESB::Error HttpServerSocket::pauseSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(!(SEND_PAUSED & _state));
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED || _state | SEND_PAUSED) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED | SEND_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1204,8 +1187,7 @@ ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(SEND_PAUSED & _state);
-  if (_state | HAS_BEEN_REMOVED || _state | ABORTED ||
-      !(_state | SEND_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & SEND_PAUSED)) {
     return ESB_INVALID_STATE;
   }
 
