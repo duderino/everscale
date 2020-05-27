@@ -130,15 +130,15 @@ bool HttpServerSocket::handleConnect() {
   return true;  // keep in multiplexer
 }
 
-ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable,
+                                                  ESB::UInt32 *bufferOffset) {
   if (!bytesAvailable) {
     return ESB_NULL_POINTER;
   }
 
   for (int i = 0; i < 2; ++i) {
-    ESB::UInt32 bufferOffset = 0U;
     switch (ESB::Error error = _transaction->getParser()->parseBody(
-                _recvBuffer, &bufferOffset, bytesAvailable)) {
+                _recvBuffer, bufferOffset, bytesAvailable)) {
       case ESB_SUCCESS:
         ESB_LOG_DEBUG("[%s] %u request bytes available in current chunk",
                       _socket.logAddress(), *bytesAvailable);
@@ -160,7 +160,8 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
 }
 
 ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
-                                             ESB::UInt32 bytesRequested) {
+                                             ESB::UInt32 bytesRequested,
+                                             ESB::UInt32 bufferOffset) {
   return ESB_NOT_IMPLEMENTED;
 }
 
@@ -689,29 +690,11 @@ ESB::Error HttpServerSocket::parseRequestBody() {
     ESB::UInt32 bufferOffset = 0U;
     ESB::UInt32 bytesAvailable = 0U;
     ESB::UInt32 bytesConsumed = 0U;
+    ESB::Error error = ESB_SUCCESS;
 
-    ESB::Error error = _transaction->getParser()->parseBody(
-        _recvBuffer, &bufferOffset, &bytesAvailable);
-    switch (error) {
-      case ESB_SUCCESS:
-        break;
-      case ESB_AGAIN:
-        ESB_LOG_DEBUG("[%s] need more request body data from stream",
-                      _socket.logAddress());
-        if (!_recvBuffer->isWritable()) {
-          ESB_LOG_DEBUG("[%s] compacting request input buffer",
-                        _socket.logAddress());
-          if (!_recvBuffer->compact()) {
-            ESB_LOG_INFO("[%s] cannot parse request body: parser jammed",
-                         _socket.logAddress());
-            return ESB_OVERFLOW;  // remove from multiplexer
-          }
-        }
-        return ESB_AGAIN;  // keep in multiplexer
-      default:
-        ESB_LOG_INFO_ERRNO(error, "[%s] error parsing request body",
-                           _socket.logAddress());
-        return error;  // remove from multiplexer
+    if (ESB_SUCCESS !=
+        (error = requestBodyAvailable(&bytesAvailable, &bufferOffset))) {
+      return error;
     }
 
     // if last chunk

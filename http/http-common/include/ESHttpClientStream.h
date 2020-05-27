@@ -40,12 +40,15 @@ class HttpClientStream : public HttpStream {
    * effect.
    *
    * @param bytesAvailable The number of bytes that can be consumed
+   * @param bufferOffset A value which should be passed to the
+   * readResponseBody() function.
    * @return ESB_SUCCESS + 0 means the last chunk is ready to be read,
    * ESB_SUCCESS + 1+ means body data can be read, ESB_AGAIN means buffers are
    * empty and there is no data to be read on the underlying socket, or another
    * error code otherwise.
    */
-  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable) = 0;
+  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable,
+                                           ESB::UInt32 *bufferOffset) = 0;
 
   /**
    * Read up to bytesRequested of response body data.
@@ -53,11 +56,13 @@ class HttpClientStream : public HttpStream {
    * @param chunk Data should be written here
    * @param bytesRequested The amount of data to write.  This must be <= the
    * bytesAvailable result returned by responseBodyAvailable().
+   * @param bufferOffset A value read from the responseBodyAvailable() function
    * @return ESB_SUCCESS if successful, ESB_INVALID_ARGUMENT if bytesRequested
    * exceeds bytesAvailable, another error code otherwise.
    */
   virtual ESB::Error readResponseBody(unsigned char *chunk,
-                                      ESB::UInt32 bytesRequested) = 0;
+                                      ESB::UInt32 bytesRequested,
+                                      ESB::UInt32 bufferOffset) = 0;
 
  private:
   // Disabled

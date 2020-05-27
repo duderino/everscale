@@ -140,9 +140,11 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   virtual ESB::Error sendResponseBody(unsigned const char *chunk,
                                       ESB::UInt32 chunkSize,
                                       ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable,
+                                          ESB::UInt32 *bufferOffset);
   virtual ESB::Error readRequestBody(unsigned char *chunk,
-                                     ESB::UInt32 bytesRequested);
+                                     ESB::UInt32 bytesRequested,
+                                     ESB::UInt32 bufferOffset);
 
  private:
   // Disabled
