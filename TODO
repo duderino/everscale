@@ -109,6 +109,7 @@ tcp proxy stuff:
 
 http stuff
  - add user agent/server agent headers
+ - remove sensitive headers while proxying
  - idle timeout
  - max requests per connection option (1 disables keepalives, 0 is unlimited)
  - max header size option

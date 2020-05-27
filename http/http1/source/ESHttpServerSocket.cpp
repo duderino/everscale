@@ -130,39 +130,72 @@ bool HttpServerSocket::handleConnect() {
   return true;  // keep in multiplexer
 }
 
+ESB::Error HttpServerSocket::currentChunkBytesAvailable(
+    ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
+  switch (ESB::Error error = _transaction->getParser()->parseBody(
+              _recvBuffer, bufferOffset, bytesAvailable)) {
+    case ESB_SUCCESS:
+      ESB_LOG_DEBUG("[%s] %u request bytes available in current chunk",
+                    _socket.logAddress(), *bytesAvailable);
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      ESB_LOG_DEBUG("[%s] insufficient bytes available in current chunk",
+                    _socket.logAddress());
+      return ESB_AGAIN;
+    default:
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] error parsing request body",
+                          _socket.logAddress());
+      return error;  // remove from multiplexer
+  }
+}
+
 ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable,
                                                   ESB::UInt32 *bufferOffset) {
-  if (!bytesAvailable) {
+  if (!bytesAvailable || !bufferOffset) {
     return ESB_NULL_POINTER;
   }
 
-  for (int i = 0; i < 2; ++i) {
-    switch (ESB::Error error = _transaction->getParser()->parseBody(
-                _recvBuffer, bufferOffset, bytesAvailable)) {
-      case ESB_SUCCESS:
-        ESB_LOG_DEBUG("[%s] %u request bytes available in current chunk",
-                      _socket.logAddress(), *bytesAvailable);
-        return ESB_SUCCESS;
-      case ESB_AGAIN:
-        if (ESB_SUCCESS != (error = fillReceiveBuffer())) {
-          return error;
-        }
-        assert(_recvBuffer->isReadable());
-        break;
-      default:
-        ESB_LOG_INFO_ERRNO(error, "[%s] error parsing request body",
-                           _socket.logAddress());
-        return error;  // remove from multiplexer
-    }
+  switch (ESB::Error error =
+              currentChunkBytesAvailable(bytesAvailable, bufferOffset)) {
+    case ESB_AGAIN:
+      if (ESB_SUCCESS != (error = fillReceiveBuffer())) {
+        return error;
+      }
+      assert(_recvBuffer->isReadable());
+      return currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+    default:
+      return error;
   }
-
-  return ESB_AGAIN;
 }
 
 ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
                                              ESB::UInt32 bytesRequested,
                                              ESB::UInt32 bufferOffset) {
-  return ESB_NOT_IMPLEMENTED;
+  assert(chunk);
+  assert(bytesRequested <= _recvBuffer->readable());
+
+  if (!chunk) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (bytesRequested > _recvBuffer->readable()) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  memcpy(chunk, _recvBuffer->buffer() + bufferOffset, bytesRequested);
+
+  ESB::Error error =
+      _transaction->getParser()->consumeBody(_recvBuffer, bytesRequested);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u request chunk bytes",
+                        _socket.logAddress(), bytesRequested);
+    return error;  // remove from multiplexer
+  }
+
+  ESB_LOG_DEBUG("[%s] consumed %u request chunk bytes", _socket.logAddress(),
+                bytesRequested);
+
+  return ESB_SUCCESS;
 }
 
 bool HttpServerSocket::handleReadable() {
@@ -693,7 +726,7 @@ ESB::Error HttpServerSocket::parseRequestBody() {
     ESB::Error error = ESB_SUCCESS;
 
     if (ESB_SUCCESS !=
-        (error = requestBodyAvailable(&bytesAvailable, &bufferOffset))) {
+        (error = currentChunkBytesAvailable(&bytesAvailable, &bufferOffset))) {
       return error;
     }
 

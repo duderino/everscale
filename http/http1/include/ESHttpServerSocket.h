@@ -156,6 +156,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   ESB::Error skipTrailer();
   ESB::Error formatResponseHeaders();
   ESB::Error formatResponseBody();
+  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable,
+                                        ESB::UInt32 *bufferOffset);
   ESB::Error fillReceiveBuffer();
   ESB::Error flushSendBuffer();
   bool sendResponse();
