@@ -489,9 +489,7 @@ ESB::Error HttpMessageParser::parseChunkedBody(ESB::Buffer *inputBuffer,
 
     if (0 == _bodyBytesRemaining) {
       _state |= ES_PARSING_TRAILER;
-
       *chunkSize = 0;
-
       return ESB_SUCCESS;
     }
 
@@ -593,7 +591,7 @@ ESB::Error HttpMessageParser::parseChunkData(ESB::Buffer *inputBuffer,
   assert(ES_PARSING_CHUNK_DATA & _state);
   assert(0 < _bodyBytesRemaining);
 
-  if (false == inputBuffer->isReadable()) {
+  if (!inputBuffer->isReadable()) {
     return ESB_AGAIN;
   }
 

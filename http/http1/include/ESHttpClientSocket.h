@@ -173,6 +173,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   ESB::Error parseResponseBody();
   ESB::Error formatRequestHeaders();
   ESB::Error formatRequestBody();
+  ESB::Error fillReceiveBuffer();
   ESB::Error flushSendBuffer();
 
   int _state;

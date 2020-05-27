@@ -91,8 +91,12 @@ bool HttpServerSocket::wantRead() {
     return false;
   }
 
-  return (_state & (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY |
-                    SKIPPING_TRAILER)) != 0;
+  if (_state &
+      (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER)) {
+    return true;
+  }
+
+  return false;
 }
 
 bool HttpServerSocket::wantWrite() {
@@ -100,8 +104,12 @@ bool HttpServerSocket::wantWrite() {
     return false;
   }
 
-  return (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS | FORMATTING_BODY |
-                    FLUSHING_BODY)) != 0;
+  if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS | FORMATTING_BODY |
+                FLUSHING_BODY)) {
+    return true;
+  }
+
+  return false;
 }
 
 bool HttpServerSocket::isIdle() {
@@ -127,14 +135,28 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
     return ESB_NULL_POINTER;
   }
 
-  ESB::Error error = fillReceiveBuffer();
-  if (ESB_SUCCESS != error) {
-    return error;
+  for (int i = 0; i < 2; ++i) {
+    ESB::UInt32 bufferOffset = 0U;
+    switch (ESB::Error error = _transaction->getParser()->parseBody(
+                _recvBuffer, &bufferOffset, bytesAvailable)) {
+      case ESB_SUCCESS:
+        ESB_LOG_DEBUG("[%s] %u request bytes available in current chunk",
+                      _socket.logAddress(), *bytesAvailable);
+        return ESB_SUCCESS;
+      case ESB_AGAIN:
+        if (ESB_SUCCESS != (error = fillReceiveBuffer())) {
+          return error;
+        }
+        assert(_recvBuffer->isReadable());
+        break;
+      default:
+        ESB_LOG_INFO_ERRNO(error, "[%s] error parsing request body",
+                           _socket.logAddress());
+        return error;  // remove from multiplexer
+    }
   }
 
-  assert(_recvBuffer->isReadable());
-  *bytesAvailable = _recvBuffer->readable();
-  return ESB_SUCCESS;
+  return ESB_AGAIN;
 }
 
 ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
@@ -428,7 +450,6 @@ bool HttpServerSocket::handleWritable() {
           default:
             return false;  // remove from multiplexer
         }
-
         continue;
       }
 
@@ -522,7 +543,7 @@ bool HttpServerSocket::handleIdle() {
 
 bool HttpServerSocket::handleRemove() {
   assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] closing socket", _socket.logAddress());
+  ESB_LOG_INFO("[%s] closing server socket", _socket.logAddress());
   _socket.close();
 
   if (_sendBuffer) {
@@ -656,6 +677,13 @@ ESB::Error HttpServerSocket::parseRequestHeaders() {
 
 ESB::Error HttpServerSocket::parseRequestBody() {
   assert(_transaction);
+
+  //
+  // Until the body is read or either the parser or handler return ESB_AGAIN,
+  // ask the parser how much body data is ready to be read, pass the available
+  // body data to the handler, and pass back the body data actually consumed to
+  // the parser.
+  //
 
   while (!_multiplexer.shutdown()) {
     ESB::UInt32 bufferOffset = 0U;
@@ -947,8 +975,6 @@ ESB::Error HttpServerSocket::fillReceiveBuffer() {
   if (!_recvBuffer || !_transaction) {
     return ESB_INVALID_STATE;
   }
-
-  // TODO introduce high/low watermark behavior?
 
   if (_recvBuffer->isReadable()) {
     return ESB_SUCCESS;

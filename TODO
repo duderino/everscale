@@ -29,6 +29,7 @@ proxy:
 
 performance and efficiency:
  - Consider compacting recvBuffer unconditionally for every ServerSocket and ClientSocket handleReadable event.  This would do more memmoves in exchange for fewer socket recvs.
+ - Consider using low watermarks for compacting and filling recvBuffer
  - Server socket:  release send and recv buffers in between transactions unless there's data for the next transaction in the app or socket recv buffs.
  - Consider always registering for read and write events and just discard events we don't care about / avoid a bunch of epollctl MOD calls.
  - Consider filling the recv buffer with data for the next transaction but not processing it until the current transaction completes.
@@ -41,6 +42,7 @@ connection pool rework:
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
 
 code health:
+ - Share more code between HttpClientSocket and HttpServerSocket
  - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
  - add noexcept and allocator references to all uses of placement new
@@ -106,8 +108,9 @@ tcp proxy stuff:
  - turn into a unit test over loopback/same proc
 
 http stuff
+ - add user agent/server agent headers
  - idle timeout
- - max requests per connection option (1 disables keepalives)
+ - max requests per connection option (1 disables keepalives, 0 is unlimited)
  - max header size option
  - max body size option
  - save don't skip trailer
