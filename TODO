@@ -43,6 +43,8 @@ connection pool rework:
 
 code health:
  - Share more code between HttpClientSocket and HttpServerSocket
+ - Share more code between proactive and reactive parsing and formatting functions in HttpClientSocket and HttpServerSocket
+ - replace all these memcpy's of ESB::Buffer internals with a convenience function
  - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
  - add noexcept and allocator references to all uses of placement new
