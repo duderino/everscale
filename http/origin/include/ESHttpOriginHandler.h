@@ -23,18 +23,18 @@ class HttpOriginHandler : public HttpServerHandler {
                                       HttpServerStream &stream);
   virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack,
                                            HttpServerStream &stream);
-  virtual ESB::Error consumeRequestChunk(HttpMultiplexer &multiplexer,
-                                         HttpServerStream &stream,
-                                         unsigned const char *chunk,
-                                         ESB::UInt32 chunkSize,
-                                         ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error offerResponseChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
                                         HttpServerStream &stream,
-                                        ESB::UInt32 *bytesAvailable);
-  virtual ESB::Error produceResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpServerStream &stream,
-                                          unsigned char *chunk,
-                                          ESB::UInt32 bytesRequested);
+                                        unsigned const char *chunk,
+                                        ESB::UInt32 chunkSize,
+                                        ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer,
+                                       HttpServerStream &stream,
+                                       ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer,
+                                         HttpServerStream &stream,
+                                         unsigned char *chunk,
+                                         ESB::UInt32 bytesRequested);
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
                               State state);
 

@@ -180,17 +180,40 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable,
     return ESB_NULL_POINTER;
   }
 
-  // TODO update multiplexer when ESB_AGAIN or error code
+  //
+  // Since this function isn't invoked by the multiplexer, we have to explicitly
+  // adjust the registered interest events here.
+  //
 
-  switch (ESB::Error error =
-              currentChunkBytesAvailable(bytesAvailable, bufferOffset)) {
-    case ESB_AGAIN:
-      if (ESB_SUCCESS != (error = fillReceiveBuffer())) {
-        return error;
-      }
+  ESB::Error error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+  if (ESB_AGAIN == error) {
+    if (ESB_SUCCESS == (error = fillReceiveBuffer())) {
       assert(_recvBuffer->isReadable());
-      return currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+      error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+    }
+  }
+
+  switch (error) {
+    case ESB_SUCCESS:
+      if (0U == *bytesAvailable) {
+        // Last chunk has been read, finish the transaction
+        ESB_LOG_DEBUG("[%s] finished response body", _socket.logAddress());
+        _state &= ~PARSING_BODY;
+        _state |= TRANSACTION_END;
+        if (ESB_SUCCESS != (error = pauseRecv(true))) {
+          abort(true);
+          return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+        }
+      }
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      if (ESB_SUCCESS != (error = resumeRecv(true))) {
+        abort(true);
+        return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+      }
+      return ESB_AGAIN;
     default:
+      abort(true);
       return error;
   }
 }
@@ -198,7 +221,11 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable,
 ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk,
                                               ESB::UInt32 bytesRequested,
                                               ESB::UInt32 bufferOffset) {
-  // TODO update multiplexer when ESB_AGAIN or error code
+  if (0U == bytesRequested) {
+    // In case the caller calls this after responseBodyAvailable() returns 0
+    // for the last chunk.
+    return ESB_SUCCESS;
+  }
 
   assert(chunk);
   assert(bytesRequested <= _recvBuffer->readable());
@@ -293,8 +320,8 @@ bool HttpClientSocket::handleReadable() {
         unsigned char byte = 0;
         ESB::UInt32 bytesWritten = 0;
 
-        switch (error = _handler.consumeResponseChunk(
-                    _multiplexer, *this, &byte, 0, &bytesWritten)) {
+        switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte,
+                                                     0, &bytesWritten)) {
           case ESB_SUCCESS:
             break;
           case ESB_PAUSE:
@@ -349,7 +376,43 @@ bool HttpClientSocket::handleReadable() {
 ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
                                              ESB::UInt32 bytesOffered,
                                              ESB::UInt32 *bytesConsumed) {
-  // TODO update multiplexer when ESB_AGAIN or error code
+  //
+  // Because this isn't invoked by the multiplexer, we have to make explicit
+  // pause and resume calls to update this socket's registered interests.
+  //
+  switch (ESB::Error error =
+              formatRequestBody(chunk, bytesOffered, bytesConsumed)) {
+    case ESB_SUCCESS:
+      if (0U == bytesOffered) {
+        if (ESB_SUCCESS != (error = pauseSend(true))) {
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client",
+                              _socket.logAddress());
+          return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+        }
+      }
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      if (ESB_SUCCESS != (error = resumeSend(true))) {
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume request body",
+                            _socket.logAddress());
+        abort(true);
+        return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+      }
+      return ESB_AGAIN;
+    default:
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send request body",
+                          _socket.logAddress());
+      abort(true);
+      return error;
+  }
+}
+
+ESB::Error HttpClientSocket::formatRequestBody(unsigned const char *chunk,
+                                               ESB::UInt32 bytesOffered,
+                                               ESB::UInt32 *bytesConsumed) {
+  //
+  // Send final chunk
+  //
 
   if (0U == bytesOffered) {
     ESB::Error error = formatEndBody();
@@ -386,6 +449,10 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
     }
     return ESB_SUCCESS;
   }
+
+  //
+  // Send non-final chunk
+  //
 
   assert(chunk);
   assert(bytesConsumed);
@@ -812,8 +879,8 @@ ESB::Error HttpClientSocket::parseResponseBody() {
     if (0 == bytesAvailable) {
       ESB_LOG_DEBUG("[%s] parsed response body", _socket.logAddress());
       unsigned char byte = 0;
-      switch (error = _handler.consumeResponseChunk(_multiplexer, *this, &byte,
-                                                    0U, &bytesConsumed)) {
+      switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte,
+                                                   0U, &bytesConsumed)) {
         case ESB_SUCCESS:
           _state &= ~PARSING_BODY;
           _state |= TRANSACTION_END;
@@ -839,7 +906,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
     ESB_LOG_DEBUG("[%s] offering response chunk of size %u",
                   _socket.logAddress(), bytesAvailable);
 
-    switch (error = _handler.consumeResponseChunk(
+    switch (error = _handler.consumeResponseBody(
                 _multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
                 bytesAvailable, &bytesConsumed)) {
       case ESB_SUCCESS:
@@ -918,7 +985,7 @@ ESB::Error HttpClientSocket::formatRequestBody() {
     ESB::UInt32 offeredSize = 0;
 
     ESB::Error error =
-        _handler.offerRequestChunk(_multiplexer, *this, &offeredSize);
+        _handler.offerRequestBody(_multiplexer, *this, &offeredSize);
     switch (error) {
       case ESB_AGAIN:
       case ESB_PAUSE:
@@ -950,7 +1017,7 @@ ESB::Error HttpClientSocket::formatRequestBody() {
 
     // let the handler consume chunkSize bytes of body data
 
-    switch (error = _handler.produceRequestChunk(
+    switch (error = _handler.produceRequestBody(
                 _multiplexer, *this,
                 _sendBuffer->buffer() + _sendBuffer->writePosition(),
                 chunkSize)) {

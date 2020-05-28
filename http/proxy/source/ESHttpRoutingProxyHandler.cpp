@@ -98,7 +98,7 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::consumeRequestChunk(
+ESB::Error HttpRoutingProxyHandler::consumeRequestBody(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
     unsigned const char *chunk, ESB::UInt32 chunkSize,
     ESB::UInt32 *bytesConsumed) {
@@ -117,7 +117,7 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestChunk(
              "TODO modify HttpStream to return remaining space in the ssend "
              "buffer");
     default:
-      assert(0 == "offerRequestChunk in invalid state");
+      assert(0 == "offerRequestBody in invalid state");
       ESB_LOG_ERROR("[%s] transaction in invalid state", stream.logAddress());
       return ESB_NOT_IMPLEMENTED;
   }
@@ -135,13 +135,13 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestChunk(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::offerResponseChunk(
+ESB::Error HttpRoutingProxyHandler::offerResponseBody(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
     ESB::UInt32 *bytesAvailable) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::produceResponseChunk(
+ESB::Error HttpRoutingProxyHandler::produceResponseBody(
     HttpMultiplexer &multiplexer, HttpServerStream &stream,
     unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
@@ -191,19 +191,19 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::offerRequestChunk(
+ESB::Error HttpRoutingProxyHandler::offerRequestBody(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
     ESB::UInt32 *bytesAvailable) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::produceRequestChunk(
+ESB::Error HttpRoutingProxyHandler::produceRequestBody(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
     unsigned char *chunk, ESB::UInt32 bytesRequested) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::consumeResponseChunk(
+ESB::Error HttpRoutingProxyHandler::consumeResponseBody(
     HttpMultiplexer &multiplexer, HttpClientStream &stream,
     const unsigned char *chunk, ESB::UInt32 chunkSize,
     ESB::UInt32 *bytesConsumed) {

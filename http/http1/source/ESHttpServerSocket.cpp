@@ -308,8 +308,8 @@ bool HttpServerSocket::handleReadable() {
         unsigned char byte = 0;
         ESB::UInt32 bytesWritten = 0;
 
-        switch (error = _handler.consumeRequestChunk(_multiplexer, *this, &byte,
-                                                     0, &bytesWritten)) {
+        switch (error = _handler.consumeRequestBody(_multiplexer, *this, &byte,
+                                                    0, &bytesWritten)) {
           case ESB_SUCCESS:
           case ESB_SEND_RESPONSE:
             return sendResponse();
@@ -734,8 +734,8 @@ ESB::Error HttpServerSocket::parseRequestBody() {
     if (0 == bytesAvailable) {
       ESB_LOG_DEBUG("[%s] parsed request body", _socket.logAddress());
       unsigned char byte = 0;
-      switch (error = _handler.consumeRequestChunk(_multiplexer, *this, &byte,
-                                                   0U, &bytesConsumed)) {
+      switch (error = _handler.consumeRequestBody(_multiplexer, *this, &byte,
+                                                  0U, &bytesConsumed)) {
         case ESB_SUCCESS:
         case ESB_SEND_RESPONSE:
           _state |= SKIPPING_TRAILER;
@@ -764,7 +764,7 @@ ESB::Error HttpServerSocket::parseRequestBody() {
     ESB_LOG_DEBUG("[%s] server socket offering request chunk of size %u",
                   _socket.logAddress(), bytesAvailable);
 
-    switch (error = _handler.consumeRequestChunk(
+    switch (error = _handler.consumeRequestBody(
                 _multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
                 bytesAvailable, &bytesConsumed)) {
       case ESB_SUCCESS:
@@ -878,8 +878,8 @@ ESB::Error HttpServerSocket::formatResponseBody() {
   while (!_multiplexer.shutdown()) {
     maxChunkSize = 0;
 
-    switch (error = _handler.offerResponseChunk(_multiplexer, *this,
-                                                &offeredSize)) {
+    switch (error =
+                _handler.offerResponseBody(_multiplexer, *this, &offeredSize)) {
       case ESB_AGAIN:
       case ESB_PAUSE:
         error = pauseSend(false);
@@ -922,7 +922,7 @@ ESB::Error HttpServerSocket::formatResponseBody() {
 
     // write the body data
 
-    switch (error = _handler.produceResponseChunk(
+    switch (error = _handler.produceResponseBody(
                 _multiplexer, *this,
                 _sendBuffer->buffer() + _sendBuffer->writePosition(),
                 chunkSize)) {

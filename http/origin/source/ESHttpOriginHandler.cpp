@@ -56,11 +56,11 @@ ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::consumeRequestChunk(HttpMultiplexer &multiplexer,
-                                                  HttpServerStream &stream,
-                                                  unsigned const char *chunk,
-                                                  ESB::UInt32 chunkSize,
-                                                  ESB::UInt32 *bytesConsumed) {
+ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer,
+                                                 HttpServerStream &stream,
+                                                 unsigned const char *chunk,
+                                                 ESB::UInt32 chunkSize,
+                                                 ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
 
@@ -76,19 +76,19 @@ ESB::Error HttpOriginHandler::consumeRequestChunk(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::offerResponseChunk(HttpMultiplexer &multiplexer,
-                                                 HttpServerStream &stream,
-                                                 ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer,
+                                                HttpServerStream &stream,
+                                                ESB::UInt32 *bytesAvailable) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   *bytesAvailable = BodySize - context->getBytesSent();
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::produceResponseChunk(HttpMultiplexer &multiplexer,
-                                                   HttpServerStream &stream,
-                                                   unsigned char *chunk,
-                                                   ESB::UInt32 bytesRequested) {
+ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer,
+                                                  HttpServerStream &stream,
+                                                  unsigned char *chunk,
+                                                  ESB::UInt32 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();

@@ -87,11 +87,11 @@ class HttpServerHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error consumeRequestChunk(HttpMultiplexer &multiplexer,
-                                         HttpServerStream &stream,
-                                         unsigned const char *chunk,
-                                         ESB::UInt32 chunkSize,
-                                         ESB::UInt32 *bytesConsumed) = 0;
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
+                                        HttpServerStream &stream,
+                                        unsigned const char *chunk,
+                                        ESB::UInt32 chunkSize,
+                                        ESB::UInt32 *bytesConsumed) = 0;
 
   /**
    * Offer body bytes to the caller, if necessary producing more data as a
@@ -106,9 +106,9 @@ class HttpServerHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error offerResponseChunk(HttpMultiplexer &multiplexer,
-                                        HttpServerStream &stream,
-                                        ESB::UInt32 *bytesAvailable) = 0;
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer,
+                                       HttpServerStream &stream,
+                                       ESB::UInt32 *bytesAvailable) = 0;
   /**
    * Copy body bytes to the caller, which consumes it in the process.
    *
@@ -120,10 +120,10 @@ class HttpServerHandler {
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error produceResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpServerStream &stream,
-                                          unsigned char *chunk,
-                                          ESB::UInt32 bytesRequested) = 0;
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer,
+                                         HttpServerStream &stream,
+                                         unsigned char *chunk,
+                                         ESB::UInt32 bytesRequested) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the

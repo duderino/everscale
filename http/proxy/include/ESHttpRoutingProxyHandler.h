@@ -27,18 +27,18 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
                                       HttpServerStream &stream);
   virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &multiplexer,
                                            HttpServerStream &stream);
-  virtual ESB::Error consumeRequestChunk(HttpMultiplexer &multiplexer,
-                                         HttpServerStream &stream,
-                                         unsigned const char *chunk,
-                                         ESB::UInt32 chunkSize,
-                                         ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error offerResponseChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
                                         HttpServerStream &stream,
-                                        ESB::UInt32 *bytesAvailable);
-  virtual ESB::Error produceResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpServerStream &stream,
-                                          unsigned char *chunk,
-                                          ESB::UInt32 bytesRequested);
+                                        unsigned const char *chunk,
+                                        ESB::UInt32 chunkSize,
+                                        ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer,
+                                       HttpServerStream &stream,
+                                       ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer,
+                                         HttpServerStream &stream,
+                                         unsigned char *chunk,
+                                         ESB::UInt32 bytesRequested);
   virtual void endTransaction(HttpMultiplexer &multiplexer,
                               HttpServerStream &stream,
                               HttpServerHandler::State state);
@@ -49,18 +49,18 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
 
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
                                             HttpClientStream &stream);
-  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream,
-                                       ESB::UInt32 *bytesAvailable);
-  virtual ESB::Error produceRequestChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
+                                      HttpClientStream &stream,
+                                      ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
+                                        HttpClientStream &stream,
+                                        unsigned char *chunk,
+                                        ESB::UInt32 bytesRequested);
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
                                          HttpClientStream &stream,
-                                         unsigned char *chunk,
-                                         ESB::UInt32 bytesRequested);
-  virtual ESB::Error consumeResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream,
-                                          const unsigned char *chunk,
-                                          ESB::UInt32 chunkSize,
-                                          ESB::UInt32 *bytesConsumed);
+                                         const unsigned char *chunk,
+                                         ESB::UInt32 chunkSize,
+                                         ESB::UInt32 *bytesConsumed);
   virtual void endTransaction(HttpMultiplexer &multiplexer,
                               HttpClientStream &stream,
                               HttpClientHandler::State state);

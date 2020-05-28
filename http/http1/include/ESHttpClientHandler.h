@@ -57,9 +57,9 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream,
-                                       ESB::UInt32 *bytesAvailable) = 0;
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
+                                      HttpClientStream &stream,
+                                      ESB::UInt32 *bytesAvailable) = 0;
   /**
    * Copy body bytes to the caller, which consumes it in the process.
    *
@@ -71,10 +71,10 @@ class HttpClientHandler {
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error produceRequestChunk(HttpMultiplexer &multiplexer,
-                                         HttpClientStream &stream,
-                                         unsigned char *chunk,
-                                         ESB::UInt32 bytesRequested) = 0;
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
+                                        HttpClientStream &stream,
+                                        unsigned char *chunk,
+                                        ESB::UInt32 bytesRequested) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -93,11 +93,11 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error consumeResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream,
-                                          const unsigned char *chunk,
-                                          ESB::UInt32 chunkSize,
-                                          ESB::UInt32 *bytesConsumed) = 0;
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
+                                         HttpClientStream &stream,
+                                         const unsigned char *chunk,
+                                         ESB::UInt32 chunkSize,
+                                         ESB::UInt32 *bytesConsumed) = 0;
 
   /**
    * Handle the end of a request (request body has been fully sent)

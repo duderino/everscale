@@ -175,6 +175,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   ESB::Error parseResponseBody();
   ESB::Error formatRequestHeaders();
   ESB::Error formatRequestBody();
+  ESB::Error formatRequestBody(unsigned const char *chunk,
+                               ESB::UInt32 bytesOffered,
+                               ESB::UInt32 *bytesConsumed);
   ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable,
                                         ESB::UInt32 *bufferOffset);
   ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);

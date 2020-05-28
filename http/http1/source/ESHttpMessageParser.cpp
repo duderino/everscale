@@ -551,13 +551,13 @@ ESB::Error HttpMessageParser::parseChunkSize(ESB::Buffer *inputBuffer) {
   unsigned char octet;
 
   while (true) {
-    if (false == inputBuffer->isReadable()) {
+    if (!inputBuffer->isReadable()) {
       return ESB_AGAIN;
     }
 
     octet = inputBuffer->next();
 
-    if (false == HttpUtil::IsHex(octet)) {
+    if (!HttpUtil::IsHex(octet)) {
       inputBuffer->setReadPosition(inputBuffer->readPosition() - 1);
 
       return ESB_SUCCESS;

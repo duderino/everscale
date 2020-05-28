@@ -28,9 +28,9 @@ HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method,
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
-ESB::Error HttpLoadgenHandler::offerRequestChunk(HttpMultiplexer &multiplexer,
-                                                 HttpClientStream &stream,
-                                                 ESB::UInt32 *maxChunkSize) {
+ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer,
+                                                HttpClientStream &stream,
+                                                ESB::UInt32 *maxChunkSize) {
   assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
@@ -38,10 +38,10 @@ ESB::Error HttpLoadgenHandler::offerRequestChunk(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::produceRequestChunk(HttpMultiplexer &multiplexer,
-                                                   HttpClientStream &stream,
-                                                   unsigned char *chunk,
-                                                   ESB::UInt32 bytesRequested) {
+ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer,
+                                                  HttpClientStream &stream,
+                                                  unsigned char *chunk,
+                                                  ESB::UInt32 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
@@ -63,10 +63,11 @@ ESB::Error HttpLoadgenHandler::receiveResponseHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::consumeResponseChunk(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    const unsigned char *chunk, ESB::UInt32 chunkSize,
-    ESB::UInt32 *bytesConsumed) {
+ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
+                                                   HttpClientStream &stream,
+                                                   const unsigned char *chunk,
+                                                   ESB::UInt32 chunkSize,
+                                                   ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
 

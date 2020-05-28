@@ -34,20 +34,20 @@ class HttpLoadgenHandler : public HttpClientHandler {
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
                                             HttpClientStream &stream);
 
-  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream,
-                                       ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
+                                      HttpClientStream &stream,
+                                      ESB::UInt32 *bytesAvailable);
 
-  virtual ESB::Error produceRequestChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
+                                        HttpClientStream &stream,
+                                        unsigned char *chunk,
+                                        ESB::UInt32 bytesRequested);
+
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
                                          HttpClientStream &stream,
-                                         unsigned char *chunk,
-                                         ESB::UInt32 bytesRequested);
-
-  virtual ESB::Error consumeResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream,
-                                          const unsigned char *chunk,
-                                          ESB::UInt32 chunkSize,
-                                          ESB::UInt32 *bytesConsumed);
+                                         const unsigned char *chunk,
+                                         ESB::UInt32 chunkSize,
+                                         ESB::UInt32 *bytesConsumed);
 
   virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
                                 HttpClientStream &stream);

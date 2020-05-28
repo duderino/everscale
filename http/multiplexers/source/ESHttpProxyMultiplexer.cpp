@@ -16,26 +16,26 @@ class HttpNullClientHandler : public HttpClientHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error offerRequestChunk(HttpMultiplexer &multiplexer,
-                                       HttpClientStream &stream,
-                                       ESB::UInt32 *bytesAvailable) {
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
+                                      HttpClientStream &stream,
+                                      ESB::UInt32 *bytesAvailable) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error produceRequestChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
+                                        HttpClientStream &stream,
+                                        unsigned char *chunk,
+                                        ESB::UInt32 bytesRequested) {
+    assert(0 == "HttpNullClientHandler called");
+    return ESB_NOT_IMPLEMENTED;
+  }
+
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
                                          HttpClientStream &stream,
-                                         unsigned char *chunk,
-                                         ESB::UInt32 bytesRequested) {
-    assert(0 == "HttpNullClientHandler called");
-    return ESB_NOT_IMPLEMENTED;
-  }
-
-  virtual ESB::Error consumeResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream,
-                                          const unsigned char *chunk,
-                                          ESB::UInt32 chunkSize,
-                                          ESB::UInt32 *bytesConsumed) {
+                                         const unsigned char *chunk,
+                                         ESB::UInt32 chunkSize,
+                                         ESB::UInt32 *bytesConsumed) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
@@ -72,26 +72,26 @@ class HttpNullServerHandler : public HttpServerHandler {
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error consumeRequestChunk(HttpMultiplexer &multiplexer,
-                                         HttpServerStream &stream,
-                                         unsigned const char *chunk,
-                                         ESB::UInt32 chunkSize,
-                                         ESB::UInt32 *bytesConsumed) {
-    assert(0 == "HttpNullServerHandler called");
-    return ESB_NOT_IMPLEMENTED;
-  }
-
-  virtual ESB::Error offerResponseChunk(HttpMultiplexer &multiplexer,
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
                                         HttpServerStream &stream,
-                                        ESB::UInt32 *bytesAvailable) {
+                                        unsigned const char *chunk,
+                                        ESB::UInt32 chunkSize,
+                                        ESB::UInt32 *bytesConsumed) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error produceResponseChunk(HttpMultiplexer &multiplexer,
-                                          HttpServerStream &stream,
-                                          unsigned char *chunk,
-                                          ESB::UInt32 bytesRequested) {
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer,
+                                       HttpServerStream &stream,
+                                       ESB::UInt32 *bytesAvailable) {
+    assert(0 == "HttpNullServerHandler called");
+    return ESB_NOT_IMPLEMENTED;
+  }
+
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer,
+                                         HttpServerStream &stream,
+                                         unsigned char *chunk,
+                                         ESB::UInt32 bytesRequested) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
