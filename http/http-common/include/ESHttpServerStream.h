@@ -20,6 +20,16 @@ class HttpServerStream : public HttpStream {
   virtual ~HttpServerStream();
 
   /**
+   * Send a response with an empty body
+   *
+   * @param statusCode the HTTP status code
+   * @param reasonPhrase the HTTP reason phrase
+   * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
+   * underlying socket send buffer is full, another error code otherwise.
+   */
+  virtual ESB::Error sendResponse(int statusCode, const char *reasonPhrase) = 0;
+
+  /**
    * Buffer and occasionally flush a request body chunk to the underlying
    * socket.
    *

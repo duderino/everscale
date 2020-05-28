@@ -435,6 +435,20 @@ bool HttpServerSocket::handleReadable() {
   return false;  // remove from multiplexer
 }
 
+ESB::Error HttpServerSocket::sendResponse(int statusCode,
+                                          const char *reasonPhrase) {
+  return ESB_NOT_IMPLEMENTED;
+  /*_transaction->response().setStatusCode(statusCode);
+  _transaction->response().setReasonPhrase(reasonPhrase);
+  _transaction->response().setHasBody(false);
+
+  ESB_LOG_DEBUG("[%s] sending response: %d %s", _socket.logAddress(),
+                _transaction->response().statusCode(),
+                _transaction->response().reasonPhrase());
+  _state &= ~(TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY);
+  _state |= FORMATTING_HEADERS;*/
+}
+
 ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
                                               ESB::UInt32 bytesOffered,
                                               ESB::UInt32 *bytesConsumed) {
