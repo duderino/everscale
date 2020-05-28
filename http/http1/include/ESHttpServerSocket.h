@@ -138,7 +138,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   //
 
   virtual ESB::Error sendResponseBody(unsigned const char *chunk,
-                                      ESB::UInt32 chunkSize,
+                                      ESB::UInt32 bytesOffered,
                                       ESB::UInt32 *bytesConsumed);
   virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable,
                                           ESB::UInt32 *bufferOffset);
@@ -156,8 +156,14 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   ESB::Error skipTrailer();
   ESB::Error formatResponseHeaders();
   ESB::Error formatResponseBody();
+  ESB::Error formatResponseBody(unsigned const char *chunk,
+                                ESB::UInt32 bytesOffered,
+                                ESB::UInt32 *bytesConsumed);
   ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable,
                                         ESB::UInt32 *bufferOffset);
+  ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);
+  ESB::Error formatEndChunk();
+  ESB::Error formatEndBody();
   ESB::Error fillReceiveBuffer();
   ESB::Error flushSendBuffer();
   bool sendResponse();

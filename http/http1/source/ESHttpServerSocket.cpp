@@ -155,15 +155,41 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable,
     return ESB_NULL_POINTER;
   }
 
-  switch (ESB::Error error =
-              currentChunkBytesAvailable(bytesAvailable, bufferOffset)) {
-    case ESB_AGAIN:
-      if (ESB_SUCCESS != (error = fillReceiveBuffer())) {
-        return error;
-      }
+  //
+  // Since this function isn't invoked by the multiplexer, we have to explicitly
+  // adjust the registered interest events here.
+  //
+
+  ESB::Error error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+  if (ESB_AGAIN == error) {
+    if (ESB_SUCCESS == (error = fillReceiveBuffer())) {
       assert(_recvBuffer->isReadable());
-      return currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+      error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
+    }
+  }
+
+  switch (error) {
+    case ESB_SUCCESS:
+      if (0U == *bytesAvailable) {
+        // Last chunk has been read, send the response
+        ESB_LOG_DEBUG("[%s] finished parsing request body",
+                      _socket.logAddress());
+        _state &= ~PARSING_BODY;
+        _state |= FORMATTING_HEADERS;
+        if (ESB_SUCCESS != (error = pauseRecv(true))) {
+          abort(true);
+          return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+        }
+      }
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      if (ESB_SUCCESS != (error = resumeRecv(true))) {
+        abort(true);
+        return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+      }
+      return ESB_AGAIN;
     default:
+      abort(true);
       return error;
   }
 }
@@ -171,6 +197,12 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable,
 ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk,
                                              ESB::UInt32 bytesRequested,
                                              ESB::UInt32 bufferOffset) {
+  if (0U == bytesRequested) {
+    // In case the caller calls this after requestBodyAvailable() returns 0
+    // for the last chunk.
+    return ESB_SUCCESS;
+  }
+
   assert(chunk);
   assert(bytesRequested <= _recvBuffer->readable());
 
@@ -404,8 +436,42 @@ bool HttpServerSocket::handleReadable() {
 }
 
 ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk,
-                                              ESB::UInt32 chunkSize,
+                                              ESB::UInt32 bytesOffered,
                                               ESB::UInt32 *bytesConsumed) {
+  //
+  // Because this isn't invoked by the multiplexer, we have to make explicit
+  // pause and resume calls to update this socket's registered interests.
+  //
+  switch (ESB::Error error =
+              formatResponseBody(chunk, bytesOffered, bytesConsumed)) {
+    case ESB_SUCCESS:
+      if (0U == bytesOffered) {
+        if (ESB_SUCCESS != (error = pauseSend(true))) {
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause server send",
+                              _socket.logAddress());
+          return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+        }
+      }
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      if (ESB_SUCCESS != (error = resumeSend(true))) {
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume request body send",
+                            _socket.logAddress());
+        abort(true);
+        return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+      }
+      return ESB_AGAIN;
+    default:
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send request body",
+                          _socket.logAddress());
+      abort(true);
+      return error;
+  }
+}
+
+ESB::Error HttpServerSocket::formatResponseBody(unsigned const char *chunk,
+                                                ESB::UInt32 bytesOffered,
+                                                ESB::UInt32 *bytesConsumed) {
   return ESB_NOT_IMPLEMENTED;
 }
 
@@ -871,19 +937,17 @@ ESB::Error HttpServerSocket::formatResponseHeaders() {
 
 ESB::Error HttpServerSocket::formatResponseBody() {
   assert(_transaction);
-  ESB::Error error = ESB_SUCCESS;
-  ESB::UInt32 maxChunkSize = 0;
-  ESB::UInt32 offeredSize = 0;
 
   while (!_multiplexer.shutdown()) {
-    maxChunkSize = 0;
+    ESB::UInt32 maxChunkSize = 0;
+    ESB::UInt32 offeredSize = 0;
 
-    switch (error =
-                _handler.offerResponseBody(_multiplexer, *this, &offeredSize)) {
+    ESB::Error error =
+        _handler.offerResponseBody(_multiplexer, *this, &offeredSize);
+    switch (error) {
       case ESB_AGAIN:
       case ESB_PAUSE:
-        error = pauseSend(false);
-        if (ESB_SUCCESS != error) {
+        if (ESB_SUCCESS != (error = pauseSend(false))) {
           ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause server send",
                               _socket.logAddress());
           return error;
@@ -900,27 +964,16 @@ ESB::Error HttpServerSocket::formatResponseBody() {
     }
 
     if (0 == offeredSize) {
-      // last chunk
-      break;
+      return formatEndBody();
     }
 
-    switch (error = _transaction->getFormatter()->beginBlock(
-                _sendBuffer, offeredSize, &maxChunkSize)) {
-      case ESB_AGAIN:
-        ESB_LOG_DEBUG("[%s] partially formatted response body",
-                      _socket.logAddress());
-        return ESB_AGAIN;  // keep in multiplexer
-      case ESB_SUCCESS:
-        break;
-      default:
-        ESB_LOG_INFO_ERRNO(error, "[%s] error formatting response body",
-                           _socket.logAddress());
-        return error;  // remove from multiplexer
+    if (ESB_SUCCESS != (error = formatStartChunk(offeredSize, &maxChunkSize))) {
+      return error;
     }
 
     ESB::UInt32 chunkSize = ESB_MIN(offeredSize, maxChunkSize);
 
-    // write the body data
+    // ask the handler to produce chunkSize bytes of body data
 
     switch (error = _handler.produceResponseBody(
                 _multiplexer, *this,
@@ -949,13 +1002,9 @@ ESB::Error HttpServerSocket::formatResponseBody() {
     ESB_LOG_DEBUG("[%s] formatted response chunk of size %u",
                   _socket.logAddress(), chunkSize);
 
-    // beginBlock reserves space for this operation
-    error = _transaction->getFormatter()->endBlock(_sendBuffer);
-
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response end block",
-                         _socket.logAddress());
-      return error;  // remove from multiplexer
+    // beginBlock reserves space for this operation, it should never fail
+    if (ESB_SUCCESS != (error = formatEndChunk())) {
+      return error;
     }
   }
 
@@ -963,28 +1012,7 @@ ESB::Error HttpServerSocket::formatResponseBody() {
     return ESB_SHUTDOWN;
   }
 
-  // format last chunk
-
-  error = _transaction->getFormatter()->endBody(_sendBuffer);
-
-  if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG(
-        "[%s] insufficient space in socket buffer to end response body",
-        _socket.logAddress());
-    return ESB_AGAIN;  // keep in multiplexer
-  }
-
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last response chunk",
-                       _socket.logAddress());
-    return error;  // remove from multiplexer
-  }
-
-  ESB_LOG_DEBUG("[%s] finished formatting response body", _socket.logAddress());
-  _state &= ~FORMATTING_BODY;
-  _state |= FLUSHING_BODY;
-
-  return ESB_SUCCESS;  // keep in multiplexer
+  return ESB_SHUTDOWN;
 }
 
 ESB::Error HttpServerSocket::fillReceiveBuffer() {
@@ -1285,6 +1313,57 @@ const void *HttpServerSocket::context() const {
 
 const ESB::SocketAddress &HttpServerSocket::peerAddress() const {
   return _socket.peerAddress();
+}
+
+ESB::Error HttpServerSocket::formatStartChunk(ESB::UInt32 chunkSize,
+                                              ESB::UInt32 *maxChunkSize) {
+  ESB::Error error = _transaction->getFormatter()->beginBlock(
+      _sendBuffer, chunkSize, maxChunkSize);
+  switch (error) {
+    case ESB_SUCCESS:
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      ESB_LOG_DEBUG("[%s] insufficient send buffer space to begin chunk",
+                    _socket.logAddress());
+      return ESB_AGAIN;
+    default:
+      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting response body",
+                         _socket.logAddress());
+      return error;
+  }
+}
+
+ESB::Error HttpServerSocket::formatEndChunk() {
+  ESB::Error error = _transaction->getFormatter()->endBlock(_sendBuffer);
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response chunk end block",
+                       _socket.logAddress());
+    return error;
+  }
+
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpServerSocket::formatEndBody() {
+  ESB::Error error = _transaction->getFormatter()->endBody(_sendBuffer);
+
+  switch (error) {
+    case ESB_SUCCESS:
+      ESB_LOG_DEBUG("[%s] finished formatting response body",
+                    _socket.logAddress());
+      _state &= ~FORMATTING_BODY;
+      _state |= FLUSHING_BODY;
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      ESB_LOG_DEBUG("[%s] insufficient space in send buffer to format end body",
+                    _socket.logAddress());
+      return ESB_AGAIN;
+    default:
+      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last response chunk",
+                         _socket.logAddress());
+      return error;
+  }
 }
 
 }  // namespace ES

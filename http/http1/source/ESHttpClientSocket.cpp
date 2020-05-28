@@ -197,7 +197,8 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable,
     case ESB_SUCCESS:
       if (0U == *bytesAvailable) {
         // Last chunk has been read, finish the transaction
-        ESB_LOG_DEBUG("[%s] finished response body", _socket.logAddress());
+        ESB_LOG_DEBUG("[%s] finished parsing response body",
+                      _socket.logAddress());
         _state &= ~PARSING_BODY;
         _state |= TRANSACTION_END;
         if (ESB_SUCCESS != (error = pauseRecv(true))) {
@@ -385,7 +386,7 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
     case ESB_SUCCESS:
       if (0U == bytesOffered) {
         if (ESB_SUCCESS != (error = pauseSend(true))) {
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client",
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client send",
                               _socket.logAddress());
           return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
         }
@@ -393,7 +394,7 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
       return ESB_SUCCESS;
     case ESB_AGAIN:
       if (ESB_SUCCESS != (error = resumeSend(true))) {
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume request body",
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume request body send",
                             _socket.logAddress());
         abort(true);
         return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
@@ -1101,10 +1102,8 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
-  ESB::SSize bytesSent;
-
   while (!_multiplexer.shutdown() && _sendBuffer->isReadable()) {
-    bytesSent = _socket.send(_sendBuffer);
+    ESB::SSize bytesSent = _socket.send(_sendBuffer);
 
     if (0 > bytesSent) {
       if (ESB_AGAIN == bytesSent) {
@@ -1305,7 +1304,7 @@ ESB::Error HttpClientSocket::formatEndBody() {
 
   switch (error) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] finshed formatting request body",
+      ESB_LOG_DEBUG("[%s] finished formatting request body",
                     _socket.logAddress());
       _state &= ~FORMATTING_BODY;
       _state |= FLUSHING_BODY;

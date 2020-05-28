@@ -24,14 +24,14 @@ class HttpServerStream : public HttpStream {
    * socket.
    *
    * @param chunk The chunk to send
-   * @param chunkSize The size of the chunk to send.  If 0, this is the last
+   * @param bytesOffered The size of the chunk to send.  If 0, this is the last
    * chunk, so immediately flush all buffered bytes to the underlying socket.
    * @param bytesConsumed The number of bytes consumed
    * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
   virtual ESB::Error sendResponseBody(unsigned const char *chunk,
-                                      ESB::UInt32 chunkSize,
+                                      ESB::UInt32 bytesOffered,
                                       ESB::UInt32 *bytesConsumed) = 0;
 
   /**
