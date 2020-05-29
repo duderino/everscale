@@ -51,6 +51,7 @@ static HttpResponseFormatter ResponseFormatter;
 static bool ParseRequest(const char *file);
 static bool ParseResponse(const char *file);
 static bool CompareFiles(int fd1, int fd2);
+static bool DumpFile(int fd, const char *filename);
 
 bool ParseRequest(const char *inputFileName) {
   int inputFd = open(inputFileName, O_RDONLY);
@@ -332,7 +333,7 @@ bool ParseRequest(const char *inputFileName) {
       buffer[chunkSize] = 0;
 
       if (3 < Debug) fprintf(stderr, "read chunk:\n");
-      if (Debug) fprintf(stderr, "%s", buffer);
+      if (Debug) fprintf(stderr, "%s\n", buffer);
     }
 
     bytesWritten = 0;
@@ -537,9 +538,11 @@ bool ParseRequest(const char *inputFileName) {
     break;
   }
 
-  if (false == CompareFiles(outputFd, validationFd)) {
+  if (!CompareFiles(outputFd, validationFd)) {
     fprintf(stderr, "%s does not match %s\n", outputFileName,
             validationFileName);
+    DumpFile(validationFd, validationFileName);
+    DumpFile(outputFd, outputFileName);
     return false;
   }
 
@@ -786,7 +789,7 @@ bool ParseResponse(const char *inputFileName) {
       buffer[chunkSize] = 0;
 
       if (3 < Debug) fprintf(stderr, "read chunk:\n");
-      if (Debug) fprintf(stderr, "%s", buffer);
+      if (Debug) fprintf(stderr, "%s\n", buffer);
     }
 
     bytesWritten = 0;
@@ -991,15 +994,56 @@ bool ParseResponse(const char *inputFileName) {
     break;
   }
 
-  if (false == CompareFiles(outputFd, validationFd)) {
+  if (!CompareFiles(outputFd, validationFd)) {
     fprintf(stderr, "%s does not match %s\n", outputFileName,
             validationFileName);
+    DumpFile(validationFd, validationFileName);
+    DumpFile(outputFd, outputFileName);
     return false;
   }
 
   fprintf(stderr, "Success!\n");
 
   return true;
+}
+
+bool DumpFile(int fd, const char *filename) {
+  fprintf(stderr, "\nFILE %s\n\n", filename);
+
+  if (0 > lseek(fd, 0, SEEK_SET)) {
+    fprintf(stderr, "cannot seek 1: %s\n", strerror(errno));
+    return false;
+  }
+
+  char buffer[4096];
+  ssize_t result;
+
+  while (true) {
+    result = read(fd, buffer, sizeof(buffer));
+
+    if (0 > result) {
+      fprintf(stderr, "cannot read from %s: %s\n", filename, strerror(errno));
+      return false;
+    }
+
+    if (0 == result) {
+      return true;
+    }
+
+    ssize_t result2 = 0;
+    int bytesWritten = 0;
+
+    while (bytesWritten < result) {
+      result2 = write(2, buffer + bytesWritten, result - bytesWritten);
+      if (0 >= result2) {
+        fprintf(stderr, "cannot dump to %s: %s\n", filename, strerror(errno));
+        return false;
+      }
+      bytesWritten += result2;
+    }
+
+    return true;
+  }
 }
 
 bool CompareFiles(int fd1, int fd2) {
@@ -1034,11 +1078,7 @@ bool CompareFiles(int fd1, int fd2) {
         return false;
       }
 
-      if (0 == result1) {
-        return true;
-      }
-
-      return false;
+      return 0 == result1;
     }
 
     result2 = read(fd2, buffer2, result1);
