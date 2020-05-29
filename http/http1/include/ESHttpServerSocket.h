@@ -83,11 +83,11 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
 
   virtual ESB::Error handleAccept();
 
-  virtual bool handleConnect();
+  virtual ESB::Error handleConnect();
 
-  virtual bool handleReadable();
+  virtual ESB::Error handleReadable();
 
-  virtual bool handleWritable();
+  virtual ESB::Error handleWritable();
 
   virtual bool handleError(ESB::Error errorCode);
 
@@ -100,8 +100,6 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   virtual SOCKET socketDescriptor() const;
 
   virtual ESB::CleanupHandler *cleanupHandler();
-
-  virtual const char *name() const;
 
   //
   // ES::HttpStream
@@ -168,9 +166,9 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   ESB::Error formatEndBody();
   ESB::Error fillReceiveBuffer();
   ESB::Error flushSendBuffer();
-  bool sendResponse();
-  bool sendBadRequestResponse();
-  bool sendInternalServerErrorResponse();
+  ESB::Error sendResponse();
+  ESB::Error sendBadRequestResponse();
+  ESB::Error sendInternalServerErrorResponse();
 
   int _state;
   int _bodyBytesWritten;

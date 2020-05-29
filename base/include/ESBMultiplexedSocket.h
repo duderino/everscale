@@ -83,59 +83,60 @@ class MultiplexedSocket : public EmbeddedMapElement {
 
   /** Client connected socket has connected to the peer endpoint.
    *
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @return ESB_SUCCESS to keep the socket in the multiplexer.  Any other
+   * return value will make the multiplexer remove the socket and then call
+   * handleRemove().
+   * @see handleRemove which should perform necessary cleanup, including
+   * possibly closing the socket descriptor.
    */
-  virtual bool handleConnect() = 0;
+  virtual Error handleConnect() = 0;
 
   /** Data is ready to be read.
    *
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @return ESB_SUCCESS to keep the socket in the multiplexer.  Any other
+   * return value will make the multiplexer remove the socket and then call
+   * handleRemove().
+   * @see handleRemove which should perform necessary cleanup, including
+   * possibly closing the socket descriptor.
    */
-  virtual bool handleReadable() = 0;
+  virtual Error handleReadable() = 0;
 
   /** There is free space in the outgoing socket buffer.
    *
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @return ESB_SUCCESS to keep the socket in the multiplexer.  Any other
+   * return value will make the multiplexer remove the socket and then call
+   * handleRemove().
+   * @see handleRemove which should perform necessary cleanup, including
+   * possibly closing the socket descriptor.
    */
-  virtual bool handleWritable() = 0;
+  virtual Error handleWritable() = 0;
 
   /** An error occurred on the socket while waiting for another event.  The
    * error code should be retrieved from the socket itself.
    *
-   * @param errorCode The error code.
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor.
-   * @see TCPSocket::getLastError to get the socket error
+   * @param error The error code.
+   * @return true to keep the socket in the multiplexer, false to make the
+   * multiplexer remove the socket and then call handleRemove().
+   * @see handleRemove which should perform necessary cleanup, including
+   * possibly closing the socket descriptor.
    */
-  virtual bool handleError(Error errorCode) = 0;
+  virtual bool handleError(Error error) = 0;
 
   /** The socket's connection was closed by the remote peer.
    *
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @return true to keep the socket in the multiplexer, false to make the
+   * multiplexer remove the socket and then call handleRemove().
+   * @see handleRemove which should perform necessary cleanup, including
+   * possibly closing the socket descriptor.
    */
   virtual bool handleRemoteClose() = 0;
 
   /** The socket's connection has been idle for too long
    *
-   * @param multiplexer The multiplexer managing this socket.
-   * @return If true keep in the multiplexer, if false remove from the
-   * multiplexer. Do not close the socket descriptor until after the socket has
-   * been removed.
-   * @see handleRemoveEvent to close the socket descriptor
+   * @return true to keep the socket in the multiplexer, false to make the
+   * multiplexer remove the socket and then call handleRemove().
+   * @see handleRemove which should perform necessary cleanup, including
+   * possibly closing the socket descriptor.
    */
   virtual bool handleIdle() = 0;
 

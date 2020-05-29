@@ -29,12 +29,12 @@ bool HttpCommandSocket::isIdle() { return false; }
 
 ESB::Error HttpCommandSocket::handleAccept() {
   ESB_LOG_ERROR("Event sockets cannot handle accept");
-  return ESB_SUCCESS;  // keep in multiplexer
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-bool HttpCommandSocket::handleConnect() {
+ESB::Error HttpCommandSocket::handleConnect() {
   ESB_LOG_ERROR("Event sockets cannot handle connect");
-  return true;  // keep in multiplexer
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
 // This code runs in any thread
@@ -63,7 +63,7 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
 }
 
 // This code runs in the multiplexer's thread
-bool HttpCommandSocket::handleReadable() {
+ESB::Error HttpCommandSocket::handleReadable() {
   ESB_LOG_DEBUG("[%d] command socket event", _eventSocket.socketDescriptor());
 
   ESB::UInt64 value = 0;
@@ -72,7 +72,7 @@ bool HttpCommandSocket::handleReadable() {
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "[%d] cannot read command socket",
                         _eventSocket.socketDescriptor());
-    return true;  // keep in multiplexer, try again
+    return ESB_SUCCESS;  // keep in multiplexer, try again
   }
 
   for (ESB::UInt64 i = 0; i < value; ++i) {
@@ -85,7 +85,7 @@ bool HttpCommandSocket::handleReadable() {
     if (!command) {
       ESB_LOG_WARNING("[%d] command socket and queue are out of sync",
                       _eventSocket.socketDescriptor());
-      return true;  // keep in multiplexer, try again
+      return ESB_SUCCESS;  // keep in multiplexer, try again
     }
 
     // TODO track latency
@@ -96,13 +96,13 @@ bool HttpCommandSocket::handleReadable() {
     }
   }
 
-  return true;  // keep in multiplexer
+  return ESB_SUCCESS;  // keep in multiplexer
 }
 
-bool HttpCommandSocket::handleWritable() {
+ESB::Error HttpCommandSocket::handleWritable() {
   ESB_LOG_ERROR("[%d] command sockets cannot handle writable",
                 _eventSocket.socketDescriptor());
-  return true;  // keep in multiplexer
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
 bool HttpCommandSocket::handleError(ESB::Error errorCode) {
@@ -115,12 +115,6 @@ bool HttpCommandSocket::handleRemoteClose() {
   ESB_LOG_ERROR("[%d] command sockets cannot handle remote close",
                 _eventSocket.socketDescriptor());
   return true;  // keep in multiplexer
-}
-
-bool HttpCommandSocket::handleLocalClose() {
-  ESB_LOG_ERROR("[%d] command socket closed by this process",
-                _eventSocket.socketDescriptor());
-  return false;  // remove from multiplexer
 }
 
 bool HttpCommandSocket::handleIdle() {
@@ -154,7 +148,5 @@ SOCKET HttpCommandSocket::socketDescriptor() const {
 }
 
 ESB::CleanupHandler *HttpCommandSocket::cleanupHandler() { return NULL; }
-
-const char *HttpCommandSocket::getName() const { return "CommandSocket"; }
 
 }  // namespace ES

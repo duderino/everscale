@@ -97,11 +97,11 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
 
   virtual ESB::Error handleAccept();
 
-  virtual bool handleConnect();
+  virtual ESB::Error handleConnect();
 
-  virtual bool handleReadable();
+  virtual ESB::Error handleReadable();
 
-  virtual bool handleWritable();
+  virtual ESB::Error handleWritable();
 
   virtual bool handleError(ESB::Error errorCode);
 
@@ -114,8 +114,6 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   virtual SOCKET socketDescriptor() const;
 
   virtual ESB::CleanupHandler *cleanupHandler();
-
-  virtual const char *name() const;
 
   //
   // ES::HttpStream

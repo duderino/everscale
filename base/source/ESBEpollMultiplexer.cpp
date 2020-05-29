@@ -357,7 +357,6 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
   int numEvents = 0;
   int i = 0;
-  ESB::Error error = ESB_SUCCESS;
   MultiplexedSocket *socket = 0;
   int errorCount = 0;
   SOCKET fd = INVALID_SOCKET;
@@ -375,7 +374,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
     }
 
     if (0 > numEvents) {
-      error = LastError();
+      ESB::Error error = LastError();
       if (ESB_INTR == error) {
         continue;
       }
@@ -416,7 +415,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          error = TCPSocket::LastSocketError(fd);
+          ESB::Error error = TCPSocket::LastSocketError(fd);
           ESB_LOG_ERROR_ERRNO(error, "[%d] listening socket error", fd);
           keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLIN) {
@@ -455,7 +454,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          error = TCPSocket::LastSocketError(fd);
+          ESB::Error error = TCPSocket::LastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "[%d] connecting socket error", fd);
           keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLHUP) {
@@ -465,7 +464,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           int bytesReadable = ConnectedTCPSocket::BytesReadable(fd);
 
           if (0 > bytesReadable) {
-            error = TCPSocket::LastSocketError(fd);
+            ESB::Error error = TCPSocket::LastSocketError(fd);
             ESB_LOG_INFO_ERRNO(error, "[%d] connecting socket error", fd);
             keepInMultiplexer = socket->handleError(error);
           } else if (0 == bytesReadable) {
@@ -473,11 +472,25 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
             keepInMultiplexer = socket->handleRemoteClose();
           } else {
             ESB_LOG_INFO("[%d] socket connected", fd);
-            keepInMultiplexer = socket->handleConnect();
+            switch (socket->handleConnect()) {
+              case ESB_SUCCESS:
+              case ESB_AGAIN:
+                keepInMultiplexer = true;
+                break;
+              default:
+                keepInMultiplexer = false;
+            }
           }
         } else if (_events[i].events & EPOLLOUT) {
           ESB_LOG_INFO("[%d] socket connected", fd);
-          keepInMultiplexer = socket->handleConnect();
+          switch (socket->handleConnect()) {
+            case ESB_SUCCESS:
+            case ESB_AGAIN:
+              keepInMultiplexer = true;
+              break;
+            default:
+              keepInMultiplexer = false;
+          }
         } else {
           ESB_LOG_WARNING("[%d] connecting socket unknown event %d", fd,
                           _events[i].events);
@@ -504,7 +517,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          error = TCPSocket::LastSocketError(fd);
+          ESB::Error error = TCPSocket::LastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "[%d] connected socket error", fd);
           keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLHUP) {
@@ -513,13 +526,27 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         } else {
           if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
             ESB_LOG_DEBUG("[%d] connected socket read event", fd);
-            keepInMultiplexer = socket->handleReadable();
+            switch (socket->handleReadable()) {
+              case ESB_SUCCESS:
+              case ESB_AGAIN:
+                keepInMultiplexer = true;
+                break;
+              default:
+                keepInMultiplexer = false;
+            }
           }
 
           if (keepInMultiplexer && socket->wantWrite() &&
               (_events[i].events & EPOLLOUT)) {
             ESB_LOG_DEBUG("[%d] connected socket write event", fd);
-            keepInMultiplexer = socket->handleWritable();
+            switch (socket->handleWritable()) {
+              case ESB_SUCCESS:
+              case ESB_AGAIN:
+                keepInMultiplexer = true;
+                break;
+              default:
+                keepInMultiplexer = false;
+            }
           }
         }
       }

@@ -141,7 +141,7 @@ ESB::Error HttpClientSocket::handleAccept() {
   return ESB_SUCCESS;  // keep in multiplexer
 }
 
-bool HttpClientSocket::handleConnect() {
+ESB::Error HttpClientSocket::handleConnect() {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
   assert(_socket.isConnected());
@@ -255,21 +255,21 @@ ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk,
   return ESB_SUCCESS;
 }
 
-bool HttpClientSocket::handleReadable() {
-  // returning true will keep the socket in the multiplexer
-  // returning false will remove the socket from the multiplexer and ultimately
-  // close it.
-
+ESB::Error HttpClientSocket::handleReadable() {
   assert(wantRead());
   assert(_socket.isConnected());
   assert(_transaction);
+
+  if (!wantRead() || !_socket.isConnected() || !_transaction) {
+    return ESB_INVALID_STATE;
+  }
 
   if (!_recvBuffer) {
     _recvBuffer = _multiplexer.acquireBuffer();
     if (!_recvBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer",
                           _socket.logAddress());
-      return false;  // remove from multiplexer
+      return ESB_OUT_OF_MEMORY;  // remove from multiplexer
     }
   }
 
@@ -280,7 +280,7 @@ bool HttpClientSocket::handleReadable() {
       case ESB_SUCCESS:
         break;
       case ESB_AGAIN:
-        return true;  // keep in multiplexer
+        return ESB_AGAIN;  // keep in multiplexer
       case ESB_CLOSED:
         return handleRemoteClose();
       default:
@@ -295,7 +295,7 @@ bool HttpClientSocket::handleReadable() {
       }
 
       if (ESB_SUCCESS != error) {
-        return false;  // remove from multiplexer
+        return error;  // remove from multiplexer
       }
 
       switch (error = _handler.receiveResponseHeaders(_multiplexer, *this)) {
@@ -307,14 +307,15 @@ bool HttpClientSocket::handleReadable() {
           if (ESB_SUCCESS != error) {
             ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client receive",
                                 _socket.logAddress());
-            return false;  // remove from multiplexer
+            return error;  // remove from multiplexer
           }
-          return true;  // keep in multiplexer but remove from read interest set
+          return ESB_SUCCESS;  // keep in multiplexer but remove from read
+                               // interest set
         default:
           ESB_LOG_DEBUG_ERRNO(
               error, "[%s] Client request header handler aborting connection",
               _socket.logAddress());
-          return false;  // remove from multiplexer
+          return error;  // remove from multiplexer
       }
 
       if (!_transaction->response().hasBody()) {
@@ -331,22 +332,22 @@ bool HttpClientSocket::handleReadable() {
             if (ESB_SUCCESS != error) {
               ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client receive",
                                   _socket.logAddress());
-              return false;  // remove from multiplexer
+              return error;  // remove from multiplexer
             }
-            return true;  // keep in multiplexer but remove from read interest
-                          // set
+            return ESB_SUCCESS;  // keep in multiplexer but remove from read
+                                 // interest set
           default:
             ESB_LOG_DEBUG_ERRNO(error,
                                 "[%s] client body handler aborted connection",
                                 _socket.logAddress());
-            return false;  // remove from multiplexer
+            return error;  // remove from multiplexer
         }
 
         assert(!(_state | RECV_PAUSED));
         _state &= ~PARSING_HEADERS;
         _state |= TRANSACTION_END;
 
-        return false;  // remove from multiplexer
+        return ESB_CLEANUP;  // remove from multiplexer
       }
 
       _state &= ~PARSING_HEADERS;
@@ -363,15 +364,17 @@ bool HttpClientSocket::handleReadable() {
     }
 
     if (ESB_PAUSE == error) {
-      return true;  // keep in multiplexer, but remove from read interest set.
+      return ESB_SUCCESS;  // keep in multiplexer, but remove from read interest
+                           // set.
     }
 
-    return false;  // remove from multiplexer
+    return ESB_SUCCESS == error ? ESB_CLEANUP
+                                : error;  // remove from multiplexer
   }
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in parse state",
                 _socket.logAddress());
-  return false;  // remove from multiplexer
+  return ESB_SHUTDOWN;  // remove from multiplexer
 }
 
 ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
@@ -388,7 +391,7 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
         if (ESB_SUCCESS != (error = pauseSend(true))) {
           ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client send",
                               _socket.logAddress());
-          return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+          return error;
         }
       }
       return ESB_SUCCESS;
@@ -397,7 +400,7 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
         ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume request body send",
                             _socket.logAddress());
         abort(true);
-        return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+        return error;
       }
       return ESB_AGAIN;
     default:
@@ -513,17 +516,21 @@ ESB::Error HttpClientSocket::formatRequestBody(unsigned const char *chunk,
   return ESB_SUCCESS;
 }
 
-bool HttpClientSocket::handleWritable() {
+ESB::Error HttpClientSocket::handleWritable() {
   assert(wantWrite());
   assert(_socket.isConnected());
   assert(_transaction);
+
+  if (!wantWrite() || !_socket.isConnected() || !_transaction) {
+    return ESB_INVALID_STATE;
+  }
 
   if (!_sendBuffer) {
     _sendBuffer = _multiplexer.acquireBuffer();
     if (!_sendBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer",
                           _socket.logAddress());
-      return false;  // remove from multiplexer
+      return ESB_OUT_OF_MEMORY;  // remove from multiplexer
     }
   }
 
@@ -539,7 +546,7 @@ bool HttpClientSocket::handleWritable() {
       if (ESB_SUCCESS != error) {
         ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header",
                             _socket.logAddress());
-        return false;  // remove from multiplexer
+        return error;  // remove from multiplexer
       }
     }
 
@@ -558,16 +565,16 @@ bool HttpClientSocket::handleWritable() {
           case ESB_SUCCESS:
             break;
           case ESB_AGAIN:
-            return true;  // keep in multiplexer, wait for socket to become
+            return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
             // writable
           default:
-            return false;  // remove from multiplexer
+            return error;  // remove from multiplexer
         }
         continue;
       }
 
       if (ESB_SUCCESS != error) {
-        return false;  // remove from multiplexer;
+        return error;  // remove from multiplexer;
       }
     }
 
@@ -576,10 +583,10 @@ bool HttpClientSocket::handleWritable() {
         case ESB_SUCCESS:
           break;
         case ESB_AGAIN:
-          return true;  // keep in multiplexer, wait for socket to become
+          return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
           // writable
         default:
-          return false;  // remove from multiplexer
+          return error;  // remove from multiplexer
       }
 
       _state &= ~FLUSHING_HEADERS;
@@ -594,7 +601,7 @@ bool HttpClientSocket::handleWritable() {
           ESB_LOG_DEBUG_ERRNO(error,
                               "[%s] handler aborted transaction on request end",
                               _socket.logAddress());
-          return false;  // remove from multiplexer
+          return error;  // remove from multiplexer
         }
 
         return handleReadable();
@@ -613,20 +620,21 @@ bool HttpClientSocket::handleWritable() {
           case ESB_SUCCESS:
             break;
           case ESB_AGAIN:
-            return true;  // keep in multiplexer, wait for socket to become
+            return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
             // writable
           default:
-            return false;  // remove from multiplexer
+            return error;  // remove from multiplexer
         }
         continue;
       }
 
       if (ESB_PAUSE == error) {
-        return true;  // keep in multiplexer but remove from write interest
+        return ESB_SUCCESS;  // keep in multiplexer but remove from write
+                             // interest
       }
 
       if (ESB_SUCCESS != error) {
-        return false;  // remove from multiplexer;
+        return error;  // remove from multiplexer;
       }
 
       if (FORMATTING_BODY & _state) {
@@ -636,25 +644,27 @@ bool HttpClientSocket::handleWritable() {
 
     assert(FLUSHING_BODY & _state);
 
-    error = flushSendBuffer();
-
-    if (ESB_AGAIN == error) {
-      return true;  // keep in multiplexer
-    }
-
-    if (ESB_SUCCESS != error) {
-      return false;  // remove from multiplexer
+    switch (error = flushSendBuffer()) {
+      case ESB_SUCCESS:
+        break;
+      case ESB_AGAIN:
+        return ESB_AGAIN;  // keep in multiplexer
+      default:
+        return error;  // remove from multiplexer
     }
 
     _state &= ~FLUSHING_BODY;
     _state |= PARSING_HEADERS;
 
-    error = _handler.endRequest(_multiplexer, *this);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error,
-                          "[%s] handler aborted transaction on request end",
-                          _socket.logAddress());
-      return false;  // remove from multiplexer
+    switch (error = _handler.endRequest(_multiplexer, *this)) {
+      case ESB_SUCCESS:
+      case ESB_AGAIN:
+        break;
+      default:
+        ESB_LOG_DEBUG_ERRNO(error,
+                            "[%s] handler aborted transaction on request end",
+                            _socket.logAddress());
+        return error;  // remove from multiplexer
     }
 
     return handleReadable();
@@ -662,7 +672,7 @@ bool HttpClientSocket::handleWritable() {
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in format state",
                 _socket.logAddress());
-  return false;  // remove from multiplexer
+  return ESB_SHUTDOWN;  // remove from multiplexer
 }
 
 bool HttpClientSocket::handleError(ESB::Error error) {
@@ -807,8 +817,6 @@ SOCKET HttpClientSocket::socketDescriptor() const {
 ESB::CleanupHandler *HttpClientSocket::cleanupHandler() {
   return &_cleanupHandler;
 }
-
-const char *HttpClientSocket::name() const { return logAddress(); }
 
 ESB::Error HttpClientSocket::parseResponseHeaders() {
   ESB::Error error = _transaction->getParser()->parseHeaders(

@@ -96,19 +96,19 @@ ESB::Error HttpListeningSocket::handleAccept() {
   return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
 }
 
-bool HttpListeningSocket::handleConnect() {
+ESB::Error HttpListeningSocket::handleConnect() {
   ESB_LOG_ERROR("[%s] Cannot handle connect events", _socket.logAddress());
-  return true;
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-bool HttpListeningSocket::handleReadable() {
+ESB::Error HttpListeningSocket::handleReadable() {
   ESB_LOG_ERROR("[%s] Cannot handle readable events", _socket.logAddress());
-  return true;
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-bool HttpListeningSocket::handleWritable() {
+ESB::Error HttpListeningSocket::handleWritable() {
   ESB_LOG_ERROR("[%s] Cannot handle writable events", _socket.logAddress());
-  return true;
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
 bool HttpListeningSocket::handleError(ESB::Error error) {
@@ -120,12 +120,6 @@ bool HttpListeningSocket::handleError(ESB::Error error) {
 bool HttpListeningSocket::handleRemoteClose() {
   ESB_LOG_ERROR("[%s] Cannot handle eof events", _socket.logAddress());
   return true;
-}
-
-bool HttpListeningSocket::handleLocalClose() {
-  ESB_LOG_ERROR("[%s] This process closed listening socket",
-                _socket.logAddress());
-  return false;  // remove from multiplexer
 }
 
 bool HttpListeningSocket::handleIdle() {
@@ -144,10 +138,6 @@ SOCKET HttpListeningSocket::socketDescriptor() const {
 
 ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() {
   return &_cleanupHandler;
-}
-
-const char *HttpListeningSocket::getName() const {
-  return "HttpListeningSocket";
 }
 
 }  // namespace ES
