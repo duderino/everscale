@@ -135,7 +135,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   // ES::HttpServerStream
   //
 
-  virtual ESB::Error sendResponse(int statusCode, const char *reasonPhrase);
+  virtual ESB::Error sendEmptyResponse(int statusCode,
+                                       const char *reasonPhrase);
 
   virtual ESB::Error sendResponseBody(unsigned const char *chunk,
                                       ESB::UInt32 bytesOffered,

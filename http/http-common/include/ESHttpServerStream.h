@@ -27,7 +27,8 @@ class HttpServerStream : public HttpStream {
    * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
-  virtual ESB::Error sendResponse(int statusCode, const char *reasonPhrase) = 0;
+  virtual ESB::Error sendEmptyResponse(int statusCode,
+                                       const char *reasonPhrase) = 0;
 
   /**
    * Buffer and occasionally flush a request body chunk to the underlying

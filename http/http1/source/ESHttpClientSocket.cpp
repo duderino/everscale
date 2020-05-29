@@ -203,17 +203,19 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable,
         _state |= TRANSACTION_END;
         if (ESB_SUCCESS != (error = pauseRecv(true))) {
           abort(true);
-          return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          return error;
         }
       }
       return ESB_SUCCESS;
     case ESB_AGAIN:
       if (ESB_SUCCESS != (error = resumeRecv(true))) {
         abort(true);
-        return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+        return error;
       }
       return ESB_AGAIN;
     default:
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot parse response body",
+                          _socket.logAddress());
       abort(true);
       return error;
   }
@@ -303,10 +305,7 @@ ESB::Error HttpClientSocket::handleReadable() {
           break;
         case ESB_AGAIN:
         case ESB_PAUSE:
-          error = pauseRecv(false);
-          if (ESB_SUCCESS != error) {
-            ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client receive",
-                                _socket.logAddress());
+          if (ESB_SUCCESS != (error = pauseRecv(false))) {
             return error;  // remove from multiplexer
           }
           return ESB_SUCCESS;  // keep in multiplexer but remove from read
@@ -330,8 +329,6 @@ ESB::Error HttpClientSocket::handleReadable() {
           case ESB_AGAIN:
             error = pauseRecv(false);
             if (ESB_SUCCESS != error) {
-              ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client receive",
-                                  _socket.logAddress());
               return error;  // remove from multiplexer
             }
             return ESB_SUCCESS;  // keep in multiplexer but remove from read
@@ -389,16 +386,13 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk,
     case ESB_SUCCESS:
       if (0U == bytesOffered) {
         if (ESB_SUCCESS != (error = pauseSend(true))) {
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client send",
-                              _socket.logAddress());
+          abort(true);
           return error;
         }
       }
       return ESB_SUCCESS;
     case ESB_AGAIN:
       if (ESB_SUCCESS != (error = resumeSend(true))) {
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume request body send",
-                            _socket.logAddress());
         abort(true);
         return error;
       }
@@ -896,10 +890,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
           return ESB_SUCCESS;
         case ESB_PAUSE:
         case ESB_AGAIN:
-          error = pauseRecv(false);
-          if (ESB_SUCCESS != error) {
-            ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client receive",
-                                _socket.logAddress());
+          if (ESB_SUCCESS != (error = pauseRecv(false))) {
             return error;
           }
           return ESB_PAUSE;
@@ -923,10 +914,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
           ESB_LOG_DEBUG(
               "[%s] pausing response body receive until handler is ready",
               _socket.logAddress());
-          error = pauseRecv(false);
-          if (ESB_SUCCESS != error) {
-            ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client receive",
-                                _socket.logAddress());
+          if (ESB_SUCCESS != (error = pauseRecv(false))) {
             return error;
           }
           return ESB_PAUSE;
@@ -934,10 +922,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
         break;
       case ESB_AGAIN:
       case ESB_PAUSE:
-        error = pauseRecv(false);
-        if (ESB_SUCCESS != error) {
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client receive",
-                              _socket.logAddress());
+        if (ESB_SUCCESS != (error = pauseRecv(false))) {
           return error;
         }
         return ESB_PAUSE;
@@ -999,8 +984,6 @@ ESB::Error HttpClientSocket::formatRequestBody() {
       case ESB_AGAIN:
       case ESB_PAUSE:
         if (ESB_SUCCESS != (error = pauseSend(false))) {
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client send",
-                              _socket.logAddress());
           return error;
         }
         return ESB_PAUSE;
@@ -1036,8 +1019,6 @@ ESB::Error HttpClientSocket::formatRequestBody() {
       case ESB_PAUSE:
         error = pauseSend(false);
         if (ESB_SUCCESS != error) {
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot pause client send",
-                              _socket.logAddress());
           return error;
         }
         return ESB_PAUSE;
@@ -1151,11 +1132,16 @@ ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] connection aborted", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] client connection aborted", _socket.logAddress());
 
   _state |= ABORTED;
   if (updateMultiplexer) {
-    return _multiplexer.multiplexer().removeMultiplexedSocket(this);
+    ESB::Error error = _multiplexer.multiplexer().removeMultiplexedSocket(this);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot abort client connection",
+                          _socket.logAddress());
+      return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+    }
   }
 
   return ESB_SUCCESS;
@@ -1173,7 +1159,12 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
 
   _state |= RECV_PAUSED;
   if (updateMultiplexer) {
-    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client response receive",
+                          _socket.logAddress());
+      return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+    }
   }
 
   return ESB_SUCCESS;
@@ -1191,7 +1182,12 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
 
   _state &= ~RECV_PAUSED;
   if (updateMultiplexer) {
-    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client response receive",
+                          _socket.logAddress());
+      return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+    }
   }
 
   return ESB_SUCCESS;
@@ -1209,7 +1205,12 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
 
   _state |= SEND_PAUSED;
   if (updateMultiplexer) {
-    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client response send",
+                          _socket.logAddress());
+      return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+    }
   }
 
   return ESB_SUCCESS;
@@ -1227,7 +1228,12 @@ ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
 
   _state &= ~SEND_PAUSED;
   if (updateMultiplexer) {
-    return _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client response send",
+                          _socket.logAddress());
+      return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+    }
   }
 
   return ESB_SUCCESS;
