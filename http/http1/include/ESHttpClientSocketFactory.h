@@ -17,10 +17,6 @@
 #include <ESHttpClientSocket.h>
 #endif
 
-#ifndef ESB_SYSTEM_DNS_CLIENT_H
-#include <ESBSystemDnsClient.h>
-#endif
-
 #ifndef ESB_SOCKET_MULTIPLEXER_H
 #include <ESBSocketMultiplexer.h>
 #endif
@@ -128,7 +124,6 @@ class HttpClientSocketFactory {
   ESB::SharedEmbeddedMap _map;
   ESB::EmbeddedList _sockets;
   CleanupHandler _cleanupHandler;
-  ESB::SystemDnsClient _dnsClient;
 };
 
 }  // namespace ES

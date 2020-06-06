@@ -4,7 +4,7 @@ project(loadgen VERSION ${VERSION} LANGUAGES CXX)
 set(SOURCE_FILES
 source/ESHttpLoadgenContext.cpp
 source/ESHttpLoadgenHandler.cpp
-source/ESHttpLoadgenRequestBuilder.cpp
+source/ESHttpLoadgenSeedCommand.cpp
         )
 
 add_library(loadgen STATIC ${SOURCE_FILES})

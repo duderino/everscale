@@ -27,7 +27,8 @@ class HttpMultiplexer {
    * this method returns anything else then the caller should clean it up with
    * destroyClientTransaction
    *
-   * @param transaction The transaction
+   * @param transaction The transaction, with a populated HTTP request.  The
+   * request will be sent to the destination returned by peerAddress().
    * @return ESB_SUCCESS if the transaction was successfully started, another
    * error code otherwise.  If error, cleanup the transaction with the
    * destroyTransaction function.

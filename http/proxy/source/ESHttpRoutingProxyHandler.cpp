@@ -37,60 +37,64 @@ ESB::Error HttpRoutingProxyHandler::beginTransaction(
 }
 
 ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
+    HttpMultiplexer &multiplexer, HttpServerStream &serverStream) {
   HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)stream.context();
+      (HttpRoutingProxyContext *)serverStream.context();
   assert(context);
 
   // TODO validate headers
 
-  HttpClientTransaction *transaction = multiplexer.createClientTransaction();
+  HttpClientTransaction *clientTransaction =
+      multiplexer.createClientTransaction();
 
-  if (!transaction) {
+  if (!clientTransaction) {
     ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY,
                           "[%s] Cannot create client transaction",
-                          stream.logAddress());
-    return sendResponse(stream, 500, "Internal Server Error");
+                          serverStream.logAddress());
+    return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
   ESB::SocketAddress destination;
-  ESB::Error error = _router.route(stream, *transaction, destination);
+  ESB::Error error =
+      _router.route(serverStream, *clientTransaction, destination);
 
   if (ESB_SUCCESS != error) {
     switch (error) {
       case ESB_CANNOT_FIND:
         ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot route request",
-                            stream.logAddress());
-        return sendResponse(stream, 404, "Not Found");
+                            serverStream.logAddress());
+        return serverStream.sendEmptyResponse(404, "Not Found");
       case ESB_NOT_OWNER:
         ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot route request",
-                            stream.logAddress());
-        return sendResponse(stream, 403, "Forbidden");
+                            serverStream.logAddress());
+        return serverStream.sendEmptyResponse(403, "Forbidden");
       default:
         ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot route request",
-                              stream.logAddress());
-        return sendResponse(stream, 500, "Internal Server Error");
+                              serverStream.logAddress());
+        return serverStream.sendEmptyResponse(500, "Internal Server Error");
     }
   }
 
-  transaction->setContext(context);
-  error =
-      transaction->request().copy(&stream.request(), transaction->allocator());
+  error = clientTransaction->request().copy(&serverStream.request(),
+                                            clientTransaction->allocator());
 
   if (ESB_SUCCESS != error) {
-    multiplexer.destroyClientTransaction(transaction);
+    multiplexer.destroyClientTransaction(clientTransaction);
     ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot populate client transaction",
-                          stream.logAddress());
-    return sendResponse(stream, 500, "Internal Server Error");
+                          serverStream.logAddress());
+    return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
-  error = multiplexer.executeClientTransaction(transaction);
+  clientTransaction->setPeerAddress(destination);
+  clientTransaction->setContext(context);
+
+  error = multiplexer.executeClientTransaction(clientTransaction);
 
   if (ESB_SUCCESS != error) {
-    multiplexer.destroyClientTransaction(transaction);
+    multiplexer.destroyClientTransaction(clientTransaction);
     ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot execute client transaction",
-                          stream.logAddress());
-    return sendResponse(stream, 500, "Internal Server Error");
+                          serverStream.logAddress());
+    return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
   context->setState(HttpRoutingProxyContext::State::CLIENT_RESPONSE_WAIT);

@@ -3,6 +3,7 @@ project(proxy VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
         source/ESHttpRouter.cpp
+	source/ESSynchronousDnsHttpRouter.cpp
         source/ESHttpRoutingProxyContext.cpp
         source/ESHttpRoutingProxyHandler.cpp
         )

@@ -66,6 +66,7 @@ using namespace ES;
 int main(int argc, char **argv) {
   int clientThreads = 3;
   int serverThreads = 3;
+  const char *destination = "127.0.0.1";
   const char *host = "localhost.localdomain";
   unsigned int connections = 500;  // concurrent connections
   unsigned int iterations = 500;   // http requests per concurrent connection
@@ -168,6 +169,9 @@ int main(int argc, char **argv) {
 
   ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
 
+  ESB::SocketAddress destaddr(destination, listener.listeningAddress().port(),
+                              ESB::SocketAddress::TransportType::TCP);
+
   //
   // Init client and server
   //
@@ -221,7 +225,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < client.threads(); ++i) {
     HttpLoadgenSeedCommand *command =
         new (ESB::SystemAllocator::Instance()) HttpLoadgenSeedCommand(
-            connections / clientThreads, iterations,
+            connections / clientThreads, iterations, destaddr,
             listener.listeningAddress().port(), host, absPath, method,
             contentType, ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);

@@ -123,6 +123,8 @@ int main(int argc, char **argv) {
   const char *contentType = "octet-stream";
   const char *bodyFilePath = 0;
   const char *absPath = "/";
+  ESB::SocketAddress destaddr("127.0.0.1", port,
+                              ESB::SocketAddress::TransportType::TCP);
 
   {
     int result = 0;
@@ -342,8 +344,9 @@ int main(int argc, char **argv) {
   for (int i = 0; i < client.threads(); ++i) {
     HttpLoadgenSeedCommand *command =
         new (ESB::SystemAllocator::Instance()) HttpLoadgenSeedCommand(
-            connections / threads, iterations, port, host, absPath, method,
-            contentType, ESB::SystemAllocator::Instance().cleanupHandler());
+            connections / threads, iterations, destaddr, port, host, absPath,
+            method, contentType,
+            ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");

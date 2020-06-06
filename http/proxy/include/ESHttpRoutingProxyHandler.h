@@ -26,7 +26,7 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer,
                                       HttpServerStream &stream);
   virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &multiplexer,
-                                           HttpServerStream &stream);
+                                           HttpServerStream &serverStream);
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
                                         HttpServerStream &stream,
                                         unsigned const char *chunk,

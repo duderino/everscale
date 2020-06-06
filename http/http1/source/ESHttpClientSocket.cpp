@@ -10,10 +10,6 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ES_HTTP_ERROR_H
-#include <ESHttpError.h>
-#endif
-
 #ifndef ES_HTTP_ALLOCATOR_SIZE
 #define ES_HTTP_ALLOCATOR_SIZE 3072
 #endif

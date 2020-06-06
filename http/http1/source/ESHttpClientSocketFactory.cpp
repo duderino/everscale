@@ -52,8 +52,7 @@ HttpClientSocketFactory::HttpClientSocketFactory(
       _allocator(allocator),
       _callbacks(_allocator),
       _map(_callbacks, HttpConfig::Instance().connectionPoolBuckets(), 0),
-      _cleanupHandler(*this),
-      _dnsClient() {}
+      _cleanupHandler(*this) {}
 
 HttpClientSocketFactory::~HttpClientSocketFactory() {
   while (true) {
@@ -150,30 +149,6 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
 
   transaction->setStartTime();
 
-  // TODO Make resolver async
-  unsigned char hostname[1024];
-  hostname[0] = 0;
-  ESB::UInt16 port = 0;
-  bool isSecure = false;
-
-  ESB::Error error = transaction->request().parsePeerAddress(
-      hostname, sizeof(hostname), &port, &isSecure);
-
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_DEBUG("Cannot extract hostname from request");
-    return error;
-  }
-
-  error =
-      _dnsClient.resolve(transaction->peerAddress(), hostname, port, isSecure);
-
-  if (ESB_SUCCESS != error) {
-    _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
-    // transaction->getHandler()->end(transaction,
-    //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RESOLVE);
-    return error;
-  }
-
   HttpClientSocket *socket = create(transaction);
 
   if (!socket) {
@@ -185,7 +160,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
   }
 
   if (!socket->isConnected()) {
-    error = socket->connect();
+    ESB::Error error = socket->connect();
 
     if (ESB_SUCCESS != error) {
       _counters.getFailures()->record(transaction->startTime(),
@@ -199,7 +174,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
     }
   }
 
-  error = _multiplexer.multiplexer().addMultiplexedSocket(socket);
+  ESB::Error error = _multiplexer.multiplexer().addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
     _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());

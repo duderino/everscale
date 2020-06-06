@@ -2,16 +2,8 @@
 #include <ESHttpLoadgenHandler.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
 #ifndef ES_HTTP_LOADGEN_CONTEXT_H
 #include <ESHttpLoadgenContext.h>
-#endif
-
-#ifndef ES_HTTP_LOADGEN_REQUEST_BUILDER_H
-#include <ESHttpLoadgenRequestBuilder.h>
 #endif
 
 namespace ES {
@@ -125,23 +117,19 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,
     return;
   }
 
-  context->setBytesSent(0U);
-
-  newTransaction->setContext(context);
-  stream.setContext(NULL);
-
-  char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
-  stream.peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
-
-  ESB::Error error =
-      HttpLoadgenRequestBuilder(dottedIP, stream.peerAddress().port(), _absPath,
-                                _method, _contentType, newTransaction);
-
+  ESB::Error error = newTransaction->request().copy(
+      &stream.request(), newTransaction->allocator());
   if (ESB_SUCCESS != error) {
     multiplexer.destroyClientTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "Cannot build request");
     return;
   }
+
+  newTransaction->setPeerAddress(stream.peerAddress());
+
+  context->setBytesSent(0U);
+  newTransaction->setContext(context);
+  stream.setContext(NULL);
 
   error = multiplexer.executeClientTransaction(newTransaction);
 
