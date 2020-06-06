@@ -108,8 +108,7 @@ class MapTest : public ESTF::Component {
  private:
   class Record {
    public:
-    Record()
-        : _key(0), _value(0), _lifetime(0), _useIterator(true), _iterator() {}
+    Record() : _key(0), _value(0), _lifetime(0), _useIterator(true), _iterator() {}
 
     virtual ~Record() {}
 
@@ -127,9 +126,7 @@ class MapTest : public ESTF::Component {
   };
 
   struct STLStringComparator {
-    bool operator()(const char *first, const char *second) const {
-      return strcmp(first, second) < 0;
-    }
+    bool operator()(const char *first, const char *second) const { return strcmp(first, second) < 0; }
   };
 
   char *generateKey();
@@ -159,8 +156,7 @@ Mutex StlLock;
 
 static const bool Debug = false;
 
-MapTest::MapTest()
-    : _records(0), _rand(), _map(_Comparator), _stlMultiMap(), _stlMap() {}
+MapTest::MapTest() : _records(0), _rand(), _map(_Comparator), _stlMultiMap(), _stlMap() {}
 
 MapTest::~MapTest() {}
 
@@ -189,15 +185,13 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
           _records[j]._lifetime = i + generateLifetime();
           _records[j]._useIterator = (1 == _rand.generateRandom(1, 2));
 
-          stlResult = _stlMap
-                          .insert(std::pair<const char *, char *>(
-                              (const char *)_records[j]._key,
-                              (char *)_records[j]._value))
-                          .second;
+          stlResult =
+              _stlMap
+                  .insert(std::pair<const char *, char *>((const char *)_records[j]._key, (char *)_records[j]._value))
+                  .second;
 
           if (_records[j]._useIterator) {
-            error = _map.insert(_records[j]._key, _records[j]._value,
-                                &_records[j]._iterator);
+            error = _map.insert(_records[j]._key, _records[j]._value, &_records[j]._iterator);
 
             if (ESB_SUCCESS == error) {
               ESTF_ASSERT(collector, !_records[j]._iterator.isNull());
@@ -216,8 +210,7 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
 
           if (ESB_SUCCESS != error) {
             if (Debug) {
-              std::cerr << "Failed to insert: " << (char *)_records[j]._key
-                        << " at time " << i << std::endl;
+              std::cerr << "Failed to insert: " << (char *)_records[j]._key << " at time " << i << std::endl;
             }
 
             delete[](char *) _records[j]._key;
@@ -226,10 +219,8 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
             _records[j]._value = 0;
           } else {
             if (Debug) {
-              std::cerr << "Inserted: " << (char *)_records[j]._key
-                        << " (Map size: " << _map.size()
-                        << " stl size: " << _stlMap.size() << ") at time " << i
-                        << std::endl;
+              std::cerr << "Inserted: " << (char *)_records[j]._key << " (Map size: " << _map.size()
+                        << " stl size: " << _stlMap.size() << ") at time " << i << std::endl;
             }
           }
 
@@ -260,10 +251,8 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
           }
 
           if (Debug) {
-            std::cerr << "Deleted: " << (char *)_records[j]._key
-                      << " (Map size: " << _map.size()
-                      << " stl size: " << _stlMap.size() << ") at time " << i
-                      << std::endl;
+            std::cerr << "Deleted: " << (char *)_records[j]._key << " (Map size: " << _map.size()
+                      << " stl size: " << _stlMap.size() << ") at time " << i << std::endl;
           }
 
           delete[](char *) _records[j]._key;
@@ -284,8 +273,7 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
     char *key = 0;
     char *value = 0;
 
-    for (iterator = _map.minimumIterator(); !iterator.isNull();
-         iterator = temp) {
+    for (iterator = _map.minimumIterator(); !iterator.isNull(); iterator = temp) {
       key = (char *)iterator.key();
       value = (char *)iterator.value();
 
@@ -298,9 +286,8 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
       ESTF_ASSERT(collector, ESB_SUCCESS == error);
 
       if (Debug) {
-        std::cerr << "Deleted: " << key << " (Map size: " << _map.size()
-                  << " stl size: " << _stlMap.size() << ") at cleanup stage"
-                  << std::endl;
+        std::cerr << "Deleted: " << key << " (Map size: " << _map.size() << " stl size: " << _stlMap.size()
+                  << ") at cleanup stage" << std::endl;
       }
 
       delete[](char *) key;
@@ -464,12 +451,10 @@ int MapTest::generateLifetime() {
 
 int main() {
   ESB::MapTestPtr mapTest = new ESB::MapTest();
-  ESTF::ConcurrencyDecoratorPtr mapDecorator =
-      new ESTF::ConcurrencyDecorator(mapTest, 10);
+  ESTF::ConcurrencyDecoratorPtr mapDecorator = new ESTF::ConcurrencyDecorator(mapTest, 10);
   ESTF::CompositePtr testSuite = new ESTF::Composite();
   testSuite->add(mapDecorator);
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
   ESTF::ResultCollector collector;
 
   if (!root->setup()) {

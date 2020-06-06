@@ -22,9 +22,7 @@ class PerformanceCounter {
 
   inline double getAverageLatencyMsec() { return _avgLatencyMsec; }
 
-  inline double getMinLatencyMsec() {
-    return 0 > _minLatencyMsec ? 0 : _minLatencyMsec;
-  }
+  inline double getMinLatencyMsec() { return 0 > _minLatencyMsec ? 0 : _minLatencyMsec; }
 
   inline double getMaxLatencyMsec() { return _maxLatencyMsec; }
 

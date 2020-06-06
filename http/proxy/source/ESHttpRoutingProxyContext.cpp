@@ -4,8 +4,6 @@
 
 namespace ES {
 HttpRoutingProxyContext::HttpRoutingProxyContext()
-    : _state(State::SERVER_REQUEST_WAIT),
-      _serverStream(NULL),
-      _clientStream(NULL) {}
+    : _state(State::SERVER_REQUEST_WAIT), _serverStream(NULL), _clientStream(NULL) {}
 HttpRoutingProxyContext::~HttpRoutingProxyContext() {}
 }  // namespace ES

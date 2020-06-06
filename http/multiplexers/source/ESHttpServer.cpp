@@ -12,8 +12,7 @@
 
 namespace ES {
 
-HttpServer::HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
-                       ESB::Allocator &allocator)
+HttpServer::HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler, ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
       _state(ES_HTTP_SERVER_IS_DESTROYED),
       _allocator(allocator),
@@ -43,8 +42,7 @@ ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
     idx = _rand.generate(0, _threads - 1);
   }
 
-  HttpProxyMultiplexer *multiplexer =
-      (HttpProxyMultiplexer *)_multiplexers.index(idx);
+  HttpProxyMultiplexer *multiplexer = (HttpProxyMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
   ESB::Error error = multiplexer->pushServerCommand(command);
 
@@ -70,9 +68,8 @@ ESB::Error HttpServer::addListener(ESB::ListeningTCPSocket &listener) {
 #endif
 
   for (int i = 0; i < _threads; ++i) {
-    AddListeningSocketCommand *command =
-        new (ESB::SystemAllocator::Instance()) AddListeningSocketCommand(
-            listener, ESB::SystemAllocator::Instance().cleanupHandler());
+    AddListeningSocketCommand *command = new (ESB::SystemAllocator::Instance())
+        AddListeningSocketCommand(listener, ESB::SystemAllocator::Instance().cleanupHandler());
     ESB::Error error = push(command, i);
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "Cannot push add listener command");
@@ -103,8 +100,7 @@ ESB::Error HttpServer::start() {
     ESB::SocketMultiplexer *multiplexer = createMultiplexer();
 
     if (!multiplexer) {
-      ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
-                             "Cannot initialize multiplexer");
+      ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot initialize multiplexer");
       return ESB_OUT_OF_MEMORY;
     }
 
@@ -143,8 +139,7 @@ void HttpServer::destroy() {
   assert(ES_HTTP_SERVER_IS_STOPPED == _state.get());
   _state.set(ES_HTTP_SERVER_IS_DESTROYED);
 
-  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
-       it = it.next()) {
+  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull(); it = it.next()) {
     destroyMultiplexer((HttpProxyMultiplexer *)it.value());
   }
 
@@ -153,8 +148,7 @@ void HttpServer::destroy() {
 
 ESB::SocketMultiplexer *HttpServer::createMultiplexer() {
   return new (_allocator)
-      HttpProxyMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(),
-                           _serverHandler, _serverCounters);
+      HttpProxyMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(), _serverHandler, _serverCounters);
 }
 
 void HttpServer::destroyMultiplexer(ESB::SocketMultiplexer *multiplexer) {

@@ -52,9 +52,7 @@ class Rand {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
 #ifdef HAVE_RAND_R

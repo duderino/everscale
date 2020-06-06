@@ -95,11 +95,9 @@ class BufferTest : public ESTF::Component {
   ESTF::ComponentPtr clone();
 
  private:
-  void fillTest(ESTF::ResultCollector *collector, unsigned int startPosition,
-                unsigned int endPosition);
+  void fillTest(ESTF::ResultCollector *collector, unsigned int startPosition, unsigned int endPosition);
 
-  void drainTest(ESTF::ResultCollector *collector, unsigned int startPosition,
-                 unsigned int endPosition);
+  void drainTest(ESTF::ResultCollector *collector, unsigned int startPosition, unsigned int endPosition);
 
   unsigned int _capacity;
   ESTF::Rand _rand;
@@ -111,16 +109,11 @@ ESTF_OBJECT_PTR(BufferTest, ESTF::Component)
 BufferTest::BufferTest()
     : _capacity(BufferSize),
       _rand(),
-      _buffer((unsigned char *)SystemAllocator::Instance().allocate(BufferSize),
-              BufferSize) {}
+      _buffer((unsigned char *)SystemAllocator::Instance().allocate(BufferSize), BufferSize) {}
 
-BufferTest::~BufferTest() {
-  SystemAllocator::Instance().deallocate(_buffer.buffer());
-}
+BufferTest::~BufferTest() { SystemAllocator::Instance().deallocate(_buffer.buffer()); }
 
-void BufferTest::fillTest(ESTF::ResultCollector *collector,
-                          unsigned int startPosition,
-                          unsigned int endPosition) {
+void BufferTest::fillTest(ESTF::ResultCollector *collector, unsigned int startPosition, unsigned int endPosition) {
   _buffer.setWritePosition(startPosition);
 
   ESTF_ASSERT(collector, _capacity == _buffer.capacity());
@@ -153,9 +146,7 @@ void BufferTest::fillTest(ESTF::ResultCollector *collector,
   }
 }
 
-void BufferTest::drainTest(ESTF::ResultCollector *collector,
-                           unsigned int startPosition,
-                           unsigned int endPosition) {
+void BufferTest::drainTest(ESTF::ResultCollector *collector, unsigned int startPosition, unsigned int endPosition) {
   _buffer.setReadPosition(startPosition);
 
   ESTF_ASSERT(collector, _capacity == _buffer.capacity());
@@ -221,15 +212,13 @@ ESTF::ComponentPtr BufferTest::clone() {
 int main() {
   ESB::BufferTestPtr bufferTest = new ESB::BufferTest();
 
-  ESTF::ConcurrencyDecoratorPtr concurrencyDecorator =
-      new ESTF::ConcurrencyDecorator(bufferTest, 3);
+  ESTF::ConcurrencyDecoratorPtr concurrencyDecorator = new ESTF::ConcurrencyDecorator(bufferTest, 3);
 
   ESTF::CompositePtr composite = new ESTF::Composite();
 
   composite->add(concurrencyDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(composite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(composite, 3);
 
   ESTF::ResultCollector collector;
 

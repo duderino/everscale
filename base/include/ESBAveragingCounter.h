@@ -25,9 +25,7 @@ class AveragingCounter {
 
   inline double mean() const { return _mean; }
 
-  inline double variance() const {
-    return 1 >= _n ? 0.0 : _avgDistToMeanSq / (_n - 1);
-  }
+  inline double variance() const { return 1 >= _n ? 0.0 : _avgDistToMeanSq / (_n - 1); }
 
   inline double min() const { return _min; }
 
@@ -35,8 +33,7 @@ class AveragingCounter {
 
   inline UInt32 n() const { return _n; }
 
-  void log(Logger &logger, Logger::Severity severity,
-           const char *description) const;
+  void log(Logger &logger, Logger::Severity severity, const char *description) const;
 
   /** Placement new.
    *
@@ -44,9 +41,7 @@ class AveragingCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

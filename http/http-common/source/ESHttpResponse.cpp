@@ -4,8 +4,7 @@
 
 namespace ES {
 
-HttpResponse::HttpResponse()
-    : HttpMessage(), _statusCode(0), _reasonPhrase(0) {}
+HttpResponse::HttpResponse() : HttpMessage(), _statusCode(0), _reasonPhrase(0) {}
 
 HttpResponse::~HttpResponse() {}
 

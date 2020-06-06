@@ -29,8 +29,7 @@ class SynchronousDnsHttpRouter : public HttpRouter {
    * implementation with the destination IP address
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  virtual ESB::Error route(const HttpServerStream &serverStream,
-                           HttpClientTransaction &clientTransaction,
+  virtual ESB::Error route(const HttpServerStream &serverStream, HttpClientTransaction &clientTransaction,
                            ESB::SocketAddress &destination);
 
  private:

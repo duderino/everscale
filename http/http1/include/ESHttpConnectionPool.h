@@ -23,8 +23,7 @@ class HttpConnectionPool {
    * @param handler The handler
    * @return a new client transaction if successful, null otherwise
    */
-  virtual HttpClientTransaction *createClientTransaction(
-      HttpClientHandler *clientHandler) = 0;
+  virtual HttpClientTransaction *createClientTransaction(HttpClientHandler *clientHandler) = 0;
 
   /**
    * Execute the client transaction.  If this method returns ESB_SUCCESS, then
@@ -37,8 +36,7 @@ class HttpConnectionPool {
    * error code otherwise.  If error, cleanup the transaction with the
    * destroyClientTransaction method.
    */
-  virtual ESB::Error executeClientTransaction(
-      HttpClientTransaction *transaction) = 0;
+  virtual ESB::Error executeClientTransaction(HttpClientTransaction *transaction) = 0;
 
   /**
    * Cleanup the client transaction.  Note that this will not free any

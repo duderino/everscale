@@ -29,9 +29,7 @@ SimpleFileLogger::SimpleFileLogger(FILE *file) : _severity(None), _file(file) {}
 
 SimpleFileLogger::~SimpleFileLogger() {}
 
-bool SimpleFileLogger::isLoggable(Severity severity) {
-  return !(severity > _severity);
-}
+bool SimpleFileLogger::isLoggable(Severity severity) { return !(severity > _severity); }
 
 void SimpleFileLogger::setSeverity(Severity severity) { _severity = severity; }
 

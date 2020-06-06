@@ -38,9 +38,8 @@ class ClientSocket : public ESB::MultiplexedSocket {
    * @param peer The peer address to connect to
    * @param cleanupHandler An object that can be used to destroy this one
    */
-  ClientSocket(ClientSocketFactory *factory, PerformanceCounter *counter,
-               int requestsPerConnection, const ESB::SocketAddress &peer,
-               ESB::CleanupHandler *cleanupHandler);
+  ClientSocket(ClientSocketFactory *factory, PerformanceCounter *counter, int requestsPerConnection,
+               const ESB::SocketAddress &peer, ESB::CleanupHandler *cleanupHandler);
 
   /** Destructor.
    */
@@ -135,8 +134,7 @@ class ClientSocket : public ESB::MultiplexedSocket {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode,
-                                ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection was closed.
    *
@@ -191,15 +189,11 @@ class ClientSocket : public ESB::MultiplexedSocket {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator *allocator) { return allocator->allocate(size); }
 
   inline ESB::Error connect() { return _socket.connect(); }
 
-  static inline void SetReuseConnections(bool reuseConnections) {
-    _ReuseConnections = reuseConnections;
-  }
+  static inline void SetReuseConnections(bool reuseConnections) { _ReuseConnections = reuseConnections; }
 
   static inline bool GetReuseConnections() { return _ReuseConnections; }
 

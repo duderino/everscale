@@ -68,8 +68,7 @@ namespace ESB {
 #define MIN_MAX_SOCKETS 1
 #define IDLE_CHECK_SEC 30
 
-EpollMultiplexer::EpollMultiplexer(UInt32 maxSockets, Allocator &allocator,
-                                   Lockable &lock)
+EpollMultiplexer::EpollMultiplexer(UInt32 maxSockets, Allocator &allocator, Lockable &lock)
     : SocketMultiplexer(),
       _epollDescriptor(INVALID_SOCKET),
       _maxSockets(maxSockets < MIN_MAX_SOCKETS ? MIN_MAX_SOCKETS : maxSockets),
@@ -87,27 +86,23 @@ EpollMultiplexer::EpollMultiplexer(UInt32 maxSockets, Allocator &allocator,
     return;
   }
 
-  _events = (struct epoll_event *)_allocator.allocate(
-      sizeof(struct epoll_event) * _maxSockets);
+  _events = (struct epoll_event *)_allocator.allocate(sizeof(struct epoll_event) * _maxSockets);
 
   if (!_events) {
     close(_epollDescriptor);
     _epollDescriptor = INVALID_SOCKET;
-    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create %d epoll_events",
-                           _maxSockets);
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create %d epoll_events", _maxSockets);
     return;
   }
 
-  _eventCache = (struct DescriptorState *)_allocator.allocate(
-      sizeof(struct DescriptorState) * _maxSockets);
+  _eventCache = (struct DescriptorState *)_allocator.allocate(sizeof(struct DescriptorState) * _maxSockets);
 
   if (!_eventCache) {
     close(_epollDescriptor);
     _epollDescriptor = INVALID_SOCKET;
     _allocator.deallocate(_events);
     _events = NULL;
-    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
-                           "Cannot create %d DescriptorStates", _maxSockets);
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create %d DescriptorStates", _maxSockets);
     return;
   }
 
@@ -169,8 +164,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   int currentSocketCount = _currentSocketCount.inc();
 
   if (currentSocketCount > _maxSockets) {
-    ESB_LOG_ERROR("[%d] Cannot add socket: at limit of %d sockets", fd,
-                  _maxSockets);
+    ESB_LOG_ERROR("[%d] Cannot add socket: at limit of %d sockets", fd, _maxSockets);
     _currentSocketCount.dec();
     return ESB_OVERFLOW;
   }
@@ -248,8 +242,7 @@ Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
   return ESB_SUCCESS;
 }
 
-Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket,
-                                                bool removeFromList) {
+Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket, bool removeFromList) {
   if (INVALID_SOCKET == _epollDescriptor) {
     return ESB_INVALID_STATE;
   }
@@ -365,8 +358,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
   while (_isRunning->get()) {
     checkIdleSockets(isRunning);
-    numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets,
-                           EPOLL_TIMEOUT_MILLIS);
+    numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets, EPOLL_TIMEOUT_MILLIS);
 
     if (0 == numEvents) {
       // Timeout
@@ -432,8 +424,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
             }
           }
         } else {
-          ESB_LOG_WARNING("[%d] listening socket unknown event %d", fd,
-                          _events[i].events);
+          ESB_LOG_WARNING("[%d] listening socket unknown event %d", fd, _events[i].events);
         }
       }
 
@@ -492,8 +483,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
               keepInMultiplexer = false;
           }
         } else {
-          ESB_LOG_WARNING("[%d] connecting socket unknown event %d", fd,
-                          _events[i].events);
+          ESB_LOG_WARNING("[%d] connecting socket unknown event %d", fd, _events[i].events);
         }
       }
 
@@ -536,8 +526,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
             }
           }
 
-          if (keepInMultiplexer && socket->wantWrite() &&
-              (_events[i].events & EPOLLOUT)) {
+          if (keepInMultiplexer && socket->wantWrite() && (_events[i].events & EPOLLOUT)) {
             ESB_LOG_DEBUG("[%d] connected socket write event", fd);
             switch (socket->handleWritable()) {
               case ESB_SUCCESS:
@@ -564,15 +553,11 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
   return false;
 }
 
-int EpollMultiplexer::currentSockets() const {
-  return _currentSocketCount.get();
-}
+int EpollMultiplexer::currentSockets() const { return _currentSocketCount.get(); }
 
 int EpollMultiplexer::maximumSockets() const { return _maxSockets; }
 
-bool EpollMultiplexer::isRunning() const {
-  return _isRunning && _isRunning->get();
-}
+bool EpollMultiplexer::isRunning() const { return _isRunning && _isRunning->get(); }
 
 Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
   if (_lastIdleCheckSec + IDLE_CHECK_SEC < time(0)) {

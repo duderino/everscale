@@ -7,11 +7,10 @@
 #endif
 
 namespace ES {
-HttpLoadgenSeedCommand::HttpLoadgenSeedCommand(
-    ESB::UInt32 connections, ESB::UInt32 iterations,
-    ESB::SocketAddress &destination, ESB::Int32 port, const char *host,
-    const char *absPath, const char *method, const char *contentType,
-    ESB::CleanupHandler &cleanupHandler)
+HttpLoadgenSeedCommand::HttpLoadgenSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations,
+                                               ESB::SocketAddress &destination, ESB::Int32 port, const char *host,
+                                               const char *absPath, const char *method, const char *contentType,
+                                               ESB::CleanupHandler &cleanupHandler)
     : _destination(destination),
       _connections(connections),
       _iterations(iterations),
@@ -33,8 +32,8 @@ ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
     assert(transaction);
 
     // Create the request context
-    HttpLoadgenContext *context = new (ESB::SystemAllocator::Instance())
-        HttpLoadgenContext(ESB::SystemAllocator::Instance().cleanupHandler());
+    HttpLoadgenContext *context =
+        new (ESB::SystemAllocator::Instance()) HttpLoadgenContext(ESB::SystemAllocator::Instance().cleanupHandler());
     assert(context);
 
     // Build the request
@@ -51,8 +50,7 @@ ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenSeedCommand::buildRequest(
-    HttpClientTransaction *transaction) {
+ESB::Error HttpLoadgenSeedCommand::buildRequest(HttpClientTransaction *transaction) {
   HttpRequest &request = transaction->request();
   HttpRequestUri &requestUri = request.requestUri();
 
@@ -60,23 +58,20 @@ ESB::Error HttpLoadgenSeedCommand::buildRequest(
   requestUri.setAbsPath(_absPath);
   request.setMethod(_method);
 
-  ESB::Error error = request.addHeader(transaction->allocator(), "Host",
-                                       "%s:%d", _host, _destination.port());
+  ESB::Error error = request.addHeader(transaction->allocator(), "Host", "%s:%d", _host, _destination.port());
 
   if (ESB_SUCCESS != error) {
     return error;
   }
 
   if (_contentType) {
-    error = request.addHeader("Content-Type", _contentType,
-                              transaction->allocator());
+    error = request.addHeader("Content-Type", _contentType, transaction->allocator());
     if (ESB_SUCCESS != error) {
       return error;
     }
   }
 
-  error = request.addHeader("Transfer-Encoding", "chunked",
-                            transaction->allocator());
+  error = request.addHeader("Transfer-Encoding", "chunked", transaction->allocator());
 
   if (ESB_SUCCESS != error) {
     return error;

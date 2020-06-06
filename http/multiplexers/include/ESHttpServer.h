@@ -78,21 +78,16 @@ class HttpServer {
 
   void destroy();
 
-  inline const HttpServerCounters &serverCounters() const {
-    return _serverCounters;
-  }
+  inline const HttpServerCounters &serverCounters() const { return _serverCounters; }
 
   class AddListeningSocketCommand : public HttpServerCommand {
    public:
-    AddListeningSocketCommand(ESB::ListeningTCPSocket &socket,
-                              ESB::CleanupHandler &cleanupHandler)
+    AddListeningSocketCommand(ESB::ListeningTCPSocket &socket, ESB::CleanupHandler &cleanupHandler)
         : _socket(socket), _cleanupHandler(cleanupHandler) {}
 
     virtual ~AddListeningSocketCommand(){};
 
-    virtual ESB::Error run(HttpMultiplexerExtended &multiplexer) {
-      return multiplexer.addListeningSocket(_socket);
-    }
+    virtual ESB::Error run(HttpMultiplexerExtended &multiplexer) { return multiplexer.addListeningSocket(_socket); }
 
     virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
 

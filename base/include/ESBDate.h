@@ -35,8 +35,7 @@ class Date {
    *    @param microSeconds Set initial microSeconds value of this date object
    *        to microSeconds.
    */
-  inline Date(UInt32 seconds, UInt32 microSeconds)
-      : _seconds(seconds), _microSeconds(microSeconds) {}
+  inline Date(UInt32 seconds, UInt32 microSeconds) : _seconds(seconds), _microSeconds(microSeconds) {}
 
   /** Copy constructor.
    *
@@ -270,9 +269,7 @@ class Date {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   /** Get a new date object initialized to the current system time.
    *

@@ -5,16 +5,13 @@
 namespace ESTF {
 
 /** Default constructor. */
-ResultCollector::ResultCollector()
-    : _results(), _successes(0), _failures(0), _errors(0) {}
+ResultCollector::ResultCollector() : _results(), _successes(0), _failures(0), _errors(0) {}
 
 /** Destructor. */
 ResultCollector::~ResultCollector() { _results.clear(); }
 
-void ResultCollector::add(ResultType type, const char *description,
-                          const char *file, int line) {
-  Result result(type, description, file, line, Thread::GetThreadId(),
-                Date::GetSystemTime());
+void ResultCollector::add(ResultType type, const char *description, const char *file, int line) {
+  Result result(type, description, file, line, Thread::GetThreadId(), Date::GetSystemTime());
 
   _results.insert(result);
 }
@@ -25,8 +22,7 @@ void ResultCollector::add(ResultType type, const char *description,
  *    @param file The file (e.g., "my_test.cpp").
  *    @param line The line of the test (e.g., 1231).
  */
-void ResultCollector::addSuccess(const char *description, const char *file,
-                                 int line) {
+void ResultCollector::addSuccess(const char *description, const char *file, int line) {
   // add( Success, description, file, line );
   ++_successes;
 }
@@ -38,8 +34,7 @@ void ResultCollector::addSuccess(const char *description, const char *file,
  *  @param file The file (e.g., "my_test.cpp").
  *  @param line The line of the test (e.g., 1231).
  */
-void ResultCollector::addFailure(const char *description, const char *file,
-                                 int line) {
+void ResultCollector::addFailure(const char *description, const char *file, int line) {
   add(Failure, description, file, line);
   ++_failures;
 }
@@ -52,8 +47,7 @@ void ResultCollector::addFailure(const char *description, const char *file,
  *  @param file The file (e.g., "my_test.cpp").
  *  @param line The line of the test (e.g., 1231).
  */
-void ResultCollector::addError(const char *description, const char *file,
-                               int line) {
+void ResultCollector::addError(const char *description, const char *file, int line) {
   add(Error, description, file, line);
   ++_errors;
 }
@@ -110,8 +104,7 @@ std::ostream &ResultCollector::print(std::ostream &output) const {
  *  @param threadId The thread that performed the test.
  *  @param date The time the result was recorded.
  */
-ResultCollector::Result::Result(ResultType type, const char *description,
-                                const char *file, int line,
+ResultCollector::Result::Result(ResultType type, const char *description, const char *file, int line,
                                 Thread::ThreadId threadId, Date date)
     : _type(type), _file(file), _line(line), _threadId(threadId), _date(date) {
   if (!description) return;

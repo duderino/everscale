@@ -114,8 +114,7 @@ class ReferenceCountSubclass : public ReferenceCount {
   int _number;
 };
 
-ESB_SMART_POINTER(ReferenceCountSubclass, ReferenceCountSubclassPointer,
-                  SmartPointer);
+ESB_SMART_POINTER(ReferenceCountSubclass, ReferenceCountSubclassPointer, SmartPointer);
 
 SmartPointerTest::SmartPointerTest() {}
 
@@ -212,8 +211,7 @@ int main() {
   }
 
   std::cout << collector << std::endl;
-  std::cout << "Remaining ESBObject references: "
-            << ESB::SmartPointerDebugger::Instance()->size() << std::endl;
+  std::cout << "Remaining ESBObject references: " << ESB::SmartPointerDebugger::Instance()->size() << std::endl;
 
   ESB::SmartPointerDebugger::Destroy();
 

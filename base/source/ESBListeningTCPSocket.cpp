@@ -25,36 +25,22 @@
 namespace ESB {
 
 ListeningTCPSocket::ListeningTCPSocket()
-    : TCPSocket(),
-      _backlog(42),
-      _state(SocketState::CLOSED),
-      _listeningAddress() {}
+    : TCPSocket(), _backlog(42), _state(SocketState::CLOSED), _listeningAddress() {}
 
-ListeningTCPSocket::ListeningTCPSocket(UInt16 port, int backlog,
-                                       bool isBlocking)
-    : TCPSocket(isBlocking),
-      _backlog(backlog),
-      _state(SocketState::CLOSED),
-      _listeningAddress() {
+ListeningTCPSocket::ListeningTCPSocket(UInt16 port, int backlog, bool isBlocking)
+    : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress() {
   _listeningAddress.setPort(port);
   _listeningAddress.setType(SocketAddress::TCP);
 }
 
-ListeningTCPSocket::ListeningTCPSocket(const SocketAddress &address,
-                                       int backlog, bool isBlocking)
-    : TCPSocket(isBlocking),
-      _backlog(backlog),
-      _state(SocketState::CLOSED),
-      _listeningAddress(address) {}
+ListeningTCPSocket::ListeningTCPSocket(const SocketAddress &address, int backlog, bool isBlocking)
+    : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress(address) {}
 
 ListeningTCPSocket::~ListeningTCPSocket() {}
 
-ListeningTCPSocket::ListeningTCPSocket(const ListeningTCPSocket &socket) {
-  duplicate(socket);
-}
+ListeningTCPSocket::ListeningTCPSocket(const ListeningTCPSocket &socket) { duplicate(socket); }
 
-ListeningTCPSocket &ListeningTCPSocket::operator=(
-    const ListeningTCPSocket &socket) {
+ListeningTCPSocket &ListeningTCPSocket::operator=(const ListeningTCPSocket &socket) {
   duplicate(socket);
   return *this;
 }
@@ -68,15 +54,13 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 #ifdef HAVE_SO_REUSEPORT
   Error error = bind();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-bind port %u",
-                        _listeningAddress.port());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-bind port %u", _listeningAddress.port());
     return error;
   }
 
   error = listen();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-listen port %u",
-                        _listeningAddress.port());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-listen port %u", _listeningAddress.port());
     close();
     return error;
   }
@@ -86,8 +70,7 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 
   if (0 > _sockFd) {
     ESB::Error error = LastError();
-    ESB_LOG_ERROR_ERRNO(error, "Cannot duplicate listening socket on port %u",
-                        _listeningAddress.port());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot duplicate listening socket on port %u", _listeningAddress.port());
     _sockFd = INVALID_SOCKET;
     return error;
   }
@@ -95,8 +78,7 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 #error "dup() or equivalent is required"
 #endif
 
-  ESB_LOG_NOTICE("Duplicated listening socket on port %u with fd %d",
-                 _listeningAddress.port(), _sockFd);
+  ESB_LOG_NOTICE("Duplicated listening socket on port %u with fd %d", _listeningAddress.port(), _sockFd);
 
   return ESB_SUCCESS;
 }
@@ -125,15 +107,13 @@ Error ListeningTCPSocket::bind() {
 
 #ifdef HAVE_SETSOCKOPT
   int value = 1;
-  if (SOCKET_ERROR ==
-      setsockopt(_sockFd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value))) {
+  if (SOCKET_ERROR == setsockopt(_sockFd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value))) {
     close();
     return LastError();
   }
 #ifdef HAVE_SO_REUSEPORT
   value = 1;
-  if (SOCKET_ERROR ==
-      setsockopt(_sockFd, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value))) {
+  if (SOCKET_ERROR == setsockopt(_sockFd, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value))) {
     close();
     return LastError();
   }
@@ -143,9 +123,8 @@ Error ListeningTCPSocket::bind() {
 #endif
 
 #if defined HAVE_BIND && defined HAVE_STRUCT_SOCKADDR
-  if (SOCKET_ERROR == ::bind(_sockFd,
-                             (sockaddr *)_listeningAddress.primitiveAddress(),
-                             sizeof(SocketAddress::Address))) {
+  if (SOCKET_ERROR ==
+      ::bind(_sockFd, (sockaddr *)_listeningAddress.primitiveAddress(), sizeof(SocketAddress::Address))) {
     close();
     return LastError();
   }
@@ -235,9 +214,7 @@ Error ListeningTCPSocket::accept(State *data) {
 
 #if defined HAVE_ACCEPT && defined HAVE_STRUCT_SOCKADDR
   addressSize = sizeof(SocketAddress::Address);
-  data->setSocketDescriptor(
-      ::accept(_sockFd, (sockaddr *)data->peerAddress().primitiveAddress(),
-               &addressSize));
+  data->setSocketDescriptor(::accept(_sockFd, (sockaddr *)data->peerAddress().primitiveAddress(), &addressSize));
 #else
 #error "accept and sockaddr or equivalent is required."
 #endif
@@ -262,9 +239,7 @@ Error ListeningTCPSocket::accept(State *data) {
   return ESB_SUCCESS;
 }
 
-const SocketAddress &ListeningTCPSocket::listeningAddress() const {
-  return _listeningAddress;
-}
+const SocketAddress &ListeningTCPSocket::listeningAddress() const { return _listeningAddress; }
 
 const char *ListeningTCPSocket::logAddress() const {
   if (!_logAddress[0]) {

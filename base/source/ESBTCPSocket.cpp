@@ -36,10 +36,8 @@ TCPSocket::State::State()
       _peerAddress(),
       _cleanupHandler(NULL) {}
 
-TCPSocket::State::State(bool isBlocking, SOCKET sockFd,
-                        const SocketAddress &listeningAddress,
-                        const SocketAddress &peerAddress,
-                        CleanupHandler *cleanupHandler)
+TCPSocket::State::State(bool isBlocking, SOCKET sockFd, const SocketAddress &listeningAddress,
+                        const SocketAddress &peerAddress, CleanupHandler *cleanupHandler)
     : EmbeddedMapElement(),
       _isBlocking(isBlocking),
       _socketDescriptor(sockFd),
@@ -72,11 +70,9 @@ const void *TCPSocket::State::key() const { return &_peerAddress; }
 
 TCPSocket::TCPSocket() : _isBlocking(false), _sockFd(INVALID_SOCKET) {}
 
-TCPSocket::TCPSocket(bool isBlocking)
-    : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
+TCPSocket::TCPSocket(bool isBlocking) : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
-TCPSocket::TCPSocket(const State &state)
-    : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
+TCPSocket::TCPSocket(const State &state) : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
 
 TCPSocket::~TCPSocket() { close(); }
 
@@ -115,8 +111,7 @@ Error TCPSocket::setBlocking(bool isBlocking) {
     return GetLastError();
   }
 
-  if (((false == isBlocking) && (O_NONBLOCK & value)) ||
-      ((true == isBlocking) && (!(O_NONBLOCK & value)))) {
+  if (((false == isBlocking) && (O_NONBLOCK & value)) || ((true == isBlocking) && (!(O_NONBLOCK & value)))) {
     return ESB_SUCCESS;
   }
 
@@ -210,8 +205,7 @@ Error TCPSocket::LastSocketError(SOCKET socket) {
 
 #if defined HAVE_GETSOCKOPT
 
-  if (SOCKET_ERROR ==
-      getsockopt(socket, SOL_SOCKET, SO_ERROR, (char *)&error, &socketLength)) {
+  if (SOCKET_ERROR == getsockopt(socket, SOL_SOCKET, SO_ERROR, (char *)&error, &socketLength)) {
     return LastError();
   }
 

@@ -17,8 +17,7 @@ namespace ES {
 #define ES_FORMATTING_HTTP_VERSION (1 << 2)
 #define ES_FORMAT_COMPLETE (1 << 3)
 
-HttpRequestFormatter::HttpRequestFormatter()
-    : _requestState(0x00), _requestUriFormatter() {}
+HttpRequestFormatter::HttpRequestFormatter() : _requestState(0x00), _requestUriFormatter() {}
 
 HttpRequestFormatter::~HttpRequestFormatter() {}
 
@@ -29,8 +28,7 @@ void HttpRequestFormatter::reset() {
   _requestUriFormatter.reset();
 }
 
-ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
-                                                 const HttpMessage &message) {
+ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer, const HttpMessage &message) {
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
 
   if (ES_FORMAT_COMPLETE & _requestState) {
@@ -52,8 +50,7 @@ ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    HttpUtil::Transition(&_requestState, outputBuffer, ES_FORMATTING_METHOD,
-                         ES_FORMATTING_REQUEST_URI);
+    HttpUtil::Transition(&_requestState, outputBuffer, ES_FORMATTING_METHOD, ES_FORMATTING_REQUEST_URI);
   }
 
   if (ES_FORMATTING_REQUEST_URI & _requestState) {
@@ -63,8 +60,7 @@ ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    HttpUtil::Transition(&_requestState, outputBuffer,
-                         ES_FORMATTING_REQUEST_URI, ES_FORMATTING_HTTP_VERSION);
+    HttpUtil::Transition(&_requestState, outputBuffer, ES_FORMATTING_REQUEST_URI, ES_FORMATTING_HTTP_VERSION);
   }
 
   if (ES_FORMATTING_HTTP_VERSION & _requestState) {
@@ -74,15 +70,13 @@ ESB::Error HttpRequestFormatter::formatStartLine(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    return HttpUtil::Transition(&_requestState, outputBuffer,
-                                ES_FORMATTING_HTTP_VERSION, ES_FORMAT_COMPLETE);
+    return HttpUtil::Transition(&_requestState, outputBuffer, ES_FORMATTING_HTTP_VERSION, ES_FORMAT_COMPLETE);
   }
 
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpRequestFormatter::formatMethod(ESB::Buffer *outputBuffer,
-                                              const HttpRequest &request) {
+ESB::Error HttpRequestFormatter::formatMethod(ESB::Buffer *outputBuffer, const HttpRequest &request) {
   // Method                = "OPTIONS"                ; Section 9.2
   //                       | "GET"                    ; Section 9.3
   //                       | "HEAD"                   ; Section 9.4

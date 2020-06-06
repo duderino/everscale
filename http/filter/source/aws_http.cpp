@@ -17,14 +17,10 @@
 
 static int aws_error_to_errno(ESFError error);
 
-aws_http_stack aws_http_stack_create(aws_http_server *server,
-                                     aws_http_server_config *server_config,
-                                     aws_http_log_level log_level,
-                                     void *log_context,
-                                     aws_http_logger logger) {
+aws_http_stack aws_http_stack_create(aws_http_server *server, aws_http_server_config *server_config,
+                                     aws_http_log_level log_level, void *log_context, aws_http_logger logger) {
   // TODO make sure http stack can be used with NULL server arguments
-  AWSHttpApi *api =
-      new AWSHttpApi(server, server_config, log_level, log_context, logger);
+  AWSHttpApi *api = new AWSHttpApi(server, server_config, log_level, log_context, logger);
 
   if (0 == api) {
     errno = ENOMEM;
@@ -104,8 +100,7 @@ int aws_http_stack_destroy(aws_http_stack stack) {
   return 0;
 }
 
-void aws_http_stack_set_log_level(aws_http_stack stack,
-                                  aws_http_log_level log_level) {
+void aws_http_stack_set_log_level(aws_http_stack stack, aws_http_log_level log_level) {
   if (!stack) {
     errno = EFAULT;
     return -1;
@@ -133,11 +128,8 @@ aws_http_request aws_http_stack_create_request(aws_http_stack stack) {
   return (aws_http_request)request;
 }
 
-int aws_http_stack_send_request(aws_http_stack stack,
-                                const struct sockaddr_in *address,
-                                aws_http_request request, void *client_context,
-                                aws_http_client *client,
-                                aws_http_client_config *client_config) {
+int aws_http_stack_send_request(aws_http_stack stack, const struct sockaddr_in *address, aws_http_request request,
+                                void *client_context, aws_http_client *client, aws_http_client_config *client_config) {
   if (!stack || !request || !client || !client_config) {
     errno = EFAULT;
     return -1;
@@ -171,8 +163,7 @@ int aws_http_stack_send_request(aws_http_stack stack,
   return 0;
 }
 
-void aws_http_stack_destroy_request(aws_http_stack stack,
-                                    aws_http_request request) {
+void aws_http_stack_destroy_request(aws_http_stack stack, aws_http_request request) {
   if (!stack || !request) {
     return;
   }
@@ -180,8 +171,7 @@ void aws_http_stack_destroy_request(aws_http_stack stack,
   ((AWSHttpApi *)stack)->destroyRequest((AWSHttpRequest *)request);
 }
 
-const unsigned char *aws_http_header_get_field_name(
-    aws_http_stack stack, const aws_http_header header) {
+const unsigned char *aws_http_header_get_field_name(aws_http_stack stack, const aws_http_header header) {
   if (!header) {
     errno = EFAULT;
     return 0;
@@ -190,113 +180,72 @@ const unsigned char *aws_http_header_get_field_name(
   return ((AWSHttpHeader *)header)->getFieldName();
 }
 
-extern int aws_http_header_set_field_name(aws_http_stack stack,
-                                          aws_http_header header,
+extern int aws_http_header_set_field_name(aws_http_stack stack, aws_http_header header,
                                           const unsigned char *field_name);
-extern const unsigned char *aws_http_header_get_field_value(
-    aws_http_stack stack, aws_http_header header);
-extern int aws_http_header_set_field_value(aws_http_stack stack,
-                                           aws_http_header header,
+extern const unsigned char *aws_http_header_get_field_value(aws_http_stack stack, aws_http_header header);
+extern int aws_http_header_set_field_value(aws_http_stack stack, aws_http_header header,
                                            const unsigned char *field_value);
 
-extern aws_http_header aws_http_message_get_first_header(
-    aws_http_stack stack, aws_http_message message);
-extern aws_http_header aws_http_message_get_next_header(
-    aws_http_stack stack, aws_http_message message, aws_http_header header);
-extern int aws_http_message_has_next_header(aws_http_stack stack,
-                                            aws_http_message message,
-                                            aws_http_header header);
-extern int aws_http_message_add_header(aws_http_stack stack,
-                                       aws_http_message message,
-                                       const unsigned char *field_name,
+extern aws_http_header aws_http_message_get_first_header(aws_http_stack stack, aws_http_message message);
+extern aws_http_header aws_http_message_get_next_header(aws_http_stack stack, aws_http_message message,
+                                                        aws_http_header header);
+extern int aws_http_message_has_next_header(aws_http_stack stack, aws_http_message message, aws_http_header header);
+extern int aws_http_message_add_header(aws_http_stack stack, aws_http_message message, const unsigned char *field_name,
                                        const unsigned char *field_value);
-extern float aws_http_message_get_version(aws_http_stack stack,
-                                          aws_http_message message);
-extern int aws_http_message_set_version(aws_http_connection connection,
-                                        aws_http_message message,
-                                        float version);
-extern void aws_http_message_set_has_body(aws_http_connection connection,
-                                          aws_http_message message,
-                                          int has_body);
-extern int aws_http_message_has_body(aws_http_connection connection,
-                                     aws_http_message message);
+extern float aws_http_message_get_version(aws_http_stack stack, aws_http_message message);
+extern int aws_http_message_set_version(aws_http_connection connection, aws_http_message message, float version);
+extern void aws_http_message_set_has_body(aws_http_connection connection, aws_http_message message, int has_body);
+extern int aws_http_message_has_body(aws_http_connection connection, aws_http_message message);
 
-extern void aws_http_request_reset(aws_http_connection connection,
-                                   aws_http_request request);
-extern const unsigned char *aws_http_request_get_method(
-    aws_http_connection connection, aws_http_request request);
-extern int aws_http_request_set_method(aws_http_connection connection,
-                                       aws_http_request request,
+extern void aws_http_request_reset(aws_http_connection connection, aws_http_request request);
+extern const unsigned char *aws_http_request_get_method(aws_http_connection connection, aws_http_request request);
+extern int aws_http_request_set_method(aws_http_connection connection, aws_http_request request,
                                        const unsigned char *method);
-extern aws_http_request_uri *aws_http_request_get_request_uri(
-    aws_http_connection connection, aws_http_request request);
+extern aws_http_request_uri *aws_http_request_get_request_uri(aws_http_connection connection, aws_http_request request);
 
-extern void aws_http_response_reset(aws_http_connection connection,
-                                    aws_http_response response);
-extern int aws_http_response_set_status_code(aws_http_connection connection,
-                                             aws_http_response response,
+extern void aws_http_response_reset(aws_http_connection connection, aws_http_response response);
+extern int aws_http_response_set_status_code(aws_http_connection connection, aws_http_response response,
                                              int status_code);
-extern int aws_http_response_get_status_code(aws_http_connection connection,
-                                             aws_http_response response);
-extern int aws_http_response_set_reason_phrase(
-    aws_http_connection connection, aws_http_response response,
-    const unsigned char *reason_phrase);
-extern const unsigned char *aws_http_response_get_reason_phrase(
-    aws_http_connection connection, aws_http_response response);
+extern int aws_http_response_get_status_code(aws_http_connection connection, aws_http_response response);
+extern int aws_http_response_set_reason_phrase(aws_http_connection connection, aws_http_response response,
+                                               const unsigned char *reason_phrase);
+extern const unsigned char *aws_http_response_get_reason_phrase(aws_http_connection connection,
+                                                                aws_http_response response);
 
-extern void aws_http_request_uri_reset(aws_http_connection connection,
-                                       aws_http_request_uri request_uri);
-extern void aws_http_request_uri_set_is_secure(aws_http_connection connection,
-                                               int is_secure);
-extern int aws_http_request_uri_is_secure(aws_http_connection connection,
-                                          aws_http_request_uri request_uri);
-extern const unsigned char *aws_http_request_uri_get_abs_path(
-    aws_http_connection connection, aws_http_request_uri request_uri);
-extern int aws_http_request_uri_set_abs_path(aws_http_connection connection,
-                                             aws_http_request_uri request_uri,
+extern void aws_http_request_uri_reset(aws_http_connection connection, aws_http_request_uri request_uri);
+extern void aws_http_request_uri_set_is_secure(aws_http_connection connection, int is_secure);
+extern int aws_http_request_uri_is_secure(aws_http_connection connection, aws_http_request_uri request_uri);
+extern const unsigned char *aws_http_request_uri_get_abs_path(aws_http_connection connection,
+                                                              aws_http_request_uri request_uri);
+extern int aws_http_request_uri_set_abs_path(aws_http_connection connection, aws_http_request_uri request_uri,
                                              const unsigned char *abs_path);
-extern const unsigned char *aws_http_request_uri_get_query(
-    aws_http_connection connection, aws_http_request_uri request_uri);
-extern int aws_http_request_uri_set_query(aws_http_connection connection,
-                                          aws_http_request_uri request_uri,
+extern const unsigned char *aws_http_request_uri_get_query(aws_http_connection connection,
+                                                           aws_http_request_uri request_uri);
+extern int aws_http_request_uri_set_query(aws_http_connection connection, aws_http_request_uri request_uri,
                                           const unsigned char *query);
-extern const unsigned char *aws_http_request_uri_get_host(
-    aws_http_connection connection, aws_http_request_uri request_uri);
-extern int aws_http_request_uri_set_host(aws_http_connection connection,
-                                         aws_http_request_uri request_uri,
+extern const unsigned char *aws_http_request_uri_get_host(aws_http_connection connection,
+                                                          aws_http_request_uri request_uri);
+extern int aws_http_request_uri_set_host(aws_http_connection connection, aws_http_request_uri request_uri,
                                          const unsigned char *host);
-extern int aws_http_request_uri_get_port(aws_http_connection connection,
-                                         aws_http_request_uri request_uri);
-extern int aws_http_request_uri_set_port(aws_http_connection connection,
-                                         aws_http_request_uri request_uri,
-                                         int port);
-extern const unsigned char *aws_http_request_uri_get_fragment(
-    aws_http_connection connection, aws_http_request_uri request_uri);
-extern int aws_http_request_uri_set_fragment(aws_http_connection connection,
-                                             aws_http_request_uri request_uri,
+extern int aws_http_request_uri_get_port(aws_http_connection connection, aws_http_request_uri request_uri);
+extern int aws_http_request_uri_set_port(aws_http_connection connection, aws_http_request_uri request_uri, int port);
+extern const unsigned char *aws_http_request_uri_get_fragment(aws_http_connection connection,
+                                                              aws_http_request_uri request_uri);
+extern int aws_http_request_uri_set_fragment(aws_http_connection connection, aws_http_request_uri request_uri,
                                              const unsigned char *fragment);
-extern int aws_http_request_uri_compare(
-    const aws_http_request_uri left_request_uri,
-    const aws_http_request_uri right_request_uri);
+extern int aws_http_request_uri_compare(const aws_http_request_uri left_request_uri,
+                                        const aws_http_request_uri right_request_uri);
 
-extern aws_http_allocator aws_http_connection_get_allocator(
-    aws_http_connection connection);
+extern aws_http_allocator aws_http_connection_get_allocator(aws_http_connection connection);
 extern int aws_http_connection_is_secure(const aws_http_connection connection);
-extern int aws_http_connection_get_remote_port(
-    const aws_http_connection connection);
-extern struct in_addr aws_http_connection_get_remote_address(
-    const aws_http_connection connection);
-extern int aws_http_connection_get_local_port(
-    const aws_http_connection connection);
-extern struct in_addr aws_http_connection_get_local_address(
-    const aws_http_connection connection);
-extern aws_http_stack aws_http_connection_get_http_stack(
-    const aws_http_connection connection);
+extern int aws_http_connection_get_remote_port(const aws_http_connection connection);
+extern struct in_addr aws_http_connection_get_remote_address(const aws_http_connection connection);
+extern int aws_http_connection_get_local_port(const aws_http_connection connection);
+extern struct in_addr aws_http_connection_get_local_address(const aws_http_connection connection);
+extern aws_http_stack aws_http_connection_get_http_stack(const aws_http_connection connection);
 
-extern void *aws_http_allocator_allocate(aws_http_allocator allocator,
-                                         size_t size);
-extern void aws_http_allocator_deallocate(aws_http_allocator allocator,
-                                          void *block);
+extern void *aws_http_allocator_allocate(aws_http_allocator allocator, size_t size);
+extern void aws_http_allocator_deallocate(aws_http_allocator allocator, void *block);
 
 static int aws_error_to_errno(ESFError error) {
   switch (error) {

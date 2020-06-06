@@ -25,7 +25,7 @@ endif ()
 if (CLANG_FORMAT)
     FILE(GLOB_RECURSE FORMAT_FILES . *.cpp *.h)
     add_custom_target(format
-            COMMAND ${CLANG_FORMAT} -i --style=Google ${FORMAT_FILES}
+            COMMAND ${CLANG_FORMAT} -i --style=\"{BasedOnStyle: Google, ColumnLimit: 120}\" ${FORMAT_FILES}
             )
 endif ()
 

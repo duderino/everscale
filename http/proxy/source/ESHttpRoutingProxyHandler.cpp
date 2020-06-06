@@ -8,24 +8,19 @@
 
 namespace ES {
 
-HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router)
-    : _router(router) {}
+HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router) : _router(router) {}
 
 HttpRoutingProxyHandler::~HttpRoutingProxyHandler() {}
 
-ESB::Error HttpRoutingProxyHandler::acceptConnection(
-    HttpMultiplexer &multiplexer, ESB::SocketAddress *address) {
+ESB::Error HttpRoutingProxyHandler::acceptConnection(HttpMultiplexer &multiplexer, ESB::SocketAddress *address) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::beginTransaction(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream) {
-  HttpRoutingProxyContext *context =
-      new (stream.allocator()) HttpRoutingProxyContext();
+ESB::Error HttpRoutingProxyHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpServerStream &stream) {
+  HttpRoutingProxyContext *context = new (stream.allocator()) HttpRoutingProxyContext();
 
   if (!context) {
-    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create proxy context",
-                          stream.logAddress());
+    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create proxy context", stream.logAddress());
     return ESB_OUT_OF_MEMORY;
   }
 
@@ -36,52 +31,42 @@ ESB::Error HttpRoutingProxyHandler::beginTransaction(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
-    HttpMultiplexer &multiplexer, HttpServerStream &serverStream) {
-  HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)serverStream.context();
+ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multiplexer,
+                                                          HttpServerStream &serverStream) {
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
   assert(context);
 
   // TODO validate headers
 
-  HttpClientTransaction *clientTransaction =
-      multiplexer.createClientTransaction();
+  HttpClientTransaction *clientTransaction = multiplexer.createClientTransaction();
 
   if (!clientTransaction) {
-    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY,
-                          "[%s] Cannot create client transaction",
-                          serverStream.logAddress());
+    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create client transaction", serverStream.logAddress());
     return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
   ESB::SocketAddress destination;
-  ESB::Error error =
-      _router.route(serverStream, *clientTransaction, destination);
+  ESB::Error error = _router.route(serverStream, *clientTransaction, destination);
 
   if (ESB_SUCCESS != error) {
     switch (error) {
       case ESB_CANNOT_FIND:
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot route request",
-                            serverStream.logAddress());
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot route request", serverStream.logAddress());
         return serverStream.sendEmptyResponse(404, "Not Found");
       case ESB_NOT_OWNER:
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot route request",
-                            serverStream.logAddress());
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot route request", serverStream.logAddress());
         return serverStream.sendEmptyResponse(403, "Forbidden");
       default:
-        ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot route request",
-                              serverStream.logAddress());
+        ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot route request", serverStream.logAddress());
         return serverStream.sendEmptyResponse(500, "Internal Server Error");
     }
   }
 
-  error = clientTransaction->request().copy(&serverStream.request(),
-                                            clientTransaction->allocator());
+  error = clientTransaction->request().copy(&serverStream.request(), clientTransaction->allocator());
 
   if (ESB_SUCCESS != error) {
     multiplexer.destroyClientTransaction(clientTransaction);
-    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot populate client transaction",
-                          serverStream.logAddress());
+    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot populate client transaction", serverStream.logAddress());
     return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
@@ -92,8 +77,7 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
 
   if (ESB_SUCCESS != error) {
     multiplexer.destroyClientTransaction(clientTransaction);
-    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot execute client transaction",
-                          serverStream.logAddress());
+    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot execute client transaction", serverStream.logAddress());
     return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
@@ -102,12 +86,10 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::consumeRequestBody(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    unsigned const char *chunk, ESB::UInt32 chunkSize,
-    ESB::UInt32 *bytesConsumed) {
-  HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)stream.context();
+ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                                       unsigned const char *chunk, ESB::UInt32 chunkSize,
+                                                       ESB::UInt32 *bytesConsumed) {
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)stream.context();
   assert(context);
 
   switch (context->state()) {
@@ -139,26 +121,22 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::offerResponseBody(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpRoutingProxyHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                                      ESB::UInt32 *bytesAvailable) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::produceResponseBody(
-    HttpMultiplexer &multiplexer, HttpServerStream &stream,
-    unsigned char *chunk, ESB::UInt32 bytesRequested) {
+ESB::Error HttpRoutingProxyHandler::produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                                        unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
   assert(stream.context());
   return ESB_NOT_IMPLEMENTED;
 }
 
-void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer,
-                                             HttpServerStream &stream,
+void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &stream,
                                              HttpServerHandler::State state) {
-  HttpRoutingProxyContext *context =
-      (HttpRoutingProxyContext *)stream.context();
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)stream.context();
   assert(context);
   ESB::Allocator &allocator = stream.allocator();
 
@@ -189,38 +167,31 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer,
   }
 }
 
-ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
+ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   // TODO unpause or close server stream.  if not paused, just write?
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::offerRequestBody(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpRoutingProxyHandler::offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                                     ESB::UInt32 *bytesAvailable) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::produceRequestBody(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    unsigned char *chunk, ESB::UInt32 bytesRequested) {
+ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                                       unsigned char *chunk, ESB::UInt32 bytesRequested) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-ESB::Error HttpRoutingProxyHandler::consumeResponseBody(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream,
-    const unsigned char *chunk, ESB::UInt32 chunkSize,
-    ESB::UInt32 *bytesConsumed) {
+ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                                        const unsigned char *chunk, ESB::UInt32 chunkSize,
+                                                        ESB::UInt32 *bytesConsumed) {
   return ESB_NOT_IMPLEMENTED;
 }
 
-void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer,
-                                             HttpClientStream &stream,
+void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                              HttpClientHandler::State state) {}
 
-ESB::Error HttpRoutingProxyHandler::sendResponse(HttpServerStream &stream,
-                                                 int statusCode,
-                                                 const char *reasonPhrase) {
+ESB::Error HttpRoutingProxyHandler::sendResponse(HttpServerStream &stream, int statusCode, const char *reasonPhrase) {
   stream.response().setStatusCode(500);
   stream.response().setReasonPhrase("Internal Server Error");
   return ESB_SEND_RESPONSE;

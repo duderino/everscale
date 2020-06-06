@@ -110,8 +110,7 @@ class LockableTest : public ESTF::Component {
 
 ESTF_OBJECT_PTR(LockableTest, ESTF::Component)
 
-LockableTest::LockableTest(Lockable &lockable)
-    : ESTF::Component(), _lock(lockable), _counter1(0), _counter2(0) {}
+LockableTest::LockableTest(Lockable &lockable) : ESTF::Component(), _lock(lockable), _counter1(0), _counter2(0) {}
 
 LockableTest::~LockableTest() {}
 
@@ -199,12 +198,9 @@ int main() {
   ESB::LockableTestPtr lockTest = new ESB::LockableTest(rwLock);
   ESB::LockableTestPtr semaphoreTest = new ESB::LockableTest(countingSemaphore);
 
-  ESTF::ConcurrencyDecoratorPtr mutexDecorator =
-      new ESTF::ConcurrencyDecorator(mutexTest, 10);
-  ESTF::ConcurrencyDecoratorPtr lockDecorator =
-      new ESTF::ConcurrencyDecorator(lockTest, 10);
-  ESTF::ConcurrencyDecoratorPtr semaphoreDecorator =
-      new ESTF::ConcurrencyDecorator(semaphoreTest, 10);
+  ESTF::ConcurrencyDecoratorPtr mutexDecorator = new ESTF::ConcurrencyDecorator(mutexTest, 10);
+  ESTF::ConcurrencyDecoratorPtr lockDecorator = new ESTF::ConcurrencyDecorator(lockTest, 10);
+  ESTF::ConcurrencyDecoratorPtr semaphoreDecorator = new ESTF::ConcurrencyDecorator(semaphoreTest, 10);
 
   ESTF::CompositePtr testSuite = new ESTF::Composite();
 
@@ -212,8 +208,7 @@ int main() {
   testSuite->add(lockDecorator);
   testSuite->add(semaphoreDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

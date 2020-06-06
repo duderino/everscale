@@ -19,8 +19,7 @@ namespace ESB {
 SharedEmbeddedMap::Callbacks::Callbacks() {}
 SharedEmbeddedMap::Callbacks::~Callbacks() {}
 
-SharedEmbeddedMap::SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets,
-                                     UInt32 numLocks, Allocator &allocator)
+SharedEmbeddedMap::SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets, UInt32 numLocks, Allocator &allocator)
     : _numElements(),
       _numBuckets(numBuckets),
       _numLocks(ESB_MIN(numBuckets, numLocks)),
@@ -28,8 +27,7 @@ SharedEmbeddedMap::SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets,
       _buckets(NULL),
       _locks(NULL),
       _allocator(allocator) {
-  _buckets =
-      (EmbeddedList *)_allocator.allocate(numBuckets * sizeof(EmbeddedList));
+  _buckets = (EmbeddedList *)_allocator.allocate(numBuckets * sizeof(EmbeddedList));
   if (!_buckets) {
     return;
   }
@@ -74,8 +72,7 @@ void SharedEmbeddedMap::clear() {
   for (UInt32 i = 0; i < _numBuckets; ++i) {
     WriteScopeLock lock(bucketLock(i));
     while (true) {
-      EmbeddedMapElement *element =
-          (EmbeddedMapElement *)_buckets[i].removeFirst();
+      EmbeddedMapElement *element = (EmbeddedMapElement *)_buckets[i].removeFirst();
       if (!element) {
         break;
       }
@@ -162,8 +159,7 @@ bool SharedEmbeddedMap::validate(double *chiSquared) const {
     }
     if (chiSquared) {
       double actualLength = _buckets[i].size();
-      sum += (actualLength - expectedLength) * (actualLength - expectedLength) /
-             expectedLength;
+      sum += (actualLength - expectedLength) * (actualLength - expectedLength) / expectedLength;
     }
   }
 

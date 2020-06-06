@@ -38,11 +38,9 @@ double Rand::generate() {
 
 int Rand::generate(int lowerBound, int upperBound) {
 #if defined HAVE_RAND_R && defined HAVE_RAND_MAX
-  return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) /
-                            (RAND_MAX + 1.0));
+  return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) / (RAND_MAX + 1.0));
 #elif defined HAVE_RAND && defined HAVE_RAND_MAX
-  return lowerBound +
-         (int)((upperBound - lowerBound + 1.0) * rand() / (RAND_MAX + 1.0));
+  return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand() / (RAND_MAX + 1.0));
 #else
 #error "rand_r and RAND_MAX or equivalent is required"
 #endif

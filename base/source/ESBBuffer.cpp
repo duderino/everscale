@@ -17,12 +17,7 @@
 namespace ESB {
 
 Buffer::Buffer(unsigned char *buffer, UInt32 capacity)
-    : _readMark(0),
-      _writeMark(0),
-      _readPosition(0),
-      _writePosition(0),
-      _capacity(capacity),
-      _buffer(buffer) {}
+    : _readMark(0), _writeMark(0), _readPosition(0), _writePosition(0), _capacity(capacity), _buffer(buffer) {}
 
 Buffer::~Buffer() {}
 
@@ -33,15 +28,13 @@ Buffer *Buffer::Create(Allocator &allocator, unsigned int capacity) {
     return NULL;
   }
 
-  unsigned char *block = (unsigned char *)allocator.allocate(
-      capacity * sizeof(unsigned char) + ESB_BUFFER_OVERHEAD);
+  unsigned char *block = (unsigned char *)allocator.allocate(capacity * sizeof(unsigned char) + ESB_BUFFER_OVERHEAD);
 
   if (!block) {
     return NULL;
   }
 
-  return new (block)
-      Buffer(block + ESB_BUFFER_OVERHEAD, capacity * sizeof(unsigned char));
+  return new (block) Buffer(block + ESB_BUFFER_OVERHEAD, capacity * sizeof(unsigned char));
 }
 
 void Buffer::Destroy(Allocator &allocator, Buffer *buffer) {
@@ -60,8 +53,7 @@ unsigned char *Buffer::duplicate(Allocator &allocator, bool trim) const {
 
   if (trim) {
     for (int i = length - 1; i >= 0; --i) {
-      if (' ' == _buffer[i] || '\t' == _buffer[i] || '\n' == _buffer[i] ||
-          '\r' == _buffer[i]) {
+      if (' ' == _buffer[i] || '\t' == _buffer[i] || '\n' == _buffer[i] || '\r' == _buffer[i]) {
         --length;
         continue;
       }
@@ -86,8 +78,7 @@ unsigned char *Buffer::duplicate(Allocator &allocator, bool trim) const {
 }
 
 bool Buffer::match(const unsigned char *str) const {
-  return 0 == strncmp((const char *)_buffer + _readPosition, (const char *)str,
-                      _writePosition - _readPosition);
+  return 0 == strncmp((const char *)_buffer + _readPosition, (const char *)str, _writePosition - _readPosition);
 }
 
 bool Buffer::compact() {

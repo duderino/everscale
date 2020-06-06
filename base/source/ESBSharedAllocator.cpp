@@ -39,8 +39,6 @@ Error SharedAllocator::deallocate(void *block) {
   return error;
 }
 
-CleanupHandler &SharedAllocator::cleanupHandler() {
-  return _sharedCleanupHandler;
-}
+CleanupHandler &SharedAllocator::cleanupHandler() { return _sharedCleanupHandler; }
 
 }  // namespace ESB

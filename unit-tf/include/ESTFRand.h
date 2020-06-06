@@ -50,8 +50,7 @@ class Rand {
    */
   inline int generateRandom(int lowerBound, int upperBound) {
 #if defined HAVE_RAND_R && defined HAVE_RAND_MAX
-    return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) /
-                              (RAND_MAX + 1.0));
+    return lowerBound + (int)((upperBound - lowerBound + 1.0) * rand_r(&_seed) / (RAND_MAX + 1.0));
 #else
 #error "A random number generator is required"
 #endif

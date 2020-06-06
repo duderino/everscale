@@ -56,8 +56,7 @@ class SocketMultiplexer : public Command {
    *
    * @param socket The multiplexed socket to remove
    */
-  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket,
-                                        bool removeFromList = true) = 0;
+  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket, bool removeFromList = true) = 0;
 
   /** Get the number of sockets this multiplexer is currently handling.
    *

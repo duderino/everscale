@@ -17,26 +17,16 @@ class HttpOriginHandler : public HttpServerHandler {
   // ES::HttpServerHandler
   //
 
-  virtual ESB::Error acceptConnection(HttpMultiplexer &stack,
-                                      ESB::SocketAddress *address);
-  virtual ESB::Error beginTransaction(HttpMultiplexer &stack,
-                                      HttpServerStream &stream);
-  virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack,
-                                           HttpServerStream &stream);
-  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
-                                        HttpServerStream &stream,
-                                        unsigned const char *chunk,
-                                        ESB::UInt32 chunkSize,
-                                        ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer,
-                                       HttpServerStream &stream,
+  virtual ESB::Error acceptConnection(HttpMultiplexer &stack, ESB::SocketAddress *address);
+  virtual ESB::Error beginTransaction(HttpMultiplexer &stack, HttpServerStream &stream);
+  virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack, HttpServerStream &stream);
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                        unsigned const char *chunk, ESB::UInt32 chunkSize, ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
                                        ESB::UInt32 *bytesAvailable);
-  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer,
-                                         HttpServerStream &stream,
-                                         unsigned char *chunk,
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream, unsigned char *chunk,
                                          ESB::UInt32 bytesRequested);
-  virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
-                              State state);
+  virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state);
 
  private:
   // Disabled

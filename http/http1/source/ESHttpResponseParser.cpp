@@ -17,8 +17,7 @@ namespace ES {
 #define ES_PARSING_REASON_PHRASE (1 << 2)
 #define ES_PARSE_COMPLETE (1 << 3)
 
-HttpResponseParser::HttpResponseParser(ESB::Buffer *workingBuffer,
-                                       ESB::DiscardAllocator &allocator)
+HttpResponseParser::HttpResponseParser(ESB::Buffer *workingBuffer, ESB::DiscardAllocator &allocator)
     : HttpMessageParser(workingBuffer, allocator), _responseState(0x00) {}
 
 HttpResponseParser::~HttpResponseParser() {}
@@ -29,8 +28,7 @@ void HttpResponseParser::reset() {
   _responseState = 0x00;
 }
 
-ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
-                                              HttpMessage &message) {
+ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer, HttpMessage &message) {
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
 
   if (ES_PARSE_COMPLETE & _responseState) {
@@ -95,8 +93,7 @@ ESB::Error HttpResponseParser::parseStartLine(ESB::Buffer *inputBuffer,
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
-                                               HttpResponse &response) {
+ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer, HttpResponse &response) {
   // Status-Code    = 3DIGIT
 
   assert(ES_PARSING_STATUS_CODE & _responseState);
@@ -138,8 +135,7 @@ ESB::Error HttpResponseParser::parseStatusCode(ESB::Buffer *inputBuffer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
-                                                 HttpResponse &response) {
+ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer, HttpResponse &response) {
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
 
   assert(ES_PARSING_REASON_PHRASE & _responseState);
@@ -169,8 +165,7 @@ ESB::Error HttpResponseParser::parseReasonPhrase(ESB::Buffer *inputBuffer,
           // newline encountered - save reason phrase
 
           {
-            unsigned char *reasonPhrase = _workingBuffer->duplicate(
-                _allocator, true);  // trims trailing whitespace
+            unsigned char *reasonPhrase = _workingBuffer->duplicate(_allocator, true);  // trims trailing whitespace
 
             if (!reasonPhrase) {
               return ESB_OUT_OF_MEMORY;

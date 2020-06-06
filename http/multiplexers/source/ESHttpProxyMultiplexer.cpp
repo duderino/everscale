@@ -10,94 +10,76 @@ namespace ES {
 
 class HttpNullClientHandler : public HttpClientHandler {
  public:
-  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                            HttpClientStream &stream) {
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                       ESB::UInt32 *bytesAvailable) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
-                                        HttpClientStream &stream,
-                                        unsigned char *chunk,
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream, unsigned char *chunk,
                                         ESB::UInt32 bytesRequested) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
-                                         HttpClientStream &stream,
-                                         const unsigned char *chunk,
-                                         ESB::UInt32 chunkSize,
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                         const unsigned char *chunk, ESB::UInt32 chunkSize,
                                          ESB::UInt32 *bytesConsumed) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
-                                HttpClientStream &stream) {
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual void endTransaction(HttpMultiplexer &multiplexer,
-                              HttpClientStream &stream, State state) {
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state) {
     assert(0 == "HttpNullClientHandler called");
   }
 };
 
 class HttpNullServerHandler : public HttpServerHandler {
  public:
-  virtual ESB::Error acceptConnection(HttpMultiplexer &stack,
-                                      ESB::SocketAddress *address) {
+  virtual ESB::Error acceptConnection(HttpMultiplexer &stack, ESB::SocketAddress *address) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error beginTransaction(HttpMultiplexer &stack,
-                                      HttpServerStream &stream) {
+  virtual ESB::Error beginTransaction(HttpMultiplexer &stack, HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack,
-                                           HttpServerStream &stream) {
+  virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack, HttpServerStream &stream) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer,
-                                        HttpServerStream &stream,
-                                        unsigned const char *chunk,
-                                        ESB::UInt32 chunkSize,
-                                        ESB::UInt32 *bytesConsumed) {
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                        unsigned const char *chunk, ESB::UInt32 chunkSize, ESB::UInt32 *bytesConsumed) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer,
-                                       HttpServerStream &stream,
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
                                        ESB::UInt32 *bytesAvailable) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer,
-                                         HttpServerStream &stream,
-                                         unsigned char *chunk,
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream, unsigned char *chunk,
                                          ESB::UInt32 bytesRequested) {
     assert(0 == "HttpNullServerHandler called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream,
-                              State state) {
+  virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
     assert(0 == "HttpNullServerHandler called");
   }
 };
@@ -250,8 +232,7 @@ class HttpNullServerCounters : public HttpServerCounters {
     assert(0 == "HttpNullServerCounters called");
     return NULL;
   }
-  virtual const ESB::SharedAveragingCounter *
-  getAverageTransactionsPerConnection() const {
+  virtual const ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() const {
     assert(0 == "HttpNullServerCounters called");
     return NULL;
   }
@@ -262,27 +243,19 @@ static HttpNullServerHandler HttpNullServerHandler;
 static HttpNullClientCounters HttpNullClientCounters;
 static HttpNullServerCounters HttpNullServerCounters;
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets,
-                                           HttpClientHandler &clientHandler,
-                                           HttpServerHandler &serverHandler,
-                                           HttpClientCounters &clientCounters,
+HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
+                                           HttpServerHandler &serverHandler, HttpClientCounters &clientCounters,
                                            HttpServerCounters &serverCounters)
-    : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
+    : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
-                    ESB::NullLock::Instance(), _ioBufferPoolAllocator),
-      _factoryAllocator(
-          ESB_PAGE_SIZE * 1000 -
-              ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
-          ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
+      _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
+                        ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, serverHandler, serverCounters,
-                           _factoryAllocator),
+      _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(*this),
-      _clientSocketFactory(*this, clientHandler, clientCounters,
-                           _factoryAllocator),
+      _clientSocketFactory(*this, clientHandler, clientCounters, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientCommandSocket(*this),
       _clientHandler(clientHandler),
@@ -290,25 +263,18 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets,
       _clientCounters(clientCounters),
       _serverCounters(serverCounters) {}
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets,
-                                           HttpClientHandler &clientHandler,
+HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
                                            HttpClientCounters &clientCounters)
-    : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
+    : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
-                    ESB::NullLock::Instance(), _ioBufferPoolAllocator),
-      _factoryAllocator(
-          ESB_PAGE_SIZE * 1000 -
-              ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
-          ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
+      _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
+                        ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, HttpNullServerHandler, HttpNullServerCounters,
-                           _factoryAllocator),
+      _serverSocketFactory(*this, HttpNullServerHandler, HttpNullServerCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(*this),
-      _clientSocketFactory(*this, clientHandler, clientCounters,
-                           _factoryAllocator),
+      _clientSocketFactory(*this, clientHandler, clientCounters, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientCommandSocket(*this),
       _clientHandler(clientHandler),
@@ -316,25 +282,18 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets,
       _clientCounters(clientCounters),
       _serverCounters(HttpNullServerCounters) {}
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets,
-                                           HttpServerHandler &serverHandler,
+HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpServerHandler &serverHandler,
                                            HttpServerCounters &serverCounters)
-    : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(),
-                             ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
+    : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
-      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0,
-                    ESB::NullLock::Instance(), _ioBufferPoolAllocator),
-      _factoryAllocator(
-          ESB_PAGE_SIZE * 1000 -
-              ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
-          ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
+      _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
+      _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
+                        ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, serverHandler, serverCounters,
-                           _factoryAllocator),
+      _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(*this),
-      _clientSocketFactory(*this, HttpNullClientHandler, HttpNullClientCounters,
-                           _factoryAllocator),
+      _clientSocketFactory(*this, HttpNullClientHandler, HttpNullClientCounters, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientCommandSocket(*this),
       _clientHandler(HttpNullClientHandler),
@@ -344,32 +303,23 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets,
 
 HttpProxyMultiplexer::~HttpProxyMultiplexer() {}
 
-ESB::Error HttpProxyMultiplexer::addMultiplexedSocket(
-    ESB::MultiplexedSocket *multiplexedSocket) {
+ESB::Error HttpProxyMultiplexer::addMultiplexedSocket(ESB::MultiplexedSocket *multiplexedSocket) {
   return _multiplexer.addMultiplexedSocket(multiplexedSocket);
 }
 
-ESB::Error HttpProxyMultiplexer::updateMultiplexedSocket(
-    ESB::MultiplexedSocket *socket) {
+ESB::Error HttpProxyMultiplexer::updateMultiplexedSocket(ESB::MultiplexedSocket *socket) {
   return _multiplexer.updateMultiplexedSocket(socket);
 }
 
-ESB::Error HttpProxyMultiplexer::removeMultiplexedSocket(
-    ESB::MultiplexedSocket *socket, bool removeFromList) {
+ESB::Error HttpProxyMultiplexer::removeMultiplexedSocket(ESB::MultiplexedSocket *socket, bool removeFromList) {
   return _multiplexer.removeMultiplexedSocket(socket, removeFromList);
 }
 
-int HttpProxyMultiplexer::currentSockets() const {
-  return _multiplexer.currentSockets();
-}
+int HttpProxyMultiplexer::currentSockets() const { return _multiplexer.currentSockets(); }
 
-int HttpProxyMultiplexer::maximumSockets() const {
-  return _multiplexer.maximumSockets();
-}
+int HttpProxyMultiplexer::maximumSockets() const { return _multiplexer.maximumSockets(); }
 
-bool HttpProxyMultiplexer::isRunning() const {
-  return _multiplexer.isRunning();
-}
+bool HttpProxyMultiplexer::isRunning() const { return _multiplexer.isRunning(); }
 
 bool HttpProxyMultiplexer::run(ESB::SharedInt *isRunning) {
   ESB::Error error = _multiplexer.addMultiplexedSocket(&_clientCommandSocket);
@@ -393,27 +343,19 @@ const char *HttpProxyMultiplexer::name() const { return _multiplexer.name(); }
 
 ESB::CleanupHandler *HttpProxyMultiplexer::cleanupHandler() { return NULL; }
 
-HttpClientTransaction *HttpProxyMultiplexer::createClientTransaction() {
-  return _clientTransactionFactory.create();
-}
+HttpClientTransaction *HttpProxyMultiplexer::createClientTransaction() { return _clientTransactionFactory.create(); }
 
-ESB::Error HttpProxyMultiplexer::executeClientTransaction(
-    HttpClientTransaction *transaction) {
+ESB::Error HttpProxyMultiplexer::executeClientTransaction(HttpClientTransaction *transaction) {
   return _clientSocketFactory.executeClientTransaction(transaction);
 }
 
-void HttpProxyMultiplexer::destroyClientTransaction(
-    HttpClientTransaction *transaction) {
+void HttpProxyMultiplexer::destroyClientTransaction(HttpClientTransaction *transaction) {
   return _clientTransactionFactory.release(transaction);
 }
 
-ESB::Buffer *HttpProxyMultiplexer::acquireBuffer() {
-  return _ioBufferPool.acquireBuffer();
-}
+ESB::Buffer *HttpProxyMultiplexer::acquireBuffer() { return _ioBufferPool.acquireBuffer(); }
 
-void HttpProxyMultiplexer::releaseBuffer(ESB::Buffer *buffer) {
-  _ioBufferPool.releaseBuffer(buffer);
-}
+void HttpProxyMultiplexer::releaseBuffer(ESB::Buffer *buffer) { _ioBufferPool.releaseBuffer(buffer); }
 
 ESB::Error HttpProxyMultiplexer::addServerSocket(ESB::TCPSocket::State &state) {
   HttpServerSocket *socket = _serverSocketFactory.create(state);
@@ -432,22 +374,19 @@ ESB::Error HttpProxyMultiplexer::addServerSocket(ESB::TCPSocket::State &state) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpProxyMultiplexer::addListeningSocket(
-    ESB::ListeningTCPSocket &socket) {
-  HttpListeningSocket *listener = new (_factoryAllocator) HttpListeningSocket(
-      *this, _serverHandler, _factoryAllocator.cleanupHandler());
+ESB::Error HttpProxyMultiplexer::addListeningSocket(ESB::ListeningTCPSocket &socket) {
+  HttpListeningSocket *listener =
+      new (_factoryAllocator) HttpListeningSocket(*this, _serverHandler, _factoryAllocator.cleanupHandler());
 
   if (!listener) {
-    ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create listener on %s",
-                        socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create listener on %s", socket.logAddress());
     return ESB_OUT_OF_MEMORY;
   }
 
   ESB::Error error = listener->initialize(socket);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize listener on %s",
-                        socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize listener on %s", socket.logAddress());
     _factoryAllocator.cleanupHandler().destroy(listener);
     return error;
   }
@@ -455,8 +394,7 @@ ESB::Error HttpProxyMultiplexer::addListeningSocket(
   error = _multiplexer.addMultiplexedSocket(listener);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot add listener on %s to multiplexer",
-                        socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot add listener on %s to multiplexer", socket.logAddress());
     _factoryAllocator.cleanupHandler().destroy(listener);
     return error;
   }
@@ -464,22 +402,15 @@ ESB::Error HttpProxyMultiplexer::addListeningSocket(
   return ESB_SUCCESS;
 }
 
-HttpServerCounters &HttpProxyMultiplexer::serverCounters() {
-  return _serverCounters;
-}
+HttpServerCounters &HttpProxyMultiplexer::serverCounters() { return _serverCounters; }
 
-HttpServerTransaction *HttpProxyMultiplexer::createServerTransaction() {
-  return _serverTransactionFactory.create();
-}
+HttpServerTransaction *HttpProxyMultiplexer::createServerTransaction() { return _serverTransactionFactory.create(); }
 
-void HttpProxyMultiplexer::destroyServerTransaction(
-    HttpServerTransaction *transaction) {
+void HttpProxyMultiplexer::destroyServerTransaction(HttpServerTransaction *transaction) {
   _serverTransactionFactory.release(transaction);
 }
 
-ESB::SocketMultiplexer &HttpProxyMultiplexer::multiplexer() {
-  return _multiplexer;
-}
+ESB::SocketMultiplexer &HttpProxyMultiplexer::multiplexer() { return _multiplexer; }
 
 bool HttpProxyMultiplexer::shutdown() { return !_multiplexer.isRunning(); }
 

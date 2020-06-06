@@ -46,8 +46,7 @@ class ThreadPool {
    * @param allocator Worker threads will be allocated with this
    *  allocator.
    */
-  ThreadPool(const char *name, UInt32 threads,
-             Allocator &allocator = SystemAllocator::Instance());
+  ThreadPool(const char *name, UInt32 threads, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -81,9 +80,7 @@ class ThreadPool {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   //  Disabled

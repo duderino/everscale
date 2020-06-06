@@ -11,8 +11,7 @@ CountingSemaphore::CountingSemaphore() : _magic(0) {
     _magic = ESB_MAGIC;
   }
 
-#elif defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && \
-    defined HAVE_PTHREAD_MUTEX_DESTROY
+#elif defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && defined HAVE_PTHREAD_MUTEX_DESTROY
 
   _semaphore._count = 0;
 
@@ -88,8 +87,7 @@ Error CountingSemaphore::writeAcquire() {
 
   return ESB_SUCCESS;
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
   Error error;
 
@@ -100,8 +98,7 @@ Error CountingSemaphore::writeAcquire() {
   }
 
   while (1 > _semaphore._count) {
-    error =
-        ConvertError(pthread_cond_wait(&_semaphore._cond, &_semaphore._mutex));
+    error = ConvertError(pthread_cond_wait(&_semaphore._cond, &_semaphore._mutex));
 
     if (ESB_SUCCESS != error && ESB_INTR != error) {
       return error;
@@ -146,8 +143,7 @@ Error CountingSemaphore::writeAttempt() {
   // GetLastError will map EAGAIN to ESB_AGAIN
   return LastError();
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
   Error error;
 
@@ -200,8 +196,7 @@ Error CountingSemaphore::writeRelease() {
 
   return LastError();
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_SIGNAL
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_SIGNAL
 
   Error error;
 

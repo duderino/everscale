@@ -71,10 +71,8 @@ class DiscardAllocator : public Allocator {
    *  @see GetOverhead To determine how much extra memory the allocator
    *      will request from the source allocator for each chunk.
    */
-  DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize = sizeof(Word),
-                   UInt16 multipleOf = 1,
-                   Allocator &source = SystemAllocator::Instance(),
-                   bool forcePool = false);
+  DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize = sizeof(Word), UInt16 multipleOf = 1,
+                   Allocator &source = SystemAllocator::Instance(), bool forcePool = false);
 
   /** Destructor.  Any memory still used by the allocator will be return to
    *  the source allocator at this point.
@@ -125,13 +123,9 @@ class DiscardAllocator : public Allocator {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
-  static inline ESB::UInt32 SizeofChunk(ESB::UInt32 alignmentSize) {
-    return ESB_ALIGN(sizeof(Chunk), alignmentSize);
-  }
+  static inline ESB::UInt32 SizeofChunk(ESB::UInt32 alignmentSize) { return ESB_ALIGN(sizeof(Chunk), alignmentSize); }
 
  private:
   //  Disabled

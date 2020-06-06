@@ -35,14 +35,11 @@ namespace ES {
  *
  * TODO implement idle check
  */
-class HttpServerSocket : public ESB::MultiplexedSocket,
-                         public HttpServerStream {
+class HttpServerSocket : public ESB::MultiplexedSocket, public HttpServerStream {
  public:
   /** Constructor
    */
-  HttpServerSocket(HttpServerHandler &handler,
-                   HttpMultiplexerExtended &multiplexer,
-                   HttpServerCounters &counters,
+  HttpServerSocket(HttpServerHandler &handler, HttpMultiplexerExtended &multiplexer, HttpServerCounters &counters,
                    ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
@@ -63,9 +60,7 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   //
   // ESB::MultiplexedSocket
@@ -135,17 +130,11 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   // ES::HttpServerStream
   //
 
-  virtual ESB::Error sendEmptyResponse(int statusCode,
-                                       const char *reasonPhrase);
+  virtual ESB::Error sendEmptyResponse(int statusCode, const char *reasonPhrase);
 
-  virtual ESB::Error sendResponseBody(unsigned const char *chunk,
-                                      ESB::UInt32 bytesOffered,
-                                      ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable,
-                                          ESB::UInt32 *bufferOffset);
-  virtual ESB::Error readRequestBody(unsigned char *chunk,
-                                     ESB::UInt32 bytesRequested,
-                                     ESB::UInt32 bufferOffset);
+  virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
+  virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset);
 
  private:
   // Disabled
@@ -157,11 +146,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket,
   ESB::Error skipTrailer();
   ESB::Error formatResponseHeaders();
   ESB::Error formatResponseBody();
-  ESB::Error formatResponseBody(unsigned const char *chunk,
-                                ESB::UInt32 bytesOffered,
-                                ESB::UInt32 *bytesConsumed);
-  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable,
-                                        ESB::UInt32 *bufferOffset);
+  ESB::Error formatResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
+  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
   ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);
   ESB::Error formatEndChunk();
   ESB::Error formatEndBody();

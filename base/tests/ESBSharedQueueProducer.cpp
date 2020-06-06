@@ -12,8 +12,7 @@
 
 namespace ESB {
 
-SharedQueueProducer::SharedQueueProducer(int id, SharedQueue &queue,
-                                         UInt32 items)
+SharedQueueProducer::SharedQueueProducer(int id, SharedQueue &queue, UInt32 items)
     : _id(id), _items(items), _queue(queue) {}
 
 SharedQueueProducer::~SharedQueueProducer() {}

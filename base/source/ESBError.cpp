@@ -139,16 +139,14 @@ void DescribeError(Error error, char *buffer, int size) {
 
     TCHAR formatBuffer[64];
 
-    if (0 == FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0,
-                           formatBuffer, 64, 0)) {
+    if (0 == FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0, formatBuffer, 64, 0)) {
       return;
     }
 
 #else
 #error "strerror or equivalent is required"
 #endif
-  } else if (((int)(sizeof(ErrorDescriptions) / sizeof(char *))) >
-             (-1 * error)) {
+  } else if (((int)(sizeof(ErrorDescriptions) / sizeof(char *))) > (-1 * error)) {
     int i = 0;
 
     for (int j = -1 * error; i < (size - 1) && ErrorDescriptions[j][i]; ++i) {

@@ -13,12 +13,9 @@ class SystemDnsClient : public DnsClient {
 
   virtual ~SystemDnsClient();
 
-  virtual Error resolve(SocketAddress &address, const unsigned char *hostname,
-                        UInt16 port = 0, bool isSecure = false);
+  virtual Error resolve(SocketAddress &address, const unsigned char *hostname, UInt16 port = 0, bool isSecure = false);
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

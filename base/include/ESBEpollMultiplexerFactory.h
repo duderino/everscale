@@ -29,8 +29,7 @@ class EpollMultiplexerFactory : public SocketMultiplexerFactory {
    * @param allocator epoll socket multiplexers will be allocated using this
    * allocator.
    */
-  EpollMultiplexerFactory(const char *name,
-                          Allocator &allocator = SystemAllocator::Instance());
+  EpollMultiplexerFactory(const char *name, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -56,9 +55,7 @@ class EpollMultiplexerFactory : public SocketMultiplexerFactory {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   //  Disabled

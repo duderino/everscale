@@ -27,8 +27,7 @@ class HttpRequestParser : public HttpMessageParser {
    * @param allocator The discard allocator to use for allocating internal
    * strings.
    */
-  HttpRequestParser(ESB::Buffer *workingBuffer,
-                    ESB::DiscardAllocator &allocator);
+  HttpRequestParser(ESB::Buffer *workingBuffer, ESB::DiscardAllocator &allocator);
 
   virtual ~HttpRequestParser();
 
@@ -39,8 +38,7 @@ class HttpRequestParser : public HttpMessageParser {
 
  protected:
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
-  virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer,
-                                    HttpMessage &message);
+  virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer, HttpMessage &message);
 
   virtual bool isBodyNotAllowed(HttpMessage &message);
 

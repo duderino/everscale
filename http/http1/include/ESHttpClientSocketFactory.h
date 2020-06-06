@@ -42,10 +42,8 @@ class HttpClientSocketFactory {
   /** Constructor
    *
    */
-  HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer,
-                          HttpClientHandler &handler,
-                          HttpClientCounters &counters,
-                          ESB::Allocator &allocator);
+  HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
+                          HttpClientCounters &counters, ESB::Allocator &allocator);
 
   /** Destructor.
    */

@@ -7,9 +7,7 @@
 using namespace ESB;
 
 struct StringComparator : public Comparator {
-  int compare(const void *first, const void *second) const {
-    return strcmp((const char *)first, (const char *)second);
-  }
+  int compare(const void *first, const void *second) const { return strcmp((const char *)first, (const char *)second); }
 };
 
 static StringComparator StringComparator;

@@ -4,14 +4,12 @@
 
 namespace ES {
 
-HttpServerTransactionFactory::HttpServerTransactionFactory(
-    ESB::Allocator &allocator)
+HttpServerTransactionFactory::HttpServerTransactionFactory(ESB::Allocator &allocator)
     : _allocator(allocator), _embeddedList(), _cleanupHandler(*this) {}
 
 HttpServerTransactionFactory::~HttpServerTransactionFactory() {
   while (true) {
-    HttpServerTransaction *transaction =
-        (HttpServerTransaction *)_embeddedList.removeFirst();
+    HttpServerTransaction *transaction = (HttpServerTransaction *)_embeddedList.removeFirst();
     if (!transaction) {
       break;
     }
@@ -21,8 +19,7 @@ HttpServerTransactionFactory::~HttpServerTransactionFactory() {
 }
 
 HttpServerTransaction *HttpServerTransactionFactory::create() {
-  HttpServerTransaction *transaction =
-      (HttpServerTransaction *)_embeddedList.removeLast();
+  HttpServerTransaction *transaction = (HttpServerTransaction *)_embeddedList.removeLast();
 
   if (!transaction) {
     transaction = new (_allocator) HttpServerTransaction(_cleanupHandler);
@@ -40,14 +37,12 @@ void HttpServerTransactionFactory::release(HttpServerTransaction *transaction) {
   _embeddedList.addLast(transaction);
 }
 
-HttpServerTransactionFactory::CleanupHandler::CleanupHandler(
-    HttpServerTransactionFactory &factory)
+HttpServerTransactionFactory::CleanupHandler::CleanupHandler(HttpServerTransactionFactory &factory)
     : ESB::CleanupHandler(), _factory(factory) {}
 
 HttpServerTransactionFactory::CleanupHandler::~CleanupHandler() {}
 
-void HttpServerTransactionFactory::CleanupHandler::destroy(
-    ESB::Object *object) {
+void HttpServerTransactionFactory::CleanupHandler::destroy(ESB::Object *object) {
   _factory.release((HttpServerTransaction *)object);
 }
 

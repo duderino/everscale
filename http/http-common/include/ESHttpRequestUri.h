@@ -89,9 +89,7 @@ class HttpRequestUri {
    *
    * @param absPath The Request-URI's abs-path
    */
-  inline void setAbsPath(const char *absPath) {
-    _absPath = (const unsigned char *)absPath;
-  }
+  inline void setAbsPath(const char *absPath) { _absPath = (const unsigned char *)absPath; }
 
   /**
    * Get the Request-URI's query string if set.  Example:
@@ -114,9 +112,7 @@ class HttpRequestUri {
    *
    * @param query The Request-URI's query string
    */
-  inline void setQuery(const char *query) {
-    _query = (const unsigned char *)query;
-  }
+  inline void setQuery(const char *query) { _query = (const unsigned char *)query; }
 
   /**
    * Get the Request-URI's host.
@@ -169,18 +165,14 @@ class HttpRequestUri {
    *
    * @param fragment The Request-URI's fragement.  Caller controls memory.
    */
-  inline void setFragment(const unsigned char *fragment) {
-    _fragment = fragment;
-  }
+  inline void setFragment(const unsigned char *fragment) { _fragment = fragment; }
 
   /**
    * Set the Request-URI's fragment (anchor)
    *
    * @param fragment The Request-URI's fragement.  Caller controls memory.
    */
-  inline void setFragment(const char *fragment) {
-    _fragment = (const unsigned char *)fragment;
-  }
+  inline void setFragment(const char *fragment) { _fragment = (const unsigned char *)fragment; }
 
   /**
    * Get the raw form of a non-http, non-https uri.

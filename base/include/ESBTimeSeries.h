@@ -56,9 +56,7 @@ class TimeSeries : public PerformanceCounter {
 
   virtual void log(Logger &logger, Logger::Severity severity) const;
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

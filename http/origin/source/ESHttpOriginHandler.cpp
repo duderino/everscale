@@ -29,20 +29,16 @@ HttpOriginHandler::HttpOriginHandler() {}
 
 HttpOriginHandler::~HttpOriginHandler() {}
 
-ESB::Error HttpOriginHandler::acceptConnection(HttpMultiplexer &stack,
-                                               ESB::SocketAddress *address) {
+ESB::Error HttpOriginHandler::acceptConnection(HttpMultiplexer &stack, ESB::SocketAddress *address) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::beginTransaction(HttpMultiplexer &stack,
-                                               HttpServerStream &stream) {
+ESB::Error HttpOriginHandler::beginTransaction(HttpMultiplexer &stack, HttpServerStream &stream) {
   ESB::Allocator &allocator = stream.allocator();
   HttpOriginContext *context = new (allocator) HttpOriginContext();
 
   if (!context) {
-    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY,
-                          "[%s] Cannot allocate new transaction",
-                          stream.logAddress());
+    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot allocate new transaction", stream.logAddress());
     return ESB_OUT_OF_MEMORY;
   }
 
@@ -51,15 +47,12 @@ ESB::Error HttpOriginHandler::beginTransaction(HttpMultiplexer &stack,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack,
-                                                    HttpServerStream &stream) {
+ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack, HttpServerStream &stream) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer,
-                                                 HttpServerStream &stream,
-                                                 unsigned const char *chunk,
-                                                 ESB::UInt32 chunkSize,
+ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                                 unsigned const char *chunk, ESB::UInt32 chunkSize,
                                                  ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
@@ -76,8 +69,7 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer,
-                                                HttpServerStream &stream,
+ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
                                                 ESB::UInt32 *bytesAvailable) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
@@ -85,10 +77,8 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer,
-                                                  HttpServerStream &stream,
-                                                  unsigned char *chunk,
-                                                  ESB::UInt32 bytesRequested) {
+ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                                  unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
@@ -96,17 +86,14 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer,
   assert(bytesRequested <= BodySize - context->getBytesSent());
 
   ESB::UInt32 totalBytesRemaining = BodySize - context->getBytesSent();
-  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining
-                                ? totalBytesRemaining
-                                : bytesRequested;
+  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
 
   memcpy(chunk, ((unsigned char *)BODY) + context->getBytesSent(), bytesToSend);
   context->addBytesSent(bytesToSend);
   return ESB_SUCCESS;
 }
 
-void HttpOriginHandler::endTransaction(HttpMultiplexer &stack,
-                                       HttpServerStream &stream, State state) {
+void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   ESB::Allocator &allocator = stream.allocator();

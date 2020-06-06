@@ -32,14 +32,11 @@ namespace ESB {
  */
 class MapNode {
  public:
-  MapNode(MapNode *parent, MapNode *left, MapNode *right, bool isBlack,
-          const void *key, void *value);
+  MapNode(MapNode *parent, MapNode *left, MapNode *right, bool isBlack, const void *key, void *value);
 
   ~MapNode();
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   MapNode *_parent;
   MapNode *_left;
@@ -278,9 +275,7 @@ class Map : public Lockable {
    *  @param allocator The source of the object's memory.
    *  @return memory for the object, or NULL if it couldn't be allocated.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled
@@ -348,9 +343,7 @@ class MapIterator {
    *
    *  @return true if there is, false otherwise.
    */
-  inline bool hasNext() {
-    return _node ? (NULL != Map::findSuccessor(_node)->_key) : false;
-  }
+  inline bool hasNext() { return _node ? (NULL != Map::findSuccessor(_node)->_key) : false; }
 
   /** Pre-increment operator.  O(lg n).  Point this iterator at the next
    *  key/value pair in the map.  If there is no next key/value pair, the
@@ -421,9 +414,7 @@ class MapIterator {
    *
    *  @return true if there is, false otherwise.
    */
-  inline bool hasPrevious() {
-    return _node ? (NULL != Map::findPredecessor(_node)->_key) : false;
-  }
+  inline bool hasPrevious() { return _node ? (NULL != Map::findPredecessor(_node)->_key) : false; }
 
   /** Get an iterator for the key/value pair before the key/value pair
    *  pointed to by this iterator.  O(lg n).  If there is no previous
@@ -482,9 +473,7 @@ class MapIterator {
    *  @return true if both iterators point to the same key/value pair or if
    *      both iterators are null (do not point to any key/value pair).
    */
-  inline bool operator==(const MapIterator &iterator) {
-    return _node == iterator._node;
-  }
+  inline bool operator==(const MapIterator &iterator) { return _node == iterator._node; }
 
   /** Placement new.
    *
@@ -492,9 +481,7 @@ class MapIterator {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator *allocator) {
-    return allocator->allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator *allocator) { return allocator->allocate(size); }
 
  private:
   /** Constructor.

@@ -31,8 +31,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
    * @param windowStart the start time of the counter's window
    * @param windowStop The stop time of the counter's window
    */
-  SimplePerformanceCounter(const char *name, const Date &windowStart,
-                           const Date &windowStop);
+  SimplePerformanceCounter(const char *name, const Date &windowStart, const Date &windowStop);
 
   virtual ~SimplePerformanceCounter();
 
@@ -64,14 +63,9 @@ class SimplePerformanceCounter : public PerformanceCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
-  inline void *operator new(size_t size,
-                            SimplePerformanceCounter *counter) noexcept {
-    return counter;
-  }
+  inline void *operator new(size_t size, SimplePerformanceCounter *counter) noexcept { return counter; }
 
  private:
   // Disabled

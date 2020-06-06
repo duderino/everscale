@@ -71,8 +71,7 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(const SocketAddress &address, int backlog,
-                     bool isBlocking = false);
+  ListeningTCPSocket(const SocketAddress &address, int backlog, bool isBlocking = false);
 
   /**
    * Duplicate an existing bound and listening socket by creating a new file
@@ -142,9 +141,7 @@ class ListeningTCPSocket : public TCPSocket {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // disabled

@@ -14,9 +14,7 @@ SystemDnsClient::SystemDnsClient() : DnsClient() {}
 
 SystemDnsClient::~SystemDnsClient() {}
 
-Error SystemDnsClient::resolve(SocketAddress &address,
-                               const unsigned char *hostname, UInt16 port,
-                               bool isSecure) {
+Error SystemDnsClient::resolve(SocketAddress &address, const unsigned char *hostname, UInt16 port, bool isSecure) {
   if (0 == hostname) {
     return ESB_NULL_POINTER;
   }
@@ -47,29 +45,25 @@ Error SystemDnsClient::resolve(SocketAddress &address,
 
   memset(&hostEntry, 0, sizeof(hostEntry));
 
-  if (0 != gethostbyname_r((const char *)hostname, &hostEntry, buffer,
-                           sizeof(buffer), &result, &hostErrno)) {
+  if (0 != gethostbyname_r((const char *)hostname, &hostEntry, buffer, sizeof(buffer), &result, &hostErrno)) {
     switch (hostErrno) {
       case HOST_NOT_FOUND:
       case NO_ADDRESS:
         ESB_LOG_DEBUG_ERRNO(hostErrno, "Cannot resolve hostname %s", hostname);
         return ESB_CANNOT_FIND;
       case TRY_AGAIN:
-        ESB_LOG_DEBUG_ERRNO(hostErrno, "Temporary error resolving hostname %s",
-                            hostname);
+        ESB_LOG_DEBUG_ERRNO(hostErrno, "Temporary error resolving hostname %s", hostname);
         return ESB_AGAIN;
       case NO_RECOVERY:
       default:
-        ESB_LOG_DEBUG_ERRNO(hostErrno, "Permanent error resolving hostname %s",
-                            hostname);
+        ESB_LOG_DEBUG_ERRNO(hostErrno, "Permanent error resolving hostname %s", hostname);
         return ESB_OTHER_ERROR;
     }
   }
 
   memset(address.primitiveAddress(), 0, sizeof(SocketAddress::Address));
 
-  memcpy(&address.primitiveAddress()->sin_addr, hostEntry.h_addr_list[0],
-         sizeof(address.primitiveAddress()->sin_addr));
+  memcpy(&address.primitiveAddress()->sin_addr, hostEntry.h_addr_list[0], sizeof(address.primitiveAddress()->sin_addr));
   address.primitiveAddress()->sin_family = AF_INET;
   address.primitiveAddress()->sin_port = htons(port);
 

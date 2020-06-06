@@ -70,7 +70,6 @@ int SmartPointerDebugger::size() {
   return size;
 }
 
-SmartPointerDebugger::SmartPointerDebugger()
-    : _references(AddressComparator, SmartPointerDebuggerMutex) {}
+SmartPointerDebugger::SmartPointerDebugger() : _references(AddressComparator, SmartPointerDebuggerMutex) {}
 
 }  // namespace ESB

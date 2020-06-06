@@ -135,9 +135,7 @@ class ObjectPtr {
    *    @return true if both smart pointers point to the same object, false
    *        otherwise.
    */
-  inline bool operator==(const ObjectPtr &smartPtr) const {
-    return _ptr == smartPtr._ptr;
-  }
+  inline bool operator==(const ObjectPtr &smartPtr) const { return _ptr == smartPtr._ptr; }
 
  protected:
   Object *_ptr;

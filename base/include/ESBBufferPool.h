@@ -37,8 +37,7 @@ class BufferPool {
    * @param allocator The allocator to use to allocate buffers.  Defaults to
    * malloc.
    */
-  BufferPool(UInt32 bufferSize, UInt32 maxBuffers = 0,
-             Lockable &lock = NullLock::Instance(),
+  BufferPool(UInt32 bufferSize, UInt32 maxBuffers = 0, Lockable &lock = NullLock::Instance(),
              Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
@@ -67,9 +66,7 @@ class BufferPool {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

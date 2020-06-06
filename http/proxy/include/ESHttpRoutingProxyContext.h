@@ -17,12 +17,7 @@ namespace ES {
 
 class HttpRoutingProxyContext {
  public:
-  enum class State {
-    SERVER_REQUEST_WAIT = 0,
-    CLIENT_RESPONSE_WAIT = 1,
-    STREAMING = 2,
-    FINISHED = 3
-  };
+  enum class State { SERVER_REQUEST_WAIT = 0, CLIENT_RESPONSE_WAIT = 1, STREAMING = 2, FINISHED = 3 };
 
   HttpRoutingProxyContext();
 
@@ -48,13 +43,9 @@ class HttpRoutingProxyContext {
     _state = state;
   }
 
-  inline void setServerStream(HttpServerStream *serverStream) {
-    _serverStream = serverStream;
-  }
+  inline void setServerStream(HttpServerStream *serverStream) { _serverStream = serverStream; }
 
-  inline void setClientStream(HttpClientStream *clientStream) {
-    _clientStream = clientStream;
-  }
+  inline void setClientStream(HttpClientStream *clientStream) { _clientStream = clientStream; }
 
   /** Placement new.
    *
@@ -62,9 +53,7 @@ class HttpRoutingProxyContext {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

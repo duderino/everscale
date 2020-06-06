@@ -24,8 +24,7 @@ class HttpServerCounters {
 
   virtual ~HttpServerCounters();
 
-  virtual void log(ESB::Logger &logger,
-                   ESB::Logger::Severity severity) const = 0;
+  virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const = 0;
 
   virtual ESB::PerformanceCounter *getSuccessfulTransactions() = 0;
 
@@ -83,11 +82,9 @@ class HttpServerCounters {
 
   virtual const ESB::SharedInt *getTotalConnections() const = 0;
 
-  virtual ESB::SharedAveragingCounter *
-  getAverageTransactionsPerConnection() = 0;
+  virtual ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() = 0;
 
-  virtual const ESB::SharedAveragingCounter *
-  getAverageTransactionsPerConnection() const = 0;
+  virtual const ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() const = 0;
 
  private:
   // Disabled

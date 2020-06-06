@@ -12,8 +12,7 @@
 
 class AWSHttpApiLogger : public ESFLogger {
  public:
-  AWSHttpApiLogger(ESFLogger::Severity severity, aws_http_logger loggerCallback,
-                   void *loggerContext);
+  AWSHttpApiLogger(ESFLogger::Severity severity, aws_http_logger loggerCallback, void *loggerContext);
 
   virtual ~AWSHttpApiLogger();
 
@@ -21,8 +20,7 @@ class AWSHttpApiLogger : public ESFLogger {
 
   virtual void setSeverity(ESFLogger::Severity severity);
 
-  virtual ESFError log(ESFLogger::Severity severity, const char *file, int line,
-                       const char *format, ...);
+  virtual ESFError log(ESFLogger::Severity severity, const char *file, int line, const char *format, ...);
 
  private:
   // Disabled

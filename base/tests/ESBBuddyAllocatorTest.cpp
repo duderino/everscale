@@ -97,8 +97,7 @@ class BuddyAllocatorTest : public ESTF::Component {
 
 ESTF_OBJECT_PTR(BuddyAllocatorTest, ESTF::Component)
 
-BuddyAllocatorTest::BuddyAllocatorTest()
-    : _rand(), _allocator(17, SystemAllocator::Instance()) {}
+BuddyAllocatorTest::BuddyAllocatorTest() : _rand(), _allocator(17, SystemAllocator::Instance()) {}
 
 BuddyAllocatorTest::~BuddyAllocatorTest() {}
 
@@ -125,8 +124,7 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
     for (int j = 0; j < Allocations; ++j) {
       if (0 < allocations[j].size && allocations[j].lifetime == i) {
         if (Debug) {
-          std::cerr << "Freeing block of size " << allocations[j].size
-                    << " at time " << i << std::endl;
+          std::cerr << "Freeing block of size " << allocations[j].size << " at time " << i << std::endl;
         }
 
         char *data = (char *)allocations[j].data;
@@ -162,10 +160,8 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
         allocations[j].lifetime = i + generateAllocLifetime();
 
         if (Debug) {
-          std::cerr << "Allocating block of size " << allocations[j].size
-                    << " at time " << i
-                    << " with lifetime: " << allocations[j].lifetime
-                    << std::endl;
+          std::cerr << "Allocating block of size " << allocations[j].size << " at time " << i
+                    << " with lifetime: " << allocations[j].lifetime << std::endl;
         }
 
         allocations[j].data = _allocator.allocate(allocations[j].size);
@@ -180,10 +176,8 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
 
         if (!allocations[j].data) {
           if (Debug) {
-            std::cerr << "Failed to allocate block of size "
-                      << allocations[j].size << " at time " << i
-                      << " with lifetime: " << allocations[j].lifetime
-                      << std::endl;
+            std::cerr << "Failed to allocate block of size " << allocations[j].size << " at time " << i
+                      << " with lifetime: " << allocations[j].lifetime << std::endl;
           }
 
           allocations[j].lifetime = 0;
@@ -193,15 +187,13 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
           // We will check this value when we free the block to
           // make sure no one overwrote it.
           //
-          memset(allocations[j].data, allocations[j].lifetime % 127,
-                 allocations[j].size);
+          memset(allocations[j].data, allocations[j].lifetime % 127, allocations[j].size);
 
           bytesAllocated += allocations[j].size;
         }
 
         if (Debug) {
-          std::cerr << bytesAllocated << " out of " << (1 << 17)
-                    << " bytes allocated\n";
+          std::cerr << bytesAllocated << " out of " << (1 << 17) << " bytes allocated\n";
         }
       }
 
@@ -222,8 +214,7 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
   for (int i = 0; i < Allocations; ++i) {
     if (0 < allocations[i].size) {
       if (Debug) {
-        std::cerr << "Freeing block of size " << allocations[i].size
-                  << " at cleanup stage\n";
+        std::cerr << "Freeing block of size " << allocations[i].size << " at cleanup stage\n";
       }
 
       error = _allocator.deallocate(allocations[i].data);
@@ -286,13 +277,11 @@ ESTF::ComponentPtr BuddyAllocatorTest::clone() {
 }
 
 int BuddyAllocatorTest::generateAllocSize() {
-  static const int array1[32] = {1, 1, 1, 1, 1, 1, 1,  1,  1,  1, 1,
-                                 1, 1, 1, 1, 1, 2, 2,  2,  2,  2, 2,
-                                 2, 2, 4, 4, 4, 4, 16, 16, 32, 32};
+  static const int array1[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1,  1,  1,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 16, 16, 32, 32};
 
-  static const int array2[22] = {10,  12,  14,   16,   18,   20,  30,  40,
-                                 50,  60,  70,   80,   90,   100, 150, 200,
-                                 250, 500, 1000, 2000, 3000, 4000};
+  static const int array2[22] = {10, 12, 14,  16,  18,  20,  30,  40,   50,   60,   70,
+                                 80, 90, 100, 150, 200, 250, 500, 1000, 2000, 3000, 4000};
 
   int uniformDeviate = _rand.generateRandom(1, 3);
 
@@ -332,15 +321,13 @@ int BuddyAllocatorTest::generateAllocLifetime() {
 int main() {
   ESB::BuddyAllocatorTestPtr buddyAllocatorTest = new ESB::BuddyAllocatorTest();
 
-  ESTF::ConcurrencyDecoratorPtr buddyAllocatorDecorator =
-      new ESTF::ConcurrencyDecorator(buddyAllocatorTest, 3);
+  ESTF::ConcurrencyDecoratorPtr buddyAllocatorDecorator = new ESTF::ConcurrencyDecorator(buddyAllocatorTest, 3);
 
   ESTF::CompositePtr testSuite = new ESTF::Composite();
 
   testSuite->add(buddyAllocatorDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

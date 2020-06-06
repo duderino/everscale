@@ -6,14 +6,8 @@
 
 namespace ESB {
 
-MapNode::MapNode(MapNode *parent, MapNode *left, MapNode *right, bool isBlack,
-                 const void *key, void *value)
-    : _parent(parent),
-      _left(left),
-      _right(right),
-      _isBlack(isBlack),
-      _key(key),
-      _value(value) {}
+MapNode::MapNode(MapNode *parent, MapNode *left, MapNode *right, bool isBlack, const void *key, void *value)
+    : _parent(parent), _left(left), _right(right), _isBlack(isBlack), _key(key), _value(value) {}
 
 MapNode::~MapNode() {}
 
@@ -36,8 +30,7 @@ Error Map::insert(const void *key, void *value) {
     return ESB_OVERFLOW;
   }
 
-  MapNode *node = new (_allocator)
-      MapNode(&_sentinel, &_sentinel, &_sentinel, true, key, value);
+  MapNode *node = new (_allocator) MapNode(&_sentinel, &_sentinel, &_sentinel, true, key, value);
 
   if (!node) {
     return ESB_OUT_OF_MEMORY;
@@ -171,8 +164,7 @@ Error Map::insert(const void *key, void *value, MapIterator *iterator) {
     return ESB_NULL_POINTER;
   }
 
-  MapNode *node = new (_allocator)
-      MapNode(&_sentinel, &_sentinel, &_sentinel, true, key, value);
+  MapNode *node = new (_allocator) MapNode(&_sentinel, &_sentinel, &_sentinel, true, key, value);
 
   if (!node) {
     return ESB_OUT_OF_MEMORY;

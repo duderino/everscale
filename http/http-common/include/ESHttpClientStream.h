@@ -30,8 +30,7 @@ class HttpClientStream : public HttpStream {
    * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
-  virtual ESB::Error sendRequestBody(unsigned const char *chunk,
-                                     ESB::UInt32 bytesOffered,
+  virtual ESB::Error sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
                                      ESB::UInt32 *bytesConsumed) = 0;
 
   /**
@@ -47,8 +46,7 @@ class HttpClientStream : public HttpStream {
    * empty and there is no data to be read on the underlying socket, or another
    * error code otherwise.
    */
-  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable,
-                                           ESB::UInt32 *bufferOffset) = 0;
+  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) = 0;
 
   /**
    * Read up to bytesRequested of response body data.
@@ -60,9 +58,7 @@ class HttpClientStream : public HttpStream {
    * @return ESB_SUCCESS if successful, ESB_INVALID_ARGUMENT if bytesRequested
    * exceeds bytesAvailable, another error code otherwise.
    */
-  virtual ESB::Error readResponseBody(unsigned char *chunk,
-                                      ESB::UInt32 bytesRequested,
-                                      ESB::UInt32 bufferOffset) = 0;
+  virtual ESB::Error readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset) = 0;
 
  private:
   // Disabled

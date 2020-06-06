@@ -8,8 +8,7 @@
 
 namespace ESB {
 
-FixedAllocator::FixedAllocator(UInt32 blocks, UInt32 blockSize,
-                               Allocator &source)
+FixedAllocator::FixedAllocator(UInt32 blocks, UInt32 blockSize, Allocator &source)
     : _availList(NULL),
       _pool(NULL),
       _sourceAllocator(source),
@@ -57,8 +56,7 @@ Error FixedAllocator::deallocate(void *block) {
   char *elem = ((char *)block) - sizeof(AvailListElem);
 
   if (elem < _pool ||
-      elem > (char *)_pool + (_blocks * (_blockSize + sizeof(AvailListElem)) -
-                              _blockSize - sizeof(AvailListElem))) {
+      elem > (char *)_pool + (_blocks * (_blockSize + sizeof(AvailListElem)) - _blockSize - sizeof(AvailListElem))) {
     return ESB_NOT_OWNER;
   }
 
@@ -74,8 +72,7 @@ Error FixedAllocator::initialize() {
     return ESB_INVALID_STATE;
   }
 
-  _pool =
-      _sourceAllocator.allocate(_blocks * (_blockSize + sizeof(AvailListElem)));
+  _pool = _sourceAllocator.allocate(_blocks * (_blockSize + sizeof(AvailListElem)));
 
   if (NULL == _pool) {
     return ESB_OUT_OF_MEMORY;

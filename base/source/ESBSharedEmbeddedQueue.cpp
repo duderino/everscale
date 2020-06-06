@@ -5,8 +5,8 @@
 namespace ESB {
 
 SharedEmbeddedQueue::SharedEmbeddedQueue() : _isStopped(false), _list() {
-#if defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && \
-    defined HAVE_PTHREAD_MUTEX_DESTROY && defined HAVE_PTHREAD_COND_DESTROY
+#if defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && defined HAVE_PTHREAD_MUTEX_DESTROY && \
+    defined HAVE_PTHREAD_COND_DESTROY
 
   pthread_mutex_init(&_mutex, 0);
   pthread_cond_init(&_signal, 0);
@@ -28,8 +28,7 @@ SharedEmbeddedQueue::~SharedEmbeddedQueue() {
 }
 
 Error SharedEmbeddedQueue::push(EmbeddedListElement *element) {
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_SIGNAL
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_SIGNAL
 
   Error error = ConvertError(pthread_mutex_lock(&_mutex));
 
@@ -60,8 +59,7 @@ EmbeddedListElement *SharedEmbeddedQueue::pop(Error *result) {
 
   if (result) *result = ESB_SUCCESS;
 
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_WAIT
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_WAIT
 
   Error error = ConvertError(pthread_mutex_lock(&_mutex));
 
@@ -107,8 +105,7 @@ EmbeddedListElement *SharedEmbeddedQueue::pop(Error *result) {
 }
 
 void SharedEmbeddedQueue::stop() {
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_BROADCAST
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_BROADCAST
 
   pthread_mutex_lock(&_mutex);
 

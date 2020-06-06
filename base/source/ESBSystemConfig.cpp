@@ -95,8 +95,6 @@ UInt32 SystemConfig::socketSoftMax() { return SoftLimit(RLIMIT_NOFILE); }
 
 UInt32 SystemConfig::socketHardMax() { return HardLimit(RLIMIT_NOFILE); }
 
-Error SystemConfig::setSocketSoftMax(UInt32 limit) {
-  return SetSoftLimit(RLIMIT_NOFILE, limit);
-}
+Error SystemConfig::setSocketSoftMax(UInt32 limit) { return SetSoftLimit(RLIMIT_NOFILE, limit); }
 
 }  // namespace ESB

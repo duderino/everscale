@@ -12,9 +12,8 @@
 
 namespace ES {
 
-HttpServerSocketFactory::HttpServerSocketFactory(
-    HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
-    HttpServerCounters &counters, ESB::Allocator &allocator)
+HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
+                                                 HttpServerCounters &counters, ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
       _handler(handler),
       _counters(counters),
@@ -33,13 +32,11 @@ HttpServerSocketFactory::~HttpServerSocketFactory() {
   }
 }
 
-HttpServerSocket *HttpServerSocketFactory::create(
-    ESB::TCPSocket::State &state) {
+HttpServerSocket *HttpServerSocketFactory::create(ESB::TCPSocket::State &state) {
   HttpServerSocket *socket = (HttpServerSocket *)_sockets.removeFirst();
 
   if (!socket) {
-    socket = new (_allocator)
-        HttpServerSocket(_handler, _multiplexer, _counters, _cleanupHandler);
+    socket = new (_allocator) HttpServerSocket(_handler, _multiplexer, _counters, _cleanupHandler);
     if (!socket) {
       return NULL;
     }
@@ -57,8 +54,7 @@ void HttpServerSocketFactory::release(HttpServerSocket *socket) {
   _sockets.addFirst(socket);
 }
 
-HttpServerSocketFactory::CleanupHandler::CleanupHandler(
-    HttpServerSocketFactory &factory)
+HttpServerSocketFactory::CleanupHandler::CleanupHandler(HttpServerSocketFactory &factory)
     : ESB::CleanupHandler(), _factory(factory) {}
 
 HttpServerSocketFactory::CleanupHandler::~CleanupHandler() {}

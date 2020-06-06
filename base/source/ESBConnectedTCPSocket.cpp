@@ -28,25 +28,17 @@
 
 namespace ESB {
 
-ConnectedTCPSocket::ConnectedTCPSocket()
-    : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
+ConnectedTCPSocket::ConnectedTCPSocket() : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
   _logAddress[0] = 0;
 }
 
 ConnectedTCPSocket::ConnectedTCPSocket(bool isBlocking)
-    : TCPSocket(isBlocking),
-      _isConnected(false),
-      _listenerAddress(),
-      _peerAddress() {
+    : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress() {
   _logAddress[0] = 0;
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const SocketAddress &peer,
-                                       bool isBlocking)
-    : TCPSocket(isBlocking),
-      _isConnected(false),
-      _listenerAddress(),
-      _peerAddress(peer) {
+ConnectedTCPSocket::ConnectedTCPSocket(const SocketAddress &peer, bool isBlocking)
+    : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress(peer) {
   _logAddress[0] = 0;
 }
 
@@ -87,13 +79,9 @@ void ConnectedTCPSocket::setPeerAddress(const SocketAddress &address) {
   _peerAddress = address;
 }
 
-const SocketAddress &ConnectedTCPSocket::peerAddress() const {
-  return _peerAddress;
-}
+const SocketAddress &ConnectedTCPSocket::peerAddress() const { return _peerAddress; }
 
-const SocketAddress &ConnectedTCPSocket::listeningAddress() const {
-  return _listenerAddress;
-}
+const SocketAddress &ConnectedTCPSocket::listeningAddress() const { return _listenerAddress; }
 
 Error ConnectedTCPSocket::connect() {
   Error error = ESB_SUCCESS;
@@ -122,9 +110,7 @@ Error ConnectedTCPSocket::connect() {
 
 #if defined HAVE_CONNECT && defined HAVE_STRUCT_SOCKADDR
 
-  if (SOCKET_ERROR == ::connect(_sockFd,
-                                (sockaddr *)_peerAddress.primitiveAddress(),
-                                sizeof(SocketAddress::Address))) {
+  if (SOCKET_ERROR == ::connect(_sockFd, (sockaddr *)_peerAddress.primitiveAddress(), sizeof(SocketAddress::Address))) {
     error = LastError();
 
     if (false == _isBlocking) {
@@ -178,8 +164,7 @@ bool ConnectedTCPSocket::isConnected() {
 #endif
 
 #if defined HAVE_GETPEERNAME
-  if (SOCKET_ERROR !=
-      getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
+  if (SOCKET_ERROR != getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
     _isConnected = true;
   }
 #else
@@ -189,9 +174,7 @@ bool ConnectedTCPSocket::isConnected() {
   return _isConnected;
 }
 
-bool ConnectedTCPSocket::isClient() const {
-  return 0 != _listenerAddress.port();
-}
+bool ConnectedTCPSocket::isClient() const { return 0 != _listenerAddress.port(); }
 
 SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
 #if defined HAVE_RECV
@@ -202,8 +185,7 @@ SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
 }
 
 SSize ConnectedTCPSocket::receive(Buffer *buffer) {
-  SSize size = receive((char *)buffer->buffer() + buffer->writePosition(),
-                       buffer->writable());
+  SSize size = receive((char *)buffer->buffer() + buffer->writePosition(), buffer->writable());
 
   if (0 >= size) {
     return size;
@@ -223,8 +205,7 @@ SSize ConnectedTCPSocket::send(const char *buffer, Size bufferSize) {
 }
 
 SSize ConnectedTCPSocket::send(Buffer *buffer) {
-  Size size = send((char *)buffer->buffer() + buffer->readPosition(),
-                   buffer->readable());
+  Size size = send((char *)buffer->buffer() + buffer->readPosition(), buffer->readable());
 
   if (0 >= size) {
     return size;

@@ -32,8 +32,7 @@ class HttpRequestUriParser {
    * @param allocator The discard allocator to use for allocating internal
    * strings.
    */
-  HttpRequestUriParser(ESB::Buffer *workingBuffer,
-                       ESB::DiscardAllocator &allocator);
+  HttpRequestUriParser(ESB::Buffer *workingBuffer, ESB::DiscardAllocator &allocator);
 
   virtual ~HttpRequestUriParser();
 
@@ -67,8 +66,7 @@ class HttpRequestUriParser {
   void operator=(const HttpRequestUriParser &);
 
   // "*"
-  ESB::Error parseAsterisk(ESB::Buffer *inputBuffer,
-                           HttpRequestUri &requestUri);
+  ESB::Error parseAsterisk(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // abs_path      = "/"  path_segments
   // path_segments = segment *( "/" segment )
@@ -94,8 +92,7 @@ class HttpRequestUriParser {
   ESB::Error parsePort(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // fragment      = *uric
-  ESB::Error parseFragment(ESB::Buffer *inputBuffer,
-                           HttpRequestUri &requestUri);
+  ESB::Error parseFragment(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // hier_part     = ( net_path | abs_path ) [ "?" query ]
@@ -104,11 +101,9 @@ class HttpRequestUriParser {
   // opaque_part   = uric_no_slash *uric
   // uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" |
   // "+" | "$" | ","
-  ESB::Error parseNonHttpUri(ESB::Buffer *inputBuffer,
-                             HttpRequestUri &requestUri);
+  ESB::Error parseNonHttpUri(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
-  ESB::Error skipForwardSlashes(ESB::Buffer *inputBuffer,
-                                HttpRequestUri &requestUri);
+  ESB::Error skipForwardSlashes(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
   int _state;
   ESB::Buffer *_workingBuffer;

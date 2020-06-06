@@ -59,8 +59,7 @@ SocketAddress::SocketAddress() {
   _transport = NONE;
 }
 
-SocketAddress::SocketAddress(const char *presentation, UInt16 port,
-                             TransportType transport) {
+SocketAddress::SocketAddress(const char *presentation, UInt16 port, TransportType transport) {
 #ifdef HAVE_MEMSET
   memset(&_address, 0, sizeof(Address));
 #else
@@ -100,9 +99,7 @@ SocketAddress &SocketAddress::operator=(const SocketAddress &address) {
   return *this;
 }
 
-const SocketAddress::Address *SocketAddress::primitiveAddress() const {
-  return &_address;
-}
+const SocketAddress::Address *SocketAddress::primitiveAddress() const { return &_address; }
 
 SocketAddress::Address *SocketAddress::primitiveAddress() { return &_address; }
 

@@ -17,11 +17,8 @@ namespace ES {
 #define ES_PARSING_HTTP_VERSION (1 << 2)
 #define ES_PARSE_COMPLETE (1 << 3)
 
-HttpRequestParser::HttpRequestParser(ESB::Buffer *workingBuffer,
-                                     ESB::DiscardAllocator &allocator)
-    : HttpMessageParser(workingBuffer, allocator),
-      _requestState(0x00),
-      _requestUriParser(workingBuffer, allocator) {}
+HttpRequestParser::HttpRequestParser(ESB::Buffer *workingBuffer, ESB::DiscardAllocator &allocator)
+    : HttpMessageParser(workingBuffer, allocator), _requestState(0x00), _requestUriParser(workingBuffer, allocator) {}
 
 HttpRequestParser::~HttpRequestParser() {}
 
@@ -32,8 +29,7 @@ void HttpRequestParser::reset() {
   _requestUriParser.reset();
 }
 
-ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
-                                             HttpMessage &message) {
+ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer, HttpMessage &message) {
   // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
 
   if (ES_PARSE_COMPLETE & _requestState) {
@@ -98,8 +94,7 @@ ESB::Error HttpRequestParser::parseStartLine(ESB::Buffer *inputBuffer,
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer,
-                                          HttpRequest &request) {
+ESB::Error HttpRequestParser::parseMethod(ESB::Buffer *inputBuffer, HttpRequest &request) {
   // Method                = "OPTIONS"                ; Section 9.2
   //                       | "GET"                    ; Section 9.3
   //                       | "HEAD"                   ; Section 9.4

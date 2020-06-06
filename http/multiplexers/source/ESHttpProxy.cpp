@@ -12,11 +12,8 @@
 
 namespace ES {
 
-HttpProxy::HttpProxy(ESB::UInt32 threads, HttpProxyHandler &proxyHandler,
-                     ESB::Allocator &allocator)
-    : HttpServer(threads, proxyHandler, allocator),
-      _proxyHandler(proxyHandler),
-      _clientCounters(60, 1, _allocator) {}
+HttpProxy::HttpProxy(ESB::UInt32 threads, HttpProxyHandler &proxyHandler, ESB::Allocator &allocator)
+    : HttpServer(threads, proxyHandler, allocator), _proxyHandler(proxyHandler), _clientCounters(60, 1, _allocator) {}
 
 HttpProxy::~HttpProxy() {}
 
@@ -34,8 +31,7 @@ ESB::Error HttpProxy::push(HttpClientCommand *command, int idx) {
     idx = _rand.generate(0, _threads - 1);
   }
 
-  HttpProxyMultiplexer *multiplexer =
-      (HttpProxyMultiplexer *)_multiplexers.index(idx);
+  HttpProxyMultiplexer *multiplexer = (HttpProxyMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
   ESB::Error error = multiplexer->pushClientCommand(command);
 
@@ -48,9 +44,8 @@ ESB::Error HttpProxy::push(HttpClientCommand *command, int idx) {
 }
 
 ESB::SocketMultiplexer *HttpProxy::createMultiplexer() {
-  return new (_allocator) HttpProxyMultiplexer(
-      ESB::SystemConfig::Instance().socketSoftMax(), _proxyHandler,
-      _proxyHandler, _clientCounters, _serverCounters);
+  return new (_allocator) HttpProxyMultiplexer(ESB::SystemConfig::Instance().socketSoftMax(), _proxyHandler,
+                                               _proxyHandler, _clientCounters, _serverCounters);
 }
 
 }  // namespace ES

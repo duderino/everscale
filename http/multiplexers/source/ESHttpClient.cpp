@@ -12,8 +12,7 @@
 
 namespace ES {
 
-HttpClient::HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler,
-                       ESB::Allocator &allocator)
+HttpClient::HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler, ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
       _state(ES_HTTP_CLIENT_IS_DESTROYED),
       _allocator(allocator),
@@ -39,8 +38,7 @@ ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
     idx = _rand.generate(0, _threads - 1);
   }
 
-  HttpProxyMultiplexer *multiplexer =
-      (HttpProxyMultiplexer *)_multiplexers.index(idx);
+  HttpProxyMultiplexer *multiplexer = (HttpProxyMultiplexer *)_multiplexers.index(idx);
   assert(multiplexer);
   ESB::Error error = multiplexer->pushClientCommand(command);
 
@@ -72,12 +70,11 @@ ESB::Error HttpClient::start() {
   ESB_LOG_DEBUG("Maximum sockets %u", maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
-    ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpProxyMultiplexer(maxSockets, _clientHandler, _clientCounters);
+    ESB::SocketMultiplexer *multiplexer =
+        new (_allocator) HttpProxyMultiplexer(maxSockets, _clientHandler, _clientCounters);
 
     if (!multiplexer) {
-      ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
-                             "Cannot initialize multiplexer");
+      ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot initialize multiplexer");
       return ESB_OUT_OF_MEMORY;
     }
 
@@ -116,8 +113,7 @@ void HttpClient::destroy() {
   assert(ES_HTTP_CLIENT_IS_STOPPED == _state.get());
   _state.set(ES_HTTP_CLIENT_IS_DESTROYED);
 
-  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull();
-       it = it.next()) {
+  for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull(); it = it.next()) {
     HttpProxyMultiplexer *multiplexer = (HttpProxyMultiplexer *)it.value();
     multiplexer->~HttpProxyMultiplexer();
     _allocator.deallocate(multiplexer);

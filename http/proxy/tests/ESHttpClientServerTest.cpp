@@ -141,16 +141,14 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
-      ESB::SystemConfig::Instance().socketHardMax());
+  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
     return -1;
   }
 
-  ESB_LOG_NOTICE("Maximum sockets %u",
-                 ESB::SystemConfig::Instance().socketSoftMax());
+  ESB_LOG_NOTICE("Maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
 
   //
   // Create listening socket
@@ -162,15 +160,13 @@ int main(int argc, char **argv) {
   error = listener.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u",
-                           listener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u", listener.listeningAddress().port());
     return -2;
   }
 
   ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
 
-  ESB::SocketAddress destaddr(destination, listener.listeningAddress().port(),
-                              ESB::SocketAddress::TransportType::TCP);
+  ESB::SocketAddress destaddr(destination, listener.listeningAddress().port(), ESB::SocketAddress::TransportType::TCP);
 
   //
   // Init client and server
@@ -185,8 +181,7 @@ int main(int argc, char **argv) {
     return -4;
   }
 
-  HttpLoadgenHandler clientHandler(absPath, method, contentType, body,
-                                   sizeof(body));
+  HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
   HttpClient client(clientThreads, clientHandler);
 
@@ -223,11 +218,9 @@ int main(int argc, char **argv) {
   // add load generators to running client
 
   for (int i = 0; i < client.threads(); ++i) {
-    HttpLoadgenSeedCommand *command =
-        new (ESB::SystemAllocator::Instance()) HttpLoadgenSeedCommand(
-            connections / clientThreads, iterations, destaddr,
-            listener.listeningAddress().port(), host, absPath, method,
-            contentType, ESB::SystemAllocator::Instance().cleanupHandler());
+    HttpLoadgenSeedCommand *command = new (ESB::SystemAllocator::Instance())
+        HttpLoadgenSeedCommand(connections / clientThreads, iterations, destaddr, listener.listeningAddress().port(),
+                               host, absPath, method, contentType, ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
@@ -256,15 +249,11 @@ int main(int argc, char **argv) {
 
   // Dump performance metrics
 
-  client.clientCounters().log(ESB::Logger::Instance(),
-                              ESB::Logger::Severity::Notice);
-  server.serverCounters().log(ESB::Logger::Instance(),
-                              ESB::Logger::Severity::Notice);
+  client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  server.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
 
-  const ESB::UInt32 totalSuccesses =
-      client.clientCounters().getSuccesses()->queries();
-  const ESB::UInt32 totalFailures =
-      client.clientCounters().getFailures()->queries();
+  const ESB::UInt32 totalSuccesses = client.clientCounters().getSuccesses()->queries();
+  const ESB::UInt32 totalFailures = client.clientCounters().getFailures()->queries();
 
   //
   // Destroy client and server

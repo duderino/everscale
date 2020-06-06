@@ -74,9 +74,7 @@ static void printHelp(const char *progName) {
   fprintf(stderr,
           "\t-l <logLevel>     Defaults to 7 / INFO.  See below for other "
           "levels.\n");
-  fprintf(
-      stderr,
-      "\t-t <epollThreads> Defaults to 1 thread handing all connections.\n");
+  fprintf(stderr, "\t-t <epollThreads> Defaults to 1 thread handing all connections.\n");
   fprintf(stderr, "\t-H <serverHost>   Defaults to localhost\n");
   fprintf(stderr, "\t-p <serverPort>   Defaults to 8080\n");
   fprintf(stderr, "\t-c <connections>  Defaults to 1 connection\n");
@@ -85,9 +83,7 @@ static void printHelp(const char *progName) {
   fprintf(stderr,
           "\t-C <content-type> Defaults to octet-stream if there is a "
           "non-empty body\n");
-  fprintf(
-      stderr,
-      "\t                  Otherwise no Content-Type header will be sent\n");
+  fprintf(stderr, "\t                  Otherwise no Content-Type header will be sent\n");
   fprintf(stderr, "\t-b <body file>    Defaults to an empty body\n");
   fprintf(stderr, "\t-a <abs_path>     Defaults to '/'\n");
   fprintf(stderr,
@@ -123,8 +119,7 @@ int main(int argc, char **argv) {
   const char *contentType = "octet-stream";
   const char *bodyFilePath = 0;
   const char *absPath = "/";
-  ESB::SocketAddress destaddr("127.0.0.1", port,
-                              ESB::SocketAddress::TransportType::TCP);
+  ESB::SocketAddress destaddr("127.0.0.1", port, ESB::SocketAddress::TransportType::TCP);
 
   {
     int result = 0;
@@ -217,8 +212,8 @@ int main(int argc, char **argv) {
       "Starting. logLevel: %d, threads: %d, host: %s, port: %d, "
       "connections: %d, iterations: %d, method: %s, contentType: %s, "
       "bodyFile %s, reuseConnections: %s",
-      logLevel, threads, host, port, connections, iterations, method,
-      contentType, bodyFilePath, reuseConnections ? "true" : "false");
+      logLevel, threads, host, port, connections, iterations, method, contentType, bodyFilePath,
+      reuseConnections ? "true" : "false");
 
   //
   // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
@@ -234,8 +229,7 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
-      ESB::SystemConfig::Instance().socketHardMax());
+  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
@@ -277,8 +271,7 @@ int main(int argc, char **argv) {
 
       if (0 == body) {
         close(fd);
-        fprintf(stderr, "Cannot allocate %d bytes of memory for body file\n",
-                bodySize);
+        fprintf(stderr, "Cannot allocate %d bytes of memory for body file\n", bodySize);
         return -7;
       }
 
@@ -298,8 +291,7 @@ int main(int argc, char **argv) {
         if (0 > bytesRead) {
           free(body);
           close(fd);
-          fprintf(stderr, "Error slurping %s into memory: %s\n", bodyFilePath,
-                  strerror(errno));
+          fprintf(stderr, "Error slurping %s into memory: %s\n", bodyFilePath, strerror(errno));
           return -9;
         }
 
@@ -314,8 +306,7 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  HttpLoadgenHandler clientHandler(absPath, method, contentType, body,
-                                   sizeof(body));
+  HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
   HttpClient client(threads, clientHandler);
 
@@ -342,11 +333,9 @@ int main(int argc, char **argv) {
   }
 
   for (int i = 0; i < client.threads(); ++i) {
-    HttpLoadgenSeedCommand *command =
-        new (ESB::SystemAllocator::Instance()) HttpLoadgenSeedCommand(
-            connections / threads, iterations, destaddr, port, host, absPath,
-            method, contentType,
-            ESB::SystemAllocator::Instance().cleanupHandler());
+    HttpLoadgenSeedCommand *command = new (ESB::SystemAllocator::Instance())
+        HttpLoadgenSeedCommand(connections / threads, iterations, destaddr, port, host, absPath, method, contentType,
+                               ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
@@ -369,8 +358,7 @@ int main(int argc, char **argv) {
     return -4;
   }
 
-  client.clientCounters().log(ESB::Logger::Instance(),
-                              ESB::Logger::Severity::Notice);
+  client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   client.destroy();
 
   return ESB_SUCCESS;

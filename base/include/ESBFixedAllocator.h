@@ -40,8 +40,7 @@ class FixedAllocator : public Allocator {
    *  @param blockSize The size in bytes of each block.
    *  @param source The allocator to use to allocate the memory pool.
    */
-  FixedAllocator(UInt32 blocks, UInt32 blockSize,
-                 Allocator &source = SystemAllocator::Instance());
+  FixedAllocator(UInt32 blocks, UInt32 blockSize, Allocator &source = SystemAllocator::Instance());
 
   /** Destructor.  If initialized, the allocator will call the its destroy
    *  method.  The destroy method may or may not return the allocator's
@@ -81,9 +80,7 @@ class FixedAllocator : public Allocator {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   //  Disabled

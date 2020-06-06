@@ -25,8 +25,7 @@ class PerformanceCounter : public EmbeddedListElement {
 
   virtual UInt32 queries() const = 0;
 
-  virtual void log(Logger &logger, Logger::Severity severity =
-                                       Logger::Severity::Debug) const = 0;
+  virtual void log(Logger &logger, Logger::Severity severity = Logger::Severity::Debug) const = 0;
 
   virtual CleanupHandler *cleanupHandler();
 

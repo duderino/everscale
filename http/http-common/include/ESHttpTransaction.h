@@ -43,8 +43,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
  public:
   HttpTransaction(ESB::CleanupHandler &cleanupHandler);
 
-  HttpTransaction(const ESB::SocketAddress *peerAddress,
-                  ESB::CleanupHandler &cleanupHandler);
+  HttpTransaction(const ESB::SocketAddress *peerAddress, ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpTransaction();
 
@@ -52,9 +51,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   inline ESB::SocketAddress &peerAddress() { return _peerAddress; }
 
-  inline void setPeerAddress(const ESB::SocketAddress &peerAddress) {
-    _peerAddress = peerAddress;
-  }
+  inline void setPeerAddress(const ESB::SocketAddress &peerAddress) { _peerAddress = peerAddress; }
 
   virtual void reset();
 
@@ -83,9 +80,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
    */
   virtual ESB::CleanupHandler *cleanupHandler();
 
-  inline unsigned char *duplicate(unsigned char *value) {
-    return HttpUtil::Duplicate(&_allocator, value);
-  }
+  inline unsigned char *duplicate(unsigned char *value) { return HttpUtil::Duplicate(&_allocator, value); }
 
   inline void setStartTime() { _start = ESB::Date::Now(); }
 

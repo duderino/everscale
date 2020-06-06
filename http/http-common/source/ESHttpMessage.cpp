@@ -31,8 +31,7 @@ const HttpHeader *HttpMessage::findHeader(const char *fieldName) const {
   return 0;
 }
 
-ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue,
-                                  ESB::Allocator &allocator) {
+ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue, ESB::Allocator &allocator) {
   if (!fieldName) {
     return ESB_NULL_POINTER;
   }
@@ -40,8 +39,7 @@ ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue,
   int fieldNameLength = strlen((const char *)fieldName);
   int fieldValueLength = strlen((const char *)fieldValue);
 
-  char *block = (char *)allocator.allocate(
-      sizeof(HttpHeader) + fieldNameLength + fieldValueLength + 2);
+  char *block = (char *)allocator.allocate(sizeof(HttpHeader) + fieldNameLength + fieldValueLength + 2);
 
   if (!block) {
     return ESB_OUT_OF_MEMORY;
@@ -50,22 +48,18 @@ ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue,
   memcpy(block + sizeof(HttpHeader), fieldName, fieldNameLength);
   block[sizeof(HttpHeader) + fieldNameLength] = 0;
 
-  memcpy(block + sizeof(HttpHeader) + fieldNameLength + 1, fieldValue,
-         fieldValueLength);
+  memcpy(block + sizeof(HttpHeader) + fieldNameLength + 1, fieldValue, fieldValueLength);
   block[sizeof(HttpHeader) + fieldNameLength + fieldValueLength + 1] = 0;
 
   HttpHeader *header =
-      new (block) HttpHeader(block + sizeof(HttpHeader),
-                             block + sizeof(HttpHeader) + fieldNameLength + 1);
+      new (block) HttpHeader(block + sizeof(HttpHeader), block + sizeof(HttpHeader) + fieldNameLength + 1);
 
   _headers.addLast(header);
 
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessage::addHeader(ESB::Allocator &allocator,
-                                  const char *fieldName,
-                                  const char *fieldValueFormat, ...) {
+ESB::Error HttpMessage::addHeader(ESB::Allocator &allocator, const char *fieldName, const char *fieldValueFormat, ...) {
   char buffer[1024];
   va_list vaList;
 

@@ -140,8 +140,7 @@ bool SharedIntTest::run(ESTF::ResultCollector *collector) {
     AddUnprotectedInt(1);
   }
 
-  fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
-          value, _Int.get(), _UnprotectedInt);
+  fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n", value, _Int.get(), _UnprotectedInt);
 
   for (int i = 0; i < 100000; ++i) {
     _Int.sub(1);
@@ -151,8 +150,7 @@ bool SharedIntTest::run(ESTF::ResultCollector *collector) {
     SubtractUnprotectedInt(1);
   }
 
-  fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n",
-          value, _Int.get(), _UnprotectedInt);
+  fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n", value, _Int.get(), _UnprotectedInt);
 
   return true;
 }
@@ -170,11 +168,9 @@ ESTF::ComponentPtr SharedIntTest::clone() {
 
 int main() {
   ESB::SharedIntTestPtr sharedIntTest = new ESB::SharedIntTest();
-  ESTF::ConcurrencyDecoratorPtr sharedIntDecorator =
-      new ESTF::ConcurrencyDecorator(sharedIntTest, 100);
+  ESTF::ConcurrencyDecoratorPtr sharedIntDecorator = new ESTF::ConcurrencyDecorator(sharedIntTest, 100);
   ESTF::CompositePtr testSuite = new ESTF::Composite();
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 1);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 1);
   ESTF::ResultCollector collector;
 
   testSuite->add(sharedIntDecorator);

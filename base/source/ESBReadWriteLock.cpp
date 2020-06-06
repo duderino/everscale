@@ -15,8 +15,8 @@ ReadWriteLock::ReadWriteLock() : _magic(0) {
     _magic = ESB_MAGIC;
   }
 
-#elif defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && \
-    defined HAVE_PTHREAD_MUTEX_DESTROY && defined HAVE_PTHREAD_COND_DESTROY
+#elif defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && defined HAVE_PTHREAD_MUTEX_DESTROY && \
+    defined HAVE_PTHREAD_COND_DESTROY
 
   if (0 != pthread_mutex_init(&_lock._mutex, 0)) {
     return;
@@ -74,8 +74,7 @@ Error ReadWriteLock::writeAcquire() {
 
   return ConvertError(pthread_rwlock_wrlock(&_lock));
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -117,8 +116,7 @@ Error ReadWriteLock::readAcquire() {
 
   return ConvertError(pthread_rwlock_rdlock(&_lock));
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -244,8 +242,8 @@ Error ReadWriteLock::writeRelease() {
 
   return ConvertError(pthread_rwlock_unlock(&_lock));
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_SIGNAL && defined HAVE_PTHREAD_COND_BROADCAST
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_SIGNAL && \
+    defined HAVE_PTHREAD_COND_BROADCAST
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -293,8 +291,8 @@ Error ReadWriteLock::readRelease() {
 
   return ConvertError(pthread_rwlock_unlock(&_lock));
 
-#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_SIGNAL && defined HAVE_PTHREAD_COND_BROADCAST
+#elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_SIGNAL && \
+    defined HAVE_PTHREAD_COND_BROADCAST
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 

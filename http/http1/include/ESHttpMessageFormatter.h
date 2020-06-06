@@ -46,8 +46,7 @@ class HttpMessageFormatter {
    * @return ESB_SUCCESS if successful, ESB_AGAIN if the buffer runs out of
    * space, another error code otherwise.
    */
-  ESB::Error formatHeaders(ESB::Buffer *outputBuffer,
-                           const HttpMessage &message);
+  ESB::Error formatHeaders(ESB::Buffer *outputBuffer, const HttpMessage &message);
 
   /**
    * Format a HTTP body in one or more blocks.  If a Transfer-Encoding 'chunked'
@@ -75,8 +74,7 @@ class HttpMessageFormatter {
    * @return ESB_SUCCESS if successful, ESB_AGAIN if the buffer runs out of
    * space, another error code otherwise.
    */
-  ESB::Error beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 offeredSize,
-                        ESB::UInt32 *maxChunkSize);
+  ESB::Error beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 offeredSize, ESB::UInt32 *maxChunkSize);
 
   ESB::Error endBlock(ESB::Buffer *outputBuffer);
 
@@ -96,12 +94,10 @@ class HttpMessageFormatter {
   ESB::Error endBody(ESB::Buffer *outputBuffer);
 
  protected:
-  virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer,
-                                     const HttpMessage &message) = 0;
+  virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer, const HttpMessage &message) = 0;
 
   // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
-  ESB::Error formatVersion(ESB::Buffer *outputBuffer,
-                           const HttpMessage &message, bool clientMode);
+  ESB::Error formatVersion(ESB::Buffer *outputBuffer, const HttpMessage &message, bool clientMode);
 
  private:
   // Disabled
@@ -109,39 +105,32 @@ class HttpMessageFormatter {
   void operator=(const HttpMessageFormatter &formatter);
 
   // field-name     = token
-  inline ESB::Error formatFieldName(ESB::Buffer *outputBuffer,
-                                    const char *fieldName) {
+  inline ESB::Error formatFieldName(ESB::Buffer *outputBuffer, const char *fieldName) {
     return formatFieldName(outputBuffer, (const unsigned char *)fieldName);
   }
 
-  ESB::Error formatFieldName(ESB::Buffer *outputBuffer,
-                             const unsigned char *fieldName);
+  ESB::Error formatFieldName(ESB::Buffer *outputBuffer, const unsigned char *fieldName);
 
   // field-value    = *( field-content | LWS )
   // field-content  = <the OCTETs making up the field-value
   //                 and consisting of either *TEXT or combinations
   //                 of token, separators, and quoted-string>
-  inline ESB::Error formatFieldValue(ESB::Buffer *outputBuffer,
-                                     const char *fieldValue) {
+  inline ESB::Error formatFieldValue(ESB::Buffer *outputBuffer, const char *fieldValue) {
     return formatFieldValue(outputBuffer, (const unsigned char *)fieldValue);
   }
 
-  ESB::Error formatFieldValue(ESB::Buffer *outputBuffer,
-                              const unsigned char *fieldValue);
+  ESB::Error formatFieldValue(ESB::Buffer *outputBuffer, const unsigned char *fieldValue);
 
   // chunk          = chunk-size [ chunk-extension ] CRLF
   //                  ...
   // chunk-size     = 1*HEX
-  ESB::Error beginChunk(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
-                        ESB::UInt32 *availableSize);
+  ESB::Error beginChunk(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize, ESB::UInt32 *availableSize);
 
   // chunk          = ...
   //                  chunk-data CRLF
   ESB::Error endChunk(ESB::Buffer *outputBuffer);
 
-  ESB::Error beginUnencodedBlock(ESB::Buffer *outputBuffer,
-                                 ESB::UInt32 requestedSize,
-                                 ESB::UInt32 *availableSize);
+  ESB::Error beginUnencodedBlock(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize, ESB::UInt32 *availableSize);
 
   int _state;
   const HttpHeader *_currentHeader;

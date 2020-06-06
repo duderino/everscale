@@ -20,9 +20,8 @@
 
 class AWSHttpApi {
  public:
-  AWSHttpApi(aws_http_server *server, aws_http_server_config *server_config,
-             aws_http_log_level log_level, void *log_context,
-             aws_http_logger logger);
+  AWSHttpApi(aws_http_server *server, aws_http_server_config *server_config, aws_http_log_level log_level,
+             void *log_context, aws_http_logger logger);
 
   virtual ~AWSHttpApi();
 
@@ -34,21 +33,13 @@ class AWSHttpApi {
 
   inline void destroy() { return _stack.destroy(); }
 
-  inline void setLogLevel(ESFLogger::Severity logLevel) {
-    _logger.setSeverity(logLevel);
-  }
+  inline void setLogLevel(ESFLogger::Severity logLevel) { _logger.setSeverity(logLevel); }
 
-  inline AWSHttpTransaction *createTransaction() {
-    return _stack.createTransaction();
-  }
+  inline AWSHttpTransaction *createTransaction() { return _stack.createTransaction(); }
 
-  inline ESFError sendTransaction(AWSHttpTransaction *transaction) {
-    return _stack.sendTransaction(transaction);
-  }
+  inline ESFError sendTransaction(AWSHttpTransaction *transaction) { return _stack.sendTransaction(transaction); }
 
-  inline void destroyTransaction(AWSHttpTransaction *transaction) {
-    _stack.destroyTransaction(transaction);
-  }
+  inline void destroyTransaction(AWSHttpTransaction *transaction) { _stack.destroyTransaction(transaction); }
 
  private:
   // Disabled

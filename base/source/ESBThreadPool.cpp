@@ -53,8 +53,7 @@ Error ThreadPool::start() {
     error = _threads[i]->start();
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot start worker '%s:%d'", _name,
-                             i + 1);
+      ESB_LOG_CRITICAL_ERRNO(error, "Cannot start worker '%s:%d'", _name, i + 1);
       _numThreads = i;
       stop();
       return error;
@@ -135,8 +134,7 @@ void ThreadPool::destroyWorkerThreads() {
   _threads = 0;
 }
 
-ThreadPoolWorker::ThreadPoolWorker(int workerId, const char *name,
-                                   SharedEmbeddedQueue *queue)
+ThreadPoolWorker::ThreadPoolWorker(int workerId, const char *name, SharedEmbeddedQueue *queue)
     : _workerId(workerId), _name(name), _queue(queue) {}
 
 ThreadPoolWorker::~ThreadPoolWorker() {}
@@ -159,17 +157,14 @@ void ThreadPoolWorker::run() {
     }
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Thread '%s:%d' cannot pop command from queue",
-                          _name, _workerId);
+      ESB_LOG_ERROR_ERRNO(error, "Thread '%s:%d' cannot pop command from queue", _name, _workerId);
       ++errorCount;
       continue;
     }
 
-    ESB_LOG_DEBUG("Thread '%s:%d' starting command '%s'", _name, _workerId,
-                  command->name());
+    ESB_LOG_DEBUG("Thread '%s:%d' starting command '%s'", _name, _workerId, command->name());
     cleanup = command->run(&_isRunning);
-    ESB_LOG_DEBUG("Thread '%s:%d' finished command '%s'", _name, _workerId,
-                  command->name());
+    ESB_LOG_DEBUG("Thread '%s:%d' finished command '%s'", _name, _workerId, command->name());
 
     if (cleanup) {
       cleanupHandler = command->cleanupHandler();

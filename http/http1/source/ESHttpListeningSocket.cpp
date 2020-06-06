@@ -18,21 +18,13 @@ namespace ES {
 
 // TODO add performance counters
 
-HttpListeningSocket::HttpListeningSocket(HttpMultiplexerExtended &stack,
-                                         HttpServerHandler &handler,
+HttpListeningSocket::HttpListeningSocket(HttpMultiplexerExtended &stack, HttpServerHandler &handler,
                                          ESB::CleanupHandler &cleanupHandler)
-    : _socket(),
-      _multiplexer(stack),
-      _handler(handler),
-      _cleanupHandler(cleanupHandler) {}
+    : _socket(), _multiplexer(stack), _handler(handler), _cleanupHandler(cleanupHandler) {}
 
-HttpListeningSocket::~HttpListeningSocket() {
-  ESB_LOG_DEBUG("HttpListeningSocket destroyed");
-}
+HttpListeningSocket::~HttpListeningSocket() { ESB_LOG_DEBUG("HttpListeningSocket destroyed"); }
 
-ESB::Error HttpListeningSocket::initialize(ESB::ListeningTCPSocket &socket) {
-  return _socket.duplicate(socket);
-}
+ESB::Error HttpListeningSocket::initialize(ESB::ListeningTCPSocket &socket) { return _socket.duplicate(socket); }
 
 bool HttpListeningSocket::wantAccept() {
   // todo return false if at max sockets...
@@ -54,14 +46,12 @@ ESB::Error HttpListeningSocket::handleAccept() {
   ESB::Error error = _socket.accept(&state);
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[%s] not ready to accept - no sockets",
-                  _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] not ready to accept - no sockets", _socket.logAddress());
     return ESB_SUCCESS;
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] error accepting new connection",
-                       _socket.logAddress());
+    ESB_LOG_INFO_ERRNO(error, "[%s] error accepting new connection", _socket.logAddress());
     return error;
   }
 
@@ -70,8 +60,7 @@ ESB::Error HttpListeningSocket::handleAccept() {
   error = _handler.acceptConnection(_multiplexer, &state.peerAddress());
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] Handler rejected connection",
-                       _socket.logAddress());
+    ESB_LOG_INFO_ERRNO(error, "[%s] Handler rejected connection", _socket.logAddress());
     ESB::TCPSocket::Close(state.socketDescriptor());
     return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }
@@ -79,18 +68,14 @@ ESB::Error HttpListeningSocket::handleAccept() {
   error = _multiplexer.addServerSocket(state);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error,
-                        "[%s] cannot add accepted connection to multiplexer",
-                        _socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add accepted connection to multiplexer", _socket.logAddress());
     return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }
 
   if (ESB_INFO_LOGGABLE) {
     char buffer[ESB_LOG_ADDRESS_SIZE];
-    state.peerAddress().logAddress(buffer, sizeof(buffer),
-                                   state.socketDescriptor());
-    ESB_LOG_INFO("[%s] accepted new connection [%s]", _socket.logAddress(),
-                 buffer);
+    state.peerAddress().logAddress(buffer, sizeof(buffer), state.socketDescriptor());
+    ESB_LOG_INFO("[%s] accepted new connection [%s]", _socket.logAddress(), buffer);
   }
 
   return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
@@ -112,8 +97,7 @@ ESB::Error HttpListeningSocket::handleWritable() {
 }
 
 bool HttpListeningSocket::handleError(ESB::Error error) {
-  ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket error",
-                      _socket.logAddress());
+  ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket error", _socket.logAddress());
   return true;
 }
 
@@ -132,12 +116,8 @@ bool HttpListeningSocket::handleRemove() {
   return true;  // call cleanup handler on us after this returns
 }
 
-SOCKET HttpListeningSocket::socketDescriptor() const {
-  return _socket.socketDescriptor();
-}
+SOCKET HttpListeningSocket::socketDescriptor() const { return _socket.socketDescriptor(); }
 
-ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() {
-  return &_cleanupHandler;
-}
+ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() { return &_cleanupHandler; }
 
 }  // namespace ES

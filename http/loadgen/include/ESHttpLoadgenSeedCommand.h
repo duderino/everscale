@@ -9,11 +9,9 @@ namespace ES {
 
 class HttpLoadgenSeedCommand : public HttpClientCommand {
  public:
-  HttpLoadgenSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations,
-                         ESB::SocketAddress &destination, ESB::Int32 port,
-                         const char *host, const char *absPath,
-                         const char *method, const char *contentType,
-                         ESB::CleanupHandler &cleanupHandler);
+  HttpLoadgenSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations, ESB::SocketAddress &destination,
+                         ESB::Int32 port, const char *host, const char *absPath, const char *method,
+                         const char *contentType, ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpLoadgenSeedCommand();
 

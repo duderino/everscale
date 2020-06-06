@@ -166,8 +166,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           if (1 == _rand.generateRandom(1, 2)) {
             _stlList.push_back(_records[j]._value);
 
-            ESTF_ASSERT(collector,
-                        ESB_SUCCESS == _list.pushBack(_records[j]._value));
+            ESTF_ASSERT(collector, ESB_SUCCESS == _list.pushBack(_records[j]._value));
 
             if (_records[j]._useIterator) {
               _records[j]._iterator = _list.backIterator();
@@ -177,8 +176,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           } else {
             _stlList.push_front(_records[j]._value);
 
-            ESTF_ASSERT(collector,
-                        ESB_SUCCESS == _list.pushFront(_records[j]._value));
+            ESTF_ASSERT(collector, ESB_SUCCESS == _list.pushFront(_records[j]._value));
 
             if (_records[j]._useIterator) {
               _records[j]._iterator = _list.frontIterator();
@@ -188,10 +186,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           }
 
           if (Debug) {
-            std::cerr << "Inserted: " << (char *)_records[j]._value
-                      << " (List size: " << _list.size()
-                      << " stl size: " << _stlList.size() << ") at time " << i
-                      << std::endl;
+            std::cerr << "Inserted: " << (char *)_records[j]._value << " (List size: " << _list.size()
+                      << " stl size: " << _stlList.size() << ") at time " << i << std::endl;
           }
 
           validateList(collector);
@@ -203,8 +199,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           //
 
           if (_records[j]._useIterator) {
-            ESTF_ASSERT(collector,
-                        ESB_SUCCESS == _list.remove(&_records[j]._iterator));
+            ESTF_ASSERT(collector, ESB_SUCCESS == _list.remove(&_records[j]._iterator));
 
             ESTF_ASSERT(collector, _records[j]._iterator.isNull());
           } else {
@@ -218,8 +213,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           }
 
           if (Debug) {
-            std::cerr << "value[" << j << "]: " << _records[j]._value
-                      << std::endl;
+            std::cerr << "value[" << j << "]: " << _records[j]._value << std::endl;
           }
 
           bool stlResult = findSTLIterator(_records[j]._value, &stlIterator);
@@ -231,10 +225,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
           _stlList.erase(stlIterator);
 
           if (Debug) {
-            std::cerr << "Deleted: " << (char *)_records[j]._value
-                      << " (list size: " << _list.size()
-                      << " stl size: " << _stlList.size() << ") at time " << i
-                      << std::endl;
+            std::cerr << "Deleted: " << (char *)_records[j]._value << " (list size: " << _list.size()
+                      << " stl size: " << _stlList.size() << ") at time " << i << std::endl;
           }
 
           delete[] _records[j]._value;
@@ -252,8 +244,7 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
     ListIterator temp;
     char *value = 0;
 
-    for (value = (char *)_list.front(); !_list.isEmpty();
-         value = (char *)_list.front()) {
+    for (value = (char *)_list.front(); !_list.isEmpty(); value = (char *)_list.front()) {
       ESTF_ASSERT(collector, ESB_SUCCESS == _list.popFront());
 
       bool stlResult = findSTLIterator(value, &stlIterator);
@@ -265,9 +256,8 @@ bool ListTest::run(ESTF::ResultCollector *collector) {
       _stlList.erase(stlIterator);
 
       if (Debug) {
-        std::cerr << "Deleted: " << value << " (List size: " << _list.size()
-                  << " stl size: " << _stlList.size() << ") at cleanup stage"
-                  << std::endl;
+        std::cerr << "Deleted: " << value << " (List size: " << _list.size() << " stl size: " << _stlList.size()
+                  << ") at cleanup stage" << std::endl;
       }
 
       delete[] value;
@@ -312,8 +302,7 @@ void ListTest::validateList(ESTF::ResultCollector *collector) {
 
   ESTF_ASSERT(collector, _list.size() == _stlList.size());
 
-  for (stlIterator = _stlList.begin(); stlIterator != _stlList.end();
-       ++stlIterator) {
+  for (stlIterator = _stlList.begin(); stlIterator != _stlList.end(); ++stlIterator) {
     iterator = findIterator(*stlIterator);
 
     ESTF_ASSERT(collector, !iterator.isNull());
@@ -324,8 +313,7 @@ void ListTest::validateList(ESTF::ResultCollector *collector) {
   //  are in the same order.
   //
 
-  for (stlIterator = _stlList.begin(), iterator = _list.frontIterator();
-       !iterator.isNull();
+  for (stlIterator = _stlList.begin(), iterator = _list.frontIterator(); !iterator.isNull();
        ++stlIterator, iterator = iterator.next(), ++counter) {
     value = (char *)iterator.value();
 
@@ -395,15 +383,13 @@ int ListTest::generateLifetime() {
 int main() {
   ESB::ListTestPtr listTest = new ESB::ListTest();
 
-  ESTF::ConcurrencyDecoratorPtr listDecorator =
-      new ESTF::ConcurrencyDecorator(listTest, 3);
+  ESTF::ConcurrencyDecoratorPtr listDecorator = new ESTF::ConcurrencyDecorator(listTest, 3);
 
   ESTF::CompositePtr testSuite = new ESTF::Composite();
 
   testSuite->add(listDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

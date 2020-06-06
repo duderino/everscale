@@ -2,8 +2,7 @@
 #include <ESBThread.h>
 #endif
 
-#if !defined HAVE_PTHREAD_YIELD && defined HAVE_SCHED_H && \
-    defined HAVE_SCHED_YIELD
+#if !defined HAVE_PTHREAD_YIELD && defined HAVE_SCHED_H && defined HAVE_SCHED_YIELD
 #include <sched.h>
 #endif
 
@@ -35,8 +34,7 @@ Thread::~Thread() {}
 
 Error Thread::start() {
 #ifdef HAVE_PTHREAD_CREATE
-  return ConvertError(
-      pthread_create(&_threadId, 0, &ThreadEntry, (Thread *)this));
+  return ConvertError(pthread_create(&_threadId, 0, &ThreadEntry, (Thread *)this));
 #else
 #error "pthread_create or equivalent is required"
 #endif

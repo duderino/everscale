@@ -14,19 +14,14 @@ namespace ES {
 class HttpClientHandler {
  public:
   typedef enum {
-    ES_HTTP_CLIENT_HANDLER_BEGIN = 0,   /**< Transaction starting */
-    ES_HTTP_CLIENT_HANDLER_RESOLVE = 1, /**< Trying to resolve client address */
-    ES_HTTP_CLIENT_HANDLER_CONNECT = 2, /**< Trying to connect to client */
-    ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS =
-        3, /**< Trying to send request headers */
-    ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY =
-        4, /**< Trying to send request body */
-    ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS =
-        5, /**< Trying to receive/parse response headers */
-    ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY =
-        6, /**< Trying to receive response body */
-    ES_HTTP_CLIENT_HANDLER_END =
-        7 /**< Response received / transaction completed */
+    ES_HTTP_CLIENT_HANDLER_BEGIN = 0,                 /**< Transaction starting */
+    ES_HTTP_CLIENT_HANDLER_RESOLVE = 1,               /**< Trying to resolve client address */
+    ES_HTTP_CLIENT_HANDLER_CONNECT = 2,               /**< Trying to connect to client */
+    ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS = 3,  /**< Trying to send request headers */
+    ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY = 4,     /**< Trying to send request body */
+    ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS = 5, /**< Trying to receive/parse response headers */
+    ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY = 6,    /**< Trying to receive response body */
+    ES_HTTP_CLIENT_HANDLER_END = 7                    /**< Response received / transaction completed */
   } State;
 
   HttpClientHandler();
@@ -41,8 +36,7 @@ class HttpClientHandler {
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                            HttpClientStream &stream) = 0;
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) = 0;
 
   /**
    * Offer body bytes to the caller, if necessary producing more data as a
@@ -57,8 +51,7 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                       ESB::UInt32 *bytesAvailable) = 0;
   /**
    * Copy body bytes to the caller, which consumes it in the process.
@@ -71,9 +64,7 @@ class HttpClientHandler {
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
-                                        HttpClientStream &stream,
-                                        unsigned char *chunk,
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream, unsigned char *chunk,
                                         ESB::UInt32 bytesRequested) = 0;
 
   /**
@@ -93,10 +84,8 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
-                                         HttpClientStream &stream,
-                                         const unsigned char *chunk,
-                                         ESB::UInt32 chunkSize,
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                         const unsigned char *chunk, ESB::UInt32 chunkSize,
                                          ESB::UInt32 *bytesConsumed) = 0;
 
   /**
@@ -108,8 +97,7 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
-                                HttpClientStream &stream) = 0;
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &stream) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the
@@ -122,8 +110,7 @@ class HttpClientHandler {
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endTransaction(HttpMultiplexer &multiplexer,
-                              HttpClientStream &stream, State state) = 0;
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state) = 0;
 
  private:
   // Disabled

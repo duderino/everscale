@@ -61,8 +61,7 @@ class SimpleFileLogger : public Logger {
    *      arguments are NULL, ESB_OPERATION_NOT_SUPPORTED if this platform
    *      does not suppoort console logging.
    */
-  virtual Error log(Severity severity, const char *format, ...)
-      __attribute__((format(printf, 3, 4)));
+  virtual Error log(Severity severity, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
   /** Placement new.
    *
@@ -70,9 +69,7 @@ class SimpleFileLogger : public Logger {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

@@ -7,11 +7,7 @@
 namespace EST {
 
 PerformanceCounter::PerformanceCounter(const char *name)
-    : _name(name),
-      _avgLatencyMsec(0.0),
-      _minLatencyMsec(-1.0),
-      _maxLatencyMsec(0.0),
-      _throughput(0UL) {
+    : _name(name), _avgLatencyMsec(0.0), _minLatencyMsec(-1.0), _maxLatencyMsec(0.0), _throughput(0UL) {
   pthread_mutex_init(&_lock, 0);
 }
 
@@ -34,8 +30,7 @@ void PerformanceCounter::addObservation(struct timeval *start) {
 
   double throughput = _throughput;
 
-  _avgLatencyMsec = (latencyMsec * (1.0 / throughput)) +
-                    (_avgLatencyMsec * ((throughput - 1.0) / throughput));
+  _avgLatencyMsec = (latencyMsec * (1.0 / throughput)) + (_avgLatencyMsec * ((throughput - 1.0) / throughput));
 
   if (0 > _minLatencyMsec) {
     _minLatencyMsec = latencyMsec;

@@ -33,8 +33,7 @@ class HttpMultiplexer {
    * error code otherwise.  If error, cleanup the transaction with the
    * destroyTransaction function.
    */
-  virtual ESB::Error executeClientTransaction(
-      HttpClientTransaction *transaction) = 0;
+  virtual ESB::Error executeClientTransaction(HttpClientTransaction *transaction) = 0;
 
   virtual void destroyClientTransaction(HttpClientTransaction *transaction) = 0;
 

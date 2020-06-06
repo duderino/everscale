@@ -19,8 +19,7 @@ BuddyAllocator::KVal BuddyAllocator::GetKVal(UWord requestedSize) {
   return kVal;
 }
 
-BuddyAllocator::AvailListElem *BuddyAllocator::popAvailList(
-    BuddyAllocator::KVal kVal) {
+BuddyAllocator::AvailListElem *BuddyAllocator::popAvailList(BuddyAllocator::KVal kVal) {
   assert(kVal < ESB_AVAIL_LIST_LENGTH);
 
   AvailListElem *elem = _availList[kVal];
@@ -180,8 +179,7 @@ Error BuddyAllocator::deallocate(void *block) {
 
   char *trueAddress = ((char *)block) - sizeof(AvailListElem);
 
-  if (trueAddress < (char *)_pool ||
-      trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
+  if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
     return ESB_NOT_OWNER;
   }
 
@@ -226,8 +224,7 @@ Error BuddyAllocator::deallocate(void *block) {
       // The buddy is to the right of this node.
       //
 
-      buddy =
-          (AvailListElem *)(((char *)elem) + (ESB_UWORD_C(1) << elem->_kVal));
+      buddy = (AvailListElem *)(((char *)elem) + (ESB_UWORD_C(1) << elem->_kVal));
 
       assert(buddy->_kVal <= elem->_kVal);
 

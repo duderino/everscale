@@ -20,8 +20,7 @@ namespace ESB {
 
 class TestLogger : public Logger {
  public:
-  TestLogger(Logger &logger)
-      : _lastSeverity(Logger::None), _lastFormat(0), _logger(logger){};
+  TestLogger(Logger &logger) : _lastSeverity(Logger::None), _lastFormat(0), _logger(logger){};
   virtual ~TestLogger(){};
 
   /** Determine whether a log message will really be logged.
@@ -50,8 +49,7 @@ class TestLogger : public Logger {
    *  @param format A printf-style format string.
    *  @return ESB_SUCCESS if successful, another value otherwise.
    */
-  virtual Error log(Severity severity, const char *format, ...)
-      __attribute__((format(printf, 3, 4))) {
+  virtual Error log(Severity severity, const char *format, ...) __attribute__((format(printf, 3, 4))) {
     _lastFormat = format;
     return ESB_SUCCESS;
   }

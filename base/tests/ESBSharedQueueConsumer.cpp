@@ -12,8 +12,7 @@
 
 namespace ESB {
 
-SharedQueueConsumer::SharedQueueConsumer(SharedQueue &queue, UInt32 items)
-    : _items(items), _queue(queue) {}
+SharedQueueConsumer::SharedQueueConsumer(SharedQueue &queue, UInt32 items) : _items(items), _queue(queue) {}
 
 SharedQueueConsumer::~SharedQueueConsumer() {}
 

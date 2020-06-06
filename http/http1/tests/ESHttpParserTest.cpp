@@ -37,12 +37,9 @@ static unsigned char InputBufferStorage[4096];
 static unsigned char OutputBufferStorage[4096];
 static unsigned char WorkingBufferStorage[4096];
 static ESB::Buffer InputBuffer(InputBufferStorage, sizeof(InputBufferStorage));
-static ESB::Buffer OutputBuffer(OutputBufferStorage,
-                                sizeof(OutputBufferStorage));
-static ESB::Buffer WorkingBuffer(WorkingBufferStorage,
-                                 sizeof(WorkingBufferStorage));
-static ESB::DiscardAllocator Allocator(4096, sizeof(ESB::UWord), 1,
-                                       ESB::SystemAllocator::Instance(), true);
+static ESB::Buffer OutputBuffer(OutputBufferStorage, sizeof(OutputBufferStorage));
+static ESB::Buffer WorkingBuffer(WorkingBufferStorage, sizeof(WorkingBufferStorage));
+static ESB::DiscardAllocator Allocator(4096, sizeof(ESB::UWord), 1, ESB::SystemAllocator::Instance(), true);
 static HttpRequestParser RequestParser(&WorkingBuffer, Allocator);
 static HttpResponseParser ResponseParser(&WorkingBuffer, Allocator);
 static HttpRequestFormatter RequestFormatter;
@@ -62,12 +59,10 @@ bool ParseRequest(const char *inputFileName) {
 
   char outputFileName[NAME_MAX + 1];
 
-  snprintf(outputFileName, sizeof(outputFileName) - 1, "output_%s",
-           inputFileName);
+  snprintf(outputFileName, sizeof(outputFileName) - 1, "output_%s", inputFileName);
   outputFileName[sizeof(outputFileName) - 1] = 0;
 
-  int outputFd =
-      open(outputFileName, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
+  int outputFd = open(outputFileName, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
 
   if (0 > outputFd) {
     fprintf(stderr, "cannot open %s: %s\n", outputFileName, strerror(errno));
@@ -76,15 +71,13 @@ bool ParseRequest(const char *inputFileName) {
 
   char validationFileName[NAME_MAX + 1];
 
-  snprintf(validationFileName, sizeof(validationFileName) - 1, "validation_%s",
-           inputFileName);
+  snprintf(validationFileName, sizeof(validationFileName) - 1, "validation_%s", inputFileName);
   validationFileName[sizeof(validationFileName) - 1] = 0;
 
   int validationFd = open(validationFileName, O_RDONLY);
 
   if (0 > validationFd) {
-    fprintf(stderr, "cannot open %s: %s\n", validationFileName,
-            strerror(errno));
+    fprintf(stderr, "cannot open %s: %s\n", validationFileName, strerror(errno));
     return false;
   }
 
@@ -102,14 +95,12 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestParser.parseHeaders(&InputBuffer, request);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "need more data from file %s\n", inputFileName);
+      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
 
       bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug)
-          fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
 
         if (false == InputBuffer.compact()) {
           fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
@@ -117,12 +108,10 @@ bool ParseRequest(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
-                    bytesToRead);
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName,
-                strerror(errno));
+        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
         return false;
       }
 
@@ -133,9 +122,7 @@ bool ParseRequest(const char *inputFileName) {
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug)
-        fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
-                inputFileName);
+      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
 
       continue;
     }
@@ -161,23 +148,15 @@ bool ParseRequest(const char *inputFileName) {
         case HttpRequestUri::ES_URI_HTTPS:
 
           fprintf(stderr, "  Scheme: %s\n",
-                  HttpRequestUri::ES_URI_HTTP == request.requestUri().type()
-                      ? "http"
-                      : "https");
+                  HttpRequestUri::ES_URI_HTTP == request.requestUri().type() ? "http" : "https");
           fprintf(stderr, "  Host: %s\n",
-                  0 == request.requestUri().host()
-                      ? "none"
-                      : (const char *)request.requestUri().host());
+                  0 == request.requestUri().host() ? "none" : (const char *)request.requestUri().host());
           fprintf(stderr, "  Port: %d\n", request.requestUri().port());
           fprintf(stderr, "  AbsPath: %s\n", request.requestUri().absPath());
           fprintf(stderr, "  Query: %s\n",
-                  0 == request.requestUri().query()
-                      ? "none"
-                      : (const char *)request.requestUri().query());
+                  0 == request.requestUri().query() ? "none" : (const char *)request.requestUri().query());
           fprintf(stderr, "  Fragment: %s\n",
-                  0 == request.requestUri().fragment()
-                      ? "none"
-                      : (const char *)request.requestUri().fragment());
+                  0 == request.requestUri().fragment() ? "none" : (const char *)request.requestUri().fragment());
 
           break;
 
@@ -188,16 +167,13 @@ bool ParseRequest(const char *inputFileName) {
           break;
       }
 
-      fprintf(stderr, "Version: HTTP/%d.%d\n", request.httpVersion() / 100,
-              request.httpVersion() % 100 / 10);
+      fprintf(stderr, "Version: HTTP/%d.%d\n", request.httpVersion() / 100, request.httpVersion() % 100 / 10);
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (HttpHeader *)request.headers().first(); header;
-           header = (HttpHeader *)header->next()) {
+      for (header = (HttpHeader *)request.headers().first(); header; header = (HttpHeader *)header->next()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
-                0 == header->fieldValue() ? "null"
-                                          : (const char *)header->fieldValue());
+                0 == header->fieldValue() ? "null" : (const char *)header->fieldValue());
       }
     }
 
@@ -212,8 +188,7 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestFormatter.formatHeaders(&OutputBuffer, request);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
         fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
@@ -221,12 +196,10 @@ bool ParseRequest(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result =
-            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                  strerror(errno));
+          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
           return false;
         }
 
@@ -247,15 +220,13 @@ bool ParseRequest(const char *inputFileName) {
 
   // flush any header data left in the output buffer
 
-  if (1 < Debug)
-    fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
     result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName,
-              strerror(errno));
+      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
       return false;
     }
 
@@ -276,14 +247,12 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestParser.parseBody(&InputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "need more data from file %s\n", inputFileName);
+      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
 
       bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug)
-          fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
 
         if (false == InputBuffer.compact()) {
           fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
@@ -291,12 +260,10 @@ bool ParseRequest(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
-                    bytesToRead);
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName,
-                strerror(errno));
+        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
         return false;
       }
 
@@ -307,9 +274,7 @@ bool ParseRequest(const char *inputFileName) {
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug)
-        fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
-                inputFileName);
+      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
 
       continue;
     }
@@ -338,26 +303,21 @@ bool ParseRequest(const char *inputFileName) {
     bytesWritten = 0;
 
     while (bytesWritten < chunkSize) {
-      error = RequestFormatter.beginBlock(
-          &OutputBuffer, chunkSize - bytesWritten, &availableSize);
+      error = RequestFormatter.beginBlock(&OutputBuffer, chunkSize - bytesWritten, &availableSize);
 
       if (ESB_AGAIN == error) {
-        if (1 < Debug)
-          fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+        if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
         if (false == OutputBuffer.isReadable()) {
-          fprintf(stderr, "cannot format %s: formatter jammed\n",
-                  outputFileName);
+          fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
           return false;
         }
 
         while (OutputBuffer.isReadable()) {
-          result =
-              write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+          result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
           if (0 > result) {
-            fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                    strerror(errno));
+            fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
             return false;
           }
 
@@ -373,11 +333,10 @@ bool ParseRequest(const char *inputFileName) {
         return false;
       }
 
-      memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(),
-             InputBuffer.buffer() + bufferOffset + bytesWritten, availableSize);
+      memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(), InputBuffer.buffer() + bufferOffset + bytesWritten,
+             availableSize);
 
-      OutputBuffer.setWritePosition(OutputBuffer.writePosition() +
-                                    availableSize);
+      OutputBuffer.setWritePosition(OutputBuffer.writePosition() + availableSize);
 
       bytesWritten += availableSize;
 
@@ -385,22 +344,18 @@ bool ParseRequest(const char *inputFileName) {
         error = RequestFormatter.endBlock(&OutputBuffer);
 
         if (ESB_AGAIN == error) {
-          if (1 < Debug)
-            fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+          if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
           if (false == OutputBuffer.isReadable()) {
-            fprintf(stderr, "cannot format %s: formatter jammed\n",
-                    outputFileName);
+            fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
             return false;
           }
 
           while (OutputBuffer.isReadable()) {
-            result =
-                write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+            result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
             if (0 > result) {
-              fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                      strerror(errno));
+              fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
               return false;
             }
 
@@ -429,8 +384,7 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestFormatter.endBody(&OutputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
         fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
@@ -438,12 +392,10 @@ bool ParseRequest(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result =
-            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                  strerror(errno));
+          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
           return false;
         }
 
@@ -464,15 +416,13 @@ bool ParseRequest(const char *inputFileName) {
 
   // flush anything left in the output buffer
 
-  if (1 < Debug)
-    fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
     result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName,
-              strerror(errno));
+      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
       return false;
     }
 
@@ -487,14 +437,12 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestParser.skipTrailer(&InputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "need more data from file %s\n", inputFileName);
+      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
 
       bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug)
-          fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
 
         if (false == InputBuffer.compact()) {
           fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
@@ -502,12 +450,10 @@ bool ParseRequest(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
-                    bytesToRead);
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName,
-                strerror(errno));
+        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
         return false;
       }
 
@@ -518,9 +464,7 @@ bool ParseRequest(const char *inputFileName) {
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug)
-        fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
-                inputFileName);
+      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
 
       continue;
     }
@@ -538,8 +482,7 @@ bool ParseRequest(const char *inputFileName) {
   }
 
   if (!CompareFiles(outputFd, validationFd)) {
-    fprintf(stderr, "%s does not match %s\n", outputFileName,
-            validationFileName);
+    fprintf(stderr, "%s does not match %s\n", outputFileName, validationFileName);
     DumpFile(validationFd, validationFileName);
     DumpFile(outputFd, outputFileName);
     return false;
@@ -558,12 +501,10 @@ bool ParseResponse(const char *inputFileName) {
 
   char outputFileName[NAME_MAX + 1];
 
-  snprintf(outputFileName, sizeof(outputFileName) - 1, "output_%s",
-           inputFileName);
+  snprintf(outputFileName, sizeof(outputFileName) - 1, "output_%s", inputFileName);
   outputFileName[sizeof(outputFileName) - 1] = 0;
 
-  int outputFd =
-      open(outputFileName, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
+  int outputFd = open(outputFileName, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
 
   if (0 > outputFd) {
     fprintf(stderr, "cannot open %s: %s\n", outputFileName, strerror(errno));
@@ -572,15 +513,13 @@ bool ParseResponse(const char *inputFileName) {
 
   char validationFileName[NAME_MAX + 1];
 
-  snprintf(validationFileName, sizeof(validationFileName) - 1, "validation_%s",
-           inputFileName);
+  snprintf(validationFileName, sizeof(validationFileName) - 1, "validation_%s", inputFileName);
   validationFileName[sizeof(validationFileName) - 1] = 0;
 
   int validationFd = open(validationFileName, O_RDONLY);
 
   if (0 > validationFd) {
-    fprintf(stderr, "cannot open %s: %s\n", validationFileName,
-            strerror(errno));
+    fprintf(stderr, "cannot open %s: %s\n", validationFileName, strerror(errno));
     return false;
   }
 
@@ -598,14 +537,12 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseParser.parseHeaders(&InputBuffer, response);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "need more data from file %s\n", inputFileName);
+      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
 
       bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug)
-          fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
 
         if (false == InputBuffer.compact()) {
           fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
@@ -613,12 +550,10 @@ bool ParseResponse(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
-                    bytesToRead);
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName,
-                strerror(errno));
+        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
         return false;
       }
 
@@ -629,9 +564,7 @@ bool ParseResponse(const char *inputFileName) {
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug)
-        fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
-                inputFileName);
+      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
 
       continue;
     }
@@ -646,16 +579,13 @@ bool ParseResponse(const char *inputFileName) {
 
       fprintf(stderr, "StatusCode: %d\n", response.statusCode());
       fprintf(stderr, "ReasonPhrase: %s\n", response.reasonPhrase());
-      fprintf(stderr, "Version: HTTP/%d.%d\n", response.httpVersion() / 100,
-              response.httpVersion() % 100 / 10);
+      fprintf(stderr, "Version: HTTP/%d.%d\n", response.httpVersion() / 100, response.httpVersion() % 100 / 10);
 
       fprintf(stderr, "Headers\n");
 
-      for (header = (HttpHeader *)response.headers().first(); header;
-           header = (HttpHeader *)header->next()) {
+      for (header = (HttpHeader *)response.headers().first(); header; header = (HttpHeader *)header->next()) {
         fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
-                0 == header->fieldValue() ? "null"
-                                          : (const char *)header->fieldValue());
+                0 == header->fieldValue() ? "null" : (const char *)header->fieldValue());
       }
     }
 
@@ -670,8 +600,7 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseFormatter.formatHeaders(&OutputBuffer, response);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
         fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
@@ -679,12 +608,10 @@ bool ParseResponse(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result =
-            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                  strerror(errno));
+          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
           return false;
         }
 
@@ -705,15 +632,13 @@ bool ParseResponse(const char *inputFileName) {
 
   // flush any header data left in the output buffer
 
-  if (1 < Debug)
-    fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
     result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName,
-              strerror(errno));
+      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
       return false;
     }
 
@@ -734,14 +659,12 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseParser.parseBody(&InputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "need more data from file %s\n", inputFileName);
+      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
 
       bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug)
-          fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
 
         if (false == InputBuffer.compact()) {
           fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
@@ -749,12 +672,10 @@ bool ParseResponse(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
-                    bytesToRead);
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName,
-                strerror(errno));
+        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
         return false;
       }
 
@@ -765,9 +686,7 @@ bool ParseResponse(const char *inputFileName) {
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug)
-        fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
-                inputFileName);
+      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
       continue;
     }
 
@@ -794,26 +713,21 @@ bool ParseResponse(const char *inputFileName) {
     bytesWritten = 0;
 
     while (bytesWritten < chunkSize) {
-      error = ResponseFormatter.beginBlock(
-          &OutputBuffer, chunkSize - bytesWritten, &availableSize);
+      error = ResponseFormatter.beginBlock(&OutputBuffer, chunkSize - bytesWritten, &availableSize);
 
       if (ESB_AGAIN == error) {
-        if (1 < Debug)
-          fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+        if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
         if (false == OutputBuffer.isReadable()) {
-          fprintf(stderr, "cannot format %s: formatter jammed\n",
-                  outputFileName);
+          fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
           return false;
         }
 
         while (OutputBuffer.isReadable()) {
-          result =
-              write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+          result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
           if (0 > result) {
-            fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                    strerror(errno));
+            fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
             return false;
           }
 
@@ -829,11 +743,10 @@ bool ParseResponse(const char *inputFileName) {
         return false;
       }
 
-      memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(),
-             InputBuffer.buffer() + bufferOffset + bytesWritten, availableSize);
+      memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(), InputBuffer.buffer() + bufferOffset + bytesWritten,
+             availableSize);
 
-      OutputBuffer.setWritePosition(OutputBuffer.writePosition() +
-                                    availableSize);
+      OutputBuffer.setWritePosition(OutputBuffer.writePosition() + availableSize);
 
       bytesWritten += availableSize;
 
@@ -841,22 +754,18 @@ bool ParseResponse(const char *inputFileName) {
         error = ResponseFormatter.endBlock(&OutputBuffer);
 
         if (ESB_AGAIN == error) {
-          if (1 < Debug)
-            fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+          if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
           if (false == OutputBuffer.isReadable()) {
-            fprintf(stderr, "cannot format %s: formatter jammed\n",
-                    outputFileName);
+            fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
             return false;
           }
 
           while (OutputBuffer.isReadable()) {
-            result =
-                write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+            result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
             if (0 > result) {
-              fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                      strerror(errno));
+              fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
               return false;
             }
 
@@ -885,8 +794,7 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseFormatter.endBody(&OutputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
         fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
@@ -894,12 +802,10 @@ bool ParseResponse(const char *inputFileName) {
       }
 
       while (OutputBuffer.isReadable()) {
-        result =
-            write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName,
-                  strerror(errno));
+          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
           return false;
         }
 
@@ -920,15 +826,13 @@ bool ParseResponse(const char *inputFileName) {
 
   // flush anything left in the output buffer
 
-  if (1 < Debug)
-    fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
 
   while (OutputBuffer.isReadable()) {
     result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName,
-              strerror(errno));
+      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
       return false;
     }
 
@@ -943,14 +847,12 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseParser.skipTrailer(&InputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug)
-        fprintf(stderr, "need more data from file %s\n", inputFileName);
+      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
 
       bytesToRead = Random.generate(1, InputBuffer.writable());
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug)
-          fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
 
         if (false == InputBuffer.compact()) {
           fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
@@ -958,12 +860,10 @@ bool ParseResponse(const char *inputFileName) {
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
-                    bytesToRead);
+      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName,
-                strerror(errno));
+        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
         return false;
       }
 
@@ -974,9 +874,7 @@ bool ParseResponse(const char *inputFileName) {
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug)
-        fprintf(stderr, "read %ld bytes from file %s\n", (long int)result,
-                inputFileName);
+      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
 
       continue;
     }
@@ -994,8 +892,7 @@ bool ParseResponse(const char *inputFileName) {
   }
 
   if (!CompareFiles(outputFd, validationFd)) {
-    fprintf(stderr, "%s does not match %s\n", outputFileName,
-            validationFileName);
+    fprintf(stderr, "%s does not match %s\n", outputFileName, validationFileName);
     DumpFile(validationFd, validationFileName);
     DumpFile(outputFd, outputFileName);
     return false;
@@ -1115,8 +1012,7 @@ int main(int argc, char **argv) {
 
   DIR *directory = opendir(currentWorkingDirectory);
 
-  for (struct dirent *entry = readdir(directory); entry;
-       entry = readdir(directory)) {
+  for (struct dirent *entry = readdir(directory); entry; entry = readdir(directory)) {
     ES::InputBuffer.clear();
     ES::WorkingBuffer.clear();
     ES::OutputBuffer.clear();

@@ -23,8 +23,7 @@ HttpServerSimpleCounters::HttpServerSimpleCounters()
 
 HttpServerSimpleCounters::~HttpServerSimpleCounters() {}
 
-void HttpServerSimpleCounters::log(ESB::Logger &logger,
-                                   ESB::Logger::Severity severity) const {
+void HttpServerSimpleCounters::log(ESB::Logger &logger, ESB::Logger::Severity severity) const {
   /*_successfulTransactions.log(logger, severity);
   _requestHeaderErrors.log(logger, severity);
   _requestHeaderFailures.log(logger, severity);
@@ -38,144 +37,93 @@ void HttpServerSimpleCounters::log(ESB::Logger &logger,
   _responseBodyErrors.log(logger, severity);
   _responseBodyFailures.log(logger, severity);
   _responseHeaderTimeouts.log(logger, severity);*/
-  ESB_LOG(logger, severity, "SERVER CONNECTION ACCEPTS: %d",
-          _totalConnections.get());
-  _averageTransactionsPerConnection.log(logger, severity,
-                                        "SERVER AVG TRANS PER CONNECTION");
+  ESB_LOG(logger, severity, "SERVER CONNECTION ACCEPTS: %d", _totalConnections.get());
+  _averageTransactionsPerConnection.log(logger, severity, "SERVER AVG TRANS PER CONNECTION");
 }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getSuccessfulTransactions() {
+ESB::PerformanceCounter *HttpServerSimpleCounters::getSuccessfulTransactions() { return &_successfulTransactions; }
+
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getSuccessfulTransactions() const {
   return &_successfulTransactions;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getSuccessfulTransactions() const {
-  return &_successfulTransactions;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderErrors() { return &_requestHeaderErrors; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderErrors() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderErrors() const {
   return &_requestHeaderErrors;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getRequestHeaderErrors() const {
-  return &_requestHeaderErrors;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderFailures() { return &_requestHeaderFailures; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderFailures() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderFailures() const {
   return &_requestHeaderFailures;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getRequestHeaderFailures() const {
-  return &_requestHeaderFailures;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderTimeouts() { return &_requestHeaderTimeouts; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderTimeouts() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestHeaderTimeouts() const {
   return &_requestHeaderTimeouts;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getRequestHeaderTimeouts() const {
-  return &_requestHeaderTimeouts;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyErrors() { return &_requestBodyErrors; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyErrors() {
-  return &_requestBodyErrors;
-}
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyErrors() const { return &_requestBodyErrors; }
 
-const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyErrors()
-    const {
-  return &_requestBodyErrors;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyFailures() { return &_requestBodyFailures; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyFailures() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyFailures() const {
   return &_requestBodyFailures;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getRequestBodyFailures() const {
-  return &_requestBodyFailures;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyTimeouts() { return &_requestBodyTimeouts; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyTimeouts() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getRequestBodyTimeouts() const {
   return &_requestBodyTimeouts;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getRequestBodyTimeouts() const {
-  return &_requestBodyTimeouts;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderErrors() { return &_responseHeaderErrors; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderErrors() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderErrors() const {
   return &_responseHeaderErrors;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getResponseHeaderErrors() const {
-  return &_responseHeaderErrors;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderFailures() { return &_responseHeaderFailures; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderFailures() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderFailures() const {
   return &_responseHeaderFailures;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getResponseHeaderFailures() const {
-  return &_responseHeaderFailures;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderTimeouts() { return &_responseHeaderTimeouts; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderTimeouts() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseHeaderTimeouts() const {
   return &_responseHeaderTimeouts;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getResponseHeaderTimeouts() const {
-  return &_responseHeaderTimeouts;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyErrors() { return &_responseBodyErrors; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyErrors() {
-  return &_responseBodyErrors;
-}
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyErrors() const { return &_responseBodyErrors; }
 
-const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyErrors()
-    const {
-  return &_responseBodyErrors;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyFailures() { return &_responseBodyFailures; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyFailures() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyFailures() const {
   return &_responseBodyFailures;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getResponseBodyFailures() const {
-  return &_responseBodyFailures;
-}
+ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyTimeouts() { return &_responseBodyTimeouts; }
 
-ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyTimeouts() {
+const ESB::PerformanceCounter *HttpServerSimpleCounters::getResponseBodyTimeouts() const {
   return &_responseBodyTimeouts;
 }
 
-const ESB::PerformanceCounter *
-HttpServerSimpleCounters::getResponseBodyTimeouts() const {
-  return &_responseBodyTimeouts;
-}
+ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() { return &_totalConnections; }
 
-ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() {
-  return &_totalConnections;
-}
+const ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() const { return &_totalConnections; }
 
-const ESB::SharedInt *HttpServerSimpleCounters::getTotalConnections() const {
-  return &_totalConnections;
-}
-
-ESB::SharedAveragingCounter *
-HttpServerSimpleCounters::getAverageTransactionsPerConnection() {
+ESB::SharedAveragingCounter *HttpServerSimpleCounters::getAverageTransactionsPerConnection() {
   return &_averageTransactionsPerConnection;
 }
 
-const ESB::SharedAveragingCounter *
-HttpServerSimpleCounters::getAverageTransactionsPerConnection() const {
+const ESB::SharedAveragingCounter *HttpServerSimpleCounters::getAverageTransactionsPerConnection() const {
   return &_averageTransactionsPerConnection;
 }
 

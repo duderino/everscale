@@ -102,8 +102,7 @@ static const bool Debug = false;
 static const int Blocks = 160;
 static const int BlockSize = 4096;
 
-FixedAllocatorTest::FixedAllocatorTest()
-    : _rand(), _allocator(Blocks, BlockSize, SystemAllocator::Instance()) {}
+FixedAllocatorTest::FixedAllocatorTest() : _rand(), _allocator(Blocks, BlockSize, SystemAllocator::Instance()) {}
 
 FixedAllocatorTest::~FixedAllocatorTest() {}
 
@@ -151,8 +150,7 @@ bool FixedAllocatorTest::run(ESTF::ResultCollector *collector) {
         allocations[j]._lifetime = i + generateAllocLifetime();
 
         if (Debug) {
-          std::cerr << "Allocating block at time " << i << " with lifetime "
-                    << allocations[j]._lifetime;
+          std::cerr << "Allocating block at time " << i << " with lifetime " << allocations[j]._lifetime;
         }
 
         allocations[j]._data = _allocator.allocate(BlockSize);
@@ -175,8 +173,7 @@ bool FixedAllocatorTest::run(ESTF::ResultCollector *collector) {
           // We will check this value when we free the block to
           // make sure no one overwrote it.
           //
-          memset(allocations[j]._data, allocations[j]._lifetime % 127,
-                 BlockSize);
+          memset(allocations[j]._data, allocations[j]._lifetime % 127, BlockSize);
         }
       }
     }
@@ -241,15 +238,13 @@ int FixedAllocatorTest::generateAllocLifetime() {
 int main() {
   ESB::FixedAllocatorTestPtr fixedAllocatorTest = new ESB::FixedAllocatorTest();
 
-  ESTF::ConcurrencyDecoratorPtr fixedAllocatorDecorator =
-      new ESTF::ConcurrencyDecorator(fixedAllocatorTest, 3);
+  ESTF::ConcurrencyDecoratorPtr fixedAllocatorDecorator = new ESTF::ConcurrencyDecorator(fixedAllocatorTest, 3);
 
   ESTF::CompositePtr testSuite = new ESTF::Composite();
 
   testSuite->add(fixedAllocatorDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

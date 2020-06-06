@@ -22,14 +22,11 @@
 // TODO Support HTTPS
 // TODO Get server callbacks into AWSHttpStack
 
-AWSHttpApi::AWSHttpApi(aws_http_server *server,
-                       aws_http_server_config *server_config,
-                       aws_http_log_level log_level, void *log_context,
-                       aws_http_logger logger)
+AWSHttpApi::AWSHttpApi(aws_http_server *server, aws_http_server_config *server_config, aws_http_log_level log_level,
+                       void *log_context, aws_http_logger logger)
     : _logger((ESFLogger::Severity)log_level, logger, log_context),
       _stack(server_config ? server_config->http_port : AWS_DEFAULT_HTTP_PORT,
-             server_config ? server_config->threads : AWS_DEFAULT_THREADS,
-             &_logger) {}
+             server_config ? server_config->threads : AWS_DEFAULT_THREADS, &_logger) {}
 
 AWSHttpApi::~AWSHttpApi() {}
 

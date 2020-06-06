@@ -30,17 +30,13 @@ class HttpMessage {
 
   const HttpHeader *findHeader(const char *fieldName) const;
 
-  inline ESB::Error addHeader(const HttpHeader *header,
-                              ESB::Allocator &allocator) {
-    return addHeader((const char *)header->fieldName(),
-                     (const char *)header->fieldValue(), allocator);
+  inline ESB::Error addHeader(const HttpHeader *header, ESB::Allocator &allocator) {
+    return addHeader((const char *)header->fieldName(), (const char *)header->fieldValue(), allocator);
   }
 
-  ESB::Error addHeader(const char *fieldName, const char *fieldValue,
-                       ESB::Allocator &allocator);
+  ESB::Error addHeader(const char *fieldName, const char *fieldValue, ESB::Allocator &allocator);
 
-  ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName,
-                       const char *fieldValueFormat, ...)
+  ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName, const char *fieldValueFormat, ...)
       __attribute__((format(printf, 4, 5)));
 
   /**
@@ -80,9 +76,7 @@ class HttpMessage {
     }
   }
 
-  inline bool reuseConnection() const {
-    return _flags & ES_HTTP_MESSAGE_REUSE_CONNECTION;
-  }
+  inline bool reuseConnection() const { return _flags & ES_HTTP_MESSAGE_REUSE_CONNECTION; }
 
   inline void setSend100Continue(bool send100Continue) {
     if (send100Continue) {
@@ -92,9 +86,7 @@ class HttpMessage {
     }
   }
 
-  inline bool send100Continue() {
-    return _flags & ES_HTTP_MESSAGE_SEND_100_CONTINUE;
-  }
+  inline bool send100Continue() { return _flags & ES_HTTP_MESSAGE_SEND_100_CONTINUE; }
 
  protected:
   inline int flags() const { return _flags; }

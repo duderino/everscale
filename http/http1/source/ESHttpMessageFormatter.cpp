@@ -23,13 +23,11 @@ namespace ES {
 #define ES_FORMATTING_UNENCODED_BODY (1 << 4)
 #define ES_FORMATTING_CHUNKED_BODY (1 << 5)
 #define ES_BODY_FORMAT_COMPLETE (1 << 6)
-#define ES_FORMATTING_HEADER \
-  (ES_FORMATTING_FIELD_NAME | ES_FORMATTING_FIELD_VALUE)
+#define ES_FORMATTING_HEADER (ES_FORMATTING_FIELD_NAME | ES_FORMATTING_FIELD_VALUE)
 #define ES_FOUND_CONTENT_LENGTH_HEADER (1 << 10)
 #define ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER (1 << 11)
 
-HttpMessageFormatter::HttpMessageFormatter()
-    : _state(0x00), _currentHeader(0) {}
+HttpMessageFormatter::HttpMessageFormatter() : _state(0x00), _currentHeader(0) {}
 
 HttpMessageFormatter::~HttpMessageFormatter() {}
 
@@ -38,8 +36,7 @@ void HttpMessageFormatter::reset() {
   _currentHeader = 0;
 }
 
-ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
-                                               const HttpMessage &message) {
+ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer, const HttpMessage &message) {
   // generic-message = start-line
   //                   *(message-header CRLF)
   //                   CRLF
@@ -68,8 +65,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
 
     _currentHeader = (HttpHeader *)message.headers().first();
 
-    HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_START_LINE,
-                         ES_FORMATTING_FIELD_NAME);
+    HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_START_LINE, ES_FORMATTING_FIELD_NAME);
   }
 
   while (ES_FORMATTING_HEADER & _state) {
@@ -89,13 +85,11 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
       // identity transfer-coding, the Content-Length MUST be ignored.
 
       if (ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER & _state) {
-        return HttpUtil::Transition(
-            &_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
-            ES_HEADER_FORMAT_COMPLETE | ES_FORMATTING_CHUNKED_BODY);
+        return HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
+                                    ES_HEADER_FORMAT_COMPLETE | ES_FORMATTING_CHUNKED_BODY);
       } else {
-        return HttpUtil::Transition(
-            &_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
-            ES_HEADER_FORMAT_COMPLETE | ES_FORMATTING_UNENCODED_BODY);
+        return HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
+                                    ES_HEADER_FORMAT_COMPLETE | ES_FORMATTING_UNENCODED_BODY);
       }
     }
 
@@ -112,27 +106,23 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
         return error;
       }
 
-      if (0 == strcasecmp((const char *)_currentHeader->fieldName(),
-                          "Content-Length")) {
+      if (0 == strcasecmp((const char *)_currentHeader->fieldName(), "Content-Length")) {
         _state |= ES_FOUND_CONTENT_LENGTH_HEADER;
       }
 
-      if (0 == strcasecmp((const char *)_currentHeader->fieldName(),
-                          "Transfer-Encoding")) {
+      if (0 == strcasecmp((const char *)_currentHeader->fieldName(), "Transfer-Encoding")) {
         // If a Transfer-Encoding header field (section 14.41) is present and
         // has any value other than "identity", then the transfer-length is
         // defined by use of the "chunked" transfer-coding (section 3.6),
         // unless the message is terminated by closing the connection.
 
         if (0 == _currentHeader->fieldValue() ||
-            0 != strncmp((const char *)_currentHeader->fieldValue(), "identity",
-                         sizeof("identity") - 1)) {
+            0 != strncmp((const char *)_currentHeader->fieldValue(), "identity", sizeof("identity") - 1)) {
           _state |= ES_FOUND_TRANSFER_ENCODING_CHUNKED_HEADER;
         }
       }
 
-      HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_NAME,
-                           ES_FORMATTING_FIELD_VALUE);
+      HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_NAME, ES_FORMATTING_FIELD_VALUE);
     }
 
     if (ES_FORMATTING_FIELD_VALUE & _state) {
@@ -142,8 +132,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
         return error;
       }
 
-      HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_VALUE,
-                           ES_FORMATTING_FIELD_NAME);
+      HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_FIELD_VALUE, ES_FORMATTING_FIELD_NAME);
 
       _currentHeader = (const HttpHeader *)_currentHeader->next();
     }
@@ -152,9 +141,7 @@ ESB::Error HttpMessageFormatter::formatHeaders(ESB::Buffer *outputBuffer,
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
-                                               const HttpMessage &message,
-                                               bool clientMode) {
+ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer, const HttpMessage &message, bool clientMode) {
   // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
   if (clientMode) {
@@ -201,8 +188,7 @@ ESB::Error HttpMessageFormatter::formatVersion(ESB::Buffer *outputBuffer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::formatFieldName(
-    ESB::Buffer *outputBuffer, const unsigned char *fieldName) {
+ESB::Error HttpMessageFormatter::formatFieldName(ESB::Buffer *outputBuffer, const unsigned char *fieldName) {
   // field-name     = token
 
   assert(ES_FORMATTING_FIELD_NAME & _state);
@@ -230,8 +216,7 @@ ESB::Error HttpMessageFormatter::formatFieldName(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::formatFieldValue(
-    ESB::Buffer *outputBuffer, const unsigned char *fieldValue) {
+ESB::Error HttpMessageFormatter::formatFieldValue(ESB::Buffer *outputBuffer, const unsigned char *fieldValue) {
   // field-value    = *( field-content | LWS )
   // field-content  = <the OCTETs making up the field-value
   //                 and consisting of either *TEXT or combinations
@@ -287,8 +272,7 @@ ESB::Error HttpMessageFormatter::formatFieldValue(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer,
-                                            ESB::UInt32 offeredSize,
+ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 offeredSize,
                                             ESB::UInt32 *maxChunkSize) {
   if (!outputBuffer || !maxChunkSize) {
     return ESB_NULL_POINTER;
@@ -358,22 +342,17 @@ ESB::Error HttpMessageFormatter::endBody(ESB::Buffer *outputBuffer) {
     outputBuffer->putNext('\r');
     outputBuffer->putNext('\n');
 
-    return HttpUtil::Transition(&_state, outputBuffer,
-                                ES_FORMATTING_CHUNKED_BODY,
-                                ES_BODY_FORMAT_COMPLETE);
+    return HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_CHUNKED_BODY, ES_BODY_FORMAT_COMPLETE);
   }
 
   if (ES_FORMATTING_UNENCODED_BODY & _state) {
-    return HttpUtil::Transition(&_state, outputBuffer,
-                                ES_FORMATTING_UNENCODED_BODY,
-                                ES_BODY_FORMAT_COMPLETE);
+    return HttpUtil::Transition(&_state, outputBuffer, ES_FORMATTING_UNENCODED_BODY, ES_BODY_FORMAT_COMPLETE);
   }
 
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer,
-                                            ESB::UInt32 requestedSize,
+ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
                                             ESB::UInt32 *availableSize) {
   // chunk          = chunk-size [ chunk-extension ] CRLF
   //                  ...
@@ -429,9 +408,8 @@ ESB::Error HttpMessageFormatter::endChunk(ESB::Buffer *outputBuffer) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::beginUnencodedBlock(
-    ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
-    ESB::UInt32 *availableSize) {
+ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
+                                                     ESB::UInt32 *availableSize) {
   assert(ES_FORMATTING_UNENCODED_BODY & _state);
   assert(0 < requestedSize);
   assert(availableSize);

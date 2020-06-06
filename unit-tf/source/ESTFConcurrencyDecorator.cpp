@@ -70,8 +70,7 @@ bool ConcurrencyDecorator::tearDown() { return _component->tearDown(); }
 
 ComponentPtr ConcurrencyDecorator::clone() {
   ComponentPtr component = _component->clone();
-  ConcurrencyDecoratorPtr decorator =
-      new ConcurrencyDecorator(component, _threads);
+  ConcurrencyDecoratorPtr decorator = new ConcurrencyDecorator(component, _threads);
 
   return decorator;
 }

@@ -12,22 +12,18 @@
 
 namespace ES {
 
-HttpClientSocketFactory::SocketAddressCallbacks::SocketAddressCallbacks(
-    ESB::Allocator &allocator)
+HttpClientSocketFactory::SocketAddressCallbacks::SocketAddressCallbacks(ESB::Allocator &allocator)
     : _allocator(allocator) {}
 
-int HttpClientSocketFactory::SocketAddressCallbacks::compare(
-    const void *f, const void *s) const {
+int HttpClientSocketFactory::SocketAddressCallbacks::compare(const void *f, const void *s) const {
   ESB::SocketAddress *first = (ESB::SocketAddress *)f;
   ESB::SocketAddress *second = (ESB::SocketAddress *)s;
 
   // TODO not IPv6 safe
-  return memcmp(first->primitiveAddress(), second->primitiveAddress(),
-                sizeof(ESB::SocketAddress::Address));
+  return memcmp(first->primitiveAddress(), second->primitiveAddress(), sizeof(ESB::SocketAddress::Address));
 }
 
-ESB::UInt32 HttpClientSocketFactory::SocketAddressCallbacks::hash(
-    const void *key) const {
+ESB::UInt32 HttpClientSocketFactory::SocketAddressCallbacks::hash(const void *key) const {
   ESB::SocketAddress *addr = (ESB::SocketAddress *)key;
 
   // TODO not IPv6 safe
@@ -37,15 +33,13 @@ ESB::UInt32 HttpClientSocketFactory::SocketAddressCallbacks::hash(
   return hash;
 }
 
-void HttpClientSocketFactory::SocketAddressCallbacks::cleanup(
-    ESB::EmbeddedMapElement *element) {
+void HttpClientSocketFactory::SocketAddressCallbacks::cleanup(ESB::EmbeddedMapElement *element) {
   element->~EmbeddedMapElement();
   _allocator.deallocate(element);
 }
 
-HttpClientSocketFactory::HttpClientSocketFactory(
-    HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
-    HttpClientCounters &counters, ESB::Allocator &allocator)
+HttpClientSocketFactory::HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
+                                                 HttpClientCounters &counters, ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
       _handler(handler),
       _counters(counters),
@@ -65,14 +59,12 @@ HttpClientSocketFactory::~HttpClientSocketFactory() {
   }
 }
 
-HttpClientSocket *HttpClientSocketFactory::create(
-    HttpClientTransaction *transaction) {
+HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transaction) {
   if (!transaction) {
     return NULL;
   }
 
-  HttpClientSocket *socket =
-      (HttpClientSocket *)_map.remove(&transaction->peerAddress());
+  HttpClientSocket *socket = (HttpClientSocket *)_map.remove(&transaction->peerAddress());
 
   if (socket) {
     assert(socket->isConnected());
@@ -84,8 +76,7 @@ HttpClientSocket *HttpClientSocketFactory::create(
   if (ESB_DEBUG_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
     transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-    ESB_LOG_DEBUG("[%s:%u] creating new connection", buffer,
-                  transaction->peerAddress().port());
+    ESB_LOG_DEBUG("[%s:%u] creating new connection", buffer, transaction->peerAddress().port());
   }
 
   // Try to reuse the memory of a dead socket
@@ -97,15 +88,13 @@ HttpClientSocket *HttpClientSocketFactory::create(
     return socket;
   }
 
-  socket = new (_allocator)
-      HttpClientSocket(_handler, _multiplexer, transaction->peerAddress(),
-                       _counters, _cleanupHandler);
+  socket =
+      new (_allocator) HttpClientSocket(_handler, _multiplexer, transaction->peerAddress(), _counters, _cleanupHandler);
 
   if (!socket) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
     transaction->peerAddress().presentationAddress(dottedIP, sizeof(dottedIP));
-    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY,
-                           "[%s:%d] cannot create new connection", dottedIP,
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "[%s:%d] cannot create new connection", dottedIP,
                            transaction->peerAddress().port());
     return socket;
   }
@@ -121,8 +110,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   }
 
   if (!socket->isConnected()) {
-    ESB_LOG_DEBUG("[%s] Not returning connection to pool",
-                  socket->logAddress());
+    ESB_LOG_DEBUG("[%s] Not returning connection to pool", socket->logAddress());
     socket->close();  // idempotent, just to be safe
     _sockets.addLast(socket);
     return;
@@ -131,15 +119,13 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   ESB::Error error = _map.insert(socket);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot return connection to pool",
-                          socket->logAddress());
+    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot return connection to pool", socket->logAddress());
     socket->close();
     _sockets.addLast(socket);
   }
 }
 
-ESB::Error HttpClientSocketFactory::executeClientTransaction(
-    HttpClientTransaction *transaction) {
+ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransaction *transaction) {
   // don't uncomment the end handler callbacks until after the processing goes
   // asynch
   assert(transaction);
@@ -163,8 +149,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
     ESB::Error error = socket->connect();
 
     if (ESB_SUCCESS != error) {
-      _counters.getFailures()->record(transaction->startTime(),
-                                      ESB::Date::Now());
+      _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
       ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot connect", socket->logAddress());
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -178,9 +163,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
 
   if (ESB_SUCCESS != error) {
     _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
-    ESB_LOG_CRITICAL_ERRNO(error,
-                           "[%s] Cannot add client socket to multiplexer",
-                           socket->logAddress());
+    ESB_LOG_CRITICAL_ERRNO(error, "[%s] Cannot add client socket to multiplexer", socket->logAddress());
     socket->close();
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
@@ -191,8 +174,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(
   return ESB_SUCCESS;
 }
 
-HttpClientSocketFactory::CleanupHandler::CleanupHandler(
-    HttpClientSocketFactory &factory)
+HttpClientSocketFactory::CleanupHandler::CleanupHandler(HttpClientSocketFactory &factory)
     : ESB::CleanupHandler(), _factory(factory) {}
 
 HttpClientSocketFactory::CleanupHandler::~CleanupHandler() {}

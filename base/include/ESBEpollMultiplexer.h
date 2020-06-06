@@ -45,8 +45,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  EpollMultiplexer(UInt32 maxSockets,
-                   Allocator &allocator = SystemAllocator::Instance(),
+  EpollMultiplexer(UInt32 maxSockets, Allocator &allocator = SystemAllocator::Instance(),
                    Lockable &lock = NullLock::Instance());
 
   /** Destructor.
@@ -86,8 +85,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @param socket The multiplexed socket to remove
    */
-  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket,
-                                        bool removeFromList = true);
+  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket, bool removeFromList = true);
 
   /** Run the multiplexer's event loop until shutdown.
    *
@@ -120,9 +118,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   //  Disabled

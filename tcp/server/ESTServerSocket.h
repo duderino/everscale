@@ -34,8 +34,7 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * @param acceptData A new connection accepted by a listening socket
    * @param cleanupHandler An object that can be used to destroy this one
    */
-  ServerSocket(ESB::TCPSocket::AcceptData *acceptData,
-               ESB::CleanupHandler *cleanupHandler);
+  ServerSocket(ESB::TCPSocket::AcceptData *acceptData, ESB::CleanupHandler *cleanupHandler);
 
   /** Destructor.
    */
@@ -130,8 +129,7 @@ class ServerSocket : public ESB::MultiplexedSocket {
    * @see handleRemoveEvent to close the socket descriptor.
    * @see TCPSocket::getLastError to get the socket error
    */
-  virtual bool handleErrorEvent(ESB::Error errorCode,
-                                ESB::SocketMultiplexer &multiplexer);
+  virtual bool handleErrorEvent(ESB::Error errorCode, ESB::SocketMultiplexer &multiplexer);
 
   /** The socket's connection was closed.
    *
@@ -186,9 +184,7 @@ class ServerSocket : public ESB::MultiplexedSocket {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) {
-    return allocator->allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator *allocator) { return allocator->allocate(size); }
 
  private:
   // Disabled

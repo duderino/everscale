@@ -44,9 +44,7 @@ class Time : public Thread {
    */
   inline UInt64 nowSec() { return ((UInt64)_Basis) + _time.get(); }
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  protected:
   virtual void run();

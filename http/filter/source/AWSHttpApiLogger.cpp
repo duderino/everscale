@@ -7,25 +7,16 @@
 #include <AWSHIttpApiLogger.h>
 #endif
 
-AWSHttpApiLogger::AWSHttpApiLogger(ESFLogger::Severity severity,
-                                   aws_http_logger loggerCallback,
-                                   void *loggerContext)
-    : _severity(severity),
-      _loggerCallback(loggerCallback),
-      _loggerContext(loggerContext) {}
+AWSHttpApiLogger::AWSHttpApiLogger(ESFLogger::Severity severity, aws_http_logger loggerCallback, void *loggerContext)
+    : _severity(severity), _loggerCallback(loggerCallback), _loggerContext(loggerContext) {}
 
 AWSHttpApiLogger::~AWSHttpApiLogger() {}
 
-bool AWSHttpApiLogger::isLoggable(ESFLogger::Severity severity) {
-  return severity > _severity ? false : true;
-}
+bool AWSHttpApiLogger::isLoggable(ESFLogger::Severity severity) { return severity > _severity ? false : true; }
 
-void AWSHttpApiLogger::setSeverity(ESFLogger::Severity severity) {
-  _severity = severity;
-}
+void AWSHttpApiLogger::setSeverity(ESFLogger::Severity severity) { _severity = severity; }
 
-ESFError AWSHttpApiLogger::log(ESFLogger::Severity severity, const char *file,
-                               int line, const char *format, ...) {
+ESFError AWSHttpApiLogger::log(ESFLogger::Severity severity, const char *file, int line, const char *format, ...) {
   if (0 == file || 0 == format) {
     return ESF_NULL_POINTER;
   }
@@ -42,8 +33,7 @@ ESFError AWSHttpApiLogger::log(ESFLogger::Severity severity, const char *file,
 
   va_start(vaList, format);
 
-  _loggerCallback(_loggerContext, (aws_http_log_level)severity, file, line,
-                  format, vaList);
+  _loggerCallback(_loggerContext, (aws_http_log_level)severity, file, line, format, vaList);
 
   va_end(vaList);
 

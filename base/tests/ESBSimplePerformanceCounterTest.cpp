@@ -50,8 +50,7 @@ TEST(SimplePerformanceCounter, LatencySec) {
   for (int i = 0; i < queries; ++i) {
     stop += 1;
     double latencyMsec = 1000 * (i + 1);
-    squaredDistToMeanMsec +=
-        (latencyMsec - meanMsec) * (latencyMsec - meanMsec);
+    squaredDistToMeanMsec += (latencyMsec - meanMsec) * (latencyMsec - meanMsec);
   }
 
   double varianceMsec = squaredDistToMeanMsec / (queries - 1);
@@ -83,8 +82,7 @@ TEST(SimplePerformanceCounter, LatencyMsec) {
     Date micros(0, 1000 * (i + 1));
     Date stop = start + micros;
     double latencyMsec = micros.microSeconds() / 1000;
-    squaredDistToMeanMsec +=
-        (latencyMsec - meanMsec) * (latencyMsec - meanMsec);
+    squaredDistToMeanMsec += (latencyMsec - meanMsec) * (latencyMsec - meanMsec);
   }
 
   double varianceMsec = squaredDistToMeanMsec / (queries - 1);

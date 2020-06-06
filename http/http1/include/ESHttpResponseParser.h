@@ -22,8 +22,7 @@ class HttpResponseParser : public HttpMessageParser {
    * @param allocator The discard allocator to use for allocating internal
    * strings.
    */
-  HttpResponseParser(ESB::Buffer *workingBuffer,
-                     ESB::DiscardAllocator &allocator);
+  HttpResponseParser(ESB::Buffer *workingBuffer, ESB::DiscardAllocator &allocator);
 
   virtual ~HttpResponseParser();
 
@@ -34,8 +33,7 @@ class HttpResponseParser : public HttpMessageParser {
 
  protected:
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
-  virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer,
-                                    HttpMessage &message);
+  virtual ESB::Error parseStartLine(ESB::Buffer *inputBuffer, HttpMessage &message);
 
   virtual bool isBodyNotAllowed(HttpMessage &message);
 
@@ -48,8 +46,7 @@ class HttpResponseParser : public HttpMessageParser {
   ESB::Error parseStatusCode(ESB::Buffer *inputBuffer, HttpResponse &response);
 
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
-  ESB::Error parseReasonPhrase(ESB::Buffer *inputBuffer,
-                               HttpResponse &response);
+  ESB::Error parseReasonPhrase(ESB::Buffer *inputBuffer, HttpResponse &response);
 
   int _responseState;
 };

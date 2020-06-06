@@ -22,14 +22,10 @@ namespace EST {
 
 // TODO buffer pool size not hardcoded
 bool ClientSocket::_ReuseConnections = true;
-ESB::BufferPool ClientSocket::_BufferPool(1024, 900,
-                                          ESB::SystemAllocator::GetInstance());
+ESB::BufferPool ClientSocket::_BufferPool(1024, 900, ESB::SystemAllocator::GetInstance());
 
-ClientSocket::ClientSocket(ClientSocketFactory *factory,
-                           PerformanceCounter *counter,
-                           int requestsPerConnection,
-                           const ESB::SocketAddress &peer,
-                           ESB::CleanupHandler *cleanupHandler)
+ClientSocket::ClientSocket(ClientSocketFactory *factory, PerformanceCounter *counter, int requestsPerConnection,
+                           const ESB::SocketAddress &peer, ESB::CleanupHandler *cleanupHandler)
     : _requestsPerConnection(requestsPerConnection),
       _inReadMode(false),
       _successCounter(counter),
@@ -60,8 +56,7 @@ bool ClientSocket::wantWrite() {
     return false;
   }
 
-  return _socket.isConnected() && false == _inReadMode &&
-         0 < _buffer->getReadable();
+  return _socket.isConnected() && false == _inReadMode && 0 < _buffer->getReadable();
 }
 
 bool ClientSocket::isIdle() {
@@ -69,8 +64,7 @@ bool ClientSocket::isIdle() {
 }
 
 bool ClientSocket::handleAcceptEvent(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_WARNING("[socket:%d] Cannot handle accept events",
-                  _socket.getSocketDescriptor());
+  ESB_LOG_WARNING("[socket:%d] Cannot handle accept events", _socket.getSocketDescriptor());
   return true;  // keep in multiplexer
 }
 
@@ -105,8 +99,7 @@ bool ClientSocket::handleReadableEvent(ESB::SocketMultiplexer &multiplexer) {
       error = ESB::GetLastError();
 
       if (ESB_AGAIN == error) {
-        ESB_LOG_DEBUG("[socket:%d] not ready for read",
-                      _socket.getSocketDescriptor());
+        ESB_LOG_DEBUG("[socket:%d] not ready for read", _socket.getSocketDescriptor());
         return true;  // keep in multiplexer
       }
 
@@ -121,8 +114,7 @@ bool ClientSocket::handleReadableEvent(ESB::SocketMultiplexer &multiplexer) {
       return handleEndOfFileEvent(multiplexer);
     }
 
-    ESB_LOG_DEBUG("[socket:%d] Read %ld bytes", _socket.getSocketDescriptor(),
-                  result);
+    ESB_LOG_DEBUG("[socket:%d] Read %ld bytes", _socket.getSocketDescriptor(), result);
   }
 
   if (!multiplexer.isRunning()) {
@@ -132,8 +124,7 @@ bool ClientSocket::handleReadableEvent(ESB::SocketMultiplexer &multiplexer) {
   _successCounter->addObservation(&_start);
   _start.tv_usec = 0;
   _start.tv_sec = 0;
-  ESB_LOG_DEBUG("[socket:%d] Received complete response",
-                _socket.getSocketDescriptor());
+  ESB_LOG_DEBUG("[socket:%d] Received complete response", _socket.getSocketDescriptor());
 
   _inReadMode = false;
   assert(wantWrite());
@@ -164,8 +155,7 @@ bool ClientSocket::handleWritableEvent(ESB::SocketMultiplexer &multiplexer) {
     if (0 > result) {
       error = ESB::GetLastError();
       if (ESB_AGAIN == error) {
-        ESB_LOG_DEBUG("[socket:%d] Not ready for write",
-                      _socket.getSocketDescriptor());
+        ESB_LOG_DEBUG("[socket:%d] Not ready for write", _socket.getSocketDescriptor());
         return true;  // keep in multiplexer
       }
 
@@ -176,16 +166,14 @@ bool ClientSocket::handleWritableEvent(ESB::SocketMultiplexer &multiplexer) {
       return handleErrorEvent(error, multiplexer);
     }
 
-    ESB_LOG_DEBUG("[socket:%d] Wrote %ld bytes", _socket.getSocketDescriptor(),
-                  result);
+    ESB_LOG_DEBUG("[socket:%d] Wrote %ld bytes", _socket.getSocketDescriptor(), result);
   }
 
   if (!multiplexer.isRunning()) {
     return false;  // remove from multiplexer
   }
 
-  ESB_LOG_DEBUG("[socket:%d] Sent complete request",
-                _socket.getSocketDescriptor());
+  ESB_LOG_DEBUG("[socket:%d] Sent complete request", _socket.getSocketDescriptor());
 
   _inReadMode = true;
   _buffer->compact();
@@ -193,13 +181,11 @@ bool ClientSocket::handleWritableEvent(ESB::SocketMultiplexer &multiplexer) {
   return handleReadableEvent(multiplexer);
 }
 
-bool ClientSocket::handleErrorEvent(ESB::Error error,
-                                    ESB::SocketMultiplexer &multiplexer) {
+bool ClientSocket::handleErrorEvent(ESB::Error error, ESB::SocketMultiplexer &multiplexer) {
   if (ESB_INFO_LOGGABLE) {
     char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB_LOG_INFO_ERRNO(error, "[socket:%d] Error from server %s:%d",
-                       _socket.getSocketDescriptor(), dottedAddress,
+    ESB_LOG_INFO_ERRNO(error, "[socket:%d] Error from server %s:%d", _socket.getSocketDescriptor(), dottedAddress,
                        _socket.getPeerAddress().getPort());
   }
   return false;  // remove from multiplexer
@@ -209,8 +195,7 @@ bool ClientSocket::handleEndOfFileEvent(ESB::SocketMultiplexer &multiplexer) {
   if (ESB_INFO_LOGGABLE) {
     char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB_LOG_INFO("[socket:%d] Server %s:%d closed socket",
-                 _socket.getSocketDescriptor(), dottedAddress,
+    ESB_LOG_INFO("[socket:%d] Server %s:%d closed socket", _socket.getSocketDescriptor(), dottedAddress,
                  _socket.getPeerAddress().getPort());
   }
   return false;  // remove from multiplexer
@@ -220,8 +205,7 @@ bool ClientSocket::handleIdleEvent(ESB::SocketMultiplexer &multiplexer) {
   if (ESB_INFO_LOGGABLE) {
     char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB_LOG_INFO("[socket:%d] Server %s:%d is idle",
-                 _socket.getSocketDescriptor(), dottedAddress,
+    ESB_LOG_INFO("[socket:%d] Server %s:%d is idle", _socket.getSocketDescriptor(), dottedAddress,
                  _socket.getPeerAddress().getPort());
   }
   return false;  // remove from multiplexer
@@ -231,8 +215,7 @@ bool ClientSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
   if (ESB_INFO_LOGGABLE) {
     char dottedAddress[ESB_IPV6_PRESENTATION_SIZE];
     _socket.getPeerAddress().getIPAddress(dottedAddress, sizeof(dottedAddress));
-    ESB_LOG_INFO("[socket:%d] Socket to server %s:%d closed",
-                 _socket.getSocketDescriptor(), dottedAddress,
+    ESB_LOG_INFO("[socket:%d] Socket to server %s:%d closed", _socket.getSocketDescriptor(), dottedAddress,
                  _socket.getPeerAddress().getPort());
   }
 
@@ -253,13 +236,9 @@ bool ClientSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
   return true;  // call cleanup handler on us after this returns
 }
 
-SOCKET ClientSocket::getSocketDescriptor() const {
-  return _socket.getSocketDescriptor();
-}
+SOCKET ClientSocket::getSocketDescriptor() const { return _socket.getSocketDescriptor(); }
 
-ESB::CleanupHandler *ClientSocket::getCleanupHandler() {
-  return _cleanupHandler;
-}
+ESB::CleanupHandler *ClientSocket::getCleanupHandler() { return _cleanupHandler; }
 
 const char *ClientSocket::getName() const { return "ClientSocket"; }
 
@@ -271,8 +250,7 @@ bool ClientSocket::setupBuffer() {
   _buffer = _BufferPool.acquireBuffer();
 
   if (!_buffer) {
-    ESB_LOG_ERROR("[socket:%d] Cannot acquire new buffer",
-                  _socket.getSocketDescriptor());
+    ESB_LOG_ERROR("[socket:%d] Cannot acquire new buffer", _socket.getSocketDescriptor());
     return false;
   }
 

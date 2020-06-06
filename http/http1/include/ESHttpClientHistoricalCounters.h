@@ -21,9 +21,7 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
    * @param allocator The counter will grab memory from this allocator
    *   for each new window it creates.
    */
-  HttpClientHistoricalCounters(ESB::UInt16 maxWindows,
-                               ESB::UInt16 windowSizeSec,
-                               ESB::Allocator &allocator);
+  HttpClientHistoricalCounters(ESB::UInt16 maxWindows, ESB::UInt16 windowSizeSec, ESB::Allocator &allocator);
 
   virtual ~HttpClientHistoricalCounters();
 

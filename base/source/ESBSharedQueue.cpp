@@ -9,8 +9,8 @@
 namespace ESB {
 
 SharedQueue::Synchronizer::Synchronizer() : _magic(0) {
-#if defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && \
-    defined HAVE_PTHREAD_MUTEX_DESTROY && defined HAVE_PTHREAD_COND_DESTROY
+#if defined HAVE_PTHREAD_MUTEX_INIT && defined HAVE_PTHREAD_COND_INIT && defined HAVE_PTHREAD_MUTEX_DESTROY && \
+    defined HAVE_PTHREAD_COND_DESTROY
 
   if (0 != pthread_mutex_init(&_mutex, 0)) {
     return;
@@ -64,8 +64,8 @@ Error SharedQueue::push(void *item) {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_SIGNAL
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
+    defined HAVE_PTHREAD_COND_SIGNAL
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -74,8 +74,7 @@ Error SharedQueue::push(void *item) {
   }
 
   while (0 != _limit && _limit <= _list.size()) {
-    error =
-        ConvertError(pthread_cond_wait(&_lock._producerSignal, &_lock._mutex));
+    error = ConvertError(pthread_cond_wait(&_lock._producerSignal, &_lock._mutex));
 
     if (ESB_SUCCESS != error && ESB_INTR != error) {
       return error;
@@ -114,8 +113,7 @@ Error SharedQueue::tryPush(void *item) {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
-    defined HAVE_PTHREAD_COND_SIGNAL
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_SIGNAL
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -161,8 +159,8 @@ Error SharedQueue::pop(void **item) {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_SIGNAL && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK && defined HAVE_PTHREAD_COND_WAIT
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_SIGNAL && defined HAVE_PTHREAD_MUTEX_UNLOCK && \
+    defined HAVE_PTHREAD_COND_WAIT
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -171,8 +169,7 @@ Error SharedQueue::pop(void **item) {
   }
 
   while (_list.isEmpty()) {
-    error =
-        ConvertError(pthread_cond_wait(&_lock._consumerSignal, &_lock._mutex));
+    error = ConvertError(pthread_cond_wait(&_lock._consumerSignal, &_lock._mutex));
 
     if (ESB_SUCCESS != error && ESB_INTR != error) {
       return error;
@@ -219,8 +216,7 @@ Error SharedQueue::tryPop(void **item) {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_SIGNAL && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_SIGNAL && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 
@@ -270,8 +266,7 @@ Error SharedQueue::clear() {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_BROADCAST && \
-    defined HAVE_PTHREAD_MUTEX_UNLOCK
+#if defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_BROADCAST && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
   Error error = ConvertError(pthread_mutex_lock(&_lock._mutex));
 

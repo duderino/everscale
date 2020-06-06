@@ -27,8 +27,7 @@ class SocketAddressCallbacks : public SharedEmbeddedMap::Callbacks {
     SocketAddress *second = (SocketAddress *)s;
 
     // TODO not IPv6 safe
-    return memcmp(first->primitiveAddress(), second->primitiveAddress(),
-                  sizeof(SocketAddress::Address));
+    return memcmp(first->primitiveAddress(), second->primitiveAddress(), sizeof(SocketAddress::Address));
   }
 
   virtual UInt32 hash(const void *key) const {
@@ -72,10 +71,9 @@ class FauxConnection : public EmbeddedMapElement {
 
 static void randomSocketAddress(SocketAddress *out, Rand &rand) {
   char dottedIP[16];
-  snprintf(dottedIP, sizeof(dottedIP), "%d:%d:%d:%d", rand.generate(0, 255),
-           rand.generate(0, 255), rand.generate(0, 255), rand.generate(0, 255));
-  SocketAddress randAddr(dottedIP, (UInt16)rand.generate(1, 65536),
-                         SocketAddress::TCP);
+  snprintf(dottedIP, sizeof(dottedIP), "%d:%d:%d:%d", rand.generate(0, 255), rand.generate(0, 255),
+           rand.generate(0, 255), rand.generate(0, 255));
+  SocketAddress randAddr(dottedIP, (UInt16)rand.generate(1, 65536), SocketAddress::TCP);
   *out = randAddr;
 }
 
@@ -103,8 +101,7 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
 
   for (int i = 0; i < numAddresses; ++i) {
     randomSocketAddress(&addresses[i], rand);
-    Error error = map.insert(new (allocator) FauxConnection(
-        addresses[i], allocator.cleanupHandler()));
+    Error error = map.insert(new (allocator) FauxConnection(addresses[i], allocator.cleanupHandler()));
     EXPECT_EQ(ESB_SUCCESS, error);
 
     if (occurrences.find(&addresses[i])) {
@@ -118,16 +115,14 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
   EXPECT_EQ(numAddresses, map.size());
   double chiSquared = 0.0;
   EXPECT_TRUE(map.validate(&chiSquared));
-  fprintf(stderr, "chi^2 %f for expected %f elements per bucket\n", chiSquared,
-          expectedElementsPerBucket);
+  fprintf(stderr, "chi^2 %f for expected %f elements per bucket\n", chiSquared, expectedElementsPerBucket);
 
   // Find returns inserted element
 
   for (int i = 0; i < numAddresses; ++i) {
     FauxConnection *connection = (FauxConnection *)map.find(&addresses[i]);
     EXPECT_TRUE(NULL != connection);
-    EXPECT_TRUE(0 == memcmp(addresses[i].primitiveAddress(),
-                            connection->getAddress().primitiveAddress(),
+    EXPECT_TRUE(0 == memcmp(addresses[i].primitiveAddress(), connection->getAddress().primitiveAddress(),
                             sizeof(SocketAddress::Address)));
   }
 
@@ -136,8 +131,7 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
   for (int i = 0; i < numAddresses; i += 2) {
     FauxConnection *connection = (FauxConnection *)map.remove(&addresses[i]);
     EXPECT_TRUE(NULL != connection);
-    EXPECT_TRUE(0 == memcmp(addresses[i].primitiveAddress(),
-                            connection->getAddress().primitiveAddress(),
+    EXPECT_TRUE(0 == memcmp(addresses[i].primitiveAddress(), connection->getAddress().primitiveAddress(),
                             sizeof(SocketAddress::Address)));
     EXPECT_TRUE(connection->cleanupHandler());
     connection->cleanupHandler()->destroy(connection);
@@ -148,8 +142,7 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
 
   EXPECT_EQ(numAddresses / 2, map.size());
   EXPECT_TRUE(map.validate(&chiSquared));
-  fprintf(stderr, "chi^2 %f for expected %f elements per bucket\n", chiSquared,
-          expectedElementsPerBucket);
+  fprintf(stderr, "chi^2 %f for expected %f elements per bucket\n", chiSquared, expectedElementsPerBucket);
 
   // Find only finds elements that have were not deleted or have no duplicates
 
@@ -157,8 +150,7 @@ TEST(SharedEmbeddedMap, InsertFindRemove) {
     if (0 < ((UWord)occurrences.find(&addresses[i]))) {
       FauxConnection *connection = (FauxConnection *)map.find(&addresses[i]);
       EXPECT_TRUE(NULL != connection);
-      EXPECT_TRUE(0 == memcmp(addresses[i].primitiveAddress(),
-                              connection->getAddress().primitiveAddress(),
+      EXPECT_TRUE(0 == memcmp(addresses[i].primitiveAddress(), connection->getAddress().primitiveAddress(),
                               sizeof(SocketAddress::Address)));
     } else {
       FauxConnection *connection = (FauxConnection *)map.find(&addresses[i]);

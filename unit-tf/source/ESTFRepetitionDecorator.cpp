@@ -4,8 +4,7 @@
 
 namespace ESTF {
 
-RepetitionDecorator::RepetitionDecorator(ComponentPtr &component,
-                                         int repetitions)
+RepetitionDecorator::RepetitionDecorator(ComponentPtr &component, int repetitions)
     : Component(), _component(component), _repetitions(repetitions) {}
 
 RepetitionDecorator::~RepetitionDecorator() {}
@@ -26,8 +25,7 @@ bool RepetitionDecorator::tearDown() { return _component->tearDown(); }
 
 ComponentPtr RepetitionDecorator::clone() {
   ComponentPtr component = _component->clone();
-  RepetitionDecoratorPtr decorator =
-      new RepetitionDecorator(component, _repetitions);
+  RepetitionDecoratorPtr decorator = new RepetitionDecorator(component, _repetitions);
 
   return decorator;
 }

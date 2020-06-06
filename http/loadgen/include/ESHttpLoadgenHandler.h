@@ -21,8 +21,7 @@ namespace ES {
 
 class HttpLoadgenHandler : public HttpClientHandler {
  public:
-  HttpLoadgenHandler(const char *absPath, const char *method,
-                     const char *contentType, const unsigned char *body,
+  HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType, const unsigned char *body,
                      int bodySize);
 
   virtual ~HttpLoadgenHandler();
@@ -31,29 +30,20 @@ class HttpLoadgenHandler : public HttpClientHandler {
   // ES::HttpClientHandler
   //
 
-  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                            HttpClientStream &stream);
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream);
 
-  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer,
-                                      HttpClientStream &stream,
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                       ESB::UInt32 *bytesAvailable);
 
-  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer,
-                                        HttpClientStream &stream,
-                                        unsigned char *chunk,
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream, unsigned char *chunk,
                                         ESB::UInt32 bytesRequested);
 
-  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer,
-                                         HttpClientStream &stream,
-                                         const unsigned char *chunk,
-                                         ESB::UInt32 chunkSize,
-                                         ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                         const unsigned char *chunk, ESB::UInt32 chunkSize, ESB::UInt32 *bytesConsumed);
 
-  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer,
-                                HttpClientStream &stream);
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &stream);
 
-  virtual void endTransaction(HttpMultiplexer &multiplexer,
-                              HttpClientStream &stream, State state);
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state);
 
  private:
   // Disabled

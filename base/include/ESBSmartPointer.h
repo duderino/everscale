@@ -152,9 +152,7 @@ class SmartPointer {
    *    @return true if both smart pointers point to the same object, false
    *        otherwise.
    */
-  inline bool operator==(const SmartPointer &smartPtr) const {
-    return _ptr == smartPtr._ptr;
-  }
+  inline bool operator==(const SmartPointer &smartPtr) const { return _ptr == smartPtr._ptr; }
 
  protected:
   inline void destroy() {

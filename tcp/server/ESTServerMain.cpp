@@ -50,9 +50,7 @@
 static void ESTServerSignalHandler(int signal);
 static volatile ESB::Word IsRunning = 1;
 
-static void printHelp() {
-  fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
-}
+static void printHelp() { fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n"); }
 
 int main(int argc, char **argv) {
   ESB::UInt16 port = 8080;
@@ -111,8 +109,7 @@ int main(int argc, char **argv) {
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
 
-  ESB_LOG_NOTICE("[main] starting. logLevel: %d, threads: %d, port: %d",
-                 logLevel, multiplexerCount, port);
+  ESB_LOG_NOTICE("[main] starting. logLevel: %d, threads: %d, port: %d", logLevel, multiplexerCount, port);
 
   //
   // Install signal handlers
@@ -124,8 +121,7 @@ int main(int argc, char **argv) {
   signal(SIGQUIT, ESTServerSignalHandler);
   signal(SIGTERM, ESTServerSignalHandler);
 
-  ESB::DiscardAllocator discardAllocator(4000,
-                                         ESB::SystemAllocator::GetInstance());
+  ESB::DiscardAllocator discardAllocator(4000, ESB::SystemAllocator::GetInstance());
   ESB::SharedAllocator rootAllocator(&discardAllocator);
   ESB::AllocatorCleanupHandler rootAllocatorCleanupHandler(&rootAllocator);
 
@@ -143,16 +139,14 @@ int main(int argc, char **argv) {
 
   ESB_LOG_NOTICE("[main] Maximum sockets %d", maxSockets);
 
-  ESB::FixedAllocator fixedAllocator(maxSockets, sizeof(EST::ServerSocket),
-                                     ESB::SystemAllocator::GetInstance());
+  ESB::FixedAllocator fixedAllocator(maxSockets, sizeof(EST::ServerSocket), ESB::SystemAllocator::GetInstance());
   ESB::SharedAllocator socketAllocator(&fixedAllocator);
   ESB::AllocatorCleanupHandler socketAllocatorCleanupHandler(&socketAllocator);
 
   error = socketAllocator.initialize();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot initialize socket allocator: %s",
-                        buffer);
+    ESB_LOG_ERROR_ERRNO(error, "[main] Cannot initialize socket allocator: %s", buffer);
     return error;
   }
 
@@ -171,8 +165,7 @@ int main(int argc, char **argv) {
     return error;
   }
 
-  ESB::SocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount,
-                                              &epollFactory, &rootAllocator,
+  ESB::SocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount, &epollFactory, &rootAllocator,
                                               "EpollDispatcher");
 
   error = dispatcher.start();
@@ -185,9 +178,8 @@ int main(int argc, char **argv) {
   EST::ListeningSocket *socket = 0;
 
   for (int i = 0; i < multiplexerCount; ++i) {
-    socket = new (&rootAllocator) EST::ListeningSocket(
-        &listeningSocket, &socketAllocator, &dispatcher,
-        &rootAllocatorCleanupHandler, &socketAllocatorCleanupHandler);
+    socket = new (&rootAllocator) EST::ListeningSocket(&listeningSocket, &socketAllocator, &dispatcher,
+                                                       &rootAllocatorCleanupHandler, &socketAllocatorCleanupHandler);
 
     if (!socket) {
       ESB_LOG_ERROR("[main] Cannot allocate new listening socket");
@@ -197,8 +189,7 @@ int main(int argc, char **argv) {
     error = dispatcher.addMultiplexedSocket(i, socket);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error,
-                          "[main] Cannot add listening socket to multiplexer");
+      ESB_LOG_ERROR_ERRNO(error, "[main] Cannot add listening socket to multiplexer");
       return error;
     }
   }

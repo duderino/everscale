@@ -147,8 +147,7 @@ int main(int argc, char **argv) {
   ESB_LOG_NOTICE(
       "starting. logLevel: %d, threads: %d, server: %s, port: "
       "%d, sockets: %u, reuseConnections: %s",
-      logLevel, multiplexerCount, dottedIp, port, sockets,
-      reuseConnections ? "true" : "false");
+      logLevel, multiplexerCount, dottedIp, port, sockets, reuseConnections ? "true" : "false");
 
   EST::ClientSocket::SetReuseConnections(reuseConnections);
   ESB::SocketAddress serverAddress(dottedIp, port, ESB::SocketAddress::TCP);
@@ -163,8 +162,7 @@ int main(int argc, char **argv) {
   signal(SIGQUIT, ClientSignalHandler);
   signal(SIGTERM, ClientSignalHandler);
 
-  ESB::DiscardAllocator discardAllocator(4000,
-                                         ESB::SystemAllocator::GetInstance());
+  ESB::DiscardAllocator discardAllocator(4000, ESB::SystemAllocator::GetInstance());
   ESB::SharedAllocator rootAllocator(&discardAllocator);
   ESB::AllocatorCleanupHandler rootAllocatorCleanupHandler(&rootAllocator);
 
@@ -181,15 +179,13 @@ int main(int argc, char **argv) {
   ESB::UInt32 maxSockets = ESB::ProcessLimits::GetSocketSoftMax();
 
   if (sockets > maxSockets) {
-    ESB_LOG_ERROR("Raise ulimit -n, only %d sockets can be created",
-                  maxSockets);
+    ESB_LOG_ERROR("Raise ulimit -n, only %d sockets can be created", maxSockets);
     return 1;
   }
 
   ESB_LOG_NOTICE("Maximum sockets %d", maxSockets);
 
-  ESB::SocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount,
-                                              &epollFactory, &rootAllocator,
+  ESB::SocketMultiplexerDispatcher dispatcher(maxSockets, multiplexerCount, &epollFactory, &rootAllocator,
                                               "EpollDispatcher");
 
   error = dispatcher.start();
@@ -230,8 +226,7 @@ int main(int argc, char **argv) {
 
   if (StopTime.tv_usec < startTime.tv_usec) {
     --seconds;
-    microseconds =
-        StopTime.tv_usec - (ESB_UINT32_C(1000000) - startTime.tv_usec);
+    microseconds = StopTime.tv_usec - (ESB_UINT32_C(1000000) - startTime.tv_usec);
   } else {
     microseconds = StopTime.tv_usec - startTime.tv_usec;
   }

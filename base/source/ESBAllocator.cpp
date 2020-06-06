@@ -8,8 +8,7 @@ Allocator::Allocator() {}
 
 Allocator::~Allocator() {}
 
-AllocatorCleanupHandler::AllocatorCleanupHandler(ESB::Allocator &allocator)
-    : _allocator(allocator) {}
+AllocatorCleanupHandler::AllocatorCleanupHandler(ESB::Allocator &allocator) : _allocator(allocator) {}
 
 AllocatorCleanupHandler::~AllocatorCleanupHandler() {}
 

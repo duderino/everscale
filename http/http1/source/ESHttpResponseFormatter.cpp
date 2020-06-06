@@ -27,8 +27,7 @@ void HttpResponseFormatter::reset() {
   _responseState = 0x00;
 }
 
-ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
-                                                  const HttpMessage &message) {
+ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer, const HttpMessage &message) {
   // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
 
   if (ES_FORMAT_COMPLETE & _responseState) {
@@ -50,8 +49,7 @@ ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    HttpUtil::Transition(&_responseState, outputBuffer, ES_FORMATTING_VERSION,
-                         ES_FORMATTING_STATUS_CODE);
+    HttpUtil::Transition(&_responseState, outputBuffer, ES_FORMATTING_VERSION, ES_FORMATTING_STATUS_CODE);
   }
 
   if (ES_FORMATTING_STATUS_CODE & _responseState) {
@@ -61,9 +59,7 @@ ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    HttpUtil::Transition(&_responseState, outputBuffer,
-                         ES_FORMATTING_STATUS_CODE,
-                         ES_FORMATTING_REASON_PHRASE);
+    HttpUtil::Transition(&_responseState, outputBuffer, ES_FORMATTING_STATUS_CODE, ES_FORMATTING_REASON_PHRASE);
   }
 
   if (ES_FORMATTING_REASON_PHRASE & _responseState) {
@@ -73,16 +69,13 @@ ESB::Error HttpResponseFormatter::formatStartLine(ESB::Buffer *outputBuffer,
       return error;
     }
 
-    return HttpUtil::Transition(&_responseState, outputBuffer,
-                                ES_FORMATTING_REASON_PHRASE,
-                                ES_FORMAT_COMPLETE);
+    return HttpUtil::Transition(&_responseState, outputBuffer, ES_FORMATTING_REASON_PHRASE, ES_FORMAT_COMPLETE);
   }
 
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpResponseFormatter::formatStatusCode(
-    ESB::Buffer *outputBuffer, const HttpResponse &response) {
+ESB::Error HttpResponseFormatter::formatStatusCode(ESB::Buffer *outputBuffer, const HttpResponse &response) {
   // Status-Code    = 3DIGIT
 
   assert(ES_FORMATTING_STATUS_CODE & _responseState);
@@ -95,8 +88,7 @@ ESB::Error HttpResponseFormatter::formatStatusCode(
     return HttpUtil::Rollback(outputBuffer, ESB_AGAIN);
   }
 
-  ESB::Error error =
-      HttpUtil::FormatInteger(outputBuffer, response.statusCode(), 10);
+  ESB::Error error = HttpUtil::FormatInteger(outputBuffer, response.statusCode(), 10);
 
   if (ESB_SUCCESS != error) {
     return HttpUtil::Rollback(outputBuffer, error);
@@ -111,8 +103,7 @@ ESB::Error HttpResponseFormatter::formatStatusCode(
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpResponseFormatter::formatReasonPhrase(
-    ESB::Buffer *outputBuffer, const HttpResponse &response) {
+ESB::Error HttpResponseFormatter::formatReasonPhrase(ESB::Buffer *outputBuffer, const HttpResponse &response) {
   // Reason-Phrase  = *<TEXT, excluding CR, LF>
 
   assert(ES_FORMATTING_REASON_PHRASE & _responseState);

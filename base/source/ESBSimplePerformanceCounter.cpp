@@ -13,22 +13,10 @@
 namespace ESB {
 
 SimplePerformanceCounter::SimplePerformanceCounter(const char *name)
-    : PerformanceCounter(),
-      _name(name),
-      _windowStart(),
-      _windowStop(),
-      _latencyMsec(),
-      _lock() {}
+    : PerformanceCounter(), _name(name), _windowStart(), _windowStop(), _latencyMsec(), _lock() {}
 
-SimplePerformanceCounter::SimplePerformanceCounter(const char *name,
-                                                   const Date &windowStart,
-                                                   const Date &windowStop)
-    : PerformanceCounter(),
-      _name(name),
-      _windowStart(windowStart),
-      _windowStop(windowStop),
-      _latencyMsec(),
-      _lock() {}
+SimplePerformanceCounter::SimplePerformanceCounter(const char *name, const Date &windowStart, const Date &windowStop)
+    : PerformanceCounter(), _name(name), _windowStart(windowStart), _windowStop(windowStop), _latencyMsec(), _lock() {}
 
 SimplePerformanceCounter::~SimplePerformanceCounter() {}
 
@@ -75,8 +63,7 @@ double SimplePerformanceCounter::varianceMSec() const {
   return _latencyMsec.variance();
 }
 
-void SimplePerformanceCounter::log(Logger &logger,
-                                   Logger::Severity severity) const {
+void SimplePerformanceCounter::log(Logger &logger, Logger::Severity severity) const {
   double meanMSec, varianceMSec, minMSec, maxMSec, qps = 0.0;
   UInt32 queries = 0U;
 

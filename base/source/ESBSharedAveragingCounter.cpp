@@ -16,8 +16,7 @@ SharedAveragingCounter::SharedAveragingCounter() : _counter(), _lock() {}
 
 SharedAveragingCounter::~SharedAveragingCounter() {}
 
-void SharedAveragingCounter::log(Logger &logger, Logger::Severity severity,
-                                 const char *description) const {
+void SharedAveragingCounter::log(Logger &logger, Logger::Severity severity, const char *description) const {
   UInt32 n = 0;
   double mean, variance, min, max = 0.0;
 
@@ -30,9 +29,8 @@ void SharedAveragingCounter::log(Logger &logger, Logger::Severity severity,
     max = _counter.max();
   }
 
-  ESB_LOG(logger, severity,
-          "%s: N=%u, MEAN=%.2lf, VAR=%.2f, MIN=%.2lf, MAX=%.2lf", description,
-          n, mean, variance, min, max);
+  ESB_LOG(logger, severity, "%s: N=%u, MEAN=%.2lf, VAR=%.2f, MIN=%.2lf, MAX=%.2lf", description, n, mean, variance, min,
+          max);
 }
 
 }  // namespace ESB

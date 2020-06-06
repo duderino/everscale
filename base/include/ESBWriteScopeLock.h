@@ -22,9 +22,7 @@ class WriteScopeLock {
    *
    *    @param lockable The lockable instance to lock/unlock.
    */
-  WriteScopeLock(Lockable &lockable) : _lockable(lockable) {
-    _lockable.writeAcquire();
-  }
+  WriteScopeLock(Lockable &lockable) : _lockable(lockable) { _lockable.writeAcquire(); }
 
   /** Default destructor. */
   virtual ~WriteScopeLock() { _lockable.writeRelease(); }

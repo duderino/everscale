@@ -24,8 +24,7 @@
 
 namespace ESB {
 
-TimeSeries::TimeSeries(const char *name, UInt16 maxWindows,
-                       UInt16 windowSizeSec, Allocator &allocator)
+TimeSeries::TimeSeries(const char *name, UInt16 maxWindows, UInt16 windowSizeSec, Allocator &allocator)
     : PerformanceCounter(),
       _currentWindows(0U),
       _maxWindows(maxWindows),
@@ -62,11 +61,9 @@ void TimeSeries::record(const Date &start, const Date &stop) {
       assert(counter);
       // reuse the oldest counter's memory for the new counter.
       counter->~SimplePerformanceCounter();
-      counter = new (counter)
-          SimplePerformanceCounter(_name, windowStart, windowStop);
+      counter = new (counter) SimplePerformanceCounter(_name, windowStart, windowStop);
     } else {
-      counter = new (_allocator)
-          SimplePerformanceCounter(_name, windowStart, windowStop);
+      counter = new (_allocator) SimplePerformanceCounter(_name, windowStart, windowStop);
       if (!counter) {
         ESB_LOG_WARNING("Cannot allocate memory for new window");
         return;
@@ -85,9 +82,8 @@ UInt32 TimeSeries::queries() const {
 
   UInt32 queries = 0;
 
-  for (const SimplePerformanceCounter *counter =
-           (const SimplePerformanceCounter *)_list.first();
-       counter; counter = (const SimplePerformanceCounter *)counter->next()) {
+  for (const SimplePerformanceCounter *counter = (const SimplePerformanceCounter *)_list.first(); counter;
+       counter = (const SimplePerformanceCounter *)counter->next()) {
     queries += counter->queries();
   }
 
@@ -97,9 +93,8 @@ UInt32 TimeSeries::queries() const {
 void TimeSeries::log(Logger &logger, Logger::Severity severity) const {
   ReadScopeLock lock(_lock);
 
-  for (SimplePerformanceCounter *counter =
-           (SimplePerformanceCounter *)_list.first();
-       counter; counter = (SimplePerformanceCounter *)counter->next()) {
+  for (SimplePerformanceCounter *counter = (SimplePerformanceCounter *)_list.first(); counter;
+       counter = (SimplePerformanceCounter *)counter->next()) {
     counter->log(logger, severity);
   }
 }

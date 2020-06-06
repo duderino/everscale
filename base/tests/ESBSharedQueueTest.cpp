@@ -141,15 +141,13 @@ ESTF::ComponentPtr SharedQueueTest::clone() {
 int main() {
   ESB::SharedQueueTestPtr sharedQueueTest = new ESB::SharedQueueTest();
 
-  ESTF::ConcurrencyDecoratorPtr sharedQueueDecorator =
-      new ESTF::ConcurrencyDecorator(sharedQueueTest, 3);
+  ESTF::ConcurrencyDecoratorPtr sharedQueueDecorator = new ESTF::ConcurrencyDecorator(sharedQueueTest, 3);
 
   ESTF::CompositePtr testSuite = new ESTF::Composite();
 
   testSuite->add(sharedQueueDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

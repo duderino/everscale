@@ -4,8 +4,7 @@
 
 namespace ESB {
 
-DiscardAllocator::DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize,
-                                   UInt16 multipleOf, Allocator &source,
+DiscardAllocator::DiscardAllocator(UInt32 chunkSize, UInt16 alignmentSize, UInt16 multipleOf, Allocator &source,
                                    bool forcePool)
     : _head(NULL),
 #ifdef ESB_NO_ALLOC

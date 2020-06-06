@@ -26,8 +26,7 @@ class Date {
    *    @param microSeconds Set initial microSeconds value of this date object
    *        to microSeconds.
    */
-  inline Date(long seconds, long microSeconds)
-      : _seconds(seconds), _microSeconds(microSeconds) {}
+  inline Date(long seconds, long microSeconds) : _seconds(seconds), _microSeconds(microSeconds) {}
 
   /** Copy constructor.
    *
@@ -221,9 +220,7 @@ class Date {
  *  @return The output stream (for chaining).
  *  @ingroup test
  */
-inline std::ostream &operator<<(std::ostream &out, const Date &date) {
-  return date.print(out);
-}
+inline std::ostream &operator<<(std::ostream &out, const Date &date) { return date.print(out); }
 
 }  // namespace ESTF
 

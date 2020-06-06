@@ -29,9 +29,7 @@ class HttpServerTransaction : public HttpTransaction {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   inline HttpRequestParser *getParser() { return &_parser; }
 
@@ -39,9 +37,7 @@ class HttpServerTransaction : public HttpTransaction {
 
   inline HttpResponseFormatter *getFormatter() { return &_formatter; }
 
-  inline const HttpResponseFormatter *getFormatter() const {
-    return &_formatter;
-  }
+  inline const HttpResponseFormatter *getFormatter() const { return &_formatter; }
 
  private:
   // Disabled

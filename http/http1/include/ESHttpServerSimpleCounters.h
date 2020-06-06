@@ -85,8 +85,7 @@ class HttpServerSimpleCounters : public HttpServerCounters {
 
   virtual ESB::SharedAveragingCounter *getAverageTransactionsPerConnection();
 
-  virtual const ESB::SharedAveragingCounter *
-  getAverageTransactionsPerConnection() const;
+  virtual const ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() const;
 
  private:
   // Disabled

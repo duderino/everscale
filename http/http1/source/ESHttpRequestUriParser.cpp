@@ -26,8 +26,7 @@ namespace ES {
 #define ES_URI_PARSING_NON_HTTP_URI (1 << 8)
 #define ES_URI_SKIPPING_FWD_SLASHES (1 << 9)
 
-HttpRequestUriParser::HttpRequestUriParser(ESB::Buffer *workingBuffer,
-                                           ESB::DiscardAllocator &allocator)
+HttpRequestUriParser::HttpRequestUriParser(ESB::Buffer *workingBuffer, ESB::DiscardAllocator &allocator)
     : _state(0x00), _workingBuffer(workingBuffer), _allocator(allocator) {}
 
 HttpRequestUriParser::~HttpRequestUriParser() {}
@@ -37,8 +36,7 @@ void HttpRequestUriParser::reset() {
   _workingBuffer->clear();
 }
 
-ESB::Error HttpRequestUriParser::parse(ESB::Buffer *inputBuffer,
-                                       HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parse(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // Request-URI   = "*" | absoluteURI | abs_path [ "?" query ] | authority
 
   if (ES_URI_PARSE_COMPLETE & _state) {
@@ -114,8 +112,7 @@ ESB::Error HttpRequestUriParser::parse(ESB::Buffer *inputBuffer,
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpRequestUriParser::parseAsterisk(ESB::Buffer *inputBuffer,
-                                               HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseAsterisk(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   assert(ES_URI_PARSING_ASTERISK & _state);
 
   if (!inputBuffer->isReadable()) {
@@ -144,8 +141,7 @@ ESB::Error HttpRequestUriParser::parseAsterisk(ESB::Buffer *inputBuffer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
-                                              HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // abs_path      = "/"  path_segments
   // path_segments = segment *( "/" segment )
   // segment       = *pchar *( ";" param )
@@ -271,8 +267,7 @@ ESB::Error HttpRequestUriParser::parseAbsPath(ESB::Buffer *inputBuffer,
   }
 }
 
-ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
-                                            HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // query         = *uric
 
   assert(ES_URI_PARSING_QUERY & _state);
@@ -355,8 +350,7 @@ ESB::Error HttpRequestUriParser::parseQuery(ESB::Buffer *inputBuffer,
   }
 }
 
-ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer,
-                                               HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // fragment     = *uric
 
   assert(ES_URI_PARSING_FRAGMENT & _state);
@@ -422,8 +416,7 @@ ESB::Error HttpRequestUriParser::parseFragment(ESB::Buffer *inputBuffer,
   }
 }
 
-ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
-                                             HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // http_URL       = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // scheme        = alpha *( alpha | digit | "+" | "-" | "." )
@@ -513,8 +506,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer,
   }
 }
 
-ESB::Error HttpRequestUriParser::skipForwardSlashes(
-    ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::skipForwardSlashes(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // Skips the "//" in ...
   // http_URL       = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
 
@@ -537,8 +529,7 @@ ESB::Error HttpRequestUriParser::skipForwardSlashes(
   }
 }
 
-ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
-                                           HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // host          = hostname | IPv4address
   // hostname      = *( domainlabel "." ) toplabel [ "." ]
   // domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
@@ -688,8 +679,7 @@ ESB::Error HttpRequestUriParser::parseHost(ESB::Buffer *inputBuffer,
   }
 }
 
-ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
-                                           HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // port          = *digit
 
   assert(ES_URI_PARSING_PORT & _state);
@@ -784,8 +774,7 @@ ESB::Error HttpRequestUriParser::parsePort(ESB::Buffer *inputBuffer,
   }
 }
 
-ESB::Error HttpRequestUriParser::parseNonHttpUri(ESB::Buffer *inputBuffer,
-                                                 HttpRequestUri &requestUri) {
+ESB::Error HttpRequestUriParser::parseNonHttpUri(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri) {
   // absoluteURI   = scheme ":" ( hier_part | opaque_part )
   // hier_part     = ( net_path | abs_path ) [ "?" query ]
   // net_path      = "//" authority [ abs_path ]

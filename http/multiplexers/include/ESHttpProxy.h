@@ -41,9 +41,7 @@ class HttpProxy : public HttpServer {
    */
   ESB::Error push(HttpClientCommand *command, int idx = -1);
 
-  inline const HttpClientCounters &clientCounters() const {
-    return _clientCounters;
-  }
+  inline const HttpClientCounters &clientCounters() const { return _clientCounters; }
 
  protected:
   virtual ESB::SocketMultiplexer *createMultiplexer();

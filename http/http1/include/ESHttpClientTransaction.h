@@ -19,8 +19,7 @@ class HttpClientTransaction : public HttpTransaction {
  public:
   HttpClientTransaction(ESB::CleanupHandler &cleanupHandler);
 
-  HttpClientTransaction(ESB::SocketAddress *peerAddress,
-                        ESB::CleanupHandler &cleanupHandler);
+  HttpClientTransaction(ESB::SocketAddress *peerAddress, ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpClientTransaction();
 
@@ -32,9 +31,7 @@ class HttpClientTransaction : public HttpTransaction {
 
   inline HttpRequestFormatter *getFormatter() { return &_formatter; }
 
-  inline const HttpRequestFormatter *getFormatter() const {
-    return &_formatter;
-  }
+  inline const HttpRequestFormatter *getFormatter() const { return &_formatter; }
 
   /** Placement new.
    *
@@ -42,9 +39,7 @@ class HttpClientTransaction : public HttpTransaction {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

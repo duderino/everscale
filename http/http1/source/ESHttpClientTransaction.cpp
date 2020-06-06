@@ -4,17 +4,11 @@
 
 namespace ES {
 
-HttpClientTransaction::HttpClientTransaction(
-    ESB::CleanupHandler &cleanupHandler)
-    : HttpTransaction(cleanupHandler),
-      _parser(parseBuffer(), _allocator),
-      _formatter() {}
+HttpClientTransaction::HttpClientTransaction(ESB::CleanupHandler &cleanupHandler)
+    : HttpTransaction(cleanupHandler), _parser(parseBuffer(), _allocator), _formatter() {}
 
-HttpClientTransaction::HttpClientTransaction(
-    ESB::SocketAddress *peerAddress, ESB::CleanupHandler &cleanupHandler)
-    : HttpTransaction(peerAddress, cleanupHandler),
-      _parser(parseBuffer(), _allocator),
-      _formatter() {}
+HttpClientTransaction::HttpClientTransaction(ESB::SocketAddress *peerAddress, ESB::CleanupHandler &cleanupHandler)
+    : HttpTransaction(peerAddress, cleanupHandler), _parser(parseBuffer(), _allocator), _formatter() {}
 
 HttpClientTransaction::~HttpClientTransaction() {}
 

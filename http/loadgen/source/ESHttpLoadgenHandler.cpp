@@ -8,8 +8,7 @@
 
 namespace ES {
 
-HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method,
-                                       const char *contentType,
+HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType,
                                        const unsigned char *body, int bodySize)
     : _absPath(absPath),
       _method(method),
@@ -20,8 +19,7 @@ HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method,
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
-ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer,
-                                                HttpClientStream &stream,
+ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                                 ESB::UInt32 *maxChunkSize) {
   assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
@@ -30,10 +28,8 @@ ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer,
-                                                  HttpClientStream &stream,
-                                                  unsigned char *chunk,
-                                                  ESB::UInt32 bytesRequested) {
+ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                                  unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
@@ -41,24 +37,19 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer,
   assert(bytesRequested <= _bodySize - context->bytesSent());
 
   ESB::UInt32 totalBytesRemaining = _bodySize - context->bytesSent();
-  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining
-                                ? totalBytesRemaining
-                                : bytesRequested;
+  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
 
   memcpy(chunk, _body + context->bytesSent(), bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::receiveResponseHeaders(
-    HttpMultiplexer &multiplexer, HttpClientStream &stream) {
+ESB::Error HttpLoadgenHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
-                                                   HttpClientStream &stream,
-                                                   const unsigned char *chunk,
-                                                   ESB::UInt32 chunkSize,
+ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                                   const unsigned char *chunk, ESB::UInt32 chunkSize,
                                                    ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
@@ -67,8 +58,7 @@ ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
   return ESB_SUCCESS;
 }
 
-void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,
-                                        HttpClientStream &stream, State state) {
+void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state) {
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
 
@@ -117,8 +107,7 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,
     return;
   }
 
-  ESB::Error error = newTransaction->request().copy(
-      &stream.request(), newTransaction->allocator());
+  ESB::Error error = newTransaction->request().copy(&stream.request(), newTransaction->allocator());
   if (ESB_SUCCESS != error) {
     multiplexer.destroyClientTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "Cannot build request");
@@ -139,12 +128,10 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer,
     return;
   }
 
-  ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining",
-                remainingIterations);
+  ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining", remainingIterations);
 }
 
-ESB::Error HttpLoadgenHandler::endRequest(HttpMultiplexer &multiplexer,
-                                          HttpClientStream &stream) {
+ESB::Error HttpLoadgenHandler::endRequest(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   return ESB_SUCCESS;
 }
 

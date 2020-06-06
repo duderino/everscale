@@ -15,9 +15,7 @@ Logger::Logger() {}
 
 Logger::~Logger() {}
 
-void Logger::SetInstance(Logger *logger) {
-  _Instance = logger ? logger : &NullInstance;
-}
+void Logger::SetInstance(Logger *logger) { _Instance = logger ? logger : &NullInstance; }
 
 const char *Logger::SeverityToString(Logger::Severity severity) {
   switch (severity) {

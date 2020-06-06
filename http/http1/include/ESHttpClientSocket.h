@@ -35,16 +35,12 @@ namespace ES {
  *
  * TODO implement idle check
  */
-class HttpClientSocket : public ESB::MultiplexedSocket,
-                         public HttpClientStream {
+class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream {
  public:
   /** Constructor
    */
-  HttpClientSocket(HttpClientHandler &handler,
-                   HttpMultiplexerExtended &multiplexer,
-                   ESB::SocketAddress &peerAddress,
-                   HttpClientCounters &counters,
-                   ESB::CleanupHandler &cleanupHandler);
+  HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer, ESB::SocketAddress &peerAddress,
+                   HttpClientCounters &counters, ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
@@ -71,13 +67,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
 
-  static inline void SetReuseConnections(bool reuseConnections) {
-    _ReuseConnections = reuseConnections;
-  }
+  static inline void SetReuseConnections(bool reuseConnections) { _ReuseConnections = reuseConnections; }
 
   static inline bool GetReuseConnections() { return _ReuseConnections; }
 
@@ -149,14 +141,9 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   // ES::HttpClientStream
   //
 
-  virtual ESB::Error sendRequestBody(unsigned const char *chunk,
-                                     ESB::UInt32 bytesOffered,
-                                     ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable,
-                                           ESB::UInt32 *bufferOffset);
-  virtual ESB::Error readResponseBody(unsigned char *chunk,
-                                      ESB::UInt32 bytesRequested,
-                                      ESB::UInt32 bufferOffset);
+  virtual ESB::Error sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
+  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
+  virtual ESB::Error readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset);
 
   //
   // ESB::EmbeddedMapElement (for connection pool lookups)
@@ -173,11 +160,8 @@ class HttpClientSocket : public ESB::MultiplexedSocket,
   ESB::Error parseResponseBody();
   ESB::Error formatRequestHeaders();
   ESB::Error formatRequestBody();
-  ESB::Error formatRequestBody(unsigned const char *chunk,
-                               ESB::UInt32 bytesOffered,
-                               ESB::UInt32 *bytesConsumed);
-  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable,
-                                        ESB::UInt32 *bufferOffset);
+  ESB::Error formatRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
+  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
   ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);
   ESB::Error formatEndChunk();
   ESB::Error formatEndBody();

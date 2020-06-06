@@ -12,8 +12,6 @@ bool NullLogger::isLoggable(Severity severity) { return false; }
 
 void NullLogger::setSeverity(Severity severity) {}
 
-Error NullLogger::log(Severity severity, const char *format, ...) {
-  return ESB_SUCCESS;
-}
+Error NullLogger::log(Severity severity, const char *format, ...) { return ESB_SUCCESS; }
 
 }  // namespace ESB

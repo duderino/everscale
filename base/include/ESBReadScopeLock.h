@@ -22,9 +22,7 @@ class ReadScopeLock {
    *
    *    @param lockable The lockable instance to lock/unlock.
    */
-  ReadScopeLock(Lockable &lockable) : _lockable(lockable) {
-    _lockable.readAcquire();
-  }
+  ReadScopeLock(Lockable &lockable) : _lockable(lockable) { _lockable.readAcquire(); }
 
   /** Default destructor. */
   virtual ~ReadScopeLock() { _lockable.readRelease(); }

@@ -8,8 +8,7 @@
 
 namespace ESB {
 
-EpollMultiplexerFactory::EpollMultiplexerFactory(const char *name,
-                                                 Allocator &allocator)
+EpollMultiplexerFactory::EpollMultiplexerFactory(const char *name, Allocator &allocator)
     : _name(name), _allocator(allocator) {}
 
 EpollMultiplexerFactory::~EpollMultiplexerFactory() {}

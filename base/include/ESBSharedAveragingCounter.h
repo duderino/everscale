@@ -63,8 +63,7 @@ class SharedAveragingCounter {
     return _counter.n();
   }
 
-  void log(Logger &logger, Logger::Severity severity,
-           const char *description) const;
+  void log(Logger &logger, Logger::Severity severity, const char *description) const;
 
   /** Placement new.
    *
@@ -72,9 +71,7 @@ class SharedAveragingCounter {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

@@ -17,8 +17,7 @@ class HttpClientCounters {
 
   virtual ~HttpClientCounters();
 
-  virtual void log(ESB::Logger &logger,
-                   ESB::Logger::Severity severity) const = 0;
+  virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const = 0;
 
   virtual ESB::PerformanceCounter *getSuccesses() = 0;
 

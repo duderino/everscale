@@ -61,8 +61,7 @@ class ReferenceCount {
    *  @return The new object or NULL if the memory allocation failed.
    */
   inline void *operator new(size_t size) noexcept {
-    ReferenceCount *object =
-        (ReferenceCount *)SystemAllocator::Instance().allocate(size);
+    ReferenceCount *object = (ReferenceCount *)SystemAllocator::Instance().allocate(size);
 
     if (object) {
       object->_allocator = &SystemAllocator::Instance();

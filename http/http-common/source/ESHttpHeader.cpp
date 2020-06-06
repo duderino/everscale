@@ -9,11 +9,8 @@ HttpHeader::HttpHeader(const char *fieldName, const char *fieldValue)
       _fieldName((const unsigned char *)fieldName),
       _fieldValue((const unsigned char *)fieldValue) {}
 
-HttpHeader::HttpHeader(const unsigned char *fieldName,
-                       const unsigned char *fieldValue)
-    : ESB::EmbeddedListElement(),
-      _fieldName(fieldName),
-      _fieldValue(fieldValue) {}
+HttpHeader::HttpHeader(const unsigned char *fieldName, const unsigned char *fieldValue)
+    : ESB::EmbeddedListElement(), _fieldName(fieldName), _fieldValue(fieldValue) {}
 
 HttpHeader::~HttpHeader() {}
 

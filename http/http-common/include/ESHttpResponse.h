@@ -22,13 +22,9 @@ class HttpResponse : public HttpMessage {
 
   inline int statusCode() const { return _statusCode; }
 
-  inline void setReasonPhrase(const unsigned char *reasonPhrase) {
-    _reasonPhrase = reasonPhrase;
-  }
+  inline void setReasonPhrase(const unsigned char *reasonPhrase) { _reasonPhrase = reasonPhrase; }
 
-  inline void setReasonPhrase(const char *reasonPhrase) {
-    _reasonPhrase = (const unsigned char *)reasonPhrase;
-  }
+  inline void setReasonPhrase(const char *reasonPhrase) { _reasonPhrase = (const unsigned char *)reasonPhrase; }
 
   inline const unsigned char *reasonPhrase() const { return _reasonPhrase; }
 

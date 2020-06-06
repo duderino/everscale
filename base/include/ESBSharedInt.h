@@ -74,10 +74,7 @@ class SharedInt {
 #ifdef HAVE_ATOMIC_T
     counter = ++_counter;
 #elif defined HAVE_X86_ASM
-    asm volatile("lock; incl %0; movl %0, %1"
-                 : "=m"(_counter), "=r"(counter)
-                 : "m"(_counter)
-                 : "memory");
+    asm volatile("lock; incl %0; movl %0, %1" : "=m"(_counter), "=r"(counter) : "m"(_counter) : "memory");
 #else
     _lock.writeAcquire();
     counter = ++_counter;
@@ -96,10 +93,7 @@ class SharedInt {
 #ifdef HAVE_ATOMIC_T
     counter = --_counter;
 #elif defined HAVE_X86_ASM
-    asm volatile("lock; decl %0; movl %0, %1"
-                 : "=m"(_counter), "=r"(counter)
-                 : "m"(_counter)
-                 : "memory");
+    asm volatile("lock; decl %0; movl %0, %1" : "=m"(_counter), "=r"(counter) : "m"(_counter) : "memory");
 #else
     _lock.writeAcquire();
     counter = --_counter;
@@ -112,9 +106,7 @@ class SharedInt {
 #ifdef HAVE_ATOMIC_T
     _counter += value;
 #elif defined HAVE_X86_ASM
-    asm volatile("lock; addl %1,%0"
-                 : "=m"(_counter)
-                 : "ir"(value), "m"(_counter));
+    asm volatile("lock; addl %1,%0" : "=m"(_counter) : "ir"(value), "m"(_counter));
 #else
     _lock.writeAcquire();
     _counter += value;
@@ -126,9 +118,7 @@ class SharedInt {
 #ifdef HAVE_ATOMIC_T
     _counter -= value;
 #elif defined HAVE_X86_ASM
-    asm volatile("lock; subl %1,%0"
-                 : "=m"(_counter)
-                 : "ir"(value), "m"(_counter));
+    asm volatile("lock; subl %1,%0" : "=m"(_counter) : "ir"(value), "m"(_counter));
 #else
     _lock.writeAcquire();
     _counter -= value;
@@ -141,10 +131,7 @@ class SharedInt {
 #ifdef HAVE_ATOMIC_T
     c = _counter--;
 #elif defined HAVE_X86_ASM
-    asm volatile("lock; decl %0; sete %1"
-                 : "=m"(_counter), "=qm"(c)
-                 : "m"(_counter)
-                 : "memory");
+    asm volatile("lock; decl %0; sete %1" : "=m"(_counter), "=qm"(c) : "m"(_counter) : "memory");
 #else
     _lock.writeAcquire();
     c = _counter--;
@@ -159,9 +146,7 @@ class SharedInt {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
 #ifdef HAVE_ATOMIC_T

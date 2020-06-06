@@ -131,9 +131,7 @@ class EmbeddedList {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   /** Placement new.
    *
@@ -141,9 +139,7 @@ class EmbeddedList {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, EmbeddedList *list) noexcept {
-    return list;
-  }
+  inline void *operator new(size_t size, EmbeddedList *list) noexcept { return list; }
 
   /** Validate the internal invariants of the list
    *

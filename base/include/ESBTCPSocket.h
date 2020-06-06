@@ -36,8 +36,7 @@ class TCPSocket {
   class State : public EmbeddedMapElement {
    public:
     State();
-    State(bool isBlocking, SOCKET sockFd, const SocketAddress &listeningAddress,
-          const SocketAddress &peerAddress,
+    State(bool isBlocking, SOCKET sockFd, const SocketAddress &listeningAddress, const SocketAddress &peerAddress,
           CleanupHandler *cleanupHandler = NULL);
     virtual ~State();
 
@@ -45,9 +44,7 @@ class TCPSocket {
 
     inline SOCKET socketDescriptor() const { return _socketDescriptor; }
 
-    inline const SocketAddress &listeningAddress() const {
-      return _listeningAddress;
-    }
+    inline const SocketAddress &listeningAddress() const { return _listeningAddress; }
 
     inline const SocketAddress &peerAddress() const { return _peerAddress; }
 
@@ -55,17 +52,11 @@ class TCPSocket {
 
     inline void setIsBlocking(bool isBlocking) { _isBlocking = isBlocking; }
 
-    inline void setSocketDescriptor(SOCKET sockFd) {
-      _socketDescriptor = sockFd;
-    }
+    inline void setSocketDescriptor(SOCKET sockFd) { _socketDescriptor = sockFd; }
 
-    inline void setListeningAddress(const SocketAddress &listeningAddress) {
-      _listeningAddress = listeningAddress;
-    }
+    inline void setListeningAddress(const SocketAddress &listeningAddress) { _listeningAddress = listeningAddress; }
 
-    inline void setPeerAddress(const SocketAddress &peerAddress) {
-      _peerAddress = peerAddress;
-    }
+    inline void setPeerAddress(const SocketAddress &peerAddress) { _peerAddress = peerAddress; }
 
     virtual const void *key() const;
 
@@ -179,9 +170,7 @@ class TCPSocket {
    *  @param allocator The source of the object's memory.
    *  @return The new object or NULL of the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  protected:
   bool _isBlocking;

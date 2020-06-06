@@ -8,17 +8,12 @@ ListIterator::ListIterator() : _node(0) {}
 
 ListIterator::ListIterator(ListNode *node) : _node(node) {}
 
-ListIterator::ListIterator(const ListIterator &iterator)
-    : _node(iterator._node) {}
+ListIterator::ListIterator(const ListIterator &iterator) : _node(iterator._node) {}
 
 ListIterator::~ListIterator() {}
 
 List::List(Lockable &lockable, Allocator &allocator)
-    : _size(0),
-      _head(0),
-      _tail(0),
-      _allocator(allocator),
-      _lockable(lockable) {}
+    : _size(0), _head(0), _tail(0), _allocator(allocator), _lockable(lockable) {}
 
 List::~List() { clear(); }
 

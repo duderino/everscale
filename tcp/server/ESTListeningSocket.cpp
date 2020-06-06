@@ -16,10 +16,8 @@
 
 namespace EST {
 
-ListeningSocket::ListeningSocket(ESB::ListeningTCPSocket *socket,
-                                 ESB::Allocator *allocator,
-                                 ESB::SocketMultiplexerDispatcher *dispatcher,
-                                 ESB::CleanupHandler *thisCleanupHandler,
+ListeningSocket::ListeningSocket(ESB::ListeningTCPSocket *socket, ESB::Allocator *allocator,
+                                 ESB::SocketMultiplexerDispatcher *dispatcher, ESB::CleanupHandler *thisCleanupHandler,
                                  ESB::CleanupHandler *socketCleanupHandler)
     : _socket(socket),
       _allocator(allocator ? allocator : ESB::SystemAllocator::GetInstance()),
@@ -27,9 +25,7 @@ ListeningSocket::ListeningSocket(ESB::ListeningTCPSocket *socket,
       _thisCleanupHandler(thisCleanupHandler),
       _socketCleanupHandler(socketCleanupHandler) {}
 
-ListeningSocket::~ListeningSocket() {
-  ESB_LOG_DEBUG("ListeningSocket destroyed");
-}
+ListeningSocket::~ListeningSocket() { ESB_LOG_DEBUG("ListeningSocket destroyed"); }
 
 bool ListeningSocket::wantAccept() { return true; }
 
@@ -60,23 +56,19 @@ bool ListeningSocket::handleAcceptEvent(ESB::SocketMultiplexer &multiplexer) {
   }
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[listener:%d] not ready to accept - thundering herd",
-                  _socket->getSocketDescriptor());
+    ESB_LOG_DEBUG("[listener:%d] not ready to accept - thundering herd", _socket->getSocketDescriptor());
     return true;
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_WARNING_ERRNO(error, "[listener:%d] error accepting new connection",
-                          _socket->getSocketDescriptor());
+    ESB_LOG_WARNING_ERRNO(error, "[listener:%d] error accepting new connection", _socket->getSocketDescriptor());
     return true;
   }
 
-  ServerSocket *serverSocket =
-      new (_allocator) ServerSocket(&acceptData, _socketCleanupHandler);
+  ServerSocket *serverSocket = new (_allocator) ServerSocket(&acceptData, _socketCleanupHandler);
 
   if (!serverSocket) {
-    ESB_LOG_WARNING("[listener:%d] Cannot allocate new server socket",
-                    _socket->getSocketDescriptor());
+    ESB_LOG_WARNING("[listener:%d] Cannot allocate new server socket", _socket->getSocketDescriptor());
     ESB::TCPSocket::Close(acceptData._sockFd);
     return true;
   }
@@ -104,8 +96,7 @@ bool ListeningSocket::handleAcceptEvent(ESB::SocketMultiplexer &multiplexer) {
   if (ESB_INFO_LOGGABLE) {
     char dottedIP[ESB_IPV6_PRESENTATION_SIZE];
     acceptData._peerAddress.getIPAddress(dottedIP, sizeof(dottedIP));
-    ESB_LOG_INFO("[listener:%d] Accepted new connection from %s:%d",
-                 _socket->getSocketDescriptor(), dottedIP,
+    ESB_LOG_INFO("[listener:%d] Accepted new connection from %s:%d", _socket->getSocketDescriptor(), dottedIP,
                  acceptData._peerAddress.getPort());
   }
 
@@ -113,46 +104,37 @@ bool ListeningSocket::handleAcceptEvent(ESB::SocketMultiplexer &multiplexer) {
 }
 
 bool ListeningSocket::handleConnectEvent(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_WARNING("[listener:%d] Cannot handle connect events",
-                  _socket->getSocketDescriptor());
+  ESB_LOG_WARNING("[listener:%d] Cannot handle connect events", _socket->getSocketDescriptor());
   return true;
 }
 
 bool ListeningSocket::handleReadableEvent(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_WARNING("[listener:%d] Cannot handle readable events",
-                  _socket->getSocketDescriptor());
+  ESB_LOG_WARNING("[listener:%d] Cannot handle readable events", _socket->getSocketDescriptor());
   return true;
 }
 
 bool ListeningSocket::handleWritableEvent(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_WARNING("[listener:%d] Cannot handle writable events",
-                  _socket->getSocketDescriptor());
+  ESB_LOG_WARNING("[listener:%d] Cannot handle writable events", _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleErrorEvent(ESB::Error error,
-                                       ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_ERROR_ERRNO(error, "[listener:%d] Error on socket",
-                      _socket->getSocketDescriptor());
+bool ListeningSocket::handleErrorEvent(ESB::Error error, ESB::SocketMultiplexer &multiplexer) {
+  ESB_LOG_ERROR_ERRNO(error, "[listener:%d] Error on socket", _socket->getSocketDescriptor());
   return true;
 }
 
-bool ListeningSocket::handleEndOfFileEvent(
-    ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_WARNING("[listener:%d] Cannot handle eof events",
-                  _socket->getSocketDescriptor());
+bool ListeningSocket::handleEndOfFileEvent(ESB::SocketMultiplexer &multiplexer) {
+  ESB_LOG_WARNING("[listener:%d] Cannot handle eof events", _socket->getSocketDescriptor());
   return true;
 }
 
 bool ListeningSocket::handleIdleEvent(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_WARNING("[listener:%d] Cannot handle idle events",
-                  _socket->getSocketDescriptor());
+  ESB_LOG_WARNING("[listener:%d] Cannot handle idle events", _socket->getSocketDescriptor());
   return true;
 }
 
 bool ListeningSocket::handleRemoveEvent(ESB::SocketMultiplexer &multiplexer) {
-  ESB_LOG_NOTICE("[listener:%d] Removed from multiplexer",
-                 _socket->getSocketDescriptor());
+  ESB_LOG_NOTICE("[listener:%d] Removed from multiplexer", _socket->getSocketDescriptor());
   return true;  // call cleanup handler on us after this returns
 }
 
@@ -160,9 +142,7 @@ SOCKET ListeningSocket::getSocketDescriptor() const {
   return _socket ? _socket->getSocketDescriptor() : INVALID_SOCKET;
 }
 
-ESB::CleanupHandler *ListeningSocket::getCleanupHandler() {
-  return _thisCleanupHandler;
-}
+ESB::CleanupHandler *ListeningSocket::getCleanupHandler() { return _thisCleanupHandler; }
 
 const char *ListeningSocket::getName() const { return "ListeningSocket"; }
 

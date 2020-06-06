@@ -38,8 +38,7 @@ class ClientSocketFactory {
    * create
    * @param dispatcher New sockets will be added to this dispatcher
    */
-  ClientSocketFactory(int maxSockets, PerformanceCounter *successCounter,
-                      ESB::SocketMultiplexerDispatcher *dispatcher);
+  ClientSocketFactory(int maxSockets, PerformanceCounter *successCounter, ESB::SocketMultiplexerDispatcher *dispatcher);
 
   /** Destructor.
    */

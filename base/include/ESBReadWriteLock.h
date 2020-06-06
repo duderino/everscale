@@ -79,9 +79,7 @@ class ReadWriteLock : public Lockable {
    */
   virtual Error readRelease();
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   //  Disabled

@@ -23,8 +23,7 @@ TEST(TimeSeries, Basic) {
   }
 
   EXPECT_EQ(timeSeries.counters()->size(), 1);
-  SimplePerformanceCounter *first =
-      (SimplePerformanceCounter *)timeSeries.counters()->first();
+  SimplePerformanceCounter *first = (SimplePerformanceCounter *)timeSeries.counters()->first();
   EXPECT_EQ(first->queries(), queries);
 }
 
@@ -41,8 +40,7 @@ TEST(TimeSeries, MultipleWindows) {
   }
 
   EXPECT_EQ(timeSeries.counters()->size(), 1);
-  SimplePerformanceCounter *first =
-      (SimplePerformanceCounter *)timeSeries.counters()->first();
+  SimplePerformanceCounter *first = (SimplePerformanceCounter *)timeSeries.counters()->first();
   EXPECT_EQ(first->queries(), queries);
 
   stop += windowSizeSec;
@@ -71,8 +69,7 @@ TEST(TimeSeries, ExceedMaxWindows) {
   }
 
   EXPECT_EQ(timeSeries.counters()->size(), 1);
-  SimplePerformanceCounter *first =
-      (SimplePerformanceCounter *)timeSeries.counters()->first();
+  SimplePerformanceCounter *first = (SimplePerformanceCounter *)timeSeries.counters()->first();
   EXPECT_EQ(first->queries(), queries);
 
   stop += windowSizeSec;

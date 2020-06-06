@@ -114,8 +114,7 @@ static const int AllocationsPerIteration = 10000;
 
 DiscardAllocatorTest::DiscardAllocatorTest()
     : _rand(ESB::Date::Now().microSeconds() + Thread::CurrentThreadId()),
-      _allocator(ChunkSize, ESB_CACHE_LINE_SIZE, 1, SystemAllocator::Instance(),
-                 true) {}
+      _allocator(ChunkSize, ESB_CACHE_LINE_SIZE, 1, SystemAllocator::Instance(), true) {}
 
 DiscardAllocatorTest::~DiscardAllocatorTest() {}
 
@@ -186,18 +185,15 @@ int DiscardAllocatorTest::generateAllocSize() {
 }  // namespace ESB
 
 int main() {
-  ESB::DiscardAllocatorTestPtr discardAllocatorTest =
-      new ESB::DiscardAllocatorTest();
+  ESB::DiscardAllocatorTestPtr discardAllocatorTest = new ESB::DiscardAllocatorTest();
 
-  ESTF::ConcurrencyDecoratorPtr discardAllocatorDecorator =
-      new ESTF::ConcurrencyDecorator(discardAllocatorTest, 3);
+  ESTF::ConcurrencyDecoratorPtr discardAllocatorDecorator = new ESTF::ConcurrencyDecorator(discardAllocatorTest, 3);
 
   ESTF::CompositePtr testSuite = new ESTF::Composite();
 
   testSuite->add(discardAllocatorDecorator);
 
-  ESTF::RepetitionDecoratorPtr root =
-      new ESTF::RepetitionDecorator(testSuite, 3);
+  ESTF::RepetitionDecoratorPtr root = new ESTF::RepetitionDecorator(testSuite, 3);
 
   ESTF::ResultCollector collector;
 

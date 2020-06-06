@@ -117,8 +117,7 @@ class ResultCollector {
      *  @param threadId The thread that performed the test.
      *  @param date The time the result was recorded.
      */
-    Result(ResultType type, const char *description, const char *file, int line,
-           Thread::ThreadId threadId, Date date);
+    Result(ResultType type, const char *description, const char *file, int line, Thread::ThreadId threadId, Date date);
 
     /** Destructor. */
     virtual ~Result();
@@ -130,9 +129,7 @@ class ResultCollector {
      *    @return true if this instance is logically less than the other
      *        instance, false otherwise.
      */
-    inline bool operator<(const Result &result) const {
-      return _date < result._date;
-    }
+    inline bool operator<(const Result &result) const { return _date < result._date; }
 
     /** Print the results contained in this result record to an output
      *    stream.
@@ -158,8 +155,7 @@ class ResultCollector {
   };
 
  private:
-  void add(ResultType type, const char *description, const char *file,
-           int line);
+  void add(ResultType type, const char *description, const char *file, int line);
 
   std::multiset<Result> _results;
 
@@ -175,10 +171,7 @@ class ResultCollector {
  *    @return The output stream (for chaining).
  *  @ingroup test
  */
-inline std::ostream &operator<<(std::ostream &out,
-                                const ResultCollector &collector) {
-  return collector.print(out);
-}
+inline std::ostream &operator<<(std::ostream &out, const ResultCollector &collector) { return collector.print(out); }
 
 /** Extractor function for ResultCollector::Result.
  *
@@ -187,10 +180,7 @@ inline std::ostream &operator<<(std::ostream &out,
  *  @return The output stream (for chaining).
  *  @ingroup test
  */
-inline std::ostream &operator<<(std::ostream &out,
-                                const ResultCollector::Result &result) {
-  return result.print(out);
-}
+inline std::ostream &operator<<(std::ostream &out, const ResultCollector::Result &result) { return result.print(out); }
 
 }  // namespace ESTF
 

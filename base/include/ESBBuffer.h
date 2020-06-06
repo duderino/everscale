@@ -112,25 +112,19 @@ class Buffer : public EmbeddedListElement {
    *
    * @return The next character or 0 if there are no more characters
    */
-  inline unsigned char next() {
-    return isReadable() ? _buffer[_readPosition++] : 0;
-  }
+  inline unsigned char next() { return isReadable() ? _buffer[_readPosition++] : 0; }
 
   /** Read the next character in the buffer but do not advance the read
    * position.  If the buffer is empty this is a no-op.
    *
    * @return The next character or 0 if there are no more characters.
    */
-  inline unsigned char peekNext() const {
-    return isReadable() ? _buffer[_readPosition] : 0;
-  }
+  inline unsigned char peekNext() const { return isReadable() ? _buffer[_readPosition] : 0; }
 
   /** Skip the next character in the buffer.  If
    *  the buffer is empty this is a no-op.  Buffer should be in drain mode.
    */
-  inline void skipNext() {
-    _readPosition = !isReadable() ? _readPosition : _readPosition + 1;
-  }
+  inline void skipNext() { _readPosition = !isReadable() ? _readPosition : _readPosition + 1; }
 
   /** Save the current read position
    */
@@ -164,17 +158,13 @@ class Buffer : public EmbeddedListElement {
    *
    * @param position The new value for the write position
    */
-  inline void setWritePosition(UInt32 position) {
-    _writePosition = position > _capacity ? _capacity : position;
-  }
+  inline void setWritePosition(UInt32 position) { _writePosition = position > _capacity ? _capacity : position; }
 
   /** Set the current read position
    *
    * @param position The new value for the read position
    */
-  inline void setReadPosition(UInt32 position) {
-    _readPosition = position > _capacity ? _capacity : position;
-  }
+  inline void setReadPosition(UInt32 position) { _readPosition = position > _capacity ? _capacity : position; }
 
   /** Get the underlying buffer.
    *
@@ -193,8 +183,7 @@ class Buffer : public EmbeddedListElement {
    * @param n The number of steps to advance the read position
    */
   inline void skip(UInt32 n) {
-    _readPosition =
-        _readPosition + n > _writePosition ? _writePosition : _readPosition + n;
+    _readPosition = _readPosition + n > _writePosition ? _writePosition : _readPosition + n;
   }
 
   /** Clear the buffer.  Both the read and write positions will be set to zero.
@@ -232,9 +221,7 @@ class Buffer : public EmbeddedListElement {
    * allocator
    * @return The duplicate or NULL if memory could not be allocated.
    */
-  inline unsigned char *duplicate(Allocator &allocator) const {
-    return duplicate(allocator, true);
-  }
+  inline unsigned char *duplicate(Allocator &allocator) const { return duplicate(allocator, true); }
 
   /** Compare a string to data in the buffer.  If in drain mode, this will
    * compare to unread data.  If in fill mode, this will compare to the data
@@ -251,9 +238,7 @@ class Buffer : public EmbeddedListElement {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    return allocator.allocate(size);
-  }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   /** Placement new
    *
@@ -261,9 +246,7 @@ class Buffer : public EmbeddedListElement {
    * @param block A valid memory block with which the object can be constructed.
    * @return The memory block
    */
-  inline void *operator new(size_t size, unsigned char *block) noexcept {
-    return block;
-  }
+  inline void *operator new(size_t size, unsigned char *block) noexcept { return block; }
 
  private:
   // Disabled

@@ -39,9 +39,7 @@ static void SignalHandler(int signal) { IsRunning = 0; }
 
 using namespace ES;
 
-static void printHelp() {
-  fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n");
-}
+static void printHelp() { fprintf(stderr, "Usage: -l <logLevel> -m <threads> -p <port>\n"); }
 
 int main(int argc, char **argv) {
   int port = 8080;
@@ -100,8 +98,7 @@ int main(int argc, char **argv) {
   logger.setSeverity((ESB::Logger::Severity)logLevel);
   ESB::Logger::SetInstance(&logger);
 
-  ESB_LOG_NOTICE("[main] starting. logLevel: %d, threads: %d, port: %d",
-                 logLevel, threads, port);
+  ESB_LOG_NOTICE("[main] starting. logLevel: %d, threads: %d, port: %d", logLevel, threads, port);
 
   //
   // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
@@ -117,8 +114,7 @@ int main(int argc, char **argv) {
   // Max out open files
   //
 
-  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(
-      ESB::SystemConfig::Instance().socketHardMax());
+  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
@@ -134,8 +130,7 @@ int main(int argc, char **argv) {
   error = listener.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u",
-                           listener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u", listener.listeningAddress().port());
     return -2;
   }
 
@@ -144,8 +139,7 @@ int main(int argc, char **argv) {
   error = listener.listen();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %u",
-                           listener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %u", listener.listeningAddress().port());
     return -3;
   }
 
@@ -190,8 +184,7 @@ int main(int argc, char **argv) {
     return -7;
   }
 
-  server.serverCounters().log(ESB::Logger::Instance(),
-                              ESB::Logger::Severity::Notice);
+  server.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   server.destroy();
 
   return 0;

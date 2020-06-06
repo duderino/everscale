@@ -4,18 +4,13 @@
 
 namespace ESTF {
 
-ComponentThread::ComponentThread()
-    : _component(), _collector(0), _result(false) {}
+ComponentThread::ComponentThread() : _component(), _collector(0), _result(false) {}
 
 ComponentThread::~ComponentThread() {}
 
-void ComponentThread::setComponent(ComponentPtr &component) {
-  _component = component;
-}
+void ComponentThread::setComponent(ComponentPtr &component) { _component = component; }
 
-void ComponentThread::setCollector(ResultCollector *collector) {
-  _collector = collector;
-}
+void ComponentThread::setCollector(ResultCollector *collector) { _collector = collector; }
 
 bool ComponentThread::getResult() { return _result; }
 

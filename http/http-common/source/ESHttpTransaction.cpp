@@ -13,10 +13,8 @@
 namespace ES {
 
 HttpTransaction::HttpTransaction(ESB::CleanupHandler &cleanupHandler)
-    : _allocator(ESB_PAGE_SIZE -
-                     ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
-                 ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
-                 ESB::SystemAllocator::Instance(), true),
+    : _allocator(ESB_PAGE_SIZE - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE), ESB_CACHE_LINE_SIZE,
+                 ESB_PAGE_SIZE, ESB::SystemAllocator::Instance(), true),
       _context(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),
@@ -25,12 +23,9 @@ HttpTransaction::HttpTransaction(ESB::CleanupHandler &cleanupHandler)
       _response(),
       _parseBuffer(_parseBufferStorage, sizeof(_parseBufferStorage)) {}
 
-HttpTransaction::HttpTransaction(const ESB::SocketAddress *peerAddress,
-                                 ESB::CleanupHandler &cleanupHandler)
-    : _allocator(ESB_PAGE_SIZE -
-                     ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
-                 ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
-                 ESB::SystemAllocator::Instance()),
+HttpTransaction::HttpTransaction(const ESB::SocketAddress *peerAddress, ESB::CleanupHandler &cleanupHandler)
+    : _allocator(ESB_PAGE_SIZE - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE), ESB_CACHE_LINE_SIZE,
+                 ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _context(NULL),
       _cleanupHandler(cleanupHandler),
       _start(),
@@ -55,8 +50,6 @@ void HttpTransaction::reset() {
   _start = 0;
 }
 
-ESB::CleanupHandler *HttpTransaction::cleanupHandler() {
-  return &_cleanupHandler;
-}
+ESB::CleanupHandler *HttpTransaction::cleanupHandler() { return &_cleanupHandler; }
 
 }  // namespace ES

@@ -9,8 +9,7 @@ EmbeddedList::EmbeddedList() : _head(0), _tail(0) {}
 EmbeddedList::~EmbeddedList() {}
 
 void EmbeddedList::clear(bool cleanup) {
-  for (EmbeddedListElement *element = removeFirst(); element;
-       element = removeFirst()) {
+  for (EmbeddedListElement *element = removeFirst(); element; element = removeFirst()) {
     CleanupHandler *cleanupHandler = element->cleanupHandler();
 
     if (cleanupHandler) {
@@ -22,8 +21,7 @@ void EmbeddedList::clear(bool cleanup) {
 int EmbeddedList::size() const {
   int length = 0;
 
-  for (EmbeddedListElement *current = _head; current;
-       current = current->next()) {
+  for (EmbeddedListElement *current = _head; current; current = current->next()) {
     ++length;
   }
 
@@ -127,8 +125,7 @@ EmbeddedListElement *EmbeddedList::index(int idx) {
 }
 
 bool EmbeddedList::validate() const {
-  for (EmbeddedListElement *current = _head; current;
-       current = current->next()) {
+  for (EmbeddedListElement *current = _head; current; current = current->next()) {
     if (current->next()) {
       assert(current == current->next()->previous());
 

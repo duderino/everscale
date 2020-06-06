@@ -13,22 +13,10 @@
 namespace ES {
 
 HttpRequestUri::HttpRequestUri(UriType type)
-    : _type(type),
-      _port(-1),
-      _host(NULL),
-      _absPath(NULL),
-      _query(NULL),
-      _fragment(NULL),
-      _other(NULL) {}
+    : _type(type), _port(-1), _host(NULL), _absPath(NULL), _query(NULL), _fragment(NULL), _other(NULL) {}
 
 HttpRequestUri::HttpRequestUri()
-    : _type(ES_URI_HTTP),
-      _port(-1),
-      _host(NULL),
-      _absPath(NULL),
-      _query(NULL),
-      _fragment(NULL),
-      _other(NULL) {}
+    : _type(ES_URI_HTTP), _port(-1), _host(NULL), _absPath(NULL), _query(NULL), _fragment(NULL), _other(NULL) {}
 
 HttpRequestUri::~HttpRequestUri() {}
 
@@ -42,8 +30,7 @@ void HttpRequestUri::reset() {
   _other = NULL;
 }
 
-ESB::Error HttpRequestUri::copy(const HttpRequestUri *other,
-                                ESB::Allocator &allocator) {
+ESB::Error HttpRequestUri::copy(const HttpRequestUri *other, ESB::Allocator &allocator) {
   if (!other) {
     return ESB_NULL_POINTER;
   }
@@ -109,8 +96,7 @@ ESB::Error HttpRequestUri::copy(const HttpRequestUri *other,
   return ESB_SUCCESS;
 }
 
-int HttpRequestUri::Compare(const HttpRequestUri *r1,
-                            const HttpRequestUri *r2) {
+int HttpRequestUri::Compare(const HttpRequestUri *r1, const HttpRequestUri *r2) {
   if (ES_URI_ASTERISK == r1->type() && ES_URI_ASTERISK == r2->type()) {
     return 0;
   }
@@ -148,10 +134,8 @@ int HttpRequestUri::Compare(const HttpRequestUri *r1,
   // A port that is empty or not given is equivalent to the default port for
   // that URI-reference;
 
-  int port1 =
-      0 <= r1->port() ? r1->port() : (ES_URI_HTTP == r1->type() ? 80 : 443);
-  int port2 =
-      0 <= r2->port() ? r2->port() : (ES_URI_HTTP == r2->type() ? 80 : 443);
+  int port1 = 0 <= r1->port() ? r1->port() : (ES_URI_HTTP == r1->type() ? 80 : 443);
+  int port2 = 0 <= r2->port() ? r2->port() : (ES_URI_HTTP == r2->type() ? 80 : 443);
 
   if (0 != port1 - port2) {
     return port1 - port2;

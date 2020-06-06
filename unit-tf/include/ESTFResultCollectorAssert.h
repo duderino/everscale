@@ -28,8 +28,7 @@
  *  @param description The description of the success result.
  *  @ingroup test
  */
-#define ESTF_SUCCESS(collector, description) \
-  collector->addSuccess(description, __FILE__, __LINE__);
+#define ESTF_SUCCESS(collector, description) collector->addSuccess(description, __FILE__, __LINE__);
 
 /** Add a failure result to a result collector.
  *
@@ -37,8 +36,7 @@
  *  @param description The description of the failure result.
  *  @ingroup test
  */
-#define ESTF_FAILURE(collector, description) \
-  collector->addFailure(description, __FILE__, __LINE__);
+#define ESTF_FAILURE(collector, description) collector->addFailure(description, __FILE__, __LINE__);
 
 /** Add an error result to a result collector.
  *
@@ -46,7 +44,6 @@
  *  @param description The description of the error condition.
  *  @ingroup test
  */
-#define ESTF_ERROR(collector, description) \
-  collector->addError(description, __FILE__, __LINE__);
+#define ESTF_ERROR(collector, description) collector->addError(description, __FILE__, __LINE__);
 
 #endif

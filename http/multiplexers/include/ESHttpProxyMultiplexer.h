@@ -63,8 +63,7 @@
 
 namespace ES {
 
-class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
-                             public HttpMultiplexerExtended {
+class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplexerExtended {
  public:
   /**
    * Create a proxy-mode (client + server) multiplexer.
@@ -75,10 +74,8 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
    * @param clientCounters
    * @param serverCounters
    */
-  HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
-                       HttpServerHandler &serverHandler,
-                       HttpClientCounters &clientCounters,
-                       HttpServerCounters &serverCounters);
+  HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
+                       HttpClientCounters &clientCounters, HttpServerCounters &serverCounters);
 
   /**
    * Create a client-only multiplexer.
@@ -87,8 +84,7 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
    * @param clientHandler
    * @param clientCounters
    */
-  HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
-                       HttpClientCounters &clientCounters);
+  HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler, HttpClientCounters &clientCounters);
 
   /**
    * Create a server-only multiplexer
@@ -97,8 +93,7 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
    * @param serverHandler
    * @param serverCounters
    */
-  HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpServerHandler &serverHandler,
-                       HttpServerCounters &serverCounters);
+  HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpServerHandler &serverHandler, HttpServerCounters &serverCounters);
 
   virtual ~HttpProxyMultiplexer();
 
@@ -110,9 +105,7 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
    * @param command The command to execute
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  inline ESB::Error pushClientCommand(HttpClientCommand *command) {
-    return _clientCommandSocket.push(command);
-  }
+  inline ESB::Error pushClientCommand(HttpClientCommand *command) { return _clientCommandSocket.push(command); }
 
   /**
    * Enqueue a command in the multiplexer and wake it up.  When the multiplexer
@@ -122,9 +115,7 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
    * @param command The command to execute
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  inline ESB::Error pushServerCommand(HttpServerCommand *command) {
-    return _serverCommandSocket.push(command);
-  }
+  inline ESB::Error pushServerCommand(HttpServerCommand *command) { return _serverCommandSocket.push(command); }
 
   //
   // ESB::Command
@@ -138,11 +129,9 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
   // ESB::SocketMultiplexer
   //
 
-  virtual ESB::Error addMultiplexedSocket(
-      ESB::MultiplexedSocket *multiplexedSocket);
+  virtual ESB::Error addMultiplexedSocket(ESB::MultiplexedSocket *multiplexedSocket);
   virtual ESB::Error updateMultiplexedSocket(ESB::MultiplexedSocket *socket);
-  virtual ESB::Error removeMultiplexedSocket(ESB::MultiplexedSocket *socket,
-                                             bool removeFromList);
+  virtual ESB::Error removeMultiplexedSocket(ESB::MultiplexedSocket *socket, bool removeFromList);
   virtual int currentSockets() const;
   virtual int maximumSockets() const;
   virtual bool isRunning() const;
@@ -157,8 +146,7 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer,
   virtual void releaseBuffer(ESB::Buffer *buffer);
 
   virtual HttpClientTransaction *createClientTransaction();
-  virtual ESB::Error executeClientTransaction(
-      HttpClientTransaction *transaction);
+  virtual ESB::Error executeClientTransaction(HttpClientTransaction *transaction);
   virtual void destroyClientTransaction(HttpClientTransaction *transaction);
 
   virtual HttpServerTransaction *createServerTransaction();
