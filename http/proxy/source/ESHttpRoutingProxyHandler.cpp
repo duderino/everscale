@@ -324,20 +324,6 @@ ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multipl
 
 void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                              HttpClientHandler::State state) {
-  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
-
-  if (context) {
-    HttpServerStream *serverStream = context->serverStream();
-    assert(serverStream);
-    if (serverStream) {
-      context->~HttpRoutingProxyContext();
-      serverStream->allocator().deallocate(context);
-      serverStream->setContext(NULL);
-    }
-  }
-
-  // TODO when to abort server transaction?  Make sure no cycles.
-
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
       ESB_LOG_DEBUG("[%s] client transaction failed at begin state", clientStream.logAddress());
@@ -360,20 +346,34 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
     default:
       ESB_LOG_WARNING("[%s] client transaction failed at unknown state", clientStream.logAddress());
   }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
+  if (context) {
+    // The server transaction has already received the endTransaction() and cleaned up
+    return;
+  }
+
+  // The client transaction is the first to receive endTransaction(), so abort the server transaction
+
+  HttpServerStream *serverStream = context->serverStream();
+  assert(serverStream);
+  if (!serverStream) {
+    return;
+  }
+
+  context->~HttpRoutingProxyContext();
+  serverStream->allocator().deallocate(context);
+  serverStream->setContext(NULL);
+
+  ESB::Error error = serverStream->abort(true);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] client transaction cannot abort associated server transaction [%s]",
+                        clientStream.logAddress(), serverStream->logAddress());
+  }
 }
 
 void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
                                              HttpServerHandler::State state) {
-  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
-
-  if (context) {
-    context->~HttpRoutingProxyContext();
-    serverStream.allocator().deallocate(context);
-    serverStream.setContext(NULL);
-  }
-
-  // TODO when to abort client transaction?  Make sure no cycles.
-
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
       ESB_LOG_DEBUG("[%s] server transaction failed at begin state", serverStream.logAddress());
@@ -395,6 +395,30 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
       break;
     default:
       ESB_LOG_WARNING("[%s] server transaction failed at unknown state", serverStream.logAddress());
+  }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
+  if (context) {
+    // The client transaction has already received the endTransaction() and cleaned up
+    return;
+  }
+
+  // The server transaction is the first to receive endTransaction(), so abort the client transaction
+
+  context->~HttpRoutingProxyContext();
+  serverStream.allocator().deallocate(context);
+  serverStream.setContext(NULL);
+
+  HttpClientStream *clientStream = context->clientStream();
+  assert(clientStream);
+  if (!clientStream) {
+    return;
+  }
+
+  ESB::Error error = clientStream->abort(true);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] server transaction cannot abort associated client transaction [%s]",
+                        serverStream.logAddress(), clientStream->logAddress());
   }
 }
 
