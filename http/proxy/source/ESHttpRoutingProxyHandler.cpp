@@ -8,8 +8,6 @@
 
 namespace ES {
 
-static bool WaitForContinue = false;
-
 HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router) : _router(router) {}
 
 HttpRoutingProxyHandler::~HttpRoutingProxyHandler() {}
@@ -88,7 +86,7 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
 
   // Pause the server transaction until we get the response from the client transaction
 
-  return WaitForContinue ? ESB_PAUSE : ESB_SUCCESS;
+  return ESB_PAUSE;
 }
 
 ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer,
@@ -98,6 +96,8 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
   if (!context) {
     return ESB_INVALID_STATE;
   }
+
+  context->setClientStream(&clientStream);
 
   HttpServerStream *serverStream = context->serverStream();
   assert(serverStream);
@@ -420,6 +420,10 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
     ESB_LOG_DEBUG_ERRNO(error, "[%s] server transaction cannot abort associated client transaction [%s]",
                         serverStream.logAddress(), clientStream->logAddress());
   }
+}
+
+ESB::Error HttpRoutingProxyHandler::endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+  return ESB_SUCCESS;
 }
 
 }  // namespace ES

@@ -776,6 +776,7 @@ ESB::Error HttpClientSocket::parseResponseHeaders() {
 
 ESB::Error HttpClientSocket::parseResponseBody() {
   assert(_transaction);
+  assert(_state & PARSING_BODY);
 
   //
   // Until the body is read or either the parser or handler return ESB_AGAIN,
@@ -1037,9 +1038,12 @@ ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
 ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(!(RECV_PAUSED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED | RECV_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (_state & RECV_PAUSED) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] pausing client response receive", _socket.logAddress());
@@ -1081,9 +1085,12 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
 ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(!(SEND_PAUSED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED | SEND_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (_state & SEND_PAUSED) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] pausing client request send", _socket.logAddress());

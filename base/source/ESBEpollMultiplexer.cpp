@@ -514,6 +514,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           ESB_LOG_INFO("[%d] connected socket remote close", fd);
           keepInMultiplexer = socket->handleRemoteClose();
         } else {
+          // TODO consider swapping these - drain first, then fill.
           if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
             ESB_LOG_DEBUG("[%d] connected socket read event", fd);
             switch (socket->handleReadable()) {

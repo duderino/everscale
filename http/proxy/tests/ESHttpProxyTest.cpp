@@ -6,6 +6,10 @@
 #include <ESHttpClient.h>
 #endif
 
+#ifndef ES_HTTP_PROXY_H
+#include <ESHttpProxy.h>
+#endif
+
 #ifndef ES_HTTP_CLIENT_SOCKET_H
 #include <ESHttpClientSocket.h>
 #endif
@@ -28,6 +32,10 @@
 
 #ifndef ES_HTTP_LOADGEN_SEED_COMMAND_H
 #include <ESHttpLoadgenSeedCommand.h>
+#endif
+
+#ifndef ES_HTTP_ROUTING_PROXY_HANDLER_H
+#include <ESHttpRoutingProxyHandler.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -58,20 +66,44 @@
 #include <stdlib.h>
 #endif
 
+namespace ES {
 static volatile ESB::Word IsRunning = 1;
 static void SignalHandler(int signal) { IsRunning = 0; }
+
+/**
+ * This router blindly forwards all requests to a given address.
+ */
+class HttpFixedRouter : public HttpRouter {
+ public:
+  HttpFixedRouter(ESB::SocketAddress &destination) : _destination(destination){};
+  virtual ~HttpFixedRouter(){};
+
+  virtual ESB::Error route(const HttpServerStream &serverStream, HttpClientTransaction &clientTransaction,
+                           ESB::SocketAddress &destination) {
+    destination = _destination;
+    return ESB_SUCCESS;
+  }
+
+ private:
+  // Disabled
+  HttpFixedRouter(const HttpFixedRouter &);
+  void operator=(const HttpFixedRouter &);
+
+  ESB::SocketAddress _destination;
+};
+}  // namespace ES
 
 using namespace ES;
 
 int main(int argc, char **argv) {
-  int clientThreads = 3;
-  int serverThreads = 3;
+  int clientThreads = 1;
+  int serverThreads = 1;
   const char *destination = "127.0.0.1";
   const char *host = "localhost.localdomain";
-  unsigned int connections = 500;  // concurrent connections
-  unsigned int iterations = 500;   // http requests per concurrent connection
+  unsigned int connections = 1;  // concurrent connections
+  unsigned int iterations = 1;   // http requests per concurrent connection
   bool reuseConnections = true;
-  int logLevel = ESB::Logger::Notice;
+  int logLevel = ESB::Logger::Debug;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
@@ -142,31 +174,51 @@ int main(int argc, char **argv) {
   ESB_LOG_NOTICE("Maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
 
   //
-  // Create listening socket
+  // Create listening socket for the origin server
   //
 
   // bind to port 0 so kernel will choose a free ephemeral port
-  ESB::ListeningTCPSocket listener(0, ESB_UINT16_MAX);
+  ESB::ListeningTCPSocket originListener(0, ESB_UINT16_MAX);
 
-  error = listener.bind();
+  error = originListener.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u", listener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind origin to port %u", originListener.listeningAddress().port());
     return -2;
   }
 
-  ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
+  ESB_LOG_NOTICE("Origin bound to port %u", originListener.listeningAddress().port());
 
-  ESB::SocketAddress destaddr(destination, listener.listeningAddress().port(), ESB::SocketAddress::TransportType::TCP);
+  ESB::SocketAddress originAddress(destination, originListener.listeningAddress().port(),
+                                   ESB::SocketAddress::TransportType::TCP);
 
   //
-  // Init client and server
+  // Create listening socket for the proxy server
+  //
+
+  // bind to port 0 so kernel will choose a free ephemeral port
+  ESB::ListeningTCPSocket proxyListener(0, ESB_UINT16_MAX);
+
+  error = proxyListener.bind();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to proxy port %u", proxyListener.listeningAddress().port());
+    return -2;
+  }
+
+  ESB_LOG_NOTICE("Proxy bound to port %u", proxyListener.listeningAddress().port());
+
+  ESB::SocketAddress proxyAddress(destination, proxyListener.listeningAddress().port(),
+                                  ESB::SocketAddress::TransportType::TCP);
+
+  //
+  // Init client, server, and proxy
   //
 
   HttpOriginHandler serverHandler;
-  HttpServer server(serverThreads, serverHandler);
+  HttpServer originServer(serverThreads, serverHandler);
 
-  error = server.initialize();
+  error = originServer.initialize();
 
   if (ESB_SUCCESS != error) {
     return -4;
@@ -182,11 +234,21 @@ int main(int argc, char **argv) {
     return -5;
   }
 
+  HttpFixedRouter proxyRouter(originAddress);
+  HttpRoutingProxyHandler proxyHandler(proxyRouter);
+  HttpProxy proxyServer(serverThreads, proxyHandler);
+
+  error = proxyServer.initialize();
+
+  if (ESB_SUCCESS != error) {
+    return -6;
+  }
+
   //
-  // Start client and server
+  // Start client, server, and proxy
   //
 
-  error = server.start();
+  error = originServer.start();
 
   if (ESB_SUCCESS != error) {
     return -6;
@@ -194,7 +256,21 @@ int main(int argc, char **argv) {
 
   // add listening sockets to running server
 
-  error = server.addListener(listener);
+  error = originServer.addListener(originListener);
+
+  if (ESB_SUCCESS != error) {
+    return -7;
+  }
+
+  error = proxyServer.start();
+
+  if (ESB_SUCCESS != error) {
+    return -6;
+  }
+
+  // add listening sockets to running server
+
+  error = proxyServer.addListener(proxyListener);
 
   if (ESB_SUCCESS != error) {
     return -7;
@@ -209,9 +285,9 @@ int main(int argc, char **argv) {
   // add load generators to running client
 
   for (int i = 0; i < client.threads(); ++i) {
-    HttpLoadgenSeedCommand *command = new (ESB::SystemAllocator::Instance())
-        HttpLoadgenSeedCommand(connections / clientThreads, iterations, destaddr, listener.listeningAddress().port(),
-                               host, absPath, method, contentType, ESB::SystemAllocator::Instance().cleanupHandler());
+    HttpLoadgenSeedCommand *command = new (ESB::SystemAllocator::Instance()) HttpLoadgenSeedCommand(
+        connections / clientThreads, iterations, proxyAddress, proxyListener.listeningAddress().port(), host, absPath,
+        method, contentType, ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
@@ -235,13 +311,16 @@ int main(int argc, char **argv) {
 
   error = client.stop();
   assert(ESB_SUCCESS == error);
-  error = server.stop();
+  error = proxyServer.stop();
+  assert(ESB_SUCCESS == error);
+  error = originServer.stop();
   assert(ESB_SUCCESS == error);
 
   // Dump performance metrics
 
   client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
-  server.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  originServer.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  proxyServer.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
 
   const ESB::UInt32 totalSuccesses = client.clientCounters().getSuccesses()->queries();
   const ESB::UInt32 totalFailures = client.clientCounters().getFailures()->queries();
@@ -251,7 +330,8 @@ int main(int argc, char **argv) {
   //
 
   client.destroy();
-  server.destroy();
+  proxyServer.destroy();
+  originServer.destroy();
 
   ESB::Time::Instance().stop();
   error = ESB::Time::Instance().join();

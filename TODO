@@ -28,6 +28,7 @@ proxy:
  - Http origin ctor should take the size of response to send and get rid of that xml string literal thing.
 
 performance and efficiency:
+ - modify multiplexer - first write, then read.
  - Consider compacting recvBuffer unconditionally for every ServerSocket and ClientSocket handleReadable event.  This would do more memmoves in exchange for fewer socket recvs.
  - Consider using low watermarks for compacting and filling recvBuffer
  - Server socket:  release send and recv buffers in between transactions unless there's data for the next transaction in the app or socket recv buffs.

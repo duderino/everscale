@@ -48,6 +48,7 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
                                          ESB::UInt32 *bytesConsumed);
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                               HttpClientHandler::State state);
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
 
  private:
   // Disabled

@@ -447,6 +447,9 @@ ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
         return error;
       }
       return ESB_SUCCESS;
+    case ESB_CLEANUP:
+      // TODO not sure about htis
+      return ESB_SUCCESS;
     case ESB_AGAIN:
       if (ESB_SUCCESS != (error = resumeSend(true))) {
         abort(true);
@@ -454,7 +457,7 @@ ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
       }
       return ESB_AGAIN;
     default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send empty response", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send response", _socket.logAddress());
       abort(true);
       return error;
   }
@@ -1133,9 +1136,12 @@ ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
 ESB::Error HttpServerSocket::pauseRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(!(RECV_PAUSED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED | RECV_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (_state & RECV_PAUSED) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] pausing server request receive", _socket.logAddress());
@@ -1177,9 +1183,12 @@ ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
 ESB::Error HttpServerSocket::pauseSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(!(SEND_PAUSED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED | SEND_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (_state & SEND_PAUSED) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] pausing server response send", _socket.logAddress());
