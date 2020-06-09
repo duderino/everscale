@@ -8,6 +8,8 @@
 
 namespace ES {
 
+static bool WaitForContinue = false;
+
 HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router) : _router(router) {}
 
 HttpRoutingProxyHandler::~HttpRoutingProxyHandler() {}
@@ -16,17 +18,17 @@ ESB::Error HttpRoutingProxyHandler::acceptConnection(HttpMultiplexer &multiplexe
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpServerStream &stream) {
-  HttpRoutingProxyContext *context = new (stream.allocator()) HttpRoutingProxyContext();
+ESB::Error HttpRoutingProxyHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream) {
+  HttpRoutingProxyContext *context = new (serverStream.allocator()) HttpRoutingProxyContext();
 
   if (!context) {
-    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create proxy context", stream.logAddress());
+    ESB_LOG_WARNING_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create proxy context", serverStream.logAddress());
     return ESB_OUT_OF_MEMORY;
   }
 
-  assert(!stream.context());
-  stream.setContext(context);
-  context->setServerStream(&stream);
+  assert(!serverStream.context());
+  serverStream.setContext(context);
+  context->setServerStream(&serverStream);
 
   return ESB_SUCCESS;
 }
@@ -35,6 +37,9 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
                                                           HttpServerStream &serverStream) {
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
   assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
 
   // TODO validate headers
 
@@ -81,120 +86,316 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
     return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
-  context->setState(HttpRoutingProxyContext::State::CLIENT_RESPONSE_WAIT);
+  // Pause the server transaction until we get the response from the client transaction
 
-  return ESB_SUCCESS;
+  return WaitForContinue ? ESB_PAUSE : ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                       unsigned const char *chunk, ESB::UInt32 chunkSize,
-                                                       ESB::UInt32 *bytesConsumed) {
-  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)stream.context();
+ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer,
+                                                           HttpClientStream &clientStream) {
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
   assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
 
-  switch (context->state()) {
-    case HttpRoutingProxyContext::State::CLIENT_RESPONSE_WAIT:
-      // Wait until we the upstream response before accepting body data.  This
-      // will pause the server socket
-      return ESB_NOT_IMPLEMENTED;
-    case HttpRoutingProxyContext::State::STREAMING:
-      assert(context->clientStream());
-      assert(0 ==
-             "TODO modify HttpStream to return remaining space in the ssend "
-             "buffer");
+  HttpServerStream *serverStream = context->serverStream();
+  assert(serverStream);
+  if (!serverStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  const HttpResponse &clientResponse = clientStream.response();
+
+  ESB_LOG_DEBUG("[%s] received response, status=%d", clientStream.logAddress(), clientResponse.statusCode());
+
+  switch (ESB::Error error = serverStream->sendResponse(clientResponse)) {
+    case ESB_SUCCESS:
+      break;
+    case ESB_AGAIN:
+      return ESB_AGAIN;
     default:
-      assert(0 == "offerRequestBody in invalid state");
-      ESB_LOG_ERROR("[%s] transaction in invalid state", stream.logAddress());
-      return ESB_NOT_IMPLEMENTED;
+      ESB_LOG_WARNING_ERRNO(error, "[%s] cannot send server response", serverStream->logAddress());
+      serverStream->abort(true);
+      return error;
   }
 
-  assert(0 == "TODO modify HttpStream to expose subset of formatRequestBody");
+  // TODO reuse connection for error responses
 
-  HttpResponse &response = stream.response();
+  if (300 <= clientResponse.statusCode()) {
+    ESB_LOG_DEBUG("[%s] aborting server transaction due to error response", serverStream->logAddress());
+    serverStream->abort(true);
+    return ESB_CLOSED;
+  }
 
-  if (0U == chunkSize) {
-    response.setStatusCode(200);
-    response.setReasonPhrase("OK");
-    return ESB_SEND_RESPONSE;
+  ESB::Error error = serverStream->resumeRecv(true);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_WARNING_ERRNO(error, "[%s] cannot resume server transaction", serverStream->logAddress());
+    serverStream->abort(true);
+    return error;
   }
 
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRoutingProxyHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                      ESB::UInt32 *bytesAvailable) {
-  return ESB_NOT_IMPLEMENTED;
-}
+ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                                       unsigned const char *body, ESB::UInt32 bytesOffered,
+                                                       ESB::UInt32 *bytesConsumed) {
+  if (!body || !bytesConsumed) {
+    return ESB_NULL_POINTER;
+  }
 
-ESB::Error HttpRoutingProxyHandler::produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                        unsigned char *chunk, ESB::UInt32 bytesRequested) {
-  assert(chunk);
-  assert(0 < bytesRequested);
-  assert(stream.context());
-  return ESB_NOT_IMPLEMENTED;
-}
-
-void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                             HttpServerHandler::State state) {
-  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)stream.context();
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
   assert(context);
-  ESB::Allocator &allocator = stream.allocator();
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
 
-  context->~HttpRoutingProxyContext();
-  allocator.deallocate(context);
-  stream.setContext(NULL);
+  HttpClientStream *clientStream = context->clientStream();
+  assert(clientStream);
+  if (!clientStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::Error error = clientStream->sendRequestBody(body, bytesOffered, bytesConsumed);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot forward request body", clientStream->logAddress());
+    return error;
+  }
+
+  ESB_LOG_DEBUG("[%s] Forwarded %u request body bytes", clientStream->logAddress(), *bytesConsumed);
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpRoutingProxyHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                                      ESB::UInt32 *bytesAvailable) {
+  if (!bytesAvailable) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
+  assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
+
+  HttpClientStream *clientStream = context->clientStream();
+  assert(clientStream);
+  if (!clientStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::UInt32 bufferOffset = 0U;
+  ESB::Error error = clientStream->responseBodyAvailable(bytesAvailable, &bufferOffset);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot determine response body bytes available", clientStream->logAddress());
+    return error;
+  }
+
+  context->setClientStreamResponseOffset(bufferOffset);
+
+  ESB_LOG_DEBUG("[%s] %u response body bytes are available", clientStream->logAddress(), *bytesAvailable);
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpRoutingProxyHandler::produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                                        unsigned char *body, ESB::UInt32 bytesRequested) {
+  if (!body) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (0 >= bytesRequested) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
+  assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
+
+  HttpClientStream *clientStream = context->clientStream();
+  assert(clientStream);
+  if (!clientStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::Error error = clientStream->readResponseBody(body, bytesRequested, context->clientStreamResponseOffset());
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot read %u response body bytes", clientStream->logAddress(), bytesRequested);
+    return error;
+  }
+
+  ESB_LOG_DEBUG("[%s] read %u response body bytes", clientStream->logAddress(), bytesRequested);
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpRoutingProxyHandler::offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                                     ESB::UInt32 *bytesAvailable) {
+  if (!bytesAvailable) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
+  assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
+
+  HttpServerStream *serverStream = context->serverStream();
+  assert(serverStream);
+  if (!serverStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::UInt32 bufferOffset = 0U;
+  ESB::Error error = serverStream->requestBodyAvailable(bytesAvailable, &bufferOffset);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot determine request body bytes available", serverStream->logAddress());
+    return error;
+  }
+
+  context->setServerStreamRequestOffset(bufferOffset);
+
+  ESB_LOG_DEBUG("[%s] %u request body bytes are available", serverStream->logAddress(), *bytesAvailable);
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                                       unsigned char *body, ESB::UInt32 bytesRequested) {
+  if (!body) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (0 >= bytesRequested) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
+  assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
+
+  HttpServerStream *serverStream = context->serverStream();
+  assert(serverStream);
+  if (!serverStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::Error error = serverStream->readRequestBody(body, bytesRequested, context->serverStreamRequestOffset());
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot read %u request body bytes", serverStream->logAddress(), bytesRequested);
+    return error;
+  }
+
+  ESB_LOG_DEBUG("[%s] read %u request body bytes", serverStream->logAddress(), bytesRequested);
+  return ESB_SUCCESS;
+}
+
+ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                                        const unsigned char *body, ESB::UInt32 bytesOffered,
+                                                        ESB::UInt32 *bytesConsumed) {
+  if (!body || !bytesConsumed) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
+  assert(context);
+  if (!context) {
+    return ESB_INVALID_STATE;
+  }
+
+  HttpServerStream *serverStream = context->serverStream();
+  assert(serverStream);
+  if (!serverStream) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::Error error = serverStream->sendResponseBody(body, bytesOffered, bytesConsumed);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot forward response body", serverStream->logAddress());
+    return error;
+  }
+
+  ESB_LOG_DEBUG("[%s] Forwarded %u response body bytes", serverStream->logAddress(), *bytesConsumed);
+  return ESB_SUCCESS;
+}
+
+void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                             HttpClientHandler::State state) {
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
+
+  if (context) {
+    HttpServerStream *serverStream = context->serverStream();
+    assert(serverStream);
+    if (serverStream) {
+      context->~HttpRoutingProxyContext();
+      serverStream->allocator().deallocate(context);
+      serverStream->setContext(NULL);
+    }
+  }
+
+  // TODO when to abort server transaction?  Make sure no cycles.
+
+  switch (state) {
+    case ES_HTTP_CLIENT_HANDLER_BEGIN:
+      ESB_LOG_DEBUG("[%s] client transaction failed at begin state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
+      ESB_LOG_DEBUG("[%s] client transaction failed at response header parse state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
+      ESB_LOG_DEBUG("[%s] client transaction failed at request body parse state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
+      ESB_LOG_DEBUG("[%s] client transaction failed at response header send state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
+      ESB_LOG_DEBUG("[%s] client transaction failed at response header send state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_END:
+      ESB_LOG_DEBUG("[%s] client transaction successfully completed", clientStream.logAddress());
+      break;
+    default:
+      ESB_LOG_WARNING("[%s] client transaction failed at unknown state", clientStream.logAddress());
+  }
+}
+
+void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                             HttpServerHandler::State state) {
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
+
+  if (context) {
+    context->~HttpRoutingProxyContext();
+    serverStream.allocator().deallocate(context);
+    serverStream.setContext(NULL);
+  }
+
+  // TODO when to abort client transaction?  Make sure no cycles.
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
-      ESB_LOG_INFO("Transaction failed at begin state");
+      ESB_LOG_DEBUG("[%s] server transaction failed at begin state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
-      ESB_LOG_INFO("Transaction failed at request header parse state");
+      ESB_LOG_DEBUG("[%s] server transaction failed at request header parse state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
-      ESB_LOG_INFO("Transaction failed at request body parse state");
+      ESB_LOG_DEBUG("[%s] server transaction failed at request body parse state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
-      ESB_LOG_INFO("Transaction failed at response header send state");
+      ESB_LOG_DEBUG("[%s] server transaction failed at response header send state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
-      ESB_LOG_INFO("Transaction failed at response header send state");
+      ESB_LOG_DEBUG("[%s] server transaction failed at response header send state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
+      ESB_LOG_DEBUG("[%s] server transaction successfully completed", serverStream.logAddress());
       break;
     default:
-      ESB_LOG_WARNING("Transaction failed at unknown state");
+      ESB_LOG_WARNING("[%s] server transaction failed at unknown state", serverStream.logAddress());
   }
-}
-
-ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
-  // TODO unpause or close server stream.  if not paused, just write?
-  return ESB_NOT_IMPLEMENTED;
-}
-
-ESB::Error HttpRoutingProxyHandler::offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
-                                                     ESB::UInt32 *bytesAvailable) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
-ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
-                                                       unsigned char *chunk, ESB::UInt32 bytesRequested) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
-ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
-                                                        const unsigned char *chunk, ESB::UInt32 chunkSize,
-                                                        ESB::UInt32 *bytesConsumed) {
-  return ESB_NOT_IMPLEMENTED;
-}
-
-void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream,
-                                             HttpClientHandler::State state) {}
-
-ESB::Error HttpRoutingProxyHandler::sendResponse(HttpServerStream &stream, int statusCode, const char *reasonPhrase) {
-  stream.response().setStatusCode(500);
-  stream.response().setReasonPhrase("Internal Server Error");
-  return ESB_SEND_RESPONSE;
 }
 
 }  // namespace ES

@@ -23,14 +23,14 @@ class HttpClientStream : public HttpStream {
    * Buffer and occasionally flush a request body chunk to the underlying
    * socket.
    *
-   * @param chunk The chunk to send
+   * @param body The chunk to send
    * @param bytesOffered The size of the chunk to send.  If 0, this is the last
    * chunk, so immediately flush all buffered bytes to the underlying socket.
    * @param bytesConsumed The number of bytes consumed
    * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
-  virtual ESB::Error sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
+  virtual ESB::Error sendRequestBody(unsigned const char *body, ESB::UInt32 bytesOffered,
                                      ESB::UInt32 *bytesConsumed) = 0;
 
   /**
@@ -51,14 +51,14 @@ class HttpClientStream : public HttpStream {
   /**
    * Read up to bytesRequested of response body data.
    *
-   * @param chunk Data should be written here
+   * @param body Data should be written here
    * @param bytesRequested The amount of data to write.  This must be <= the
    * bytesAvailable result returned by responseBodyAvailable().
    * @param bufferOffset A value read from the responseBodyAvailable() function
    * @return ESB_SUCCESS if successful, ESB_INVALID_ARGUMENT if bytesRequested
    * exceeds bytesAvailable, another error code otherwise.
    */
-  virtual ESB::Error readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset) = 0;
+  virtual ESB::Error readResponseBody(unsigned char *body, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset) = 0;
 
  private:
   // Disabled

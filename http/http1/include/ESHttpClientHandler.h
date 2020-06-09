@@ -32,11 +32,11 @@ class HttpClientHandler {
    * Process the HTTP headers of a received response.
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
+   * @param clientStream The client stream, including request and response objects
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) = 0;
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) = 0;
 
   /**
    * Offer body bytes to the caller, if necessary producing more data as a
@@ -44,28 +44,28 @@ class HttpClientHandler {
    * ESB_AGAIN + 0 bytesAvailable to relay backpressure.
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
+   * @param clientStream The client stream, including request and response objects
    * @param bytesAvailable The bytes of body data that can be immediately
    * consumed.
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                       ESB::UInt32 *bytesAvailable) = 0;
   /**
    * Copy body bytes to the caller, which consumes it in the process.
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
-   * @param chunk A buffer to fill with body data
+   * @param clientStream The client stream, including request and response objects
+   * @param body A buffer to fill with body data
    * @param bytesRequested Fill the buffer with this many bytes of body data.
    * bytesRequested will be <= result of offerRequestChunk().
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
-  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream, unsigned char *chunk,
-                                        ESB::UInt32 bytesRequested) = 0;
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                        unsigned char *body, ESB::UInt32 bytesRequested) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -74,9 +74,9 @@ class HttpClientHandler {
    * be called once with a chunk_size of 0.
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
-   * @param chunk A buffer to drain
-   * @param chunkSize The size of the buffer to drain, or 0 if the body is
+   * @param clientStream The client stream, including request and response objects
+   * @param body A buffer to drain
+   * @param bytesOffered The size of the buffer to drain, or 0 if the body is
    * finished.
    * @param bytesConsumed impl should write the number of bytes read from the
    * buffer here.  Must be <= chunkSize.
@@ -84,33 +84,33 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
-                                         const unsigned char *chunk, ESB::UInt32 chunkSize,
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                         const unsigned char *body, ESB::UInt32 bytesOffered,
                                          ESB::UInt32 *bytesConsumed) = 0;
 
   /**
    * Handle the end of a request (request body has been fully sent)
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects.
+   * @param clientStream The client stream, including request and response objects.
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
    * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
    * transaction.
    */
-  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &stream) = 0;
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the
    * transaction's success or failure.
    *
    * @param multiplexer An API for the thread's multiplexer
-   * @param stream The client stream, including request and response objects
+   * @param clientStream The client stream, including request and response objects
    * @param state The state at which the transaction ended.
    * ES_HTTP_CLIENT_HANDLER_END means the transaction was successfully
    * completed, any other state indicates error - reason will be in the server
    * logs.
    */
-  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state) = 0;
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream, State state) = 0;
 
  private:
   // Disabled

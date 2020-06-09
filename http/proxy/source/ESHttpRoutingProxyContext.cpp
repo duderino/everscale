@@ -3,7 +3,10 @@
 #endif
 
 namespace ES {
+
 HttpRoutingProxyContext::HttpRoutingProxyContext()
-    : _state(State::SERVER_REQUEST_WAIT), _serverStream(NULL), _clientStream(NULL) {}
+    : _serverStream(NULL), _clientStream(NULL), _clientStreamResponseOffset(0U), _serverStreamRequestOffset(0U) {}
+
 HttpRoutingProxyContext::~HttpRoutingProxyContext() {}
+
 }  // namespace ES

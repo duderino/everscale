@@ -17,35 +17,28 @@ namespace ES {
 
 class HttpRoutingProxyContext {
  public:
-  enum class State { SERVER_REQUEST_WAIT = 0, CLIENT_RESPONSE_WAIT = 1, STREAMING = 2, FINISHED = 3 };
-
   HttpRoutingProxyContext();
 
   virtual ~HttpRoutingProxyContext();
 
-  inline State state() { return _state; }
   inline HttpServerStream *serverStream() { return _serverStream; }
   inline HttpClientStream *clientStream() { return _clientStream; }
-
-  inline void setState(State state) {
-#ifndef NDEBUG
-    switch (state) {
-      case State::CLIENT_RESPONSE_WAIT:
-        assert(State::SERVER_REQUEST_WAIT == _state);
-        break;
-      case State::STREAMING:
-        assert(State::CLIENT_RESPONSE_WAIT == _state);
-        break;
-      default:
-        break;
-    }
-#endif
-    _state = state;
-  }
 
   inline void setServerStream(HttpServerStream *serverStream) { _serverStream = serverStream; }
 
   inline void setClientStream(HttpClientStream *clientStream) { _clientStream = clientStream; }
+
+  inline ESB::UInt32 clientStreamResponseOffset() const { return _clientStreamResponseOffset; }
+
+  inline void setClientStreamResponseOffset(ESB::UInt32 clientStreamResponseOffset) {
+    _clientStreamResponseOffset = clientStreamResponseOffset;
+  }
+
+  inline ESB::UInt32 serverStreamRequestOffset() const { return _serverStreamRequestOffset; }
+
+  inline void setServerStreamRequestOffset(ESB::UInt32 serverStreamRequestOffset) {
+    _serverStreamRequestOffset = serverStreamRequestOffset;
+  }
 
   /** Placement new.
    *
@@ -60,9 +53,10 @@ class HttpRoutingProxyContext {
   HttpRoutingProxyContext(const HttpRoutingProxyContext &);
   void operator=(const HttpRoutingProxyContext &);
 
-  State _state;
   HttpServerStream *_serverStream;
   HttpClientStream *_clientStream;
+  ESB::UInt32 _clientStreamResponseOffset;
+  ESB::UInt32 _serverStreamRequestOffset;
 };
 
 }  // namespace ES

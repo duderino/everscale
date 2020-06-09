@@ -433,6 +433,33 @@ ESB::Error HttpServerSocket::sendEmptyResponse(int statusCode, const char *reaso
   }
 }
 
+ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
+  ESB::Error error = _transaction->response().copy(&response, _transaction->allocator());
+  if (ESB_SUCCESS != error) {
+    abort(true);
+    return error;
+  }
+
+  switch (error = sendResponse()) {
+    case ESB_SUCCESS:
+      if (ESB_SUCCESS != (error = pauseSend(true))) {
+        abort(true);
+        return error;
+      }
+      return ESB_SUCCESS;
+    case ESB_AGAIN:
+      if (ESB_SUCCESS != (error = resumeSend(true))) {
+        abort(true);
+        return error;
+      }
+      return ESB_AGAIN;
+    default:
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send empty response", _socket.logAddress());
+      abort(true);
+      return error;
+  }
+}
+
 ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
                                               ESB::UInt32 *bytesConsumed) {
   //

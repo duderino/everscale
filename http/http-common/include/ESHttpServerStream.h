@@ -24,23 +24,32 @@ class HttpServerStream : public HttpStream {
    *
    * @param statusCode the HTTP status code
    * @param reasonPhrase the HTTP reason phrase
-   * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
+   * @return ESB_SUCCESS if successful, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
   virtual ESB::Error sendEmptyResponse(int statusCode, const char *reasonPhrase) = 0;
 
   /**
+   * Send a response
+   *
+   * @param response The response headers to send (a copy will be made of this)
+   * @return ESB_SUCCESS if successful, ESB_AGAIN if send buffer full and
+   * underlying socket send buffer is full, another error code otherwise.
+   */
+  virtual ESB::Error sendResponse(const HttpResponse &response) = 0;
+
+  /**
    * Buffer and occasionally flush a request body chunk to the underlying
    * socket.
    *
-   * @param chunk The chunk to send
+   * @param body The chunk to send
    * @param bytesOffered The size of the chunk to send.  If 0, this is the last
    * chunk, so immediately flush all buffered bytes to the underlying socket.
    * @param bytesConsumed The number of bytes consumed
    * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
-  virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
+  virtual ESB::Error sendResponseBody(unsigned const char *body, ESB::UInt32 bytesOffered,
                                       ESB::UInt32 *bytesConsumed) = 0;
 
   /**
@@ -60,14 +69,14 @@ class HttpServerStream : public HttpStream {
   /**
    * Read up to bytesRequested of request body data.
    *
-   * @param chunk Data should be written here
+   * @param body Data should be written here
    * @param bytesRequested The amount of data to write.  This must be <= the
    * bytesAvailable result returned by requestBodyAvailable().
    * @param bufferOffset A value read from the requestBodyAvailable() function
    * @return ESB_SUCCESS if successful, ESB_INVALID_ARGUMENT if bytesRequested
    * exceeds bytesAvailable, another error code otherwise.
    */
-  virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset) = 0;
+  virtual ESB::Error readRequestBody(unsigned char *body, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset) = 0;
 
  private:
   // Disabled

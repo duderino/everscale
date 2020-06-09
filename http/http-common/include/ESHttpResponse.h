@@ -18,6 +18,8 @@ class HttpResponse : public HttpMessage {
 
   void reset();
 
+  ESB::Error copy(const HttpResponse *other, ESB::Allocator &allocator);
+
   inline void setStatusCode(int statusCode) { _statusCode = statusCode; }
 
   inline int statusCode() const { return _statusCode; }
