@@ -263,9 +263,9 @@ ESB::Error HttpClientSocket::handleReadable() {
       case ESB_AGAIN:
         return ESB_AGAIN;  // keep in multiplexer
       case ESB_CLOSED:
-        return handleRemoteClose();
+        return handleRemoteClose() ? ESB_SUCCESS : ESB_CLOSED;
       default:
-        return handleError(error);
+        return handleError(error) ? ESB_SUCCESS : error;
     }
 
     if (PARSING_HEADERS & _state) {

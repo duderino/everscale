@@ -386,6 +386,45 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
       continue;
     }
 
+    // Dump a description of all events that will be processed in this loop before taking any action.
+
+    if (ESB_DEBUG_LOGGABLE) {
+      ESB_LOG_DEBUG("[%d] epoll multiplexer got %d events", fd, numEvents);
+
+      for (i = 0; i < numEvents; ++i) {
+        socket = (MultiplexedSocket *)_events[i].data.ptr;
+        fd = socket->socketDescriptor();
+
+        if (socket->wantAccept()) {
+          if (_events[i].events & EPOLLERR) {
+            ESB_LOG_DEBUG("[%d] listening socket got error event", fd);
+          } else if (_events[i].events & EPOLLIN) {
+            ESB_LOG_DEBUG("[%d] listening socket got accept event", fd);
+          }
+        } else if (socket->wantConnect()) {
+          if (_events[i].events & EPOLLERR) {
+            ESB_LOG_DEBUG("[%d] connecting socket got error", fd);
+          } else if (_events[i].events & EPOLLHUP) {
+            ESB_LOG_DEBUG("[%d] connecting socket got remote close", fd);
+          } else if (_events[i].events & EPOLLIN) {
+            ESB_LOG_DEBUG("[%d] connecting socket connected", fd);
+          }
+        } else {
+          if (_events[i].events & EPOLLERR) {
+            ESB_LOG_DEBUG("[%d] connected socket got error", fd);
+          } else if (_events[i].events & EPOLLHUP) {
+            ESB_LOG_DEBUG("[%d] connected socket got remote close", fd);
+          } else if (_events[i].events & EPOLLIN) {
+            ESB_LOG_DEBUG("[%d] connected socket got read event", fd);
+          } else if (_events[i].events & EPOLLOUT) {
+            ESB_LOG_DEBUG("[%d] connected socket got write event", fd);
+          }
+        }
+      }
+    }
+
+    // Now take action
+
     errorCount = 0;
 
     for (i = 0; i < numEvents; ++i) {
