@@ -76,7 +76,7 @@ HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transac
   if (ESB_DEBUG_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
     transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-    ESB_LOG_DEBUG("[%s:%u] creating new connection", buffer, transaction->peerAddress().port());
+    ESB_LOG_DEBUG("[%s] creating new connection [%s:%u]", name(), buffer, transaction->peerAddress().port());
   }
 
   // Try to reuse the memory of a dead socket
@@ -110,7 +110,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   }
 
   if (!socket->isConnected()) {
-    ESB_LOG_DEBUG("[%s] Not returning connection to pool", socket->logAddress());
+    ESB_LOG_DEBUG("[%s] not returning connection to pool", socket->logAddress());
     socket->close();  // idempotent, just to be safe
     _sockets.addLast(socket);
     return;
@@ -119,7 +119,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *socket) {
   ESB::Error error = _map.insert(socket);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot return connection to pool", socket->logAddress());
+    ESB_LOG_WARNING_ERRNO(error, "[%s] cannot return connection to pool", socket->logAddress());
     socket->close();
     _sockets.addLast(socket);
   }
@@ -141,7 +141,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
     _counters.getFailures()->record(transaction->startTime(), ESB::Date::Now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
-    ESB_LOG_CRITICAL("Cannot allocate new client socket");
+    ESB_LOG_CRITICAL("[%s] cannot allocate new client socket", name());
     return 0;
   }
 
@@ -173,6 +173,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
 
   return ESB_SUCCESS;
 }
+
+const char *HttpClientSocketFactory::name() const { return _multiplexer.multiplexer().name(); }
 
 HttpClientSocketFactory::CleanupHandler::CleanupHandler(HttpClientSocketFactory &factory)
     : ESB::CleanupHandler(), _factory(factory) {}

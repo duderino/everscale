@@ -4,7 +4,8 @@
 
 namespace ES {
 
-HttpClientCommandSocket::HttpClientCommandSocket(HttpMultiplexerExtended &stack) : _stack(stack) {}
+HttpClientCommandSocket::HttpClientCommandSocket(const char *namePrefix, HttpMultiplexerExtended &stack)
+    : HttpCommandSocket(namePrefix), _stack(stack) {}
 
 HttpClientCommandSocket::~HttpClientCommandSocket() {}
 
@@ -14,11 +15,11 @@ ESB::Error HttpClientCommandSocket::push(HttpClientCommand *command) { return pu
 ESB::Error HttpClientCommandSocket::runCommand(ESB::EmbeddedListElement *element) {
   HttpClientCommand *command = (HttpClientCommand *)element;
 
-  ESB_LOG_DEBUG("Executing command '%s' in multiplexer", ESB_SAFE_STR(command->name()));
+  ESB_LOG_DEBUG("[%s] executing command '%s'", name(), ESB_SAFE_STR(command->name()));
   ESB::Error error = command->run(_stack);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_WARNING_ERRNO(error, "Failed executing command '%s in multiplexer", ESB_SAFE_STR(command->name()));
+    ESB_LOG_WARNING_ERRNO(error, "[%s] cannot execute command '%s'", name(), ESB_SAFE_STR(command->name()));
   }
 
   return error;

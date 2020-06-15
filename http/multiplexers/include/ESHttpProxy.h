@@ -22,9 +22,9 @@ namespace ES {
 class HttpProxy : public HttpServer {
  public:
   /**
-   * Create a client stack.
+   * Create a proxy stack.
    */
-  HttpProxy(ESB::UInt32 threads, HttpProxyHandler &proxyHandler,
+  HttpProxy(const char *namePrefix, ESB::UInt32 threads, HttpProxyHandler &proxyHandler,
             ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpProxy();

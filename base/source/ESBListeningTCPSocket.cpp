@@ -24,17 +24,26 @@
 
 namespace ESB {
 
-ListeningTCPSocket::ListeningTCPSocket()
-    : TCPSocket(), _backlog(42), _state(SocketState::CLOSED), _listeningAddress() {}
+ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix)
+    : TCPSocket(), _backlog(42), _state(SocketState::CLOSED), _listeningAddress() {
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+}
 
-ListeningTCPSocket::ListeningTCPSocket(UInt16 port, int backlog, bool isBlocking)
+ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix, UInt16 port, int backlog, bool isBlocking)
     : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress() {
   _listeningAddress.setPort(port);
   _listeningAddress.setType(SocketAddress::TCP);
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
 }
 
-ListeningTCPSocket::ListeningTCPSocket(const SocketAddress &address, int backlog, bool isBlocking)
-    : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress(address) {}
+ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix, const SocketAddress &address, int backlog,
+                                       bool isBlocking)
+    : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress(address) {
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+}
 
 ListeningTCPSocket::~ListeningTCPSocket() {}
 
@@ -54,13 +63,13 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 #ifdef HAVE_SO_REUSEPORT
   Error error = bind();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-bind port %u", _listeningAddress.port());
+    ESB_LOG_ERROR_ERRNO(error, "[%s] cannot SO_REUSEPORT re-bind port %u", name(), _listeningAddress.port());
     return error;
   }
 
   error = listen();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot SO_REUSEPORT re-listen port %u", _listeningAddress.port());
+    ESB_LOG_ERROR_ERRNO(error, "[%s] cannot SO_REUSEPORT re-listen port %u", name(), _listeningAddress.port());
     close();
     return error;
   }
@@ -78,7 +87,7 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 #error "dup() or equivalent is required"
 #endif
 
-  ESB_LOG_NOTICE("Duplicated listening socket on port %u with fd %d", _listeningAddress.port(), _sockFd);
+  ESB_LOG_NOTICE("[%s] duplicated listening socket on port %u with fd %d", name(), _listeningAddress.port(), _sockFd);
 
   return ESB_SUCCESS;
 }
@@ -159,9 +168,8 @@ Error ListeningTCPSocket::bind() {
 
   _listeningAddress.updatePrimitiveAddress(&addr);
 
-  if (_logAddress[0]) {
-    _listeningAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
-  }
+  int len = strlen(_logAddress);
+  _listeningAddress.logAddress(_logAddress + len, sizeof(_logAddress) - len, _sockFd);
 
   _state = SocketState::BOUND;
   return ESB_SUCCESS;
@@ -241,12 +249,6 @@ Error ListeningTCPSocket::accept(State *data) {
 
 const SocketAddress &ListeningTCPSocket::listeningAddress() const { return _listeningAddress; }
 
-const char *ListeningTCPSocket::logAddress() const {
-  if (!_logAddress[0]) {
-    _listeningAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
-  }
-
-  return _logAddress;
-}
+const char *ListeningTCPSocket::name() const { return _logAddress; }
 
 }  // namespace ESB

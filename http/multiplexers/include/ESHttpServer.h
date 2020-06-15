@@ -36,7 +36,7 @@ class HttpServer {
   /**
    * Constructor
    */
-  HttpServer(ESB::UInt32 threads, HttpServerHandler &serverHandler,
+  HttpServer(const char *namePrefix, ESB::UInt32 threads, HttpServerHandler &serverHandler,
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpServer();
@@ -122,6 +122,7 @@ class HttpServer {
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
   HttpServerSimpleCounters _serverCounters;
+  char _name[ESB_NAME_PREFIX_SIZE];
 
  private:
   // disabled

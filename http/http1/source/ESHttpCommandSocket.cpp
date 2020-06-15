@@ -12,7 +12,10 @@
 
 namespace ES {
 
-HttpCommandSocket::HttpCommandSocket() : _eventSocket(), _lock(), _queue(), _removed(false) {}
+HttpCommandSocket::HttpCommandSocket(const char *prefix) : _eventSocket(), _lock(), _queue(), _removed(false) {
+  snprintf(_name, sizeof(_name), "%s%s", prefix, ESB_COMMAND_SUFFIX);
+  _name[sizeof(_name) - 1] = 0;
+}
 
 HttpCommandSocket::~HttpCommandSocket() {}
 
@@ -27,12 +30,12 @@ bool HttpCommandSocket::wantWrite() { return false; }
 bool HttpCommandSocket::isIdle() { return false; }
 
 ESB::Error HttpCommandSocket::handleAccept() {
-  ESB_LOG_ERROR("Event sockets cannot handle accept");
+  ESB_LOG_ERROR("[%s] command sockets cannot handle accept", _name);
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
 ESB::Error HttpCommandSocket::handleConnect() {
-  ESB_LOG_ERROR("Event sockets cannot handle connect");
+  ESB_LOG_ERROR("[%s] command sockets cannot handle connect", _name);
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
@@ -53,7 +56,7 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
   ESB::Error error = _eventSocket.write(1);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "[%d] cannot update command socket", _eventSocket.socketDescriptor());
+    ESB_LOG_ERROR_ERRNO(error, "[%s] cannot update command socket", _name);
     return error;
   }
 
@@ -62,13 +65,13 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
 
 // This code runs in the multiplexer's thread
 ESB::Error HttpCommandSocket::handleReadable() {
-  ESB_LOG_DEBUG("[%d] command socket event", _eventSocket.socketDescriptor());
+  ESB_LOG_DEBUG("[%s] command socket read event", _name);
 
   ESB::UInt64 value = 0;
   ESB::Error error = _eventSocket.read(&value);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "[%d] cannot read command socket", _eventSocket.socketDescriptor());
+    ESB_LOG_ERROR_ERRNO(error, "[%s] cannot read command socket", _name);
     return ESB_SUCCESS;  // keep in multiplexer, try again
   }
 
@@ -80,7 +83,7 @@ ESB::Error HttpCommandSocket::handleReadable() {
     }
 
     if (!command) {
-      ESB_LOG_WARNING("[%d] command socket and queue are out of sync", _eventSocket.socketDescriptor());
+      ESB_LOG_WARNING("[%s] command socket and queue are out of sync", _name);
       return ESB_SUCCESS;  // keep in multiplexer, try again
     }
 
@@ -96,27 +99,27 @@ ESB::Error HttpCommandSocket::handleReadable() {
 }
 
 ESB::Error HttpCommandSocket::handleWritable() {
-  ESB_LOG_ERROR("[%d] command sockets cannot handle writable", _eventSocket.socketDescriptor());
+  ESB_LOG_ERROR("[%s] command sockets cannot handle writable", _name);
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
 bool HttpCommandSocket::handleError(ESB::Error errorCode) {
-  ESB_LOG_ERROR_ERRNO(errorCode, "[%d] command socket had error", _eventSocket.socketDescriptor());
+  ESB_LOG_ERROR_ERRNO(errorCode, "[%s] command socket had error: %d", _name, errorCode);
   return false;  // remove from multiplexer
 }
 
 bool HttpCommandSocket::handleRemoteClose() {
-  ESB_LOG_ERROR("[%d] command sockets cannot handle remote close", _eventSocket.socketDescriptor());
+  ESB_LOG_ERROR("[%s] command sockets cannot handle remote close", _name);
   return true;  // keep in multiplexer
 }
 
 bool HttpCommandSocket::handleIdle() {
-  ESB_LOG_ERROR("[%d] command sockets cannot handle idle", _eventSocket.socketDescriptor());
+  ESB_LOG_ERROR("[%s] command sockets cannot handle idle event", _name);
   return true;  // keep in multiplexer
 }
 
 bool HttpCommandSocket::handleRemove() {
-  ESB_LOG_NOTICE("[%d] command socket removed from multiplexer", _eventSocket.socketDescriptor());
+  ESB_LOG_NOTICE("[%s] command socket removed from multiplexer", _name);
 
   ESB::WriteScopeLock lock(_lock);
   _removed = true;
@@ -137,5 +140,7 @@ bool HttpCommandSocket::handleRemove() {
 SOCKET HttpCommandSocket::socketDescriptor() const { return _eventSocket.socketDescriptor(); }
 
 ESB::CleanupHandler *HttpCommandSocket::cleanupHandler() { return NULL; }
+
+const char *HttpCommandSocket::name() const { return _name; }
 
 }  // namespace ES

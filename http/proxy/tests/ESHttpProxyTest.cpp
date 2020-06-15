@@ -171,23 +171,23 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  ESB_LOG_NOTICE("Maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
+  ESB_LOG_NOTICE("[main] maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
 
   //
   // Create listening socket for the origin server
   //
 
   // bind to port 0 so kernel will choose a free ephemeral port
-  ESB::ListeningTCPSocket originListener(0, ESB_UINT16_MAX);
+  ESB::ListeningTCPSocket originListener("origin-listener", 0, ESB_UINT16_MAX);
 
   error = originListener.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind origin to port %u", originListener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot bind origin to port %u", originListener.listeningAddress().port());
     return -2;
   }
 
-  ESB_LOG_NOTICE("Origin bound to port %u", originListener.listeningAddress().port());
+  ESB_LOG_NOTICE("[%s] bound to port %u", originListener.name(), originListener.listeningAddress().port());
 
   ESB::SocketAddress originAddress(destination, originListener.listeningAddress().port(),
                                    ESB::SocketAddress::TransportType::TCP);
@@ -197,16 +197,16 @@ int main(int argc, char **argv) {
   //
 
   // bind to port 0 so kernel will choose a free ephemeral port
-  ESB::ListeningTCPSocket proxyListener(0, ESB_UINT16_MAX);
+  ESB::ListeningTCPSocket proxyListener("proxy-listener", 0, ESB_UINT16_MAX);
 
   error = proxyListener.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to proxy port %u", proxyListener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot bind to proxy port %u", proxyListener.listeningAddress().port());
     return -2;
   }
 
-  ESB_LOG_NOTICE("Proxy bound to port %u", proxyListener.listeningAddress().port());
+  ESB_LOG_NOTICE("[%s] bound to port %u", proxyListener.name(), proxyListener.listeningAddress().port());
 
   ESB::SocketAddress proxyAddress(destination, proxyListener.listeningAddress().port(),
                                   ESB::SocketAddress::TransportType::TCP);
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
   //
 
   HttpOriginHandler serverHandler;
-  HttpServer originServer(serverThreads, serverHandler);
+  HttpServer originServer("origin", serverThreads, serverHandler);
 
   error = originServer.initialize();
 
@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
 
   HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  HttpClient client(clientThreads, clientHandler);
+  HttpClient client("client", clientThreads, clientHandler);
 
   error = client.initialize();
 
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
 
   HttpFixedRouter proxyRouter(originAddress);
   HttpRoutingProxyHandler proxyHandler(proxyRouter);
-  HttpProxy proxyServer(serverThreads, proxyHandler);
+  HttpProxy proxyServer("proxy", serverThreads, proxyHandler);
 
   error = proxyServer.initialize();
 
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
         method, contentType, ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
+      ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot push seed command");
       return -9;
     }
   }
@@ -303,7 +303,7 @@ int main(int argc, char **argv) {
     sleep(1);
   }
 
-  ESB_LOG_NOTICE("Load test finished");
+  ESB_LOG_NOTICE("[main] load test finished");
 
   //
   // Stop client and server
@@ -342,10 +342,8 @@ int main(int argc, char **argv) {
   //
 
   if (totalSuccesses != totalTransactions || 0 < totalFailures) {
-    ESB_LOG_CRITICAL(
-        "TEST FAILURE: expected %u successes but got %u successes and %u "
-        "failures",
-        totalTransactions, totalSuccesses, totalFailures);
+    ESB_LOG_CRITICAL("TEST FAILURE: expected %u successes but got %u successes and %u failures", totalTransactions,
+                     totalSuccesses, totalFailures);
     return -10;
   }
 

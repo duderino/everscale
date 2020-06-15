@@ -45,7 +45,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  EpollMultiplexer(UInt32 maxSockets, Allocator &allocator = SystemAllocator::Instance(),
+  EpollMultiplexer(const char *namePrefix, UInt32 maxSockets, Allocator &allocator = SystemAllocator::Instance(),
                    Lockable &lock = NullLock::Instance());
 
   /** Destructor.
@@ -64,7 +64,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *
    * @return The multiplexer's name
    */
-  virtual const char *name() const { return "multiplexer"; }
+  virtual const char *name() const;
 
   /** Add a new multiplexed socket to the socket multiplexer
    *
@@ -159,6 +159,7 @@ class EpollMultiplexer : public SocketMultiplexer {
   ESB::Lockable &_lock;
   SharedInt _currentSocketCount;
   EmbeddedList _currentSocketList;
+  char _namePrefix[ESB_NAME_PREFIX_SIZE];
 };
 
 }  // namespace ESB

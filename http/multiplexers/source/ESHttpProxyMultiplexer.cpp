@@ -243,59 +243,59 @@ static HttpNullServerHandler HttpNullServerHandler;
 static HttpNullClientCounters HttpNullClientCounters;
 static HttpNullServerCounters HttpNullServerCounters;
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
-                                           HttpServerHandler &serverHandler, HttpClientCounters &clientCounters,
-                                           HttpServerCounters &serverCounters)
+HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets,
+                                           HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
+                                           HttpClientCounters &clientCounters, HttpServerCounters &serverCounters)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _multiplexer(maxSockets, ESB::SystemAllocator::Instance()),
+      _multiplexer(namePrefix, maxSockets, ESB::SystemAllocator::Instance()),
       _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverCommandSocket(*this),
+      _serverCommandSocket(namePrefix, *this),
       _clientSocketFactory(*this, clientHandler, clientCounters, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
-      _clientCommandSocket(*this),
+      _clientCommandSocket(namePrefix, *this),
       _clientHandler(clientHandler),
       _serverHandler(serverHandler),
       _clientCounters(clientCounters),
       _serverCounters(serverCounters) {}
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpClientHandler &clientHandler,
-                                           HttpClientCounters &clientCounters)
+HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets,
+                                           HttpClientHandler &clientHandler, HttpClientCounters &clientCounters)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _multiplexer(maxSockets, ESB::SystemAllocator::Instance()),
+      _multiplexer(namePrefix, maxSockets, ESB::SystemAllocator::Instance()),
       _serverSocketFactory(*this, HttpNullServerHandler, HttpNullServerCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverCommandSocket(*this),
+      _serverCommandSocket(namePrefix, *this),
       _clientSocketFactory(*this, clientHandler, clientCounters, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
-      _clientCommandSocket(*this),
+      _clientCommandSocket(namePrefix, *this),
       _clientHandler(clientHandler),
       _serverHandler(HttpNullServerHandler),
       _clientCounters(clientCounters),
       _serverCounters(HttpNullServerCounters) {}
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(ESB::UInt32 maxSockets, HttpServerHandler &serverHandler,
-                                           HttpServerCounters &serverCounters)
+HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets,
+                                           HttpServerHandler &serverHandler, HttpServerCounters &serverCounters)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _multiplexer(maxSockets, ESB::SystemAllocator::Instance()),
+      _multiplexer(namePrefix, maxSockets, ESB::SystemAllocator::Instance()),
       _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
-      _serverCommandSocket(*this),
+      _serverCommandSocket(namePrefix, *this),
       _clientSocketFactory(*this, HttpNullClientHandler, HttpNullClientCounters, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
-      _clientCommandSocket(*this),
+      _clientCommandSocket(namePrefix, *this),
       _clientHandler(HttpNullClientHandler),
       _serverHandler(serverHandler),
       _clientCounters(HttpNullClientCounters),
@@ -379,14 +379,14 @@ ESB::Error HttpProxyMultiplexer::addListeningSocket(ESB::ListeningTCPSocket &soc
       new (_factoryAllocator) HttpListeningSocket(*this, _serverHandler, _factoryAllocator.cleanupHandler());
 
   if (!listener) {
-    ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create listener on %s", socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create listener on %s", socket.name());
     return ESB_OUT_OF_MEMORY;
   }
 
   ESB::Error error = listener->initialize(socket);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize listener on %s", socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize listener on %s", socket.name());
     _factoryAllocator.cleanupHandler().destroy(listener);
     return error;
   }
@@ -394,7 +394,7 @@ ESB::Error HttpProxyMultiplexer::addListeningSocket(ESB::ListeningTCPSocket &soc
   error = _multiplexer.addMultiplexedSocket(listener);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot add listener on %s to multiplexer", socket.logAddress());
+    ESB_LOG_ERROR_ERRNO(error, "Cannot add listener on %s to multiplexer", socket.name());
     _factoryAllocator.cleanupHandler().destroy(listener);
     return error;
   }

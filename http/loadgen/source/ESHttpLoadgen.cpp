@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
   ESB::Logger::SetInstance(&logger);
 
   ESB_LOG_NOTICE(
-      "Starting. logLevel: %d, threads: %d, host: %s, port: %d, "
+      "[main] Starting. logLevel: %d, threads: %d, host: %s, port: %d, "
       "connections: %d, iterations: %d, method: %s, contentType: %s, "
       "bodyFile %s, reuseConnections: %s",
       logLevel, threads, host, port, connections, iterations, method, contentType, bodyFilePath,
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
   ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot raise max fd limit");
+    ESB_LOG_ERROR_ERRNO(error, "[main] cannot raise max fd limit");
     return -5;
   }
 
@@ -246,7 +246,7 @@ int main(int argc, char **argv) {
   if (0 != bodyFilePath) {
     int fd = open(bodyFilePath, O_RDONLY);
     if (-1 == fd) {
-      fprintf(stderr, "Cannot open %s: %s\n", bodyFilePath, strerror(errno));
+      fprintf(stderr, "[main] cannot open %s: %s\n", bodyFilePath, strerror(errno));
       return -5;
     }
 
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 
     if (0 != fstat(fd, &statbuf)) {
       close(fd);
-      fprintf(stderr, "Cannot stat %s: %s\n", bodyFilePath, strerror(errno));
+      fprintf(stderr, "[main] cannot stat %s: %s\n", bodyFilePath, strerror(errno));
       return -6;
     }
 
@@ -271,7 +271,7 @@ int main(int argc, char **argv) {
 
       if (0 == body) {
         close(fd);
-        fprintf(stderr, "Cannot allocate %d bytes of memory for body file\n", bodySize);
+        fprintf(stderr, "[main] cannot allocate %d bytes of memory for body file\n", bodySize);
         return -7;
       }
 
@@ -284,14 +284,14 @@ int main(int argc, char **argv) {
         if (0 == bytesRead) {
           free(body);
           close(fd);
-          fprintf(stderr, "Premature EOF slurping body into memory\n");
+          fprintf(stderr, "[main] premature EOF slurping body into memory\n");
           return -8;
         }
 
         if (0 > bytesRead) {
           free(body);
           close(fd);
-          fprintf(stderr, "Error slurping %s into memory: %s\n", bodyFilePath, strerror(errno));
+          fprintf(stderr, "[main] error slurping %s into memory: %s\n", bodyFilePath, strerror(errno));
           return -9;
         }
 
@@ -308,7 +308,7 @@ int main(int argc, char **argv) {
 
   HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  HttpClient client(threads, clientHandler);
+  HttpClient client("client", threads, clientHandler);
 
   error = client.initialize();
 
@@ -338,7 +338,7 @@ int main(int argc, char **argv) {
                                ESB::SystemAllocator::Instance().cleanupHandler());
     error = client.push(command, i);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot push seed command");
+      ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot push seed command");
       return -6;
     }
   }

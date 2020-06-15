@@ -39,14 +39,14 @@ class ThreadPool {
  public:
   /** Constructor.
    *
-   * @param name The name of the thread pool (included in all log messages).
+   * @param namePrefix The name of the thread pool (included in all log messages).
    *  Caller responsible for the strings memory - use a string literal if
    * possible.
    * @param threads The number of threads to start for the thread pool.
    * @param allocator Worker threads will be allocated with this
    *  allocator.
    */
-  ThreadPool(const char *name, UInt32 threads, Allocator &allocator = SystemAllocator::Instance());
+  ThreadPool(const char *namePrefix, UInt32 threads, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -91,10 +91,10 @@ class ThreadPool {
   void destroyWorkerThreads();
 
   UInt32 _numThreads;
-  const char *_name;
   Thread **_threads;
   Allocator &_allocator;
   SharedEmbeddedQueue _queue;
+  char _name[ESB_NAME_PREFIX_SIZE + 5];
 };
 
 }  // namespace ESB

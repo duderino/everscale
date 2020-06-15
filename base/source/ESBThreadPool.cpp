@@ -28,44 +28,43 @@ class ThreadPoolWorker : public Thread {
   SharedEmbeddedQueue *_queue;
 };
 
-ThreadPool::ThreadPool(const char *name, UInt32 threads, Allocator &allocator)
-    : _numThreads(threads < MIN_THREADS ? MIN_THREADS : threads),
-      _name(name ? name : "ThreadPool"),
-      _threads(0),
-      _allocator(allocator),
-      _queue() {}
+ThreadPool::ThreadPool(const char *namePrefix, UInt32 threads, Allocator &allocator)
+    : _numThreads(threads < MIN_THREADS ? MIN_THREADS : threads), _threads(0), _allocator(allocator), _queue() {
+  snprintf(_name, sizeof(_name), "%s-%s", namePrefix, "pool");
+  _name[sizeof(_name) - 1] = 0;
+}
 
 ThreadPool::~ThreadPool() {}
 
 Error ThreadPool::start() {
-  ESB_LOG_DEBUG("ThreadPool '%s' starting", _name);
+  ESB_LOG_DEBUG("[%s] starting", _name);
 
   if (false == createWorkerThreads()) {
-    ESB_LOG_CRITICAL("Cannot start ThreadPool '%s': out of threads", _name);
+    ESB_LOG_CRITICAL("[%s] is out of threads", _name);
     return ESB_OUT_OF_MEMORY;
   }
 
   Error error;
 
   for (int i = 0; i < _numThreads; ++i) {
-    ESB_LOG_DEBUG("Starting worker '%s:%d' starting", _name, i + 1);
+    ESB_LOG_DEBUG("[%s:%d] starting worker", _name, i + 1);
 
     error = _threads[i]->start();
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot start worker '%s:%d'", _name, i + 1);
+      ESB_LOG_CRITICAL_ERRNO(error, "[%s:%d] cannot start worker", _name, i + 1);
       _numThreads = i;
       stop();
       return error;
     }
   }
 
-  ESB_LOG_NOTICE("ThreadPool '%s' started", _name);
+  ESB_LOG_NOTICE("[%s] started", _name);
   return ESB_SUCCESS;
 }
 
 void ThreadPool::stop() {
-  ESB_LOG_DEBUG("ThreadPool '%s' stopping", _name);
+  ESB_LOG_DEBUG("[%s] stopping", _name);
 
   // worker threads will get ESB_SHUTDOWN next time they try to pull an item
   // from the queue
@@ -79,17 +78,17 @@ void ThreadPool::stop() {
   Error error;
 
   for (int i = 0; i < _numThreads; ++i) {
-    ESB_LOG_DEBUG("Waiting for worker '%s:%d'", _name, i + 1);
+    ESB_LOG_DEBUG("[%s:%d} joining worker", _name, i + 1);
 
     error = _threads[i]->join();
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Error joining worker '%s:%d'", _name, i + 1);
+      ESB_LOG_ERROR_ERRNO(error, "[%s:%d] error joining worker", _name, i + 1);
     }
   }
 
   destroyWorkerThreads();
-  ESB_LOG_NOTICE("ThreadPool '%s' stopped", _name);
+  ESB_LOG_NOTICE("[%s] stopped", _name);
 }
 
 bool ThreadPool::createWorkerThreads() {
@@ -140,7 +139,7 @@ ThreadPoolWorker::ThreadPoolWorker(int workerId, const char *name, SharedEmbedde
 ThreadPoolWorker::~ThreadPoolWorker() {}
 
 void ThreadPoolWorker::run() {
-  ESB_LOG_DEBUG("Thread '%s:%d' starting", _name, _workerId);
+  ESB_LOG_DEBUG("[%s:%d] worker starting", _name, _workerId);
 
   Error error;
   Command *command = 0;
@@ -152,19 +151,19 @@ void ThreadPoolWorker::run() {
     command = (Command *)_queue->pop(&error);
 
     if (ESB_SHUTDOWN == error) {
-      ESB_LOG_DEBUG("Thread '%s:%d' shutting down", _name, _workerId);
+      ESB_LOG_DEBUG("[%s:%d] worker shutting down", _name, _workerId);
       break;
     }
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Thread '%s:%d' cannot pop command from queue", _name, _workerId);
+      ESB_LOG_ERROR_ERRNO(error, "[%s:%d] worker cannot pop command from queue", _name, _workerId);
       ++errorCount;
       continue;
     }
 
-    ESB_LOG_DEBUG("Thread '%s:%d' starting command '%s'", _name, _workerId, command->name());
+    ESB_LOG_DEBUG("[%s:%d] worker starting command '%s'", _name, _workerId, command->name());
     cleanup = command->run(&_isRunning);
-    ESB_LOG_DEBUG("Thread '%s:%d' finished command '%s'", _name, _workerId, command->name());
+    ESB_LOG_DEBUG("[%s:%d] worker finished command '%s'", _name, _workerId, command->name());
 
     if (cleanup) {
       cleanupHandler = command->cleanupHandler();
@@ -177,7 +176,7 @@ void ThreadPoolWorker::run() {
     errorCount = 0;
   }
 
-  ESB_LOG_DEBUG("Thread '%s:%d' exiting", _name, _workerId);
+  ESB_LOG_DEBUG("[%s:%d] worker exiting", _name, _workerId);
 }
 
 }  // namespace ESB

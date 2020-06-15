@@ -153,6 +153,13 @@ class MultiplexedSocket : public EmbeddedMapElement {
    */
   virtual SOCKET socketDescriptor() const = 0;
 
+  /**
+   * Get the socket's human readable name.
+   *
+   * @return The socket's name
+   */
+  virtual const char *name() const = 0;
+
   /** Placement new.
    *
    *  @param size The size of the object.

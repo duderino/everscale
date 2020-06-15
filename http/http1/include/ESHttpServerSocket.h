@@ -96,6 +96,8 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpServerStream 
 
   virtual ESB::CleanupHandler *cleanupHandler();
 
+  virtual const char *name() const;
+
   //
   // ES::HttpStream
   //

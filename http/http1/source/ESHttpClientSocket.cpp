@@ -52,7 +52,7 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerEx
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
-      _socket(peerAddress, false) {}
+      _socket(multiplexer.multiplexer().name(), peerAddress, false) {}
 
 HttpClientSocket::~HttpClientSocket() {
   if (_recvBuffer) {
@@ -139,7 +139,7 @@ ESB::Error HttpClientSocket::handleConnect() {
   assert(_socket.isConnected());
   assert(_state & CONNECTING);
 
-  ESB_LOG_INFO("[%s] Connected to peer", _socket.logAddress());
+  ESB_LOG_INFO("[%s] Connected to peer", _socket.name());
 
   _state &= ~CONNECTING;
   _state |= TRANSACTION_BEGIN;
@@ -150,13 +150,13 @@ ESB::Error HttpClientSocket::handleConnect() {
 ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
   switch (ESB::Error error = _transaction->getParser()->parseBody(_recvBuffer, bufferOffset, bytesAvailable)) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] %u response bytes available in current chunk", _socket.logAddress(), *bytesAvailable);
+      ESB_LOG_DEBUG("[%s] %u response bytes available in current chunk", _socket.name(), *bytesAvailable);
       return ESB_SUCCESS;
     case ESB_AGAIN:
-      ESB_LOG_DEBUG("[%s] insufficient bytes available in current chunk", _socket.logAddress());
+      ESB_LOG_DEBUG("[%s] insufficient bytes available in current chunk", _socket.name());
       return ESB_AGAIN;
     default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] error parsing response body", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] error parsing response body", _socket.name());
       return error;  // remove from multiplexer
   }
 }
@@ -183,7 +183,7 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
     case ESB_SUCCESS:
       if (0U == *bytesAvailable) {
         // Last chunk has been read, finish the transaction
-        ESB_LOG_DEBUG("[%s] finished parsing response body", _socket.logAddress());
+        ESB_LOG_DEBUG("[%s] finished parsing response body", _socket.name());
         _state &= ~PARSING_BODY;
         _state |= TRANSACTION_END;
         if (ESB_SUCCESS != (error = pauseRecv(true))) {
@@ -199,7 +199,7 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
       }
       return ESB_AGAIN;
     default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot parse response body", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot parse response body", _socket.name());
       abort(true);
       return error;
   }
@@ -228,11 +228,11 @@ ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 
 
   ESB::Error error = _transaction->getParser()->consumeBody(_recvBuffer, bytesRequested);
   if (ESB_SUCCESS != error) {
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u response chunk bytes", _socket.logAddress(), bytesRequested);
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u response chunk bytes", _socket.name(), bytesRequested);
     return error;  // remove from multiplexer
   }
 
-  ESB_LOG_DEBUG("[%s] consumed %u response chunk bytes", _socket.logAddress(), bytesRequested);
+  ESB_LOG_DEBUG("[%s] consumed %u response chunk bytes", _socket.name(), bytesRequested);
 
   return ESB_SUCCESS;
 }
@@ -249,7 +249,7 @@ ESB::Error HttpClientSocket::handleReadable() {
   if (!_recvBuffer) {
     _recvBuffer = _multiplexer.acquireBuffer();
     if (!_recvBuffer) {
-      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.logAddress());
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
       return ESB_OUT_OF_MEMORY;  // remove from multiplexer
     }
   }
@@ -290,7 +290,7 @@ ESB::Error HttpClientSocket::handleReadable() {
           return ESB_SUCCESS;  // keep in multiplexer but remove from read
                                // interest set
         default:
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] Client request header handler aborting connection", _socket.logAddress());
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] Client request header handler aborting connection", _socket.name());
           return error;  // remove from multiplexer
       }
 
@@ -310,7 +310,7 @@ ESB::Error HttpClientSocket::handleReadable() {
             return ESB_SUCCESS;  // keep in multiplexer but remove from read
                                  // interest set
           default:
-            ESB_LOG_DEBUG_ERRNO(error, "[%s] client body handler aborted connection", _socket.logAddress());
+            ESB_LOG_DEBUG_ERRNO(error, "[%s] client body handler aborted connection", _socket.name());
             return error;  // remove from multiplexer
         }
 
@@ -342,7 +342,7 @@ ESB::Error HttpClientSocket::handleReadable() {
     return ESB_SUCCESS == error ? ESB_CLEANUP : error;  // remove from multiplexer
   }
 
-  ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in parse state", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in parse state", _socket.name());
   return ESB_SHUTDOWN;  // remove from multiplexer
 }
 
@@ -368,7 +368,7 @@ ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk, ESB::UI
       }
       return ESB_AGAIN;
     default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send request body", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send request body", _socket.name());
       abort(true);
       return error;
   }
@@ -408,7 +408,7 @@ ESB::Error HttpClientSocket::formatRequestBody(unsigned const char *chunk, ESB::
 
     error = _handler.endRequest(_multiplexer, *this);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
       return error;
     }
     return ESB_SUCCESS;
@@ -460,7 +460,7 @@ ESB::Error HttpClientSocket::formatRequestBody(unsigned const char *chunk, ESB::
     bytesSent += chunkSize;
     *bytesConsumed = bytesSent;
 
-    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u", _socket.logAddress(), chunkSize);
+    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u", _socket.name(), chunkSize);
 
     // beginBlock reserves space for this operation, it should never fail
 
@@ -484,7 +484,7 @@ ESB::Error HttpClientSocket::handleWritable() {
   if (!_sendBuffer) {
     _sendBuffer = _multiplexer.acquireBuffer();
     if (!_sendBuffer) {
-      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.logAddress());
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
       return ESB_OUT_OF_MEMORY;  // remove from multiplexer
     }
   }
@@ -497,7 +497,7 @@ ESB::Error HttpClientSocket::handleWritable() {
       error = _transaction->request().addHeader("Connection", "close", _transaction->allocator());
 
       if (ESB_SUCCESS != error) {
-        ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header", _socket.logAddress());
+        ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header", _socket.name());
         return error;  // remove from multiplexer
       }
     }
@@ -550,7 +550,7 @@ ESB::Error HttpClientSocket::handleWritable() {
 
         error = _handler.endRequest(_multiplexer, *this);
         if (ESB_SUCCESS != error) {
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.logAddress());
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
           return error;  // remove from multiplexer
         }
 
@@ -611,20 +611,20 @@ ESB::Error HttpClientSocket::handleWritable() {
       case ESB_AGAIN:
         break;
       default:
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.logAddress());
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
         return error;  // remove from multiplexer
     }
 
     return handleReadable();
   }
 
-  ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in format state", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in format state", _socket.name());
   return ESB_SHUTDOWN;  // remove from multiplexer
 }
 
 bool HttpClientSocket::handleError(ESB::Error error) {
   assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] socket error", _socket.logAddress());
+  ESB_LOG_INFO("[%s] socket error", _socket.name());
   return false;  // remove from multiplexer
 }
 
@@ -632,19 +632,19 @@ bool HttpClientSocket::handleRemoteClose() {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
   assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] remote server closed socket", _socket.logAddress());
+  ESB_LOG_INFO("[%s] remote server closed socket", _socket.name());
   return false;  // remove from multiplexer
 }
 
 bool HttpClientSocket::handleIdle() {
   assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] server is idle", _socket.logAddress());
+  ESB_LOG_INFO("[%s] server is idle", _socket.name());
   return false;  // remove from multiplexer
 }
 
 bool HttpClientSocket::handleRemove() {
   assert(!(HAS_BEEN_REMOVED & _state));
-  ESB_LOG_INFO("[%s] client socket has been removed", _socket.logAddress());
+  ESB_LOG_INFO("[%s] client socket has been removed", _socket.name());
 
   if (_sendBuffer) {
     _multiplexer.releaseBuffer(_sendBuffer);
@@ -703,11 +703,11 @@ bool HttpClientSocket::handleRemove() {
     _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
   } else if (_state & RETRY_STALE_CONNECTION) {
     assert(_transaction);
-    ESB_LOG_DEBUG("[%s] connection stale, retrying transaction", _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] connection stale, retrying transaction", _socket.name());
     ESB::Error error = _multiplexer.executeClientTransaction(_transaction);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_INFO_ERRNO(error, "[%s] Cannot retry transaction", _socket.logAddress());
+      ESB_LOG_INFO_ERRNO(error, "[%s] Cannot retry transaction", _socket.name());
       _state &= ~RETRY_STALE_CONNECTION;
       _state |= TRANSACTION_BEGIN;
 
@@ -742,31 +742,31 @@ ESB::Error HttpClientSocket::parseResponseHeaders() {
   ESB::Error error = _transaction->getParser()->parseHeaders(_recvBuffer, _transaction->response());
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[%s] need more response header data from stream", _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] need more response header data from stream", _socket.name());
     if (!_recvBuffer->compact()) {
-      ESB_LOG_INFO("[%s] cannot parse response headers: parser jammed", _socket.logAddress());
+      ESB_LOG_INFO("[%s] cannot parse response headers: parser jammed", _socket.name());
       return ESB_OVERFLOW;  // remove from multiplexer
     }
     return ESB_AGAIN;  // keep in multiplexer
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] cannot response parse headers", _socket.logAddress());
+    ESB_LOG_INFO_ERRNO(error, "[%s] cannot response parse headers", _socket.name());
     return error;  // remove from multiplexer
   }
 
   // parse complete
 
   if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("[%s] response headers parsed", _socket.logAddress());
-    ESB_LOG_DEBUG("[%s] StatusCode: %d", _socket.logAddress(), _transaction->response().statusCode());
-    ESB_LOG_DEBUG("[%s] ReasonPhrase: %s", _socket.logAddress(), ESB_SAFE_STR(_transaction->response().reasonPhrase()));
-    ESB_LOG_DEBUG("[%s] Version: HTTP/%d.%d", _socket.logAddress(), _transaction->response().httpVersion() / 100,
+    ESB_LOG_DEBUG("[%s] response headers parsed", _socket.name());
+    ESB_LOG_DEBUG("[%s] StatusCode: %d", _socket.name(), _transaction->response().statusCode());
+    ESB_LOG_DEBUG("[%s] ReasonPhrase: %s", _socket.name(), ESB_SAFE_STR(_transaction->response().reasonPhrase()));
+    ESB_LOG_DEBUG("[%s] Version: HTTP/%d.%d", _socket.name(), _transaction->response().httpVersion() / 100,
                   _transaction->response().httpVersion() % 100 / 10);
 
     HttpHeader *header = (HttpHeader *)_transaction->response().headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("[%s] %s: %s", _socket.logAddress(), ESB_SAFE_STR(header->fieldName()),
+      ESB_LOG_DEBUG("[%s] %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
                     ESB_SAFE_STR(header->fieldValue()));
     }
   }
@@ -797,7 +797,7 @@ ESB::Error HttpClientSocket::parseResponseBody() {
 
     // if last chunk
     if (0 == bytesAvailable) {
-      ESB_LOG_DEBUG("[%s] parsed response body", _socket.logAddress());
+      ESB_LOG_DEBUG("[%s] parsed response body", _socket.name());
       unsigned char byte = 0;
       switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
         case ESB_SUCCESS:
@@ -811,19 +811,18 @@ ESB::Error HttpClientSocket::parseResponseBody() {
           }
           return ESB_PAUSE;
         default:
-          ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection after last response body chunk",
-                              _socket.logAddress());
+          ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection after last response body chunk", _socket.name());
           return error;
       }
     }
 
-    ESB_LOG_DEBUG("[%s] offering response chunk of size %u", _socket.logAddress(), bytesAvailable);
+    ESB_LOG_DEBUG("[%s] offering response chunk of size %u", _socket.name(), bytesAvailable);
 
     switch (error = _handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
                                                  bytesAvailable, &bytesConsumed)) {
       case ESB_SUCCESS:
         if (0 == bytesConsumed) {
-          ESB_LOG_DEBUG("[%s] pausing response body receive until handler is ready", _socket.logAddress());
+          ESB_LOG_DEBUG("[%s] pausing response body receive until handler is ready", _socket.name());
           if (ESB_SUCCESS != (error = pauseRecv(false))) {
             return error;
           }
@@ -837,19 +836,17 @@ ESB::Error HttpClientSocket::parseResponseBody() {
         }
         return ESB_PAUSE;
       default:
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection before last response body chunk",
-                            _socket.logAddress());
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection before last response body chunk", _socket.name());
         return error;  // remove from multiplexer
     }
 
     error = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u response chunk bytes", _socket.logAddress(), bytesAvailable);
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u response chunk bytes", _socket.name(), bytesAvailable);
       return error;  // remove from multiplexer
     }
 
-    ESB_LOG_DEBUG("[%s] consumed %u out of %u response chunk bytes", _socket.logAddress(), bytesConsumed,
-                  bytesAvailable);
+    ESB_LOG_DEBUG("[%s] consumed %u out of %u response chunk bytes", _socket.name(), bytesConsumed, bytesAvailable);
   }
 
   return ESB_SHUTDOWN;
@@ -859,16 +856,16 @@ ESB::Error HttpClientSocket::formatRequestHeaders() {
   ESB::Error error = _transaction->getFormatter()->formatHeaders(_sendBuffer, _transaction->request());
 
   if (ESB_AGAIN == error) {
-    ESB_LOG_DEBUG("[%s] partially formatted request headers", _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] partially formatted request headers", _socket.name());
     return ESB_AGAIN;  // keep in multiplexer
   }
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request header", _socket.logAddress());
+    ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request header", _socket.name());
     return error;
   }
 
-  ESB_LOG_DEBUG("[%s] formatted request headers", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] formatted request headers", _socket.name());
   _state &= ~FORMATTING_HEADERS;
   _state |= FORMATTING_BODY;
 
@@ -891,10 +888,10 @@ ESB::Error HttpClientSocket::formatRequestBody() {
         }
         return ESB_PAUSE;
       case ESB_SUCCESS:
-        ESB_LOG_DEBUG("[%s] handler offers request chunk of %u bytes", _socket.logAddress(), offeredSize);
+        ESB_LOG_DEBUG("[%s] handler offers request chunk of %u bytes", _socket.name(), offeredSize);
         break;
       default:
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler error offering request chunk", _socket.logAddress());
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] handler error offering request chunk", _socket.name());
         return error;  // remove from multiplexer
     }
 
@@ -922,13 +919,13 @@ ESB::Error HttpClientSocket::formatRequestBody() {
         }
         return ESB_PAUSE;
       default:
-        ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket.logAddress(), chunkSize);
+        ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket.name(), chunkSize);
         return error;  // remove from multiplexer
     }
 
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
     _bodyBytesWritten += chunkSize;
-    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u", _socket.logAddress(), chunkSize);
+    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u", _socket.name(), chunkSize);
 
     // beginBlock reserves space for this operation, it should never fail
     if (ESB_SUCCESS != (error = formatEndChunk())) {
@@ -951,9 +948,9 @@ ESB::Error HttpClientSocket::fillReceiveBuffer() {
   // If there is no data in the recv buffer, read some more from the socket
   // If there is no space left in the recv buffer, make room if possible
   if (!_recvBuffer->isWritable()) {
-    ESB_LOG_DEBUG("[%s] compacting input buffer", _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] compacting input buffer", _socket.name());
     if (!_recvBuffer->compact()) {
-      ESB_LOG_INFO("[%s] parser jammed", _socket.logAddress());
+      ESB_LOG_INFO("[%s] parser jammed", _socket.name());
       return ESB_OVERFLOW;
     }
   }
@@ -964,24 +961,24 @@ ESB::Error HttpClientSocket::fillReceiveBuffer() {
 
   if (0 > result) {
     ESB::Error error = ESB::LastError();
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot refill client recv buffer", _socket.logAddress());
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot refill client recv buffer", _socket.name());
     return error;
   }
 
   if (0 == result) {
-    ESB_LOG_DEBUG("[%s] connection closed during client recv buffer refill", _socket.logAddress());
+    ESB_LOG_DEBUG("[%s] connection closed during client recv buffer refill", _socket.name());
     return ESB_CLOSED;
   }
 
-  ESB_LOG_DEBUG("[%s] read %ld bytes into client recv buffer", _socket.logAddress(), result);
+  ESB_LOG_DEBUG("[%s] read %ld bytes into client recv buffer", _socket.name(), result);
   return ESB_SUCCESS;
 }
 
 ESB::Error HttpClientSocket::flushSendBuffer() {
-  ESB_LOG_DEBUG("[%s] flushing request output buffer", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] flushing request output buffer", _socket.name());
 
   if (!_sendBuffer->isReadable()) {
-    ESB_LOG_INFO("[%s] request formatter jammed", _socket.logAddress());
+    ESB_LOG_INFO("[%s] request formatter jammed", _socket.name());
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
@@ -990,7 +987,7 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
 
     if (0 > bytesSent) {
       if (ESB_AGAIN == bytesSent) {
-        ESB_LOG_DEBUG("[%s] would block flushing request output buffer", _socket.logAddress());
+        ESB_LOG_DEBUG("[%s] would block flushing request output buffer", _socket.name());
         return ESB_AGAIN;  // keep in multiplexer
       }
 
@@ -1001,18 +998,18 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
 
       ESB::Error error = ESB::LastError();
       assert(ESB_SUCCESS != error);
-      ESB_LOG_INFO_ERRNO(error, "[%s] error flushing request output buffer", _socket.logAddress());
+      ESB_LOG_INFO_ERRNO(error, "[%s] error flushing request output buffer", _socket.name());
       return error;  // remove from multiplexer
     }
 
     _state &= ~FIRST_USE_AFTER_REUSE;
-    ESB_LOG_DEBUG("[%s] flushed %ld bytes from request output buffer", _socket.logAddress(), bytesSent);
+    ESB_LOG_DEBUG("[%s] flushed %ld bytes from request output buffer", _socket.name(), bytesSent);
   }
 
   return _sendBuffer->isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;
 }
 
-const char *HttpClientSocket::logAddress() const { return _socket.logAddress(); }
+const char *HttpClientSocket::logAddress() const { return _socket.name(); }
 
 ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
@@ -1021,13 +1018,13 @@ ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] client connection aborted", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] client connection aborted", _socket.name());
 
   _state |= ABORTED;
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().removeMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot abort client connection", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot abort client connection", _socket.name());
       return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
     }
   }
@@ -1046,13 +1043,13 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
     return ESB_SUCCESS;
   }
 
-  ESB_LOG_DEBUG("[%s] pausing client response receive", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] pausing client response receive", _socket.name());
 
   _state |= RECV_PAUSED;
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client response receive", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client response receive", _socket.name());
       return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
     }
   }
@@ -1068,13 +1065,13 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] resuming client response receive", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] resuming client response receive", _socket.name());
 
   _state &= ~RECV_PAUSED;
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client response receive", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client response receive", _socket.name());
       return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
     }
   }
@@ -1093,13 +1090,13 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
     return ESB_SUCCESS;
   }
 
-  ESB_LOG_DEBUG("[%s] pausing client request send", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] pausing client request send", _socket.name());
 
   _state |= SEND_PAUSED;
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client response send", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client response send", _socket.name());
       return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
     }
   }
@@ -1115,13 +1112,13 @@ ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  ESB_LOG_DEBUG("[%s] resuming client request send", _socket.logAddress());
+  ESB_LOG_DEBUG("[%s] resuming client request send", _socket.name());
 
   _state &= ~SEND_PAUSED;
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client response send", _socket.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client response send", _socket.name());
       return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
     }
   }
@@ -1177,10 +1174,10 @@ ESB::Error HttpClientSocket::formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32
     case ESB_SUCCESS:
       return ESB_SUCCESS;
     case ESB_AGAIN:
-      ESB_LOG_DEBUG("[%s] insufficient send buffer space to begin chunk", _socket.logAddress());
+      ESB_LOG_DEBUG("[%s] insufficient send buffer space to begin chunk", _socket.name());
       return ESB_AGAIN;
     default:
-      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request body", _socket.logAddress());
+      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting request body", _socket.name());
       return error;
   }
 }
@@ -1189,7 +1186,7 @@ ESB::Error HttpClientSocket::formatEndChunk() {
   ESB::Error error = _transaction->getFormatter()->endBlock(_sendBuffer);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk end block", _socket.logAddress());
+    ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk end block", _socket.name());
     return error;
   }
 
@@ -1201,17 +1198,19 @@ ESB::Error HttpClientSocket::formatEndBody() {
 
   switch (error) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] finished formatting request body", _socket.logAddress());
+      ESB_LOG_DEBUG("[%s] finished formatting request body", _socket.name());
       _state &= ~FORMATTING_BODY;
       _state |= FLUSHING_BODY;
       return ESB_SUCCESS;
     case ESB_AGAIN:
-      ESB_LOG_DEBUG("[%s] insufficient space in send buffer to format end body", _socket.logAddress());
+      ESB_LOG_DEBUG("[%s] insufficient space in send buffer to format end body", _socket.name());
       return ESB_AGAIN;
     default:
-      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last request chunk", _socket.logAddress());
+      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last request chunk", _socket.name());
       return error;
   }
 }
+
+const char *HttpClientSocket::name() const { return _socket.name(); }
 
 }  // namespace ES

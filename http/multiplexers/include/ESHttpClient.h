@@ -36,7 +36,7 @@ class HttpClient {
   /**
    * Create a client stack.
    */
-  HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler,
+  HttpClient(const char *namePrefix, ESB::UInt32 threads, HttpClientHandler &clientHandler,
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpClient();
@@ -85,6 +85,7 @@ class HttpClient {
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
   HttpClientHistoricalCounters _clientCounters;
+  char _name[ESB_NAME_PREFIX_SIZE];
 };
 
 }  // namespace ES

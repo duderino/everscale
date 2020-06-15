@@ -38,14 +38,14 @@ class ConnectedTCPSocket : public TCPSocket {
  public:
   /** Construct an uninitialized ConnectedTCPSocket.
    */
-  ConnectedTCPSocket();
+  ConnectedTCPSocket(const char *namePrefix);
 
   /** Construct a new client ConnectedTCPSocket.  This instance's
    *  peer will be left uninitialized by this call.
    *
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedTCPSocket(bool isBlocking);
+  ConnectedTCPSocket(const char *namePrefix, bool isBlocking);
 
   /** Construct a new client ConnectedTCPSocket.  This instance will
    *  connect (attempt to connect) to the peer identified by the
@@ -54,14 +54,14 @@ class ConnectedTCPSocket : public TCPSocket {
    *  @param peer The peer that this socket will attempt to connect to.
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedTCPSocket(const SocketAddress &peer, bool isBlocking);
+  ConnectedTCPSocket(const char *namePrefix, const SocketAddress &peer, bool isBlocking);
 
   /** Construct a new server ConnectedTCPSocket.
    *
    * @param state An object populated by ListeningTCPSockets
    *  when accepting a new connection.
    */
-  ConnectedTCPSocket(const State &state);
+  ConnectedTCPSocket(const char *namePrefix, const State &state);
 
   /** Destroy the connected socket.  Will close the socket if it has not
    *  already been closed.
@@ -72,7 +72,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *
    * @return The peer's presentation address.
    */
-  virtual const char *logAddress() const;
+  virtual const char *name() const;
 
   /** Reset a tcp socket.  If the socket is currently open, this will close
    *  it as a side-effect.

@@ -12,15 +12,19 @@
 
 namespace ES {
 
-HttpClient::HttpClient(ESB::UInt32 threads, HttpClientHandler &clientHandler, ESB::Allocator &allocator)
+HttpClient::HttpClient(const char *namePrefix, ESB::UInt32 threads, HttpClientHandler &clientHandler,
+                       ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
       _state(ES_HTTP_CLIENT_IS_DESTROYED),
       _allocator(allocator),
       _clientHandler(clientHandler),
       _multiplexers(),
-      _threadPool("HttpClientMultiplexerPool", _threads),
+      _threadPool(namePrefix, _threads),
       _rand(),
-      _clientCounters(60, 1, _allocator) {}
+      _clientCounters(60, 1, _allocator) {
+  strncpy(_name, namePrefix, sizeof(_name));
+  _name[sizeof(_name) - 1] = 0;
+}
 
 HttpClient::~HttpClient() {}
 
@@ -43,7 +47,7 @@ ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
   ESB::Error error = multiplexer->pushClientCommand(command);
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot queue command on multiplexer");
+    ESB_LOG_ERROR_ERRNO(error, "[%s] cannot queue command on multiplexer", _name);
     return error;
   }
 
@@ -62,16 +66,16 @@ ESB::Error HttpClient::start() {
   ESB::Error error = _threadPool.start();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot start multiplexer threads");
+    ESB_LOG_CRITICAL_ERRNO(error, "[%s] cannot start multiplexer threads", _name);
     return error;
   }
 
   ESB::UInt32 maxSockets = ESB::SystemConfig::Instance().socketSoftMax();
-  ESB_LOG_DEBUG("Maximum sockets %u", maxSockets);
+  ESB_LOG_DEBUG("[%s] maximum sockets %u", _name, maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
     ESB::SocketMultiplexer *multiplexer =
-        new (_allocator) HttpProxyMultiplexer(maxSockets, _clientHandler, _clientCounters);
+        new (_allocator) HttpProxyMultiplexer(_name, maxSockets, _clientHandler, _clientCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot initialize multiplexer");
@@ -81,20 +85,20 @@ ESB::Error HttpClient::start() {
     error = _threadPool.execute(multiplexer);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot schedule multiplexer on thread");
+      ESB_LOG_CRITICAL_ERRNO(error, "[%s] cannot schedule multiplexer on thread", _name);
       return error;
     }
 
     error = _multiplexers.pushBack(multiplexer);
 
     if (ESB_SUCCESS != error) {
-      ESB_LOG_CRITICAL_ERRNO(error, "Cannot add multiplexer to multiplexers");
+      ESB_LOG_CRITICAL_ERRNO(error, "[%s] cannot add multiplexer to multiplexers", _name);
       return error;
     }
   }
 
   _state.set(ES_HTTP_CLIENT_IS_STARTED);
-  ESB_LOG_DEBUG("Started");
+  ESB_LOG_DEBUG("[%s] started", _name);
   return ESB_SUCCESS;
 }
 
@@ -102,9 +106,9 @@ ESB::Error HttpClient::stop() {
   assert(ES_HTTP_CLIENT_IS_STARTED == _state.get());
   _state.set(ES_HTTP_CLIENT_IS_STOPPED);
 
-  ESB_LOG_DEBUG("Stopping");
+  ESB_LOG_DEBUG("[%s] stopping", _name);
   _threadPool.stop();
-  ESB_LOG_DEBUG("Stopped");
+  ESB_LOG_DEBUG("[%s] stopped", _name);
 
   return ESB_SUCCESS;
 }

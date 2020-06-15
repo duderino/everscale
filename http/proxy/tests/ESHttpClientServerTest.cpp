@@ -139,14 +139,12 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  ESB_LOG_NOTICE("Maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
-
   //
   // Create listening socket
   //
 
   // bind to port 0 so kernel will choose a free ephemeral port
-  ESB::ListeningTCPSocket listener(0, ESB_UINT16_MAX);
+  ESB::ListeningTCPSocket listener("origin-listener", 0, ESB_UINT16_MAX);
 
   error = listener.bind();
 
@@ -155,7 +153,7 @@ int main(int argc, char **argv) {
     return -2;
   }
 
-  ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
+  ESB_LOG_NOTICE("[%s] bound to port %u", listener.name(), listener.listeningAddress().port());
 
   ESB::SocketAddress destaddr(destination, listener.listeningAddress().port(), ESB::SocketAddress::TransportType::TCP);
 
@@ -164,7 +162,7 @@ int main(int argc, char **argv) {
   //
 
   HttpOriginHandler serverHandler;
-  HttpServer server(serverThreads, serverHandler);
+  HttpServer server("origin", serverThreads, serverHandler);
 
   error = server.initialize();
 
@@ -174,7 +172,7 @@ int main(int argc, char **argv) {
 
   HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  HttpClient client(clientThreads, clientHandler);
+  HttpClient client("client", clientThreads, clientHandler);
 
   error = client.initialize();
 
@@ -227,7 +225,7 @@ int main(int argc, char **argv) {
     sleep(1);
   }
 
-  ESB_LOG_NOTICE("Load test finished");
+  ESB_LOG_NOTICE("[main] load test finished");
 
   //
   // Stop client and server

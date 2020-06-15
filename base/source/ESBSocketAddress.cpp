@@ -130,16 +130,16 @@ void SocketAddress::presentationAddress(char *address, int size) const {
 
 void SocketAddress::logAddress(char *address, int size, int fd) const {
   assert(address);
-  assert(size >= ESB_LOG_ADDRESS_SIZE);
+  assert(size >= ESB_LOG_ADDRESS_SIZE - ESB_NAME_PREFIX_SIZE);
   // TODO support IPv6
-  if (!address || ESB_LOG_ADDRESS_SIZE > size) {
+  if (!address || (ESB_LOG_ADDRESS_SIZE - ESB_NAME_PREFIX_SIZE) > size) {
     return;
   }
 
   char buffer[ESB_IPV6_PRESENTATION_SIZE];
   presentationAddress(buffer, sizeof(buffer));
 
-  snprintf(address, size, "%s:%u,%d", buffer, port(), fd);
+  snprintf(address, size, ":%s:%u,%d", buffer, port(), fd);
   address[ESB_LOG_ADDRESS_SIZE - 1] = 0;
 }
 

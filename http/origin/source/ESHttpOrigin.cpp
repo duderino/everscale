@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
   ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot raise max fd limit");
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot raise max fd limit");
     return -1;
   }
 
@@ -125,28 +125,28 @@ int main(int argc, char **argv) {
   // Create listening socket
   //
 
-  ESB::ListeningTCPSocket listener(port, ESB_UINT16_MAX);
+  ESB::ListeningTCPSocket listener("origin-listener", port, ESB_UINT16_MAX);
 
   error = listener.bind();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot bind to port %u", listener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot bind to port %u", listener.listeningAddress().port());
     return -2;
   }
 
-  ESB_LOG_NOTICE("Bound to port %u", listener.listeningAddress().port());
+  ESB_LOG_NOTICE("[%s] bound to port %u", listener.name(), listener.listeningAddress().port());
 
   error = listener.listen();
 
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "Cannot listen on port %u", listener.listeningAddress().port());
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot listen on port %u", listener.listeningAddress().port());
     return -3;
   }
 
   // Init
 
   HttpOriginHandler handler;
-  HttpServer server(threads, handler);
+  HttpServer server("origin", threads, handler);
 
   error = server.initialize();
 

@@ -17,6 +17,9 @@
 #include <ESBMutex.h>
 #endif
 
+#define ESB_COMMAND_SUFFIX "-command"
+#define ESB_COMMAND_SUFFIX_SIZE 9
+
 namespace ES {
 
 /** A base class for sockets that can wake up multiplexers to run commands.
@@ -25,7 +28,7 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
  public:
   /** Constructor
    */
-  HttpCommandSocket();
+  HttpCommandSocket(const char *namePrefix);
 
   /** Destructor.
    */
@@ -65,6 +68,8 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
 
   virtual ESB::CleanupHandler *cleanupHandler();
 
+  virtual const char *name() const;
+
  protected:
   /**
    * Enqueue a command on the command socket.  When the command socket is
@@ -89,6 +94,7 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
   ESB::Mutex _lock;
   ESB::EmbeddedList _queue;
   bool _removed;
+  char _name[ESB_NAME_PREFIX_SIZE + ESB_COMMAND_SUFFIX_SIZE];
 };
 
 }  // namespace ES

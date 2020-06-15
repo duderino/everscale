@@ -28,33 +28,39 @@
 
 namespace ESB {
 
-ConnectedTCPSocket::ConnectedTCPSocket() : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
-  _logAddress[0] = 0;
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix)
+    : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(bool isBlocking)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, bool isBlocking)
     : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress() {
-  _logAddress[0] = 0;
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const SocketAddress &peer, bool isBlocking)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const SocketAddress &peer, bool isBlocking)
     : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress(peer) {
-  _logAddress[0] = 0;
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const State &state)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const State &state)
     : TCPSocket(state),
       _isConnected(true),
       _listenerAddress(state.listeningAddress()),
       _peerAddress(state.peerAddress()) {
-  _logAddress[0] = 0;
+  memset(_logAddress, 0, sizeof(_logAddress));
+  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
 }
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
 
-const char *ConnectedTCPSocket::logAddress() const {
-  if (!_logAddress[0]) {
-    _peerAddress.logAddress(_logAddress, sizeof(_logAddress), _sockFd);
+const char *ConnectedTCPSocket::name() const {
+  if (!_logAddress[ESB_NAME_PREFIX_SIZE]) {
+    int len = strlen(_logAddress);
+    _peerAddress.logAddress(_logAddress + len, sizeof(_logAddress) - len, _sockFd);
   }
   return _logAddress;
 }

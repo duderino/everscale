@@ -158,6 +158,9 @@ typedef SSIZE_T SSize;
 #define ESB_MIN(a, b) ((a) > (b) ? (b) : (a))
 #define ESB_MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define ESB_NAME_PREFIX_SIZE 16
+#define ESB_LOG_ADDRESS_SIZE (ESB_IPV6_PRESENTATION_SIZE + 17 + ESB_NAME_PREFIX_SIZE)
+
 }  // namespace ESB
 
 #endif

@@ -71,6 +71,8 @@ class HttpClientSocketFactory {
   HttpClientSocketFactory(const HttpClientSocketFactory &);
   HttpClientSocketFactory &operator=(const HttpClientSocketFactory &);
 
+  const char *name() const;
+
   // To cleanup client sockets created by this factory.  Cleanup returns the
   // socket to the factory for subsequent reuse.
   class CleanupHandler : public ESB::CleanupHandler {

@@ -43,7 +43,7 @@ class ListeningTCPSocket : public TCPSocket {
   /**
    * Constructor
    */
-  ListeningTCPSocket();
+  ListeningTCPSocket(const char *namePrefix);
 
   /** Construct a new ListeningTCPSocket instance.  This socket will
    *  listen on the specified port and let the kernel choose the IP address
@@ -57,7 +57,7 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(UInt16 port, int backlog, bool isBlocking = false);
+  ListeningTCPSocket(const char *namePrefix, UInt16 port, int backlog, bool isBlocking = false);
 
   /** Construct a new ListeningTCPSocket instance.  This socket will
    *  listen on the port and ip address specified in the SocketAddress
@@ -71,7 +71,7 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(const SocketAddress &address, int backlog, bool isBlocking = false);
+  ListeningTCPSocket(const char *namePrefix, const SocketAddress &address, int backlog, bool isBlocking = false);
 
   /**
    * Duplicate an existing bound and listening socket by creating a new file
@@ -92,7 +92,7 @@ class ListeningTCPSocket : public TCPSocket {
    *
    * @return The presentation address.
    */
-  virtual const char *logAddress() const;
+  virtual const char *name() const;
 
   /** Bind the socket to its IP address and port.
    *

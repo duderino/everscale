@@ -36,7 +36,6 @@ set(SOURCE_FILES
         source/ESBSmartPointer.cpp
         source/ESBSmartPointerDebugger.cpp
         source/ESBSocketMultiplexer.cpp
-        source/ESBSocketMultiplexerFactory.cpp
         source/ESBSystemAllocator.cpp
         source/ESBThread.cpp
         source/ESBThreadPool.cpp
@@ -44,7 +43,6 @@ set(SOURCE_FILES
         source/ESBTCPSocket.cpp
         source/ESBDiscardAllocator.cpp
         source/ESBEpollMultiplexer.cpp
-        source/ESBEpollMultiplexerFactory.cpp
         source/ESBDnsClient.cpp
         source/ESBSystemDnsClient.cpp
         source/ESBAveragingCounter.cpp

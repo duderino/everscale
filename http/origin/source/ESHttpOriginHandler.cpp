@@ -104,24 +104,24 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
-      ESB_LOG_INFO("Transaction failed at begin state");
+      ESB_LOG_INFO("[%s] Transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
-      ESB_LOG_INFO("Transaction failed at request header parse state");
+      ESB_LOG_INFO("[%s] Transaction failed at request header parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
-      ESB_LOG_INFO("Transaction failed at request body parse state");
+      ESB_LOG_INFO("[%s] Transaction failed at request body parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
-      ESB_LOG_INFO("Transaction failed at response header send state");
+      ESB_LOG_INFO("[%s] Transaction failed at response header send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
-      ESB_LOG_INFO("Transaction failed at response header send state");
+      ESB_LOG_INFO("[%s] Transaction failed at response header send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
       break;
     default:
-      ESB_LOG_WARNING("Transaction failed at unknown state");
+      ESB_LOG_WARNING("[%s] Transaction failed at unknown state", stream.logAddress());
   }
 }
 

@@ -65,6 +65,8 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
 
   virtual ESB::CleanupHandler *cleanupHandler();
 
+  virtual const char *name() const;
+
   ESB::Error initialize(ESB::ListeningTCPSocket &socket);
 
   /** Placement new.

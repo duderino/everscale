@@ -21,7 +21,7 @@ class HttpServerCommandSocket : public HttpCommandSocket {
  public:
   /** Constructor
    */
-  HttpServerCommandSocket(HttpMultiplexerExtended &stack);
+  HttpServerCommandSocket(const char *namePrefix, HttpMultiplexerExtended &stack);
 
   /** Destructor.
    */

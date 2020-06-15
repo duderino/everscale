@@ -3,6 +3,8 @@ add 'loadgent client', 'proxy server', 'proxy client', and 'origin server' label
       TODO any call out to a handler may change the _state ... audit every handler callout in
       client and server socket and update control flow accordingly
 
+Use state transition macros and barf on invalid state transitions
+
 proxy:
  - relay error codes to handler.endTransaction().  Instead of returning true|false in handleRead(), etc, return ESB::Error to the multiplexer and pass these back to the handlers.
  - add test and support for http pipelining.
