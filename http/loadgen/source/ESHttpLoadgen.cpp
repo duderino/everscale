@@ -308,7 +308,7 @@ int main(int argc, char **argv) {
 
   HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
   HttpClientSocket::SetReuseConnections(reuseConnections);
-  HttpClient client("client", threads, clientHandler);
+  HttpClient client("loadgen", threads, clientHandler);
 
   error = client.initialize();
 

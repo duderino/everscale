@@ -51,7 +51,7 @@ HttpServerSocket::HttpServerSocket(HttpServerHandler &handler, HttpMultiplexerEx
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
-      _socket(multiplexer.multiplexer().name()) {}
+      _socket(multiplexer.multiplexer().name(), "server") {}
 
 HttpServerSocket::~HttpServerSocket() {
   if (_recvBuffer) {

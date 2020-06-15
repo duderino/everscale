@@ -28,31 +28,32 @@
 
 namespace ESB {
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix)
     : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
   memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, bool isBlocking)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
     : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress() {
   memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const SocketAddress &peer, bool isBlocking)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
+                                       bool isBlocking)
     : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress(peer) {
   memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const State &state)
+ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const State &state)
     : TCPSocket(state),
       _isConnected(true),
       _listenerAddress(state.listeningAddress()),
       _peerAddress(state.peerAddress()) {
   memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
 }
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}

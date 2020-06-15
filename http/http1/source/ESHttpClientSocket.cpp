@@ -52,7 +52,7 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerEx
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
-      _socket(multiplexer.multiplexer().name(), peerAddress, false) {}
+      _socket(multiplexer.multiplexer().name(), "client", peerAddress, false) {}
 
 HttpClientSocket::~HttpClientSocket() {
   if (_recvBuffer) {
