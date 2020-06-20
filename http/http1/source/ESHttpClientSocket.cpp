@@ -310,25 +310,26 @@ ESB::Error HttpClientSocket::handleReadable() {
         }
 
         assert(!(_state | RECV_PAUSED));
-        stateTransition(TRANSACTION_END);
+        conditionalStateTransition(PARSING_HEADERS, TRANSACTION_END);
         return ESB_CLEANUP;  // remove from multiplexer
       }
 
-      stateTransition(PARSING_BODY);
+      conditionalStateTransition(PARSING_HEADERS, PARSING_BODY);
     }
 
-    assert(PARSING_BODY & _state);
-    assert(_transaction->response().hasBody());
+    if (PARSING_BODY & _state) {
+      assert(_transaction->response().hasBody());
 
-    error = parseResponseBody();
+      error = parseResponseBody();
 
-    if (ESB_AGAIN == error) {
-      continue;  // read more data and repeat parse
-    }
+      if (ESB_AGAIN == error) {
+        continue;  // read more data and repeat parse
+      }
 
-    if (ESB_PAUSE == error) {
-      return ESB_SUCCESS;  // keep in multiplexer, but remove from read interest
-                           // set.
+      if (ESB_PAUSE == error) {
+        return ESB_SUCCESS;  // keep in multiplexer, but remove from read interest
+        // set.
+      }
     }
 
     return ESB_SUCCESS == error ? ESB_CLEANUP : error;  // remove from multiplexer
@@ -686,7 +687,10 @@ bool HttpClientSocket::handleRemove() {
   if (!reuseConnection) {
     // HttpClientSocketFactory::release() is invoked by the cleanup handler.
     // Sockets that are closed are not returned to the connection pool.
+    ESB_LOG_DEBUG("[%s] connection will not be reused", _socket.name());
     _socket.close();
+  } else {
+    ESB_LOG_DEBUG("[%s] adding connection to connection pool", _socket.name());
   }
 
   _transaction = NULL;
@@ -719,15 +723,12 @@ ESB::Error HttpClientSocket::parseResponseHeaders() {
   // parse complete
 
   if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("[%s] response headers parsed", _socket.name());
-    ESB_LOG_DEBUG("[%s] StatusCode: %d", _socket.name(), _transaction->response().statusCode());
-    ESB_LOG_DEBUG("[%s] ReasonPhrase: %s", _socket.name(), ESB_SAFE_STR(_transaction->response().reasonPhrase()));
-    ESB_LOG_DEBUG("[%s] Version: HTTP/%d.%d", _socket.name(), _transaction->response().httpVersion() / 100,
-                  _transaction->response().httpVersion() % 100 / 10);
-
+    ESB_LOG_DEBUG("[%s] status line: HTTP/%d.%d %d %s", _socket.name(), _transaction->response().httpVersion() / 100,
+                  _transaction->response().httpVersion() % 100 / 10, _transaction->response().statusCode(),
+                  ESB_SAFE_STR(_transaction->response().reasonPhrase()));
     HttpHeader *header = (HttpHeader *)_transaction->response().headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("[%s] %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
+      ESB_LOG_DEBUG("[%s] response header: %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
                     ESB_SAFE_STR(header->fieldValue()));
     }
   }
@@ -825,7 +826,6 @@ ESB::Error HttpClientSocket::formatRequestHeaders() {
     return error;
   }
 
-  ESB_LOG_DEBUG("[%s] formatted request headers", _socket.name());
   stateTransition(FORMATTING_BODY);
 
   return ESB_SUCCESS;
@@ -1157,7 +1157,6 @@ ESB::Error HttpClientSocket::formatEndBody() {
 
   switch (error) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] finished formatting request body", _socket.name());
       stateTransition(FLUSHING_BODY);
       return ESB_SUCCESS;
     case ESB_AGAIN:
@@ -1186,10 +1185,13 @@ void HttpClientSocket::unsetFlag(int flag) {
 void HttpClientSocket::stateTransition(int state) {
   assert(state & stateMask());
   assert(!(state & flagMask()));
+#ifndef NDEBUG
+  int currentState = _state & stateMask();
+#endif
 
   switch (state) {
     case HAS_BEEN_REMOVED:
-      assert(!(_state & HAS_BEEN_REMOVED));
+      assert(!(currentState & HAS_BEEN_REMOVED));
       _state = HAS_BEEN_REMOVED;
       ESB_LOG_DEBUG("[%s] connection removed", _socket.name());
       break;
@@ -1197,43 +1199,43 @@ void HttpClientSocket::stateTransition(int state) {
       assert(0 == "Cannot transition into state CONNECTING");
       break;
     case TRANSACTION_BEGIN:
-      assert(_state & (CONNECTING | HAS_BEEN_REMOVED));
+      assert(currentState & (CONNECTING | HAS_BEEN_REMOVED));
       _state &= ~(CONNECTING | HAS_BEEN_REMOVED);
       _state |= TRANSACTION_BEGIN;
       ESB_LOG_DEBUG("[%s] transaction begun", _socket.name());
       break;
     case FORMATTING_HEADERS:
-      assert(_state & TRANSACTION_BEGIN);
+      assert(currentState & TRANSACTION_BEGIN);
       _state &= ~TRANSACTION_BEGIN;
       _state |= FORMATTING_HEADERS;
       ESB_LOG_DEBUG("[%s] formatting headers", _socket.name());
       break;
     case FORMATTING_BODY:
-      assert(_state & FORMATTING_HEADERS);
+      assert(currentState & FORMATTING_HEADERS);
       _state &= ~FORMATTING_HEADERS;
       _state |= FORMATTING_BODY;
       ESB_LOG_DEBUG("[%s] formatting body", _socket.name());
       break;
     case FLUSHING_BODY:
-      assert(_state & FORMATTING_BODY);
+      assert(currentState & FORMATTING_BODY);
       _state &= ~FORMATTING_BODY;
       _state |= FLUSHING_BODY;
       ESB_LOG_DEBUG("[%s] flushing body", _socket.name());
       break;
     case PARSING_HEADERS:
-      assert(_state & FLUSHING_BODY);
+      assert(currentState & FLUSHING_BODY);
       _state &= ~FLUSHING_BODY;
       _state |= PARSING_HEADERS;
       ESB_LOG_DEBUG("[%s] parsing headers", _socket.name());
       break;
     case PARSING_BODY:
-      assert(_state & PARSING_HEADERS);
+      assert(currentState & PARSING_HEADERS);
       _state &= ~PARSING_HEADERS;
       _state |= PARSING_BODY;
       ESB_LOG_DEBUG("[%s] parsing body", _socket.name());
       break;
     case TRANSACTION_END:
-      assert(_state & (PARSING_HEADERS | PARSING_BODY));
+      assert(currentState & (PARSING_HEADERS | PARSING_BODY));
       _state &= ~(PARSING_HEADERS | PARSING_BODY);
       _state |= TRANSACTION_END;
       ESB_LOG_DEBUG("[%s] transaction complete", _socket.name());

@@ -76,7 +76,7 @@ HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transac
   if (ESB_DEBUG_LOGGABLE) {
     char buffer[ESB_IPV6_PRESENTATION_SIZE];
     transaction->peerAddress().presentationAddress(buffer, sizeof(buffer));
-    ESB_LOG_DEBUG("[%s] creating new connection [%s:%u]", name(), buffer, transaction->peerAddress().port());
+    ESB_LOG_DEBUG("[%s] creating new connection to [%s:%u]", name(), buffer, transaction->peerAddress().port());
   }
 
   // Try to reuse the memory of a dead socket

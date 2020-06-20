@@ -91,7 +91,7 @@ class HttpServer {
 
     virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
 
-    virtual const char *name() { return "AddListeningSocket"; }
+    virtual const char *name() { return "add listening socket"; }
 
    private:
     // Disabled

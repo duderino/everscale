@@ -259,7 +259,7 @@ ESB::Error HttpServerSocket::handleReadable() {
         return error;  // remove from multiplexer - immediately close
     }
 
-    stateTransition(PARSING_HEADERS);
+    conditionalStateTransition(TRANSACTION_BEGIN, PARSING_HEADERS);
   }
 
   while (!_multiplexer.shutdown()) {
@@ -333,7 +333,7 @@ ESB::Error HttpServerSocket::handleReadable() {
         }
       }
 
-      stateTransition(PARSING_BODY);
+      conditionalStateTransition(PARSING_HEADERS, PARSING_BODY);
     }
 
     if (PARSING_BODY & _state) {
@@ -370,24 +370,25 @@ ESB::Error HttpServerSocket::handleReadable() {
       assert(_state & SKIPPING_TRAILER);
     }
 
-    assert(SKIPPING_TRAILER & _state);
-    assert(_transaction->request().hasBody());
-    error = skipTrailer();
+    if (SKIPPING_TRAILER & _state) {
+      assert(_transaction->request().hasBody());
+      error = skipTrailer();
 
-    if (ESB_AGAIN == error) {
-      continue;  // read more data and repeat parse
-    }
+      if (ESB_AGAIN == error) {
+        continue;  // read more data and repeat parse
+      }
 
-    if (ESB_SUCCESS != error) {
-      return error;  // remove from multiplexer
-    }
+      if (ESB_SUCCESS != error) {
+        return error;  // remove from multiplexer
+      }
 
-    // Request has been fully read, so we can reuse the connection, but don't
-    // start reading the next request until the response has been fully sent.
+      // Request has been fully read, so we can reuse the connection, but don't
+      // start reading the next request until the response has been fully sent.
 
-    unsetFlag(CANNOT_REUSE_CONNECTION);
-    if (ESB_SUCCESS != (error = pauseRecv(false))) {
-      return error;  // remove from multiplexer
+      unsetFlag(CANNOT_REUSE_CONNECTION);
+      if (ESB_SUCCESS != (error = pauseRecv(false))) {
+        return error;  // remove from multiplexer
+      }
     }
 
     // server handler should have populated the response object in
@@ -697,34 +698,33 @@ ESB::Error HttpServerSocket::parseRequestHeaders() {
   // parse complete
 
   if (ESB_DEBUG_LOGGABLE) {
-    ESB_LOG_DEBUG("[%s] request headers parsed", _socket.name());
-    ESB_LOG_DEBUG("[%s] Method: %s", _socket.name(), _transaction->request().method());
+    const char *method = (const char *)_transaction->request().method();
+    int major = _transaction->request().httpVersion() / 100;
+    int minor = _transaction->request().httpVersion() % 100 / 10;
 
     switch (_transaction->request().requestUri().type()) {
       case HttpRequestUri::ES_URI_ASTERISK:
-        ESB_LOG_DEBUG("[%s] Asterisk Request-URI", _socket.name());
+        ESB_LOG_DEBUG("[%s] request line: %s * HTTP/%d.%d", _socket.name(), method, major, minor);
         break;
       case HttpRequestUri::ES_URI_HTTP:
       case HttpRequestUri::ES_URI_HTTPS:
-        ESB_LOG_DEBUG("[%s] scheme: %s", _socket.name(), _transaction->request().requestUri().typeString());
-        ESB_LOG_DEBUG("[%s] host: %s", _socket.name(), ESB_SAFE_STR(_transaction->request().requestUri().host()));
-        ESB_LOG_DEBUG("[%s] port: %d", _socket.name(), _transaction->request().requestUri().port());
-        ESB_LOG_DEBUG("[%s] path: %s", _socket.name(), ESB_SAFE_STR(_transaction->request().requestUri().absPath()));
-        ESB_LOG_DEBUG("[%s] query: %s", _socket.name(), ESB_SAFE_STR(_transaction->request().requestUri().query()));
-        ESB_LOG_DEBUG("[%s] fragment: %s", _socket.name(),
-                      ESB_SAFE_STR(_transaction->request().requestUri().fragment()));
+        ESB_LOG_DEBUG("[%s] request line: %s %s//%s:%d%s?%s#%s HTTP/%d.%d", _socket.name(), method,
+                      _transaction->request().requestUri().typeString(),
+                      ESB_SAFE_STR(_transaction->request().requestUri().host()),
+                      _transaction->request().requestUri().port(),
+                      ESB_SAFE_STR(_transaction->request().requestUri().absPath()),
+                      ESB_SAFE_STR(_transaction->request().requestUri().query()),
+                      ESB_SAFE_STR(_transaction->request().requestUri().fragment()), major, minor);
         break;
       case HttpRequestUri::ES_URI_OTHER:
-        ESB_LOG_DEBUG("[%s] Other: %s", _socket.name(), ESB_SAFE_STR(_transaction->request().requestUri().other()));
+        ESB_LOG_DEBUG("[%s] request line: %s %s HTTP/%d.%d", _socket.name(), method,
+                      ESB_SAFE_STR(_transaction->request().requestUri().other()), major, minor);
         break;
     }
 
-    ESB_LOG_DEBUG("[%s] Version: HTTP/%d.%d", _socket.name(), _transaction->request().httpVersion() / 100,
-                  _transaction->request().httpVersion() % 100 / 10);
-
     HttpHeader *header = (HttpHeader *)_transaction->request().headers().first();
     for (; header; header = (HttpHeader *)header->next()) {
-      ESB_LOG_DEBUG("[%s] %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
+      ESB_LOG_DEBUG("[%s] request header: %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
                     ESB_SAFE_STR(header->fieldValue()));
     }
   }
@@ -949,16 +949,16 @@ ESB::Error HttpServerSocket::fillReceiveBuffer() {
 
   if (0 > result) {
     ESB::Error error = ESB::LastError();
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot refill server recv buffer", _socket.name());
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot refill recv buffer", _socket.name());
     return error;
   }
 
   if (0 == result) {
-    ESB_LOG_DEBUG("[%s] connection closed during server recv buffer refill", _socket.name());
+    ESB_LOG_DEBUG("[%s] connection closed during recv buffer refill", _socket.name());
     return ESB_CLOSED;
   }
 
-  ESB_LOG_DEBUG("[%s] read %ld bytes into server recv buffer", _socket.name(), result);
+  ESB_LOG_DEBUG("[%s] read %ld bytes into recv buffer", _socket.name(), result);
   return ESB_SUCCESS;
 }
 
@@ -1286,57 +1286,60 @@ void HttpServerSocket::unsetFlag(int flag) {
 void HttpServerSocket::stateTransition(int state) {
   assert(state & stateMask());
   assert(!(state & flagMask()));
+#ifndef NDEBUG
+  int currentState = _state & stateMask();
+#endif
 
   switch (state) {
     case HAS_BEEN_REMOVED:
-      assert(!(_state & HAS_BEEN_REMOVED));
+      assert(!(currentState & HAS_BEEN_REMOVED));
       _state = HAS_BEEN_REMOVED;
       ESB_LOG_DEBUG("[%s] connection removed", _socket.name());
       break;
     case PARSING_HEADERS:
-      assert(_state & TRANSACTION_BEGIN);
+      assert(currentState & TRANSACTION_BEGIN);
       _state &= ~TRANSACTION_BEGIN;
       _state |= PARSING_HEADERS;
       ESB_LOG_DEBUG("[%s] parsing headers", _socket.name());
       break;
     case PARSING_BODY:
-      assert(_state & PARSING_HEADERS);
+      assert(currentState & PARSING_HEADERS);
       _state &= ~PARSING_HEADERS;
       _state |= PARSING_BODY;
       ESB_LOG_DEBUG("[%s] parsing body", _socket.name());
       break;
     case SKIPPING_TRAILER:
-      assert(_state & PARSING_BODY);
+      assert(currentState & PARSING_BODY);
       _state &= ~PARSING_BODY;
       _state |= SKIPPING_TRAILER;
       ESB_LOG_DEBUG("[%s] skipping trailer", _socket.name());
       break;
     case FORMATTING_HEADERS:
-      assert(_state & (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER));
+      assert(currentState & (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER));
       _state &= ~(TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER);
       _state |= FORMATTING_HEADERS;
       ESB_LOG_DEBUG("[%s] formatting headers", _socket.name());
       break;
     case FORMATTING_BODY:
-      assert(_state & FORMATTING_HEADERS);
+      assert(currentState & FORMATTING_HEADERS);
       _state &= ~FORMATTING_HEADERS;
       _state |= FORMATTING_BODY;
       ESB_LOG_DEBUG("[%s] formatting body", _socket.name());
       break;
     case FLUSHING_BODY:
-      assert(_state & FORMATTING_BODY);
+      assert(currentState & FORMATTING_BODY);
       _state &= ~FORMATTING_BODY;
       _state |= FLUSHING_BODY;
       ESB_LOG_DEBUG("[%s] flushing body", _socket.name());
       break;
     case TRANSACTION_BEGIN:
-      assert(_state & TRANSACTION_END);
+      assert(currentState & TRANSACTION_END);
       _state &= ~TRANSACTION_END;
       _state |= TRANSACTION_BEGIN;
       ESB_LOG_DEBUG("[%s] transaction begun", _socket.name());
       break;
     case TRANSACTION_END:
-      assert(_state & FLUSHING_BODY);
+      assert(currentState & FLUSHING_BODY);
       _state &= ~FLUSHING_BODY;
       _state |= TRANSACTION_END;
       ESB_LOG_DEBUG("[%s] transaction complete", _socket.name());

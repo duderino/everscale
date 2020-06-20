@@ -164,6 +164,18 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
   void setFlag(int flag);
   void unsetFlag(int flag);
 
+  /**
+   * Perform a state transition only if the handler has not already performed one.
+   *
+   * @param ifState If the socket is in this state, perform the transition.  Else skip
+   * @param newState The new state to transition into, if the condition has been met.
+   */
+  inline void conditionalStateTransition(int ifState, int newState) {
+    if (_state & ifState) {
+      stateTransition(newState);
+    }
+  }
+
   ESB::Error parseResponseHeaders();
   ESB::Error parseResponseBody();
   ESB::Error formatRequestHeaders();

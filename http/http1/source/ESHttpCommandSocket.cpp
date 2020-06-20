@@ -65,8 +65,6 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
 
 // This code runs in the multiplexer's thread
 ESB::Error HttpCommandSocket::handleReadable() {
-  ESB_LOG_DEBUG("[%s] command socket read event", _name);
-
   ESB::UInt64 value = 0;
   ESB::Error error = _eventSocket.read(&value);
 

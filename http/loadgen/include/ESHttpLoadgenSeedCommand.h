@@ -17,7 +17,7 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
 
   virtual ESB::Error run(HttpMultiplexerExtended &multiplexer);
 
-  virtual const char *name() { return "SeedCommand"; }
+  virtual const char *name() { return "start load"; }
 
   virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
 
