@@ -158,6 +158,12 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
   HttpClientSocket(const HttpClientSocket &);
   HttpClientSocket &operator=(const HttpClientSocket &);
 
+  int stateMask();
+  int flagMask();
+  void stateTransition(int state);
+  void setFlag(int flag);
+  void unsetFlag(int flag);
+
   ESB::Error parseResponseHeaders();
   ESB::Error parseResponseBody();
   ESB::Error formatRequestHeaders();

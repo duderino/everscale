@@ -30,41 +30,30 @@ namespace ESB {
 
 ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix)
     : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
-  memset(_logAddress, 0, sizeof(_logAddress));
-  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
+  formatPrefix(namePrefix, nameSuffix);
 }
 
 ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
     : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress() {
-  memset(_logAddress, 0, sizeof(_logAddress));
-  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
+  formatPrefix(namePrefix, nameSuffix);
 }
 
 ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
                                        bool isBlocking)
-    : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress(peer) {
-  memset(_logAddress, 0, sizeof(_logAddress));
-  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
+    : TCPSocket(isBlocking), _isConnected(false), _listenerAddress() {
+  formatPrefix(namePrefix, nameSuffix);
+  setPeerAddress(peer);
 }
 
 ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const State &state)
-    : TCPSocket(state),
-      _isConnected(true),
-      _listenerAddress(state.listeningAddress()),
-      _peerAddress(state.peerAddress()) {
-  memset(_logAddress, 0, sizeof(_logAddress));
-  snprintf(_logAddress, sizeof(_logAddress), "%s-%s", namePrefix, nameSuffix);
+    : TCPSocket(state), _isConnected(true), _listenerAddress(state.listeningAddress()) {
+  formatPrefix(namePrefix, nameSuffix);
+  setPeerAddress(state.peerAddress());
 }
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
 
-const char *ConnectedTCPSocket::name() const {
-  if (!_logAddress[ESB_NAME_PREFIX_SIZE]) {
-    int len = strlen(_logAddress);
-    _peerAddress.logAddress(_logAddress + len, sizeof(_logAddress) - len, _sockFd);
-  }
-  return _logAddress;
-}
+const char *ConnectedTCPSocket::name() const { return _logAddress; }
 
 Error ConnectedTCPSocket::reset(const State &acceptData) {
   Error error = TCPSocket::reset(acceptData);
@@ -75,15 +64,24 @@ Error ConnectedTCPSocket::reset(const State &acceptData) {
 
   _isConnected = true;
   _listenerAddress = acceptData.listeningAddress();
-  _peerAddress = acceptData.peerAddress();
+  setPeerAddress(acceptData.peerAddress());
 
   return ESB_SUCCESS;
 }
 
 void ConnectedTCPSocket::setPeerAddress(const SocketAddress &address) {
-  assert(INVALID_SOCKET == _sockFd);
-
   _peerAddress = address;
+
+  char *p = _logAddress;
+  for (; *p && *p != ':'; ++p) {
+  }
+
+  if (!*p) {
+    return;
+  }
+
+  ++p;
+  _peerAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), _sockFd);
 }
 
 const SocketAddress &ConnectedTCPSocket::peerAddress() const { return _peerAddress; }
@@ -107,6 +105,8 @@ Error ConnectedTCPSocket::connect() {
     return LastError();
   }
 
+  setPeerAddress(_peerAddress);
+
   error = setBlocking(_isBlocking);
 
   if (ESB_SUCCESS != error) {
@@ -120,7 +120,7 @@ Error ConnectedTCPSocket::connect() {
   if (SOCKET_ERROR == ::connect(_sockFd, (sockaddr *)_peerAddress.primitiveAddress(), sizeof(SocketAddress::Address))) {
     error = LastError();
 
-    if (false == _isBlocking) {
+    if (!_isBlocking) {
 #if defined UNIX_NONBLOCKING_CONNECT_ERROR
       if (ESB_INPROGRESS == error) {
         return ESB_SUCCESS;
@@ -248,6 +248,12 @@ int ConnectedTCPSocket::BytesReadable(SOCKET socketDescriptor) {
 #endif
 
   return bytesReadable;
+}
+
+void ConnectedTCPSocket::formatPrefix(const char *namePrefix, const char *nameSuffix) {
+  int desired = snprintf(_logAddress, ESB_NAME_PREFIX_SIZE, "%s-%s:", namePrefix, nameSuffix);
+  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
+  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
 }
 
 }  // namespace ESB

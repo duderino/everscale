@@ -23,15 +23,14 @@ namespace ES {
 #define PARSING_BODY (1 << 2)
 #define SKIPPING_TRAILER (1 << 3)
 #define FORMATTING_HEADERS (1 << 4)
-#define FLUSHING_HEADERS (1 << 5)
-#define FORMATTING_BODY (1 << 6)
-#define FLUSHING_BODY (1 << 7)
-#define TRANSACTION_BEGIN (1 << 8)
-#define TRANSACTION_END (1 << 9)
-#define CANNOT_REUSE_CONNECTION (1 << 10)
-#define RECV_PAUSED (1 << 11)
-#define SEND_PAUSED (1 << 12)
-#define ABORTED (1 << 13)
+#define FORMATTING_BODY (1 << 5)
+#define FLUSHING_BODY (1 << 6)
+#define TRANSACTION_BEGIN (1 << 7)
+#define TRANSACTION_END (1 << 8)
+#define CANNOT_REUSE_CONNECTION (1 << 9)
+#define RECV_PAUSED (1 << 10)
+#define SEND_PAUSED (1 << 11)
+#define ABORTED (1 << 12)
 
 // TODO - max requests per connection option (1 disables keepalives)
 // TODO - max header size option
@@ -101,7 +100,7 @@ bool HttpServerSocket::wantWrite() {
     return false;
   }
 
-  if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS | FORMATTING_BODY | FLUSHING_BODY)) {
+  if (_state & (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY)) {
     return true;
   }
 
@@ -161,9 +160,7 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable, E
     case ESB_SUCCESS:
       if (0U == *bytesAvailable) {
         // Last chunk has been read, send the response
-        ESB_LOG_DEBUG("[%s] finished parsing request body", _socket.name());
-        _state &= ~PARSING_BODY;
-        _state |= FORMATTING_HEADERS;
+        stateTransition(FORMATTING_HEADERS);
         if (ESB_SUCCESS != (error = pauseRecv(true))) {
           abort(true);
           return error;
@@ -247,7 +244,7 @@ ESB::Error HttpServerSocket::handleReadable() {
   if (_state & TRANSACTION_BEGIN) {
     // If we don't fully read the request we can't reuse the socket.  Unset
     // this flag once the request has been fully read.
-    _state |= CANNOT_REUSE_CONNECTION;
+    setFlag(CANNOT_REUSE_CONNECTION);
     _transaction->setPeerAddress(_socket.peerAddress());
 
     switch (error = _handler.beginTransaction(_multiplexer, *this)) {
@@ -262,8 +259,7 @@ ESB::Error HttpServerSocket::handleReadable() {
         return error;  // remove from multiplexer - immediately close
     }
 
-    _state &= ~TRANSACTION_BEGIN;
-    _state |= PARSING_HEADERS;
+    stateTransition(PARSING_HEADERS);
   }
 
   while (!_multiplexer.shutdown()) {
@@ -294,7 +290,7 @@ ESB::Error HttpServerSocket::handleReadable() {
       }
 
       if (!_transaction->request().hasBody()) {
-        _state &= ~CANNOT_REUSE_CONNECTION;
+        unsetFlag(CANNOT_REUSE_CONNECTION);
       }
 
       // TODO - check Expect header and maybe send a 100 Continue
@@ -337,8 +333,7 @@ ESB::Error HttpServerSocket::handleReadable() {
         }
       }
 
-      _state &= ~PARSING_HEADERS;
-      _state |= PARSING_BODY;
+      stateTransition(PARSING_BODY);
     }
 
     if (PARSING_BODY & _state) {
@@ -366,11 +361,6 @@ ESB::Error HttpServerSocket::handleReadable() {
         }
       }
 
-      if (_state & TRANSACTION_END) {
-        // server handler decided to abort
-        return ESB_OTHER_ERROR;  // remove from multiplexer
-      }
-
       if (_state & FORMATTING_HEADERS) {
         // server handler decided to send response before finishing body
         assert(_state & CANNOT_REUSE_CONNECTION);
@@ -395,7 +385,7 @@ ESB::Error HttpServerSocket::handleReadable() {
     // Request has been fully read, so we can reuse the connection, but don't
     // start reading the next request until the response has been fully sent.
 
-    _state &= ~CANNOT_REUSE_CONNECTION;
+    unsetFlag(CANNOT_REUSE_CONNECTION);
     if (ESB_SUCCESS != (error = pauseRecv(false))) {
       return error;  // remove from multiplexer
     }
@@ -536,26 +526,6 @@ ESB::Error HttpServerSocket::handleWritable() {
       }
     }
 
-    if (FLUSHING_HEADERS & _state) {
-      switch (error = flushSendBuffer()) {
-        case ESB_SUCCESS:
-          break;
-        case ESB_AGAIN:
-          return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
-          // writable
-        default:
-          return error;  // remove from multiplexer
-      }
-
-      _state &= ~FLUSHING_HEADERS;
-
-      if (_transaction->response().hasBody()) {
-        _state |= FORMATTING_BODY;
-      } else {
-        _state |= TRANSACTION_END;
-      }
-    }
-
     if (FORMATTING_BODY & _state) {
       error = formatResponseBody();
 
@@ -601,8 +571,7 @@ ESB::Error HttpServerSocket::handleWritable() {
           return error;  // remove from multiplexer
       }
 
-      _state &= ~FLUSHING_BODY;
-      _state |= TRANSACTION_END;
+      stateTransition(TRANSACTION_END);
     }
 
     assert(_state & TRANSACTION_END);
@@ -632,7 +601,7 @@ ESB::Error HttpServerSocket::handleWritable() {
 
     // TODO release buffers in between transactions
 
-    _state = TRANSACTION_BEGIN;
+    stateTransition(TRANSACTION_BEGIN);
     _bodyBytesWritten = 0;
     _transaction->reset();
     return handleReadable();
@@ -682,7 +651,7 @@ bool HttpServerSocket::handleRemove() {
   } else if (_state & PARSING_BODY) {
     assert(_transaction);
     _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY);
-  } else if (_state & (FORMATTING_HEADERS | FLUSHING_HEADERS)) {
+  } else if (_state & FORMATTING_HEADERS) {
     assert(_transaction);
     _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS);
   } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
@@ -695,7 +664,7 @@ bool HttpServerSocket::handleRemove() {
     _transaction = NULL;
   }
 
-  _state = HAS_BEEN_REMOVED;
+  stateTransition(HAS_BEEN_REMOVED);
   _counters.getAverageTransactionsPerConnection()->add(_requestsPerConnection);
   _requestsPerConnection = 0;
 
@@ -790,8 +759,7 @@ ESB::Error HttpServerSocket::parseRequestBody() {
       switch (error = _handler.consumeRequestBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
         case ESB_SUCCESS:
         case ESB_SEND_RESPONSE:
-          _state |= SKIPPING_TRAILER;
-          _state &= ~PARSING_BODY;
+          stateTransition(SKIPPING_TRAILER);
           assert(wantRead());
           return ESB_SUCCESS;
         case ESB_PAUSE:
@@ -802,7 +770,6 @@ ESB::Error HttpServerSocket::parseRequestBody() {
           return ESB_PAUSE;
         default:
           ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection after last request body chunk", _socket.name());
-          _state |= TRANSACTION_END;
           return error;
       }
     }
@@ -828,14 +795,11 @@ ESB::Error HttpServerSocket::parseRequestBody() {
         return ESB_PAUSE;
       case ESB_SEND_RESPONSE:
         ESB_LOG_DEBUG("[%s] handler sending response before last request body chunk", _socket.name());
-        _state &= ~PARSING_BODY;
-        _state |= FORMATTING_HEADERS;
+        stateTransition(FORMATTING_HEADERS);
         return ESB_SUCCESS;
       default:
         ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection before last request body chunk", _socket.name());
-        _state &= ~PARSING_BODY;
-        _state |= TRANSACTION_END;
-        return ESB_SUCCESS;
+        return error;
     }
 
     error = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
@@ -888,8 +852,7 @@ ESB::Error HttpServerSocket::formatResponseHeaders() {
 
   ESB_LOG_DEBUG("[%s] formatted response headers", _socket.name());
 
-  _state &= ~FORMATTING_HEADERS;
-  _state |= FORMATTING_BODY;
+  stateTransition(FORMATTING_BODY);
 
   return ESB_SUCCESS;
 }
@@ -1062,8 +1025,9 @@ ESB::Error HttpServerSocket::sendResponse() {
 
   ESB_LOG_DEBUG("[%s] sending response: %d %s", _socket.name(), _transaction->response().statusCode(),
                 _transaction->response().reasonPhrase());
-  _state &= ~(TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY);
-  _state |= FORMATTING_HEADERS;
+  if (!(FORMATTING_HEADERS & _state)) {
+    stateTransition(FORMATTING_HEADERS);
+  }
   return handleWritable();
 }
 
@@ -1097,8 +1061,7 @@ ESB::Error HttpServerSocket::sendInternalServerErrorResponse() {
     }
   }
 
-  _state &= ~(TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY);
-  _state |= FORMATTING_HEADERS;
+  stateTransition(FORMATTING_HEADERS);
 
   ESB_LOG_DEBUG("[%s] sending response: %d %s", _socket.name(), _transaction->response().statusCode(),
                 _transaction->response().reasonPhrase());
@@ -1116,7 +1079,7 @@ ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] server connection aborted", _socket.name());
 
-  _state |= ABORTED;
+  setFlag(ABORTED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().removeMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1141,7 +1104,7 @@ ESB::Error HttpServerSocket::pauseRecv(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] pausing server request receive", _socket.name());
 
-  _state |= RECV_PAUSED;
+  setFlag(RECV_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1163,7 +1126,7 @@ ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] resuming server request receive", _socket.name());
 
-  _state &= ~RECV_PAUSED;
+  unsetFlag(RECV_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1188,7 +1151,7 @@ ESB::Error HttpServerSocket::pauseSend(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] pausing server response send", _socket.name());
 
-  _state |= SEND_PAUSED;
+  setFlag(SEND_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1210,7 +1173,7 @@ ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] resuming server request send", _socket.name());
 
-  _state &= ~SEND_PAUSED;
+  unsetFlag(SEND_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1295,8 +1258,7 @@ ESB::Error HttpServerSocket::formatEndBody() {
   switch (error) {
     case ESB_SUCCESS:
       ESB_LOG_DEBUG("[%s] finished formatting response body", _socket.name());
-      _state &= ~FORMATTING_BODY;
-      _state |= FLUSHING_BODY;
+      stateTransition(FLUSHING_BODY);
       return ESB_SUCCESS;
     case ESB_AGAIN:
       ESB_LOG_DEBUG("[%s] insufficient space in send buffer to format end body", _socket.name());
@@ -1308,5 +1270,90 @@ ESB::Error HttpServerSocket::formatEndBody() {
 }
 
 const char *HttpServerSocket::name() const { return _socket.name(); }
+
+void HttpServerSocket::setFlag(int flag) {
+  assert(flag & flagMask());
+  assert(!(flag & stateMask()));
+  _state |= flag;
+}
+
+void HttpServerSocket::unsetFlag(int flag) {
+  assert(flag & flagMask());
+  assert(!(flag & stateMask()));
+  _state &= ~flag;
+}
+
+void HttpServerSocket::stateTransition(int state) {
+  assert(state & stateMask());
+  assert(!(state & flagMask()));
+
+  switch (state) {
+    case HAS_BEEN_REMOVED:
+      assert(!(_state & HAS_BEEN_REMOVED));
+      _state = HAS_BEEN_REMOVED;
+      ESB_LOG_DEBUG("[%s] connection removed", _socket.name());
+      break;
+    case PARSING_HEADERS:
+      assert(_state & TRANSACTION_BEGIN);
+      _state &= ~TRANSACTION_BEGIN;
+      _state |= PARSING_HEADERS;
+      ESB_LOG_DEBUG("[%s] parsing headers", _socket.name());
+      break;
+    case PARSING_BODY:
+      assert(_state & PARSING_HEADERS);
+      _state &= ~PARSING_HEADERS;
+      _state |= PARSING_BODY;
+      ESB_LOG_DEBUG("[%s] parsing body", _socket.name());
+      break;
+    case SKIPPING_TRAILER:
+      assert(_state & PARSING_BODY);
+      _state &= ~PARSING_BODY;
+      _state |= SKIPPING_TRAILER;
+      ESB_LOG_DEBUG("[%s] skipping trailer", _socket.name());
+      break;
+    case FORMATTING_HEADERS:
+      assert(_state & (TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER));
+      _state &= ~(TRANSACTION_BEGIN | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER);
+      _state |= FORMATTING_HEADERS;
+      ESB_LOG_DEBUG("[%s] formatting headers", _socket.name());
+      break;
+    case FORMATTING_BODY:
+      assert(_state & FORMATTING_HEADERS);
+      _state &= ~FORMATTING_HEADERS;
+      _state |= FORMATTING_BODY;
+      ESB_LOG_DEBUG("[%s] formatting body", _socket.name());
+      break;
+    case FLUSHING_BODY:
+      assert(_state & FORMATTING_BODY);
+      _state &= ~FORMATTING_BODY;
+      _state |= FLUSHING_BODY;
+      ESB_LOG_DEBUG("[%s] flushing body", _socket.name());
+      break;
+    case TRANSACTION_BEGIN:
+      assert(_state & TRANSACTION_END);
+      _state &= ~TRANSACTION_END;
+      _state |= TRANSACTION_BEGIN;
+      ESB_LOG_DEBUG("[%s] transaction begun", _socket.name());
+      break;
+    case TRANSACTION_END:
+      assert(_state & FLUSHING_BODY);
+      _state &= ~FLUSHING_BODY;
+      _state |= TRANSACTION_END;
+      ESB_LOG_DEBUG("[%s] transaction complete", _socket.name());
+      break;
+    default:
+      assert(0 == "Cannot transition into unknown state");
+  }
+}
+
+int HttpServerSocket::stateMask() {
+  return (HAS_BEEN_REMOVED | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER | FORMATTING_HEADERS | FORMATTING_BODY |
+          FLUSHING_BODY | TRANSACTION_BEGIN | TRANSACTION_END);
+}
+
+int HttpServerSocket::flagMask() {
+  return ~(HAS_BEEN_REMOVED | PARSING_HEADERS | PARSING_BODY | SKIPPING_TRAILER | FORMATTING_HEADERS | FORMATTING_BODY |
+           FLUSHING_BODY | TRANSACTION_BEGIN | TRANSACTION_END);
+}
 
 }  // namespace ES

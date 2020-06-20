@@ -450,11 +450,11 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
         if (_events[i].events & EPOLLERR) {
           ESB::Error error = TCPSocket::LastSocketError(fd);
-          ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket error", socket->name());
+          ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket got error", socket->name());
           keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLIN) {
           while (keepInMultiplexer) {
-            ESB_LOG_DEBUG("[%s] listening socket accept event", socket->name());
+            ESB_LOG_DEBUG("[%s] listening socket got accept event", socket->name());
             ESB::Error error = socket->handleAccept();
             if (ESB_AGAIN == error) {
               continue;
@@ -466,7 +466,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
             }
           }
         } else {
-          ESB_LOG_WARNING("[%s] listening socket unknown event %d", socket->name(), _events[i].events);
+          ESB_LOG_WARNING("[%s] listening socket got unknown event %d", socket->name(), _events[i].events);
         }
       }
 
@@ -488,20 +488,20 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
         if (_events[i].events & EPOLLERR) {
           ESB::Error error = TCPSocket::LastSocketError(fd);
-          ESB_LOG_INFO_ERRNO(error, "[%s] connecting socket error", socket->name());
+          ESB_LOG_INFO_ERRNO(error, "[%s] connecting socket got error", socket->name());
           keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLHUP) {
-          ESB_LOG_INFO("[%s] connected socket remote close", socket->name());
+          ESB_LOG_INFO("[%s] connected socket got remote close", socket->name());
           keepInMultiplexer = socket->handleRemoteClose();
         } else if (_events[i].events & EPOLLIN) {
           int bytesReadable = ConnectedTCPSocket::BytesReadable(fd);
 
           if (0 > bytesReadable) {
             ESB::Error error = TCPSocket::LastSocketError(fd);
-            ESB_LOG_INFO_ERRNO(error, "[%s] connecting socket error", socket->name());
+            ESB_LOG_INFO_ERRNO(error, "[%s] connecting socket got error", socket->name());
             keepInMultiplexer = socket->handleError(error);
           } else if (0 == bytesReadable) {
-            ESB_LOG_INFO("[%s] connecting socket remote close", socket->name());
+            ESB_LOG_INFO("[%s] connecting socket got remote close", socket->name());
             keepInMultiplexer = socket->handleRemoteClose();
           } else {
             ESB_LOG_INFO("[%s] socket connected", socket->name());
@@ -525,7 +525,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
               keepInMultiplexer = false;
           }
         } else {
-          ESB_LOG_WARNING("[%s] connecting socket unknown event %d", socket->name(), _events[i].events);
+          ESB_LOG_WARNING("[%s] connecting socket got unknown event %d", socket->name(), _events[i].events);
         }
       }
 
@@ -550,15 +550,15 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
         if (_events[i].events & EPOLLERR) {
           ESB::Error error = TCPSocket::LastSocketError(fd);
-          ESB_LOG_INFO_ERRNO(error, "[%s] connected socket error", socket->name());
+          ESB_LOG_INFO_ERRNO(error, "[%s] connected socket got error", socket->name());
           keepInMultiplexer = socket->handleError(error);
         } else if (_events[i].events & EPOLLHUP) {
-          ESB_LOG_INFO("[%s] connected socket remote close", socket->name());
+          ESB_LOG_INFO("[%s] connected socket got remote close", socket->name());
           keepInMultiplexer = socket->handleRemoteClose();
         } else {
           // TODO consider swapping these - drain first, then fill.
           if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
-            ESB_LOG_DEBUG("[%s] connected socket read event", socket->name());
+            ESB_LOG_DEBUG("[%s] connected socket got read event", socket->name());
             switch (socket->handleReadable()) {
               case ESB_SUCCESS:
               case ESB_AGAIN:
@@ -570,7 +570,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           }
 
           if (keepInMultiplexer && socket->wantWrite() && (_events[i].events & EPOLLOUT)) {
-            ESB_LOG_DEBUG("[%s] connected socket write event", socket->name());
+            ESB_LOG_DEBUG("[%s] connected socket got write event", socket->name());
             switch (socket->handleWritable()) {
               case ESB_SUCCESS:
               case ESB_AGAIN:

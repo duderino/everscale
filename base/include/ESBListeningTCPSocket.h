@@ -148,6 +148,8 @@ class ListeningTCPSocket : public TCPSocket {
   ListeningTCPSocket(const ListeningTCPSocket &socket);
   ListeningTCPSocket &operator=(const ListeningTCPSocket &socket);
 
+  void formatPrefix(const char *namePrefix);
+
   int _backlog;
   SocketState _state;
   SocketAddress _listeningAddress;

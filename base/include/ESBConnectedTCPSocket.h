@@ -217,6 +217,8 @@ class ConnectedTCPSocket : public TCPSocket {
   ConnectedTCPSocket(const ConnectedTCPSocket &);
   ConnectedTCPSocket &operator=(const ConnectedTCPSocket &);
 
+  void formatPrefix(const char *namePrefix, const char *nameSuffix);
+
   bool _isConnected;
   SocketAddress _listenerAddress;
   SocketAddress _peerAddress;

@@ -139,8 +139,8 @@ void SocketAddress::logAddress(char *address, int size, int fd) const {
   char buffer[ESB_IPV6_PRESENTATION_SIZE];
   presentationAddress(buffer, sizeof(buffer));
 
-  snprintf(address, size, ":%s:%u,%d", buffer, port(), fd);
-  address[ESB_LOG_ADDRESS_SIZE - 1] = 0;
+  snprintf(address, size, "%s:%u,%d", buffer, port(), fd);
+  address[ESB_LOG_ADDRESS_SIZE - ESB_NAME_PREFIX_SIZE - 1] = 0;
 }
 
 UInt16 SocketAddress::port() const {

@@ -26,23 +26,20 @@ namespace ESB {
 
 ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix)
     : TCPSocket(), _backlog(42), _state(SocketState::CLOSED), _listeningAddress() {
-  memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  formatPrefix(namePrefix);
 }
 
 ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix, UInt16 port, int backlog, bool isBlocking)
     : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress() {
   _listeningAddress.setPort(port);
   _listeningAddress.setType(SocketAddress::TCP);
-  memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  formatPrefix(namePrefix);
 }
 
 ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix, const SocketAddress &address, int backlog,
                                        bool isBlocking)
     : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress(address) {
-  memset(_logAddress, 0, sizeof(_logAddress));
-  strncpy(_logAddress, namePrefix, ESB_NAME_PREFIX_SIZE);
+  formatPrefix(namePrefix);
 }
 
 ListeningTCPSocket::~ListeningTCPSocket() {}
@@ -58,7 +55,6 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
   _isBlocking = socket._isBlocking;
   _backlog = socket._backlog;
   _listeningAddress = socket._listeningAddress;
-  memcpy(_logAddress, socket._logAddress, sizeof(_logAddress));
 
 #ifdef HAVE_SO_REUSEPORT
   Error error = bind();
@@ -87,7 +83,20 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
 #error "dup() or equivalent is required"
 #endif
 
-  ESB_LOG_NOTICE("[%s] duplicated listening socket on port %u with fd %d", name(), _listeningAddress.port(), _sockFd);
+  const char *p = socket._logAddress;
+  char *q = _logAddress;
+  for (; *p && *p != ':'; ++p, ++q) {
+    *q = *p;
+  }
+
+  if (*p == ':') {
+    *q++ = ':';
+    _listeningAddress.logAddress(q, sizeof(_logAddress) - (q - _logAddress), _sockFd);
+  } else {
+    *q = 0;
+  }
+
+  ESB_LOG_NOTICE("[%s] duplicated listening socket on port %u", name(), _listeningAddress.port());
 
   return ESB_SUCCESS;
 }
@@ -250,5 +259,11 @@ Error ListeningTCPSocket::accept(State *data) {
 const SocketAddress &ListeningTCPSocket::listeningAddress() const { return _listeningAddress; }
 
 const char *ListeningTCPSocket::name() const { return _logAddress; }
+
+void ListeningTCPSocket::formatPrefix(const char *namePrefix) {
+  int desired = snprintf(_logAddress, ESB_NAME_PREFIX_SIZE, "%s:", namePrefix);
+  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
+  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
+}
 
 }  // namespace ESB

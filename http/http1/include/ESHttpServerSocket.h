@@ -144,6 +144,12 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpServerStream 
   HttpServerSocket(const HttpServerSocket &);
   HttpServerSocket &operator=(const HttpServerSocket &);
 
+  int stateMask();
+  int flagMask();
+  void stateTransition(int state);
+  void setFlag(int flag);
+  void unsetFlag(int flag);
+
   ESB::Error parseRequestHeaders();
   ESB::Error parseRequestBody();
   ESB::Error skipTrailer();
