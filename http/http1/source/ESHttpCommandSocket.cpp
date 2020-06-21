@@ -101,20 +101,13 @@ ESB::Error HttpCommandSocket::handleWritable() {
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-bool HttpCommandSocket::handleError(ESB::Error errorCode) {
+void HttpCommandSocket::handleError(ESB::Error errorCode) {
   ESB_LOG_ERROR_ERRNO(errorCode, "[%s] command socket had error: %d", _name, errorCode);
-  return false;  // remove from multiplexer
 }
 
-bool HttpCommandSocket::handleRemoteClose() {
-  ESB_LOG_ERROR("[%s] command sockets cannot handle remote close", _name);
-  return true;  // keep in multiplexer
-}
+void HttpCommandSocket::handleRemoteClose() { ESB_LOG_ERROR("[%s] command sockets cannot handle remote close", _name); }
 
-bool HttpCommandSocket::handleIdle() {
-  ESB_LOG_ERROR("[%s] command sockets cannot handle idle event", _name);
-  return true;  // keep in multiplexer
-}
+void HttpCommandSocket::handleIdle() { ESB_LOG_ERROR("[%s] command sockets cannot handle idle event", _name); }
 
 bool HttpCommandSocket::handleRemove() {
   ESB_LOG_NOTICE("[%s] command socket removed from multiplexer", _name);

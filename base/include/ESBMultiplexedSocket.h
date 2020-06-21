@@ -83,9 +83,9 @@ class MultiplexedSocket : public EmbeddedMapElement {
 
   /** Client connected socket has connected to the peer endpoint.
    *
-   * @return ESB_SUCCESS to keep the socket in the multiplexer.  Any other
+   * @return ESB_AGAIN to keep the socket in the multiplexer.  Any other
    * return value will make the multiplexer remove the socket and then call
-   * handleRemove().
+   * handleRemove() with the return code
    * @see handleRemove which should perform necessary cleanup, including
    * possibly closing the socket descriptor.
    */
@@ -93,9 +93,9 @@ class MultiplexedSocket : public EmbeddedMapElement {
 
   /** Data is ready to be read.
    *
-   * @return ESB_SUCCESS to keep the socket in the multiplexer.  Any other
+   * @return ESB_AGAIN to keep the socket in the multiplexer.  Any other
    * return value will make the multiplexer remove the socket and then call
-   * handleRemove().
+   * handleRemove() with the return code
    * @see handleRemove which should perform necessary cleanup, including
    * possibly closing the socket descriptor.
    */
@@ -103,9 +103,9 @@ class MultiplexedSocket : public EmbeddedMapElement {
 
   /** There is free space in the outgoing socket buffer.
    *
-   * @return ESB_SUCCESS to keep the socket in the multiplexer.  Any other
+   * @return ESB_AGAIN to keep the socket in the multiplexer.  Any other
    * return value will make the multiplexer remove the socket and then call
-   * handleRemove().
+   * handleRemove() with the return code
    * @see handleRemove which should perform necessary cleanup, including
    * possibly closing the socket descriptor.
    */
@@ -115,30 +115,24 @@ class MultiplexedSocket : public EmbeddedMapElement {
    * error code should be retrieved from the socket itself.
    *
    * @param error The error code.
-   * @return true to keep the socket in the multiplexer, false to make the
-   * multiplexer remove the socket and then call handleRemove().
    * @see handleRemove which should perform necessary cleanup, including
    * possibly closing the socket descriptor.
    */
-  virtual bool handleError(Error error) = 0;
+  virtual void handleError(Error error) = 0;
 
   /** The socket's connection was closed by the remote peer.
    *
-   * @return true to keep the socket in the multiplexer, false to make the
-   * multiplexer remove the socket and then call handleRemove().
    * @see handleRemove which should perform necessary cleanup, including
    * possibly closing the socket descriptor.
    */
-  virtual bool handleRemoteClose() = 0;
+  virtual void handleRemoteClose() = 0;
 
   /** The socket's connection has been idle for too long
    *
-   * @return true to keep the socket in the multiplexer, false to make the
-   * multiplexer remove the socket and then call handleRemove().
    * @see handleRemove which should perform necessary cleanup, including
    * possibly closing the socket descriptor.
    */
-  virtual bool handleIdle() = 0;
+  virtual void handleIdle() = 0;
 
   /** The socket has been removed from the multiplexer
    *

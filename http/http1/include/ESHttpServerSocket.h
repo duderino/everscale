@@ -84,11 +84,11 @@ class HttpServerSocket : public ESB::MultiplexedSocket, public HttpServerStream 
 
   virtual ESB::Error handleWritable();
 
-  virtual bool handleError(ESB::Error errorCode);
+  virtual void handleError(ESB::Error errorCode);
 
-  virtual bool handleRemoteClose();
+  virtual void handleRemoteClose();
 
-  virtual bool handleIdle();
+  virtual void handleIdle();
 
   virtual bool handleRemove();
 

@@ -96,20 +96,13 @@ ESB::Error HttpListeningSocket::handleWritable() {
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-bool HttpListeningSocket::handleError(ESB::Error error) {
+void HttpListeningSocket::handleError(ESB::Error error) {
   ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket error", _socket.name());
-  return true;
 }
 
-bool HttpListeningSocket::handleRemoteClose() {
-  ESB_LOG_ERROR("[%s] Cannot handle eof events", _socket.name());
-  return true;
-}
+void HttpListeningSocket::handleRemoteClose() { ESB_LOG_ERROR("[%s] Cannot handle eof events", _socket.name()); }
 
-bool HttpListeningSocket::handleIdle() {
-  ESB_LOG_ERROR("[%s] Cannot handle idle events", _socket.name());
-  return true;
-}
+void HttpListeningSocket::handleIdle() { ESB_LOG_ERROR("[%s] Cannot handle idle events", _socket.name()); }
 
 bool HttpListeningSocket::handleRemove() {
   ESB_LOG_INFO("[%s] Removed from multiplexer", _socket.name());

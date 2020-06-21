@@ -248,5 +248,18 @@ int main () {
 check_include_file("sys/eventfd.h" HAVE_SYS_EVENTFD_H)
 check_symbol_exists(eventfd "sys/eventfd.h" HAVE_EVENTFD)
 
+check_cxx_source_compiles("
+#define likely(expr) __builtin_expect(!!(expr),1)
+#define unlikely(expr) __builtin_expect(!!(expr),0)
+int main () {
+    if (likely(true)) {
+        return 0;
+    }
+    if (unlikely(false)) {
+        return 1;
+    }
+    return 0;
+}" HAVE_BUILTIN_EXPECT)
+
 configure_file(config.h.in base/include/ESBConfig.h @ONLY)
 configure_file(config.h.in unit-tf/include/ESTFConfig.h @ONLY)

@@ -242,8 +242,8 @@ ESB::Error HttpServerSocket::handleReadable() {
   ESB::Error error = ESB_SUCCESS;
 
   if (_state & TRANSACTION_BEGIN) {
-    // If we don't fully read the request we can't reuse the socket.  Unset
-    // this flag once the request has been fully read.
+    // If we don't fully read the request we can't reuse the socket.  Unset this flag once the request has been fully
+    // read.
     setFlag(CANNOT_REUSE_CONNECTION);
     _transaction->setPeerAddress(_socket.peerAddress());
 
@@ -251,12 +251,12 @@ ESB::Error HttpServerSocket::handleReadable() {
       case ESB_SUCCESS:
         break;
       case ESB_AGAIN:
-        return ESB_AGAIN;  // keep in multiplexer
+        return ESB_AGAIN;
       case ESB_SEND_RESPONSE:
         return sendResponse();
       default:
         ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted connection", _socket.name());
-        return error;  // remove from multiplexer - immediately close
+        return error;
     }
 
     conditionalStateTransition(TRANSACTION_BEGIN, PARSING_HEADERS);
@@ -267,11 +267,13 @@ ESB::Error HttpServerSocket::handleReadable() {
       case ESB_SUCCESS:
         break;
       case ESB_AGAIN:
-        return ESB_AGAIN;  // keep in multiplexer
+        return ESB_AGAIN;
       case ESB_CLOSED:
-        return handleRemoteClose() ? ESB_SUCCESS : ESB_CLOSED;
+        handleRemoteClose();
+        return ESB_CLOSED;
       default:
-        return handleError(error) ? ESB_SUCCESS : error;
+        handleError(error);
+        return error;
     }
 
     if (PARSING_HEADERS & _state) {
@@ -301,15 +303,14 @@ ESB::Error HttpServerSocket::handleReadable() {
         case ESB_PAUSE:
         case ESB_AGAIN:
           if (ESB_SUCCESS != (error = pauseRecv(false))) {
-            return error;  // remove from multiplexer
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
           }
-          return ESB_SUCCESS;  // keep in multiplexer but remove from read
-                               // interest set
+          return ESB_AGAIN;
         case ESB_SEND_RESPONSE:
           return sendResponse();
         default:
           ESB_LOG_DEBUG_ERRNO(error, "[%s] Server request header handler aborting connection", _socket.name());
-          return error;  // remove from multiplexer
+          return error;
       }
 
       if (!_transaction->request().hasBody()) {
@@ -323,13 +324,12 @@ ESB::Error HttpServerSocket::handleReadable() {
           case ESB_PAUSE:
           case ESB_AGAIN:
             if (ESB_SUCCESS != (error = pauseRecv(false))) {
-              return error;  // remove from multiplexer
+              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
             }
-            return ESB_SUCCESS;  // keep in multiplexer but remove from read
-                                 // interest set
+            return ESB_AGAIN;
           default:
             ESB_LOG_DEBUG_ERRNO(error, "[%s] server body handler aborted connection", _socket.name());
-            return error;  // remove from multiplexer
+            return error;
         }
       }
 
@@ -349,8 +349,7 @@ ESB::Error HttpServerSocket::handleReadable() {
       }
 
       if (ESB_PAUSE == error) {
-        return ESB_SUCCESS;  // keep in multiplexer but remove from read
-                             // interest set
+        return ESB_AGAIN;
       }
 
       if (ESB_SUCCESS != error) {
@@ -375,11 +374,11 @@ ESB::Error HttpServerSocket::handleReadable() {
       error = skipTrailer();
 
       if (ESB_AGAIN == error) {
-        continue;  // read more data and repeat parse
+        continue;
       }
 
       if (ESB_SUCCESS != error) {
-        return error;  // remove from multiplexer
+        return error;
       }
 
       // Request has been fully read, so we can reuse the connection, but don't
@@ -387,7 +386,7 @@ ESB::Error HttpServerSocket::handleReadable() {
 
       unsetFlag(CANNOT_REUSE_CONNECTION);
       if (ESB_SUCCESS != (error = pauseRecv(false))) {
-        return error;  // remove from multiplexer
+        return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
       }
     }
 
@@ -514,10 +513,9 @@ ESB::Error HttpServerSocket::handleWritable() {
           case ESB_SUCCESS:
             break;
           case ESB_AGAIN:
-            return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
-            // writable
+            return ESB_AGAIN;
           default:
-            return error;  // remove from multiplexer
+            return error;
         }
         continue;
       }
@@ -539,21 +537,19 @@ ESB::Error HttpServerSocket::handleWritable() {
           case ESB_SUCCESS:
             break;
           case ESB_AGAIN:
-            return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
-            // writable
+            return ESB_AGAIN;
           default:
-            return error;  // remove from multiplexer
+            return error;
         }
         continue;
       }
 
       if (ESB_PAUSE == error) {
-        return ESB_SUCCESS;  // keep in multiplexer but remove from write
-                             // interest set
+        return ESB_AGAIN;
       }
 
       if (ESB_SUCCESS != error) {
-        return error;  // remove from multiplexer;
+        return error;
       }
 
       if (FORMATTING_BODY & _state) {
@@ -566,8 +562,7 @@ ESB::Error HttpServerSocket::handleWritable() {
         case ESB_SUCCESS:
           break;
         case ESB_AGAIN:
-          return ESB_AGAIN;  // keep in multiplexer, wait for socket to become
-          // writable
+          return ESB_AGAIN;
         default:
           return error;  // remove from multiplexer
       }
@@ -581,23 +576,23 @@ ESB::Error HttpServerSocket::handleWritable() {
     _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_END);
 
     if (CANNOT_REUSE_CONNECTION & _state) {
-      return ESB_CLEANUP;  // remove from multiplexer
+      return ESB_SUCCESS;
     }
 
     if (CloseAfterErrorResponse && 300 <= _transaction->response().statusCode()) {
-      return ESB_CLEANUP;  // remove from multiplexer
+      return ESB_CLEANUP;
     }
 
     // TODO - close connection if max requests sent on connection
 
     if (!_transaction->request().reuseConnection()) {
-      return ESB_CLEANUP;  // remove from multiplexer
+      return ESB_SUCCESS;
     }
 
     // Resume receiving and immediately start processing the next request.
 
     if (ESB_SUCCESS != (error = resumeRecv(false))) {
-      return error;  // remove from multiplexer
+      return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
     }
 
     // TODO release buffers in between transactions
@@ -612,24 +607,21 @@ ESB::Error HttpServerSocket::handleWritable() {
   return ESB_SHUTDOWN;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleError(ESB::Error error) {
+void HttpServerSocket::handleError(ESB::Error error) {
   assert(!(HAS_BEEN_REMOVED & _state));
   ESB_LOG_INFO_ERRNO(error, "[%s] socket error", _socket.name());
-  return false;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleRemoteClose() {
+void HttpServerSocket::handleRemoteClose() {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
   assert(!(HAS_BEEN_REMOVED & _state));
   ESB_LOG_INFO("[%s] remote client closed socket", _socket.name());
-  return false;  // remove from multiplexer
 }
 
-bool HttpServerSocket::handleIdle() {
+void HttpServerSocket::handleIdle() {
   assert(!(HAS_BEEN_REMOVED & _state));
   ESB_LOG_INFO("[%s] client is idle", _socket.name());
-  return false;  // remove from multiplexer
 }
 
 bool HttpServerSocket::handleRemove() {

@@ -94,8 +94,7 @@ class HttpClientHandler {
    * @param multiplexer An API for the thread's multiplexer
    * @param clientStream The client stream, including request and response objects.
    * @return ESB_SUCCESS if successful, another error code otherwise.  Any
-   * return value other than ESB_SUCCESS and ESB_AGAIN will abort the current
-   * transaction.
+   * return value other than ESB_SUCCESS will abort the current transaction.
    */
   virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) = 0;
 

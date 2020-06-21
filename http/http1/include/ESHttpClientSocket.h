@@ -95,11 +95,11 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
 
   virtual ESB::Error handleWritable();
 
-  virtual bool handleError(ESB::Error errorCode);
+  virtual void handleError(ESB::Error errorCode);
 
-  virtual bool handleRemoteClose();
+  virtual void handleRemoteClose();
 
-  virtual bool handleIdle();
+  virtual void handleIdle();
 
   virtual bool handleRemove();
 
@@ -176,10 +176,26 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
     }
   }
 
-  ESB::Error parseResponseHeaders();
-  ESB::Error parseResponseBody();
-  ESB::Error formatRequestHeaders();
-  ESB::Error formatRequestBody();
+  /**
+   * Advance the socket's state machine until it finishes, needs more data (ESB_AGAIN), or becomes application limited
+   * (ESB_PAUSE).
+   *
+   * @param fillRecvBuffer If true, fill the receive buffer before executing the state machine
+   * @param drainSendBuffer If true, drain the send buffer before executing the state machine
+   * @return ESB_SUCCESS if the state machine finishes, ESB_AGAIN if the state machine needs more data from the socket,
+   * ESB_PAUSE if the state machine needs more data from the application (e.g., a different socket), or another error
+   * code if the state machine encountered a terminal error.  Terminal errors should generally be handled by closing the
+   * connection.
+   */
+  ESB::Error advanceStateMachine(bool fillRecvBuffer, bool drainSendBuffer);
+  ESB::Error stateBeginTransaction();
+  ESB::Error stateSendRequestHeaders();
+  ESB::Error stateSendRequestBody();
+  ESB::Error stateFlushRequestBody();
+  ESB::Error stateReceiveResponseHeaders();
+  ESB::Error stateReceiveResponseBody();
+  ESB::Error stateEndTransaction();
+
   ESB::Error formatRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
   ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
   ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);
