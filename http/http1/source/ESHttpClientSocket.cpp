@@ -20,16 +20,15 @@
 #define CONNECTING (1 << 1)
 #define TRANSACTION_BEGIN (1 << 2)
 #define FORMATTING_HEADERS (1 << 3)
-#define FORMATTING_BODY (1 << 5)
-#define FLUSHING_BODY (1 << 6)
-#define PARSING_HEADERS (1 << 7)
-#define PARSING_BODY (1 << 8)
-#define TRANSACTION_END (1 << 9)
-#define RETRY_STALE_CONNECTION (1 << 10)
-#define FIRST_USE_AFTER_REUSE (1 << 11)
-#define RECV_PAUSED (1 << 12)
-#define SEND_PAUSED (1 << 13)
-#define ABORTED (1 << 14)
+#define FORMATTING_BODY (1 << 4)
+#define FLUSHING_BODY (1 << 5)
+#define PARSING_HEADERS (1 << 6)
+#define PARSING_BODY (1 << 7)
+#define TRANSACTION_END (1 << 8)
+#define FIRST_USE_AFTER_REUSE (1 << 9)
+#define RECV_PAUSED (1 << 10)
+#define SEND_PAUSED (1 << 11)
+#define ABORTED (1 << 12)
 
 // TODO - max requests per connection option (1 disables keepalives)
 // TODO - max header size option
@@ -241,7 +240,7 @@ ESB::Error HttpClientSocket::handleReadable() {
     return ESB_INVALID_STATE;
   }
 
-  return advanceStateMachine(true, false);
+  return advanceStateMachine(true);
 }
 
 ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
@@ -378,110 +377,7 @@ ESB::Error HttpClientSocket::handleWritable() {
     return ESB_INVALID_STATE;
   }
 
-  if (!_sendBuffer) {
-    _sendBuffer = _multiplexer.acquireBuffer();
-    if (!_sendBuffer) {
-      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
-      return ESB_OUT_OF_MEMORY;
-    }
-  }
-
-  ESB::Error error = ESB_SUCCESS;
-
-  if (_state & TRANSACTION_BEGIN) {
-    // TODO make connection reuse more configurable
-    if (!HttpClientSocket::GetReuseConnections() && !_transaction->request().findHeader("Connection")) {
-      error = _transaction->request().addHeader("Connection", "close", _transaction->allocator());
-
-      if (ESB_SUCCESS != error) {
-        ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header", _socket.name());
-        return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-      }
-    }
-
-    // TODO add user agent, etc headers
-
-    stateTransition(FORMATTING_HEADERS);
-  }
-
-  while (!_multiplexer.shutdown()) {
-    if (FORMATTING_HEADERS & _state) {
-      error = stateSendRequestHeaders();
-
-      if (unlikely(ESB_AGAIN == error)) {
-        switch (error = flushSendBuffer()) {
-          case ESB_SUCCESS:
-            break;
-          case ESB_AGAIN:
-            return ESB_AGAIN;
-          default:
-            return error;
-        }
-        continue;
-      }
-
-      if (unlikely(ESB_SUCCESS != error)) {
-        return error;
-      }
-    }
-
-    if (FORMATTING_BODY & _state) {
-      error = stateSendRequestBody();
-
-      if (ESB_SHUTDOWN == error) {
-        continue;
-      }
-
-      if (ESB_AGAIN == error) {
-        switch (error = flushSendBuffer()) {
-          case ESB_SUCCESS:
-            break;
-          case ESB_AGAIN:
-            return ESB_AGAIN;
-          default:
-            return error;
-        }
-        continue;
-      }
-
-      if (ESB_PAUSE == error) {
-        return ESB_AGAIN;
-      }
-
-      if (ESB_SUCCESS != error) {
-        return error;
-      }
-
-      if (FORMATTING_BODY & _state) {
-        continue;
-      }
-    }
-
-    assert(FLUSHING_BODY & _state);
-
-    switch (error = flushSendBuffer()) {
-      case ESB_SUCCESS:
-        break;
-      case ESB_AGAIN:
-        return ESB_AGAIN;
-      default:
-        return error;
-    }
-
-    stateTransition(PARSING_HEADERS);
-
-    error = _handler.endRequest(_multiplexer, *this);
-
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
-      return error;
-    }
-
-    return handleReadable();
-  }
-
-  ESB_LOG_DEBUG("[%s] multiplexer shutdown with socket in format state", _socket.name());
-  return ESB_SHUTDOWN;
+  return advanceStateMachine(false);
 }
 
 ESB::Error HttpClientSocket::stateEndTransaction() { return ESB_NOT_IMPLEMENTED; }
@@ -516,85 +412,84 @@ bool HttpClientSocket::handleRemove() {
     _recvBuffer = NULL;
   }
 
-  bool reuseConnection = false;
-
-  if (_state & TRANSACTION_BEGIN) {
+  if (_state & FIRST_USE_AFTER_REUSE && !(_state & ABORTED)) {
+    ESB_LOG_DEBUG("[%s] closing stale connection and retrying transaction", _socket.name());
+    _socket.close();
     assert(_transaction);
-    _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
-
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
-  } else if (_state & CONNECTING) {
-    assert(_transaction);
-    _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
-
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
-  } else if (_state & FORMATTING_HEADERS) {
-    assert(_transaction);
-    _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
-
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
-  } else if (_state & (FORMATTING_BODY | FLUSHING_BODY)) {
-    assert(_transaction);
-    _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
-  } else if (_state & PARSING_HEADERS) {
-    assert(_transaction);
-    _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
-  } else if (_state & PARSING_BODY) {
-    assert(_transaction);
-    _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
-  } else if (_state & TRANSACTION_END) {
-    assert(_transaction);
-    _counters.getSuccesses()->record(_transaction->startTime(), ESB::Date::Now());
-
-    if (GetReuseConnections() && !(_state & ABORTED)) {
-      const HttpHeader *header = _transaction->response().findHeader("Connection");
-
-      if (header && header->fieldValue() && !strcasecmp("close", (const char *)header->fieldValue())) {
-        reuseConnection = false;
-      } else {
-        reuseConnection = true;
-      }
-    } else {
-      reuseConnection = false;
-    }
-
-    _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
-  } else if (_state & RETRY_STALE_CONNECTION) {
-    assert(_transaction);
-    ESB_LOG_DEBUG("[%s] connection stale, retrying transaction", _socket.name());
     ESB::Error error = _multiplexer.executeClientTransaction(_transaction);
-
     if (ESB_SUCCESS != error) {
       ESB_LOG_INFO_ERRNO(error, "[%s] Cannot retry transaction", _socket.name());
-      unsetFlag(RETRY_STALE_CONNECTION);
-      stateTransition(TRANSACTION_BEGIN);
-
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
-    }
-  }
-
-  if (0x00 == (_state & RETRY_STALE_CONNECTION)) {
-    if (_transaction) {
       _multiplexer.destroyClientTransaction(_transaction);
-      _transaction = NULL;
     }
+    _transaction = NULL;
+    stateTransition(HAS_BEEN_REMOVED);
+    return true;  // call cleanup handler on us after this returns
   }
 
-  if (!reuseConnection) {
-    // HttpClientSocketFactory::release() is invoked by the cleanup handler.
-    // Sockets that are closed are not returned to the connection pool.
+  bool reuseConnection = false;
+  int state = _state & stateMask();
+
+  switch (state) {
+    case TRANSACTION_BEGIN:
+      assert(_transaction);
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
+      break;
+    case CONNECTING:
+      assert(_transaction);
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+      break;
+    case FORMATTING_HEADERS:
+      assert(_transaction);
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
+      break;
+    case FORMATTING_BODY:
+    case FLUSHING_BODY:
+      assert(_transaction);
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
+      break;
+    case PARSING_HEADERS:
+      assert(_transaction);
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
+      break;
+    case PARSING_BODY:
+      assert(_transaction);
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
+      break;
+    case TRANSACTION_END:
+      assert(_transaction);
+      _counters.getSuccesses()->record(_transaction->startTime(), ESB::Date::Now());
+      if (GetReuseConnections() && !(_state & ABORTED)) {
+        const HttpHeader *header = _transaction->response().findHeader("Connection");
+        reuseConnection = !(header && header->fieldValue() && !strcasecmp("close", (const char *)header->fieldValue()));
+      }
+      _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
+      break;
+    default:
+      ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] socket has invalid state '%d'", _socket.name(), state);
+  }
+
+  if (_transaction) {
+    _multiplexer.destroyClientTransaction(_transaction);
+    _transaction = NULL;
+  }
+
+  // HttpClientSocketFactory::release() is invoked by the cleanup handler and returns open sockets to the pool.
+
+  if (reuseConnection) {
+    ESB_LOG_DEBUG("[%s] adding connection to connection pool", _socket.name());
+  } else {
     ESB_LOG_DEBUG("[%s] connection will not be reused", _socket.name());
     _socket.close();
-  } else {
-    ESB_LOG_DEBUG("[%s] adding connection to connection pool", _socket.name());
   }
 
-  _transaction = NULL;
   stateTransition(HAS_BEEN_REMOVED);
-
   return true;  // call cleanup handler on us after this returns
 }
 
@@ -602,22 +497,13 @@ SOCKET HttpClientSocket::socketDescriptor() const { return _socket.socketDescrip
 
 ESB::CleanupHandler *HttpClientSocket::cleanupHandler() { return &_cleanupHandler; }
 
-ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer, bool drainSendBuffer) {
-  // TODO create statemachine function that combines handle read and handle write.
-  // TODO pass in fillReceiveBuffer = true if handle read, else false
-  // TODO pass in flushSendBuffer = true if handle write, else false
+ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
   // TODO pass in adaptor that either calls handler or delegates to application supplied buffers
-  // TODO call state machine from handle read, handle write, sync read, and sync write
-
-  if (!_recvBuffer) {
-    _recvBuffer = _multiplexer.acquireBuffer();
-    if (!_recvBuffer) {
-      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
-      return ESB_OUT_OF_MEMORY;  // remove from multiplexer
-    }
-  }
+  // TODO call state machine from sync read, and sync write
 
   while (!_multiplexer.shutdown()) {
+    bool drainSendBuffer = false;
+    int state = _state & stateMask();
     ESB::Error error = ESB_OTHER_ERROR;
 
     if (fillRecvBuffer) {
@@ -636,28 +522,86 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer, bool drain
       }
     }
 
-    switch (_state & stateMask()) {
+    switch (state) {
+      case TRANSACTION_BEGIN:
+        // TODO move to state function
+        // TODO make connection reuse more configurable
+        if (!HttpClientSocket::GetReuseConnections() && !_transaction->request().findHeader("Connection")) {
+          error = _transaction->request().addHeader("Connection", "close", _transaction->allocator());
+
+          if (ESB_SUCCESS != error) {
+            ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header", _socket.name());
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
+        }
+        if (!_sendBuffer) {
+          _sendBuffer = _multiplexer.acquireBuffer();
+          if (!_sendBuffer) {
+            ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
+            return ESB_OUT_OF_MEMORY;
+          }
+        }
+        // TODO add user agent, etc headers
+        stateTransition(FORMATTING_HEADERS);
+        error = ESB_SUCCESS;
+        break;
+      case FORMATTING_HEADERS:
+        error = stateSendRequestHeaders();
+        break;
+      case FORMATTING_BODY:
+        error = stateSendRequestBody();
+        break;
+      case FLUSHING_BODY:
+        // TODO move to state function
+        switch (error = flushSendBuffer()) {
+          case ESB_SUCCESS:
+            stateTransition(PARSING_HEADERS);
+            error = _handler.endRequest(_multiplexer, *this);
+            if (ESB_SUCCESS != error) {
+              ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
+              return error;
+            }
+            switch (error = fillReceiveBuffer()) {
+              case ESB_SUCCESS:
+                fillRecvBuffer = false;
+                break;
+              case ESB_AGAIN:
+                return ESB_AGAIN;
+              case ESB_CLOSED:
+                handleRemoteClose();
+                return ESB_CLOSED;
+              default:
+                handleError(error);
+                return error;
+            }
+            break;
+          case ESB_AGAIN:
+            return ESB_AGAIN;
+          default:
+            return error;
+        }
+        break;
       case PARSING_HEADERS:
         error = stateReceiveResponseHeaders();
         break;
       case PARSING_BODY:
         error = stateReceiveResponseBody();
         break;
+      case TRANSACTION_END:
+        // TODO move to state function
+        return ESB_SUCCESS;
       default:
         assert(!"invalid state");
-        ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] invalid transition to state %d", _socket.name(),
-                              _state & stateMask());
+        ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] invalid transition to state %d", _socket.name(), state);
         return ESB_INVALID_STATE;
     }
 
     switch (error) {
       case ESB_SUCCESS:
-        if (TRANSACTION_END & _state) {
-          return ESB_SUCCESS;
-        }
         break;
       case ESB_AGAIN:
-        fillRecvBuffer = true;
+        fillRecvBuffer = state & (PARSING_BODY | PARSING_HEADERS);
+        drainSendBuffer = state & (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY);
         break;
       case ESB_PAUSE:
         if (ESB_SUCCESS != (error = pauseRecv(false))) {
@@ -666,6 +610,18 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer, bool drain
         return ESB_AGAIN;
       default:
         return error;
+    }
+
+    if (drainSendBuffer) {
+      switch (error = flushSendBuffer()) {
+        case ESB_SUCCESS:
+          drainSendBuffer = false;
+          break;
+        case ESB_AGAIN:
+          return ESB_AGAIN;
+        default:
+          return error;
+      }
     }
   }
 
@@ -898,8 +854,16 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody() {
 }
 
 ESB::Error HttpClientSocket::fillReceiveBuffer() {
-  if (!_recvBuffer || !_transaction) {
+  if (!_transaction) {
     return ESB_INVALID_STATE;
+  }
+
+  if (!_recvBuffer) {
+    _recvBuffer = _multiplexer.acquireBuffer();
+    if (!_recvBuffer) {
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
+      return ESB_OUT_OF_MEMORY;  // remove from multiplexer
+    }
   }
 
   if (_recvBuffer->isReadable()) {
@@ -950,11 +914,6 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
       if (ESB_AGAIN == bytesSent) {
         ESB_LOG_DEBUG("[%s] would block flushing request output buffer", _socket.name());
         return ESB_AGAIN;  // keep in multiplexer
-      }
-
-      if (FIRST_USE_AFTER_REUSE & _state) {
-        unsetFlag(FIRST_USE_AFTER_REUSE);
-        setFlag(RETRY_STALE_CONNECTION);
       }
 
       ESB::Error error = ESB::LastError();

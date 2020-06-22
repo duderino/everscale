@@ -187,7 +187,7 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
    * code if the state machine encountered a terminal error.  Terminal errors should generally be handled by closing the
    * connection.
    */
-  ESB::Error advanceStateMachine(bool fillRecvBuffer, bool drainSendBuffer);
+  ESB::Error advanceStateMachine(bool fillRecvBuffer);
   ESB::Error stateBeginTransaction();
   ESB::Error stateSendRequestHeaders();
   ESB::Error stateSendRequestBody();
