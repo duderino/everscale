@@ -1,5 +1,21 @@
 stat:
- - any call out to a handler may change the _state ... audit handleReadable and handleWritable and guard every transition with a state check.
+ - proxy-server connections are not registered for read interest after completing a transaction
+ - implement HttpServerSocket::formatResponseBody
+ - Problem:  sendResponse calls handleWritable which finishes transaction because the handler produces no data... and doesn't update multiplexer
+ES::HttpServerSocket::handleWritable
+ES::HttpServerSocket::sendResponse
+ES::HttpServerSocket::sendResponse
+ES::HttpRoutingProxyHandler::receiveResponseHeaders
+ES::HttpClientSocket::stateReceiveResponseHeaders
+ES::HttpClientSocket::advanceStateMachine
+ES::HttpClientSocket::handleReadable
+ESB::EpollMultiplexer::run
+
+ - combine reactive and proactive state machine in client socket.
+   - pass down whether reactive or proactive in the stack - use this to determine when to update multiplexer.
+   - wrap buffers to send or read in server/client handler callbacks
+ - propagate client socket changes to server socket
+
 
 proxy:
  - relay error codes to handler.endTransaction().  Instead of returning true|false in handleRead(), etc, return ESB::Error to the multiplexer and pass these back to the handlers.

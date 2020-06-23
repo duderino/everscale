@@ -70,7 +70,7 @@ ESB::Error HttpCommandSocket::handleReadable() {
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "[%s] cannot read command socket", _name);
-    return ESB_SUCCESS;  // keep in multiplexer, try again
+    return ESB_AGAIN;  // keep in multiplexer, try again
   }
 
   for (ESB::UInt64 i = 0; i < value; ++i) {
@@ -82,7 +82,7 @@ ESB::Error HttpCommandSocket::handleReadable() {
 
     if (!command) {
       ESB_LOG_WARNING("[%s] command socket and queue are out of sync", _name);
-      return ESB_SUCCESS;  // keep in multiplexer, try again
+      return ESB_AGAIN;  // keep in multiplexer, try again
     }
 
     // TODO track latency
@@ -93,7 +93,7 @@ ESB::Error HttpCommandSocket::handleReadable() {
     }
   }
 
-  return ESB_SUCCESS;  // keep in multiplexer
+  return ESB_AGAIN;  // keep in multiplexer
 }
 
 ESB::Error HttpCommandSocket::handleWritable() {
