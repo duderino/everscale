@@ -94,7 +94,8 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Paused",
                                           "Response must be sent",
                                           "Must be closed",
-                                          "Not implemented"};
+                                          "Not implemented",
+                                          "Do not call again"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

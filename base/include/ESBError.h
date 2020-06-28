@@ -230,6 +230,13 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_NOT_IMPLEMENTED (-29)
 
+/**
+ * Do not call operation again
+ *
+ * @ingroup error
+ */
+#define ESB_BREAK (-30)
+
 }  // namespace ESB
 
 #endif

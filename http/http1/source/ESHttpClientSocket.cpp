@@ -34,9 +34,171 @@
 // TODO - max header size option
 // TODO - max body size option
 
+// State machine operation flags
+#define INITIAL_FILL_RECV_BUFFER (1 << 0)
+#define INITIAL_DRAIN_SEND_BUFFER (1 << 1)
+#define UPDATE_MULTIPLEXER (1 << 2)
+#define ADVANCE_RECV (1 << 3)
+#define ADVANCE_SEND (1 << 4)
+
 namespace ES {
 
 bool HttpClientSocket::_ReuseConnections = true;
+
+/**
+ * The state machine is built around the concept of a set of callback functions that produce and consume on demand, but
+ * some APIs support direct passing in of buffers.  This class wraps a buffer that was directly passed in with a
+ * callback adaptor that can be subsequently invoked by the state machine.
+ *
+ */
+class HttpRequestBodyProducer : public HttpClientHandler {
+ public:
+  HttpRequestBodyProducer(unsigned const char *buffer, ESB::UInt32 size)
+      : _buffer(buffer), _size(size), _bytesProduced(0) {}
+  virtual ~HttpRequestBodyProducer() {}
+
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                      ESB::UInt32 *bytesAvailable) {
+    if (!bytesAvailable) {
+      return ESB_NULL_POINTER;
+    }
+
+    if (!_size) {
+      // end body, transition to flushing state
+      *bytesAvailable = 0;
+      return ESB_SUCCESS;
+    }
+
+    *bytesAvailable = _size - _bytesProduced;
+    return 0 == *bytesAvailable ? ESB_BREAK : ESB_SUCCESS;
+  }
+
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                        unsigned char *body, ESB::UInt32 bytesRequested) {
+    assert(bytesRequested <= _size - _bytesProduced);
+    if (bytesRequested > _size - _bytesProduced) {
+      return ESB_INVALID_ARGUMENT;
+    }
+
+    memcpy(body, _buffer + _bytesProduced, bytesRequested);
+    _bytesProduced += bytesRequested;
+    return ESB_SUCCESS;
+  }
+
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                         const unsigned char *body, ESB::UInt32 bytesOffered,
+                                         ESB::UInt32 *bytesConsumed) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream, State state) {
+    assert(!"function should not be called");
+  }
+
+  inline ESB::UInt32 bytesProduced() const { return _bytesProduced; };
+
+ private:
+  HttpRequestBodyProducer(const HttpRequestBodyProducer &disabled);
+  void operator=(const HttpRequestBodyProducer &disabled);
+
+  unsigned const char *_buffer;
+  ESB::UInt32 _size;
+  ESB::UInt32 _bytesProduced;
+};
+
+/**
+ * The state machine is built around the concept of a set of callback functions that produce and consume on demand, but
+ * some APIs support direct passing in of buffers.  This class wraps a buffer that was directly passed in with a
+ * callback adaptor that can be subsequently invoked by the state machine.
+ *
+ */
+class HttpResponseBodyConsumer : public HttpClientHandler {
+ public:
+  HttpResponseBodyConsumer(unsigned const char *buffer, ESB::UInt32 size)
+      : _buffer(buffer), _size(size), _bytesConsumed(0) {}
+  virtual ~HttpResponseBodyConsumer() {}
+
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                      ESB::UInt32 *bytesAvailable) {
+    if (!bytesAvailable) {
+      return ESB_NULL_POINTER;
+    }
+
+    if (!_size) {
+      // end body, transition to flushing state
+      *bytesAvailable = 0;
+      return ESB_SUCCESS;
+    }
+
+    *bytesAvailable = _size - _bytesConsumed;
+    return 0 == *bytesAvailable ? ESB_BREAK : ESB_SUCCESS;
+  }
+
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                        unsigned char *body, ESB::UInt32 bytesRequested) {
+    assert(bytesRequested <= _size - _bytesConsumed);
+    if (bytesRequested > _size - _bytesConsumed) {
+      return ESB_INVALID_ARGUMENT;
+    }
+
+    memcpy(body, _buffer + _bytesConsumed, bytesRequested);
+    _bytesConsumed += bytesRequested;
+    return ESB_SUCCESS;
+  }
+
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                         const unsigned char *body, ESB::UInt32 bytesOffered,
+                                         ESB::UInt32 *bytesConsumed) {
+    if (!body || !bytesConsumed) {
+      return ESB_NULL_POINTER;
+    }
+
+    ESB::UInt32 bytesToCopy = ESB_MIN(_size - _bytesConsumed, bytesOffered);
+    if (0 >= bytesToCopy) {
+      *bytesConsumed = 0U;
+      return ESB_SUCCESS;
+    }
+
+    memcpy((void *)(_buffer + _bytesConsumed), body, bytesToCopy);
+    *bytesConsumed = bytesToCopy;
+    return ESB_SUCCESS;
+  }
+
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream, State state) {
+    assert(!"function should not be called");
+  }
+
+  inline ESB::UInt32 bytesConsumed() const { return _bytesConsumed; };
+
+ private:
+  HttpResponseBodyConsumer(const HttpResponseBodyConsumer &disabled);
+  void operator=(const HttpResponseBodyConsumer &disabled);
+
+  unsigned const char *_buffer;
+  ESB::UInt32 _size;
+  ESB::UInt32 _bytesConsumed;
+};
 
 HttpClientSocket::HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,
                                    ESB::SocketAddress &peerAddress, HttpClientCounters &counters,
@@ -121,7 +283,7 @@ bool HttpClientSocket::wantWrite() {
 }
 
 bool HttpClientSocket::isIdle() {
-  // TODO - implement idle timeout
+  // TODO - implement idle timeout.  Return true if bytes transferred over time interval is too low
   return false;
 }
 
@@ -161,11 +323,6 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
     return ESB_NULL_POINTER;
   }
 
-  //
-  // Since this function isn't invoked by the multiplexer, we have to explicitly
-  // adjust the registered interest events here.
-  //
-
   ESB::Error error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
   if (ESB_AGAIN == error) {
     if (ESB_SUCCESS == (error = fillReceiveBuffer())) {
@@ -176,17 +333,12 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
 
   switch (error) {
     case ESB_SUCCESS:
-      if (0U == *bytesAvailable) {
-        // Last chunk has been read, finish the transaction
-        ESB_LOG_DEBUG("[%s] finished parsing response body", _socket.name());
-        stateTransition(TRANSACTION_END);
-        if (ESB_SUCCESS != (error = pauseRecv(true))) {
-          abort(true);
-          return error;
-        }
-      }
       return ESB_SUCCESS;
     case ESB_AGAIN:
+      //
+      // Since this function isn't invoked by the multiplexer, we have to explicitly
+      // adjust the registered interest events here.
+      //
       if (ESB_SUCCESS != (error = resumeRecv(true))) {
         abort(true);
         return error;
@@ -201,34 +353,24 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
 
 ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested,
                                               ESB::UInt32 bufferOffset) {
-  if (0U == bytesRequested) {
-    // In case the caller calls this after responseBodyAvailable() returns 0
-    // for the last chunk.
-    return ESB_SUCCESS;
-  }
-
   assert(chunk);
-  assert(bytesRequested <= _recvBuffer->readable());
-
   if (!chunk) {
     return ESB_NULL_POINTER;
   }
 
-  if (bytesRequested > _recvBuffer->readable()) {
-    return ESB_INVALID_ARGUMENT;
+  // TODO remove bufferOffset
+
+  HttpResponseBodyConsumer adaptor(chunk, bytesRequested);
+
+  ESB::Error error = advanceStateMachine(adaptor, UPDATE_MULTIPLEXER | ADVANCE_RECV);
+
+#ifndef NDEBUG
+  if (ESB_SUCCESS == error) {
+    assert(bytesRequested == adaptor.bytesConsumed());
   }
+#endif
 
-  memcpy(chunk, _recvBuffer->buffer() + bufferOffset, bytesRequested);
-
-  ESB::Error error = _transaction->getParser()->consumeBody(_recvBuffer, bytesRequested);
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u response chunk bytes", _socket.name(), bytesRequested);
-    return error;  // remove from multiplexer
-  }
-
-  ESB_LOG_DEBUG("[%s] consumed %u response chunk bytes", _socket.name(), bytesRequested);
-
-  return ESB_SUCCESS;
+  return error;
 }
 
 ESB::Error HttpClientSocket::handleReadable() {
@@ -240,132 +382,24 @@ ESB::Error HttpClientSocket::handleReadable() {
     return ESB_INVALID_STATE;
   }
 
-  return advanceStateMachine(true);
+  return advanceStateMachine(_handler, INITIAL_FILL_RECV_BUFFER | ADVANCE_RECV | ADVANCE_SEND);
 }
 
 ESB::Error HttpClientSocket::sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
                                              ESB::UInt32 *bytesConsumed) {
-  //
-  // Because this isn't invoked by the multiplexer, we have to make explicit
-  // pause and resume calls to update this socket's registered interests.
-  //
-  switch (ESB::Error error = formatRequestBody(chunk, bytesOffered, bytesConsumed)) {
-    case ESB_SUCCESS:
-      if (0U == bytesOffered) {
-        if (ESB_SUCCESS != (error = pauseSend(true))) {
-          abort(true);
-          return error;
-        }
-      }
-      return ESB_SUCCESS;
-    case ESB_AGAIN:
-      if (ESB_SUCCESS != (error = resumeSend(true))) {
-        abort(true);
-        return error;
-      }
-      return ESB_AGAIN;
-    default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot send request body", _socket.name());
-      abort(true);
-      return error;
-  }
-}
-
-ESB::Error HttpClientSocket::formatRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
-                                               ESB::UInt32 *bytesConsumed) {
-  //
-  // Send final chunk
-  //
-
-  if (0U == bytesOffered) {
-    ESB::Error error = formatEndBody();
-    switch (error) {
-      case ESB_AGAIN:
-        if (ESB_SUCCESS != (error = flushSendBuffer())) {
-          return error;
-        }
-        if (ESB_SUCCESS != (error = formatEndBody())) {
-          return error;
-        }
-        break;
-      case ESB_SUCCESS:
-        break;
-      default:
-        return error;
-    }
-
-    // TODO can this block be shared with the reactive sequence?
-    error = flushSendBuffer();
-    if (ESB_SUCCESS != error) {
-      return error;
-    }
-
-    stateTransition(PARSING_HEADERS);
-
-    error = _handler.endRequest(_multiplexer, *this);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
-      return error;
-    }
-    return ESB_SUCCESS;
-  }
-
-  //
-  // Send non-final chunk
-  //
-
-  assert(chunk);
-  assert(bytesConsumed);
-
   if (!chunk || !bytesConsumed) {
     return ESB_NULL_POINTER;
   }
 
-  ESB::UInt32 bytesSent = 0U;
-
-  while (bytesSent < bytesOffered) {
-    if (_multiplexer.shutdown()) {
-      return ESB_SHUTDOWN;
-    }
-
-    ESB::UInt32 maxChunkSize = 0U;
-    ESB::Error error = formatStartChunk(bytesOffered - bytesSent, &maxChunkSize);
-
-    switch (error) {
-      case ESB_SUCCESS:
-        break;
-      case ESB_AGAIN:
-        if (ESB_SUCCESS != (error = flushSendBuffer())) {
-          return error;
-        }
-        if (ESB_SUCCESS != (error = formatStartChunk(bytesOffered - bytesSent, &maxChunkSize))) {
-          return error;
-        }
-        break;
-      default:
-        return error;
-    }
-
-    ESB::UInt32 chunkSize = ESB_MIN(bytesOffered - bytesSent, maxChunkSize);
-
-    // consume the chunk
-
-    memcpy(_sendBuffer->buffer() + _sendBuffer->writePosition(), chunk + bytesSent, chunkSize);
-    _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
-    _bodyBytesWritten += chunkSize;
-    bytesSent += chunkSize;
-    *bytesConsumed = bytesSent;
-
-    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u", _socket.name(), chunkSize);
-
-    // beginBlock reserves space for this operation, it should never fail
-
-    if (ESB_SUCCESS != (error = formatEndChunk())) {
-      return error;
-    }
+  if (!(_state & FORMATTING_BODY)) {
+    return ESB_INVALID_STATE;
   }
 
-  return ESB_SUCCESS;
+  HttpRequestBodyProducer adaptor(chunk, bytesOffered);
+
+  ESB::Error error = advanceStateMachine(adaptor, UPDATE_MULTIPLEXER | ADVANCE_SEND);
+  *bytesConsumed = adaptor.bytesProduced();
+  return error;
 }
 
 ESB::Error HttpClientSocket::handleWritable() {
@@ -377,7 +411,8 @@ ESB::Error HttpClientSocket::handleWritable() {
     return ESB_INVALID_STATE;
   }
 
-  return advanceStateMachine(false);
+  // TODO measure impact of adding INITIAL_DRAIN_SEND_BUFFER here
+  return advanceStateMachine(_handler, ADVANCE_RECV | ADVANCE_SEND);
 }
 
 ESB::Error HttpClientSocket::stateEndTransaction() { return ESB_NOT_IMPLEMENTED; }
@@ -388,8 +423,7 @@ void HttpClientSocket::handleError(ESB::Error error) {
 }
 
 void HttpClientSocket::handleRemoteClose() {
-  // TODO - this may just mean the client closed its half of the socket but is
-  // still expecting a response.
+  // TODO - this may just mean the client closed its half of the socket but is still expecting a response.
   assert(!(HAS_BEEN_REMOVED & _state));
   ESB_LOG_INFO("[%s] remote server closed socket", _socket.name());
 }
@@ -497,21 +531,34 @@ SOCKET HttpClientSocket::socketDescriptor() const { return _socket.socketDescrip
 
 ESB::CleanupHandler *HttpClientSocket::cleanupHandler() { return &_cleanupHandler; }
 
-ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
-  // TODO pass in adaptor that either calls handler or delegates to application supplied buffers
-  // TODO call state machine from sync read, and sync write
+ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int flags) {
+  bool fillRecvBuffer = flags & INITIAL_FILL_RECV_BUFFER;
+  bool drainSendBuffer = flags & INITIAL_DRAIN_SEND_BUFFER;
+  bool updateMultiplexer = flags & UPDATE_MULTIPLEXER;
 
   while (!_multiplexer.shutdown()) {
-    bool drainSendBuffer = false;
     int state = _state & stateMask();
-    ESB::Error error = ESB_OTHER_ERROR;
+    bool inRecvState = state & (PARSING_BODY | PARSING_HEADERS);
+    bool inSendState = state & (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY);
+
+    if (inRecvState && !(flags & ADVANCE_RECV)) {
+      return ESB_SUCCESS;  // TODO maybe do a resumeRecv(updateMultiplexer);
+    }
+
+    if (inSendState && !(flags & ADVANCE_SEND)) {
+      return ESB_SUCCESS;  // TODO maybe do a resumeSend(updateMultiplexer);
+    }
 
     if (fillRecvBuffer) {
-      switch (error = fillReceiveBuffer()) {
+      switch (ESB::Error error = fillReceiveBuffer()) {
         case ESB_SUCCESS:
           fillRecvBuffer = false;
           break;
         case ESB_AGAIN:
+          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
+            abort(updateMultiplexer);
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
           return ESB_AGAIN;
         case ESB_CLOSED:
           handleRemoteClose();
@@ -522,63 +569,31 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
       }
     }
 
+    ESB::Error error;
+
+    /* todo for ServerSocket audit send response... make sure it calls state machine with the right flags */
+
     switch (state) {
       case TRANSACTION_BEGIN:
-        // TODO move to state function
-        // TODO make connection reuse more configurable
-        if (!HttpClientSocket::GetReuseConnections() && !_transaction->request().findHeader("Connection")) {
-          error = _transaction->request().addHeader("Connection", "close", _transaction->allocator());
-
-          if (ESB_SUCCESS != error) {
-            ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header", _socket.name());
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-        }
-        if (!_sendBuffer) {
-          _sendBuffer = _multiplexer.acquireBuffer();
-          if (!_sendBuffer) {
-            ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
-            return ESB_OUT_OF_MEMORY;
-          }
-        }
-        // TODO add user agent, etc headers
-        stateTransition(FORMATTING_HEADERS);
-        error = ESB_SUCCESS;
+        error = stateBeginTransaction();
         break;
       case FORMATTING_HEADERS:
         error = stateSendRequestHeaders();
         break;
       case FORMATTING_BODY:
-        error = stateSendRequestBody();
+        error = stateSendRequestBody(handler);
         break;
       case FLUSHING_BODY:
-        // TODO move to state function
-        switch (error = flushSendBuffer()) {
-          case ESB_SUCCESS:
-            stateTransition(PARSING_HEADERS);
-            error = _handler.endRequest(_multiplexer, *this);
-            if (ESB_SUCCESS != error) {
-              ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
-              return error;
-            }
-            switch (error = fillReceiveBuffer()) {
-              case ESB_SUCCESS:
-                fillRecvBuffer = false;
-                break;
-              case ESB_AGAIN:
-                return ESB_AGAIN;
-              case ESB_CLOSED:
-                handleRemoteClose();
-                return ESB_CLOSED;
-              default:
-                handleError(error);
-                return error;
-            }
-            break;
-          case ESB_AGAIN:
-            return ESB_AGAIN;
-          default:
-            return error;
+        if (ESB_SUCCESS == (error = stateFlushRequestBody())) {
+          if (ESB_SUCCESS != (error = pauseSend(false))) {
+            abort(updateMultiplexer);
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
+          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
+            abort(updateMultiplexer);
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
+          fillRecvBuffer = true;
         }
         break;
       case PARSING_HEADERS:
@@ -588,7 +603,7 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
         error = stateReceiveResponseBody();
         break;
       case TRANSACTION_END:
-        // TODO move to state function
+        // TODO for ServerSocket, this should resumeRecv
         return ESB_SUCCESS;
       default:
         assert(!"invalid state");
@@ -599,13 +614,23 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
     switch (error) {
       case ESB_SUCCESS:
         break;
+      case ESB_BREAK:
+        return ESB_SUCCESS;
       case ESB_AGAIN:
-        fillRecvBuffer = state & (PARSING_BODY | PARSING_HEADERS);
-        drainSendBuffer = state & (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY);
+        fillRecvBuffer = inRecvState;
+        drainSendBuffer = inSendState;
         break;
       case ESB_PAUSE:
-        if (ESB_SUCCESS != (error = pauseRecv(false))) {
-          return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+        if (inRecvState) {
+          if (ESB_SUCCESS != (error = pauseRecv(updateMultiplexer))) {
+            abort(updateMultiplexer);
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
+        } else if (inSendState) {
+          if (ESB_SUCCESS != (error = pauseSend(updateMultiplexer))) {
+            abort(updateMultiplexer);
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
         }
         return ESB_AGAIN;
       default:
@@ -618,6 +643,9 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
           drainSendBuffer = false;
           break;
         case ESB_AGAIN:
+          if (ESB_SUCCESS != (error = resumeSend(updateMultiplexer))) {
+            return error;
+          }
           return ESB_AGAIN;
         default:
           return error;
@@ -629,9 +657,33 @@ ESB::Error HttpClientSocket::advanceStateMachine(bool fillRecvBuffer) {
   return ESB_SHUTDOWN;
 }
 
-ESB::Error HttpClientSocket::stateBeginTransaction() { return ESB_NOT_IMPLEMENTED; }
+ESB::Error HttpClientSocket::stateBeginTransaction() {
+  // TODO make connection reuse more configurable
+  if (!HttpClientSocket::GetReuseConnections() && !_transaction->request().findHeader("Connection")) {
+    ESB::Error error = _transaction->request().addHeader("Connection", "close", _transaction->allocator());
+
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add connection: close header", _socket.name());
+      return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+    }
+  }
+
+  // TODO add user agent, etc headers
+
+  stateTransition(FORMATTING_HEADERS);
+
+  return ESB_SUCCESS;
+}
 
 ESB::Error HttpClientSocket::stateSendRequestHeaders() {
+  if (!_sendBuffer) {
+    _sendBuffer = _multiplexer.acquireBuffer();
+    if (!_sendBuffer) {
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
+      return ESB_OUT_OF_MEMORY;
+    }
+  }
+
   ESB::Error error = _transaction->getFormatter()->formatHeaders(_sendBuffer, _transaction->request());
 
   if (ESB_AGAIN == error) {
@@ -649,20 +701,20 @@ ESB::Error HttpClientSocket::stateSendRequestHeaders() {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpClientSocket::stateSendRequestBody() {
+ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
   assert(_transaction);
+  assert(_sendBuffer);
 
   while (!_multiplexer.shutdown()) {
     ESB::UInt32 maxChunkSize = 0;
     ESB::UInt32 offeredSize = 0;
 
-    ESB::Error error = _handler.offerRequestBody(_multiplexer, *this, &offeredSize);
+    ESB::Error error = handler.offerRequestBody(_multiplexer, *this, &offeredSize);
     switch (error) {
+      case ESB_CLEANUP:
+        return ESB_CLEANUP;
       case ESB_AGAIN:
       case ESB_PAUSE:
-        if (ESB_SUCCESS != (error = pauseSend(false))) {
-          return error;
-        }
         return ESB_PAUSE;
       case ESB_SUCCESS:
         ESB_LOG_DEBUG("[%s] handler offers request chunk of %u bytes", _socket.name(), offeredSize);
@@ -673,7 +725,18 @@ ESB::Error HttpClientSocket::stateSendRequestBody() {
     }
 
     if (0 == offeredSize) {
-      return formatEndBody();
+      error = _transaction->getFormatter()->endBody(_sendBuffer);
+      switch (error) {
+        case ESB_SUCCESS:
+          stateTransition(FLUSHING_BODY);
+          return ESB_SUCCESS;
+        case ESB_AGAIN:
+          ESB_LOG_DEBUG("[%s] insufficient space in send buffer to format end body", _socket.name());
+          return ESB_AGAIN;
+        default:
+          ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last request chunk", _socket.name());
+          return error;
+      }
     }
 
     if (ESB_SUCCESS != (error = formatStartChunk(offeredSize, &maxChunkSize))) {
@@ -684,16 +747,12 @@ ESB::Error HttpClientSocket::stateSendRequestBody() {
 
     // let the handler consume chunkSize bytes of body data
 
-    switch (error = _handler.produceRequestBody(_multiplexer, *this,
-                                                _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize)) {
+    switch (error = handler.produceRequestBody(_multiplexer, *this,
+                                               _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize)) {
       case ESB_SUCCESS:
         break;
       case ESB_AGAIN:
       case ESB_PAUSE:
-        error = pauseSend(false);
-        if (ESB_SUCCESS != error) {
-          return error;
-        }
         return ESB_PAUSE;
       default:
         ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket.name(), chunkSize);
@@ -713,7 +772,22 @@ ESB::Error HttpClientSocket::stateSendRequestBody() {
   return ESB_SHUTDOWN;
 }
 
-ESB::Error HttpClientSocket::stateFlushRequestBody() { return ESB_NOT_IMPLEMENTED; }
+ESB::Error HttpClientSocket::stateFlushRequestBody() {
+  ESB::Error error = flushSendBuffer();
+
+  if (unlikely(ESB_SUCCESS != error)) {
+    return error;
+  }
+
+  stateTransition(PARSING_HEADERS);
+  error = _handler.endRequest(_multiplexer, *this);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction on request end", _socket.name());
+    return error;
+  }
+
+  return ESB_SUCCESS;
+}
 
 ESB::Error HttpClientSocket::stateReceiveResponseHeaders() {
   ESB::Error error = _transaction->getParser()->parseHeaders(_recvBuffer, _transaction->response());
@@ -980,9 +1054,12 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
 ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(RECV_PAUSED & _state);
-  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & RECV_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (!(_state & RECV_PAUSED)) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] resuming client response receive", _socket.name());
@@ -1027,9 +1104,12 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
 ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(SEND_PAUSED & _state);
-  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & SEND_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (!(_state & SEND_PAUSED)) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] resuming client request send", _socket.name());
@@ -1111,22 +1191,6 @@ ESB::Error HttpClientSocket::formatEndChunk() {
   }
 
   return ESB_SUCCESS;
-}
-
-ESB::Error HttpClientSocket::formatEndBody() {
-  ESB::Error error = _transaction->getFormatter()->endBody(_sendBuffer);
-
-  switch (error) {
-    case ESB_SUCCESS:
-      stateTransition(FLUSHING_BODY);
-      return ESB_SUCCESS;
-    case ESB_AGAIN:
-      ESB_LOG_DEBUG("[%s] insufficient space in send buffer to format end body", _socket.name());
-      return ESB_AGAIN;
-    default:
-      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting last request chunk", _socket.name());
-      return error;
-  }
 }
 
 const char *HttpClientSocket::name() const { return _socket.name(); }

@@ -108,7 +108,7 @@ bool HttpServerSocket::wantWrite() {
 }
 
 bool HttpServerSocket::isIdle() {
-  // TODO - implement idle timeout
+  // TODO - implement idle timeout.  Return true if bytes transferred over time interval is too low
   return false;
 }
 
@@ -1111,9 +1111,12 @@ ESB::Error HttpServerSocket::pauseRecv(bool updateMultiplexer) {
 ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(RECV_PAUSED & _state);
-  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & RECV_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (!(_state & RECV_PAUSED)) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] resuming server request receive", _socket.name());
@@ -1158,9 +1161,12 @@ ESB::Error HttpServerSocket::pauseSend(bool updateMultiplexer) {
 ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
   assert(!(HAS_BEEN_REMOVED & _state));
   assert(!(ABORTED & _state));
-  assert(SEND_PAUSED & _state);
-  if (_state & (HAS_BEEN_REMOVED | ABORTED) || !(_state & SEND_PAUSED)) {
+  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
     return ESB_INVALID_STATE;
+  }
+
+  if (!(_state & SEND_PAUSED)) {
+    return ESB_SUCCESS;
   }
 
   ESB_LOG_DEBUG("[%s] resuming server request send", _socket.name());

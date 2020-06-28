@@ -18,6 +18,8 @@ ESB::EpollMultiplexer::run
 
 
 proxy:
+ - origin server and loadgen should send configurably sized response.  loadgen should assert that it received the entire origin response.  origin should assert it received the entire loagden request.
+ - for proxy initiated connections, do not blindly relay connection close headers and content-length/transfer encoding headers from the client and server.
  - relay error codes to handler.endTransaction().  Instead of returning true|false in handleRead(), etc, return ESB::Error to the multiplexer and pass these back to the handlers.
  - add test and support for http pipelining.
  - implement idle check - and make it work with paused sockets
