@@ -35,6 +35,7 @@ set(SOURCE_FILES
         source/ESHttpServerSocketFactory.cpp
         source/ESHttpServerTransaction.cpp
         source/ESHttpServerTransactionFactory.cpp
+		source/ESHttpSocket.cpp
         )
 
 add_library(http1 STATIC ${SOURCE_FILES})

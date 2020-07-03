@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_CLIENT_SOCKET_H
 #define ES_HTTP_CLIENT_SOCKET_H
 
-#ifndef ESB_MULTIPLEXED_SOCKET_H
-#include <ESBMultiplexedSocket.h>
+#ifndef ES_HTTP_SOCKET_H
+#include <ESHttpSocket.h>
 #endif
 
 #ifndef ESB_CONNECTED_TCP_SOCKET_H
@@ -35,7 +35,7 @@ namespace ES {
  *
  * TODO implement idle check
  */
-class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream {
+class HttpClientSocket : public HttpSocket, public HttpClientStream {
  public:
   /** Constructor
    */
@@ -158,23 +158,41 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
   HttpClientSocket(const HttpClientSocket &);
   HttpClientSocket &operator=(const HttpClientSocket &);
 
-  int stateMask();
-  int flagMask();
-  void stateTransition(int state);
-  void setFlag(int flag);
-  void unsetFlag(int flag);
+  // State machine argument flags
 
-  /**
-   * Perform a state transition only if the handler has not already performed one.
-   *
-   * @param ifState If the socket is in this state, perform the transition.  Else skip
-   * @param newState The new state to transition into, if the condition has been met.
-   */
-  inline void conditionalStateTransition(int ifState, int newState) {
-    if (_state & ifState) {
-      stateTransition(newState);
-    }
-  }
+#define INITIAL_FILL_RECV_BUFFER (1 << 0)
+#define INITIAL_DRAIN_SEND_BUFFER (1 << 1)
+#define UPDATE_MULTIPLEXER (1 << 2)
+#define ADVANCE_RECV (1 << 3)
+#define ADVANCE_SEND (1 << 4)
+
+  // Socket States
+
+#define INACTIVE (1 << 0)
+#define CONNECTING (1 << 1)
+#define TRANSACTION_BEGIN (1 << 2)
+#define FORMATTING_HEADERS (1 << 3)
+#define FORMATTING_BODY (1 << 4)
+#define FLUSHING_BODY (1 << 5)
+#define PARSING_HEADERS (1 << 6)
+#define PARSING_BODY (1 << 7)
+#define TRANSACTION_END (1 << 8)
+
+  // Other socket flags affecting control flow
+
+#define FIRST_USE_AFTER_REUSE (1 << 9)
+#define RECV_PAUSED (1 << 10)
+#define SEND_PAUSED (1 << 11)
+#define ABORTED (1 << 12)
+
+  // Useful socket flag masks
+
+#define STATE_MASK                                                                                    \
+  (INACTIVE | CONNECTING | TRANSACTION_BEGIN | FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY | \
+   PARSING_HEADERS | PARSING_BODY | TRANSACTION_END)
+#define FLAG_MASK (~STATE_MASK)
+#define RECV_STATE_MASK (PARSING_BODY | PARSING_HEADERS)
+#define SEND_STATE_MASK (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY)
 
   /**
    * Advance the socket's state machine until it finishes, needs more data (ESB_AGAIN), or becomes application limited
@@ -191,8 +209,21 @@ class HttpClientSocket : public ESB::MultiplexedSocket, public HttpClientStream 
   ESB::Error stateSendRequestBody(HttpClientHandler &handler);
   ESB::Error stateFlushRequestBody();
   ESB::Error stateReceiveResponseHeaders();
-  ESB::Error stateReceiveResponseBody();
-  ESB::Error stateEndTransaction();
+  ESB::Error stateReceiveResponseBody(HttpClientHandler &handler);
+
+  void stateTransition(int state);
+
+  inline void addFlag(int flag) {
+    assert(flag & FLAG_MASK);
+    assert(!(flag & STATE_MASK));
+    _state |= flag;
+  }
+
+  inline void clearFlag(int flag) {
+    assert(flag & FLAG_MASK);
+    assert(!(flag & STATE_MASK));
+    _state &= ~flag;
+  }
 
   ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
   ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);

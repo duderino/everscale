@@ -2,46 +2,12 @@
 #include <ESHttpClientSocket.h>
 #endif
 
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
+namespace ES {
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ES_HTTP_ALLOCATOR_SIZE
-#define ES_HTTP_ALLOCATOR_SIZE 3072
-#endif
-
-// TODO add performance counters
-
-#define HAS_BEEN_REMOVED (1 << 0)
-#define CONNECTING (1 << 1)
-#define TRANSACTION_BEGIN (1 << 2)
-#define FORMATTING_HEADERS (1 << 3)
-#define FORMATTING_BODY (1 << 4)
-#define FLUSHING_BODY (1 << 5)
-#define PARSING_HEADERS (1 << 6)
-#define PARSING_BODY (1 << 7)
-#define TRANSACTION_END (1 << 8)
-#define FIRST_USE_AFTER_REUSE (1 << 9)
-#define RECV_PAUSED (1 << 10)
-#define SEND_PAUSED (1 << 11)
-#define ABORTED (1 << 12)
-
+// TODO - add performance counters
 // TODO - max requests per connection option (1 disables keepalives)
 // TODO - max header size option
 // TODO - max body size option
-
-// State machine operation flags
-#define INITIAL_FILL_RECV_BUFFER (1 << 0)
-#define INITIAL_DRAIN_SEND_BUFFER (1 << 1)
-#define UPDATE_MULTIPLEXER (1 << 2)
-#define ADVANCE_RECV (1 << 3)
-#define ADVANCE_SEND (1 << 4)
-
-namespace ES {
 
 bool HttpClientSocket::_ReuseConnections = true;
 
@@ -243,7 +209,7 @@ ESB::Error HttpClientSocket::reset(bool reused, HttpClientTransaction *transacti
 
   if (reused) {
     assert(isConnected());
-    setFlag(FIRST_USE_AFTER_REUSE);
+    addFlag(FIRST_USE_AFTER_REUSE);
   } else {
     assert(!isConnected());
   }
@@ -259,27 +225,19 @@ bool HttpClientSocket::wantAccept() { return false; }
 bool HttpClientSocket::wantConnect() { return (_state & CONNECTING) != 0; }
 
 bool HttpClientSocket::wantRead() {
-  if (_state & (RECV_PAUSED | ABORTED | HAS_BEEN_REMOVED)) {
+  if (_state & (RECV_PAUSED | ABORTED | INACTIVE)) {
     return false;
   }
 
-  if (_state & (PARSING_HEADERS | PARSING_BODY)) {
-    return true;
-  }
-
-  return false;
+  return _state & RECV_STATE_MASK;
 }
 
 bool HttpClientSocket::wantWrite() {
-  if (_state & (SEND_PAUSED | ABORTED | HAS_BEEN_REMOVED)) {
+  if (_state & (SEND_PAUSED | ABORTED | INACTIVE)) {
     return false;
   }
 
-  if (_state & (TRANSACTION_BEGIN | FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY)) {
-    return true;
-  }
-
-  return false;
+  return _state & (TRANSACTION_BEGIN | SEND_STATE_MASK);
 }
 
 bool HttpClientSocket::isIdle() {
@@ -288,9 +246,9 @@ bool HttpClientSocket::isIdle() {
 }
 
 ESB::Error HttpClientSocket::handleAccept() {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   ESB_LOG_ERROR("[%d] Cannot handle accept events", _socket.socketDescriptor());
-  return ESB_SUCCESS;  // keep in multiplexer
+  return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
 ESB::Error HttpClientSocket::handleConnect() {
@@ -300,7 +258,6 @@ ESB::Error HttpClientSocket::handleConnect() {
   ESB_LOG_INFO("[%s] Connected to peer", _socket.name());
 
   stateTransition(TRANSACTION_BEGIN);
-
   return handleWritable();
 }
 
@@ -415,26 +372,24 @@ ESB::Error HttpClientSocket::handleWritable() {
   return advanceStateMachine(_handler, ADVANCE_RECV | ADVANCE_SEND);
 }
 
-ESB::Error HttpClientSocket::stateEndTransaction() { return ESB_NOT_IMPLEMENTED; }
-
 void HttpClientSocket::handleError(ESB::Error error) {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   ESB_LOG_INFO("[%s] socket error", _socket.name());
 }
 
 void HttpClientSocket::handleRemoteClose() {
   // TODO - this may just mean the client closed its half of the socket but is still expecting a response.
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   ESB_LOG_INFO("[%s] remote server closed socket", _socket.name());
 }
 
 void HttpClientSocket::handleIdle() {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   ESB_LOG_INFO("[%s] server is idle", _socket.name());
 }
 
 bool HttpClientSocket::handleRemove() {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   ESB_LOG_INFO("[%s] client socket has been removed", _socket.name());
 
   if (_sendBuffer) {
@@ -457,12 +412,12 @@ bool HttpClientSocket::handleRemove() {
       _multiplexer.destroyClientTransaction(_transaction);
     }
     _transaction = NULL;
-    stateTransition(HAS_BEEN_REMOVED);
+    stateTransition(INACTIVE);
     return true;  // call cleanup handler on us after this returns
   }
 
   bool reuseConnection = false;
-  int state = _state & stateMask();
+  int state = _state & STATE_MASK;
 
   switch (state) {
     case TRANSACTION_BEGIN:
@@ -506,6 +461,7 @@ bool HttpClientSocket::handleRemove() {
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_END);
       break;
     default:
+      assert(!"socket has invalid state");
       ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] socket has invalid state '%d'", _socket.name(), state);
   }
 
@@ -523,7 +479,7 @@ bool HttpClientSocket::handleRemove() {
     _socket.close();
   }
 
-  stateTransition(HAS_BEEN_REMOVED);
+  stateTransition(INACTIVE);
   return true;  // call cleanup handler on us after this returns
 }
 
@@ -537,9 +493,8 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
   bool updateMultiplexer = flags & UPDATE_MULTIPLEXER;
 
   while (!_multiplexer.shutdown()) {
-    int state = _state & stateMask();
-    bool inRecvState = state & (PARSING_BODY | PARSING_HEADERS);
-    bool inSendState = state & (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY);
+    bool inRecvState = _state & RECV_STATE_MASK;
+    bool inSendState = _state & SEND_STATE_MASK;
 
     if (inRecvState && !(flags & ADVANCE_RECV)) {
       return ESB_SUCCESS;  // TODO maybe do a resumeRecv(updateMultiplexer);
@@ -562,16 +517,17 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           return ESB_AGAIN;
         case ESB_CLOSED:
           handleRemoteClose();
+          abort(updateMultiplexer);
           return ESB_CLOSED;
         default:
           handleError(error);
+          abort(updateMultiplexer);
           return error;
       }
     }
 
     ESB::Error error;
-
-    /* todo for ServerSocket audit send response... make sure it calls state machine with the right flags */
+    int state = _state & STATE_MASK;
 
     switch (state) {
       case TRANSACTION_BEGIN:
@@ -584,30 +540,36 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
         error = stateSendRequestBody(handler);
         break;
       case FLUSHING_BODY:
-        if (ESB_SUCCESS == (error = stateFlushRequestBody())) {
-          if (ESB_SUCCESS != (error = pauseSend(false))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-          fillRecvBuffer = true;
+        switch (error = stateFlushRequestBody()) {
+          case ESB_AGAIN:
+            return ESB_AGAIN;  // don't try to write to a socket with full send buffers twice in a row.
+          case ESB_SUCCESS:
+            if (ESB_SUCCESS != (error = pauseSend(false))) {
+              abort(updateMultiplexer);
+              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+            }
+            if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
+              abort(updateMultiplexer);
+              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+            }
+            fillRecvBuffer = true;
+            break;
+          default:
+            break;
         }
         break;
       case PARSING_HEADERS:
         error = stateReceiveResponseHeaders();
         break;
       case PARSING_BODY:
-        error = stateReceiveResponseBody();
+        error = stateReceiveResponseBody(handler);
         break;
       case TRANSACTION_END:
-        // TODO for ServerSocket, this should resumeRecv
         return ESB_SUCCESS;
       default:
         assert(!"invalid state");
         ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] invalid transition to state %d", _socket.name(), state);
+        abort(updateMultiplexer);
         return ESB_INVALID_STATE;
     }
 
@@ -634,6 +596,7 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
         }
         return ESB_AGAIN;
       default:
+        abort(updateMultiplexer);
         return error;
     }
 
@@ -648,12 +611,14 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           }
           return ESB_AGAIN;
         default:
+          abort(updateMultiplexer);
           return error;
       }
     }
   }
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown", _socket.name());
+  abort(updateMultiplexer);
   return ESB_SHUTDOWN;
 }
 
@@ -711,8 +676,6 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
 
     ESB::Error error = handler.offerRequestBody(_multiplexer, *this, &offeredSize);
     switch (error) {
-      case ESB_CLEANUP:
-        return ESB_CLEANUP;
       case ESB_AGAIN:
       case ESB_PAUSE:
         return ESB_PAUSE;
@@ -721,7 +684,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
         break;
       default:
         ESB_LOG_DEBUG_ERRNO(error, "[%s] handler error offering request chunk", _socket.name());
-        return error;  // remove from multiplexer
+        return error;
     }
 
     if (0 == offeredSize) {
@@ -756,7 +719,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
         return ESB_PAUSE;
       default:
         ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket.name(), chunkSize);
-        return error;  // remove from multiplexer
+        return error;
     }
 
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
@@ -794,10 +757,6 @@ ESB::Error HttpClientSocket::stateReceiveResponseHeaders() {
 
   if (ESB_AGAIN == error) {
     ESB_LOG_DEBUG("[%s] need more response header data from stream", _socket.name());
-    if (!_recvBuffer->compact()) {
-      ESB_LOG_INFO("[%s] cannot parse response headers: parser jammed", _socket.name());
-      return ESB_OVERFLOW;  // remove from multiplexer
-    }
     return ESB_AGAIN;  // keep in multiplexer
   }
 
@@ -841,24 +800,20 @@ ESB::Error HttpClientSocket::stateReceiveResponseHeaders() {
   }
 
   unsigned char byte = 0;
-  ESB::UInt32 bytesWritten = 0;
-
-  switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte, 0, &bytesWritten)) {
+  ESB::UInt32 bytesConsumed = 0;
+  switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte, 0, &bytesConsumed)) {
     case ESB_SUCCESS:
-      break;
+      return ESB_SUCCESS;
     case ESB_PAUSE:
     case ESB_AGAIN:
       return ESB_PAUSE;
     default:
       ESB_LOG_DEBUG_ERRNO(error, "[%s] client body handler aborted connection", _socket.name());
-      return error;  // remove from multiplexer
+      return error;
   }
-
-  assert(!(_state | RECV_PAUSED));
-  return ESB_CLEANUP;  // remove from multiplexer
 }
 
-ESB::Error HttpClientSocket::stateReceiveResponseBody() {
+ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler) {
   assert(_transaction);
   assert(_state & PARSING_BODY);
   assert(_transaction->response().hasBody());
@@ -885,7 +840,7 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody() {
       stateTransition(TRANSACTION_END);
       ESB_LOG_DEBUG("[%s] parsed response body", _socket.name());
       unsigned char byte = 0;
-      switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
+      switch (error = handler.consumeResponseBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
         case ESB_SUCCESS:
           return ESB_SUCCESS;
         case ESB_PAUSE:
@@ -899,8 +854,8 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody() {
 
     ESB_LOG_DEBUG("[%s] offering response chunk of size %u", _socket.name(), bytesAvailable);
 
-    switch (error = _handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
-                                                 bytesAvailable, &bytesConsumed)) {
+    switch (error = handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
+                                                bytesAvailable, &bytesConsumed)) {
       case ESB_SUCCESS:
         if (0 == bytesConsumed) {
           ESB_LOG_DEBUG("[%s] pausing response body receive until handler is ready", _socket.name());
@@ -996,7 +951,7 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
       return error;  // remove from multiplexer
     }
 
-    unsetFlag(FIRST_USE_AFTER_REUSE);
+    clearFlag(FIRST_USE_AFTER_REUSE);
     ESB_LOG_DEBUG("[%s] flushed %ld bytes from request output buffer", _socket.name(), bytesSent);
   }
 
@@ -1006,15 +961,15 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
 const char *HttpClientSocket::logAddress() const { return _socket.name(); }
 
 ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
+  if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
   ESB_LOG_DEBUG("[%s] client connection aborted", _socket.name());
 
-  setFlag(ABORTED);
+  addFlag(ABORTED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().removeMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1027,9 +982,9 @@ ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
 }
 
 ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
+  if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1039,7 +994,7 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] pausing client response receive", _socket.name());
 
-  setFlag(RECV_PAUSED);
+  addFlag(RECV_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1052,9 +1007,9 @@ ESB::Error HttpClientSocket::pauseRecv(bool updateMultiplexer) {
 }
 
 ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
+  if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1064,7 +1019,7 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] resuming client response receive", _socket.name());
 
-  unsetFlag(RECV_PAUSED);
+  clearFlag(RECV_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1077,9 +1032,9 @@ ESB::Error HttpClientSocket::resumeRecv(bool updateMultiplexer) {
 }
 
 ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
+  if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1089,7 +1044,7 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] pausing client request send", _socket.name());
 
-  setFlag(SEND_PAUSED);
+  addFlag(SEND_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1102,9 +1057,9 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
 }
 
 ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
-  assert(!(HAS_BEEN_REMOVED & _state));
+  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
-  if (_state & (HAS_BEEN_REMOVED | ABORTED)) {
+  if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;
   }
 
@@ -1114,7 +1069,7 @@ ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
 
   ESB_LOG_DEBUG("[%s] resuming client request send", _socket.name());
 
-  unsetFlag(SEND_PAUSED);
+  clearFlag(SEND_PAUSED);
   if (updateMultiplexer) {
     ESB::Error error = _multiplexer.multiplexer().updateMultiplexedSocket(this);
     if (ESB_SUCCESS != error) {
@@ -1195,37 +1150,25 @@ ESB::Error HttpClientSocket::formatEndChunk() {
 
 const char *HttpClientSocket::name() const { return _socket.name(); }
 
-void HttpClientSocket::setFlag(int flag) {
-  assert(flag & flagMask());
-  assert(!(flag & stateMask()));
-  _state |= flag;
-}
-
-void HttpClientSocket::unsetFlag(int flag) {
-  assert(flag & flagMask());
-  assert(!(flag & stateMask()));
-  _state &= ~flag;
-}
-
 void HttpClientSocket::stateTransition(int state) {
-  assert(state & stateMask());
-  assert(!(state & flagMask()));
+  assert(state & STATE_MASK);
+  assert(!(state & FLAG_MASK));
 #ifndef NDEBUG
-  int currentState = _state & stateMask();
+  int currentState = _state & STATE_MASK;
 #endif
 
   switch (state) {
-    case HAS_BEEN_REMOVED:
-      assert(!(currentState & HAS_BEEN_REMOVED));
-      _state = HAS_BEEN_REMOVED;
+    case INACTIVE:
+      assert(!(currentState & INACTIVE));
+      _state = INACTIVE;
       ESB_LOG_DEBUG("[%s] connection removed", _socket.name());
       break;
     case CONNECTING:
       assert(0 == "Cannot transition into state CONNECTING");
       break;
     case TRANSACTION_BEGIN:
-      assert(currentState & (CONNECTING | HAS_BEEN_REMOVED));
-      _state &= ~(CONNECTING | HAS_BEEN_REMOVED);
+      assert(currentState & (CONNECTING | INACTIVE));
+      _state &= ~(CONNECTING | INACTIVE);
       _state |= TRANSACTION_BEGIN;
       ESB_LOG_DEBUG("[%s] transaction begun", _socket.name());
       break;
@@ -1267,17 +1210,8 @@ void HttpClientSocket::stateTransition(int state) {
       break;
     default:
       assert(0 == "Cannot transition into unknown state");
+      ESB_LOG_ERROR("[%s] cannot transition to multiple states: %d", _socket.name(), state);
   }
-}
-
-int HttpClientSocket::stateMask() {
-  return (HAS_BEEN_REMOVED | CONNECTING | TRANSACTION_BEGIN | FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY |
-          PARSING_HEADERS | PARSING_BODY | TRANSACTION_END);
-}
-
-int HttpClientSocket::flagMask() {
-  return ~(HAS_BEEN_REMOVED | CONNECTING | TRANSACTION_BEGIN | FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY |
-           PARSING_HEADERS | PARSING_BODY | TRANSACTION_END);
 }
 
 }  // namespace ES

@@ -220,6 +220,9 @@ ESB::Error HttpRoutingProxyHandler::produceResponseBody(HttpMultiplexer &multipl
     return ESB_INVALID_STATE;
   }
 
+  // TODO audit anything that can pause a stream (any EAGAIN or ESB_PAUSE) so that it can be resumed later
+  // If clientStream->readResponseBody pauses the serverStream, then resume the serverStream in
+  // this->consumeResponseBody.  Build up a table of pause/resume pairs.
   ESB::Error error = clientStream->readResponseBody(body, bytesRequested, context->clientStreamResponseOffset());
   if (ESB_SUCCESS != error) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot read %u response body bytes", clientStream->logAddress(), bytesRequested);

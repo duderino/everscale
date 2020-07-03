@@ -15,6 +15,18 @@ ESB::EpollMultiplexer::run
    - pass down whether reactive or proactive in the stack - use this to determine when to update multiplexer.
    - wrap buffers to send or read in server/client handler callbacks
  - propagate client socket changes to server socket
+ - In proxy handler:
+  // TODO audit anything that can pause a stream (any EAGAIN or ESB_PAUSE) so that it can be resumed later
+  // If clientStream->readResponseBody pauses the serverStream, then resume the serverStream in
+  // this->consumeResponseBody.  Build up a table of pause/resume pairs.
+ - consider removing pause resume calls from client and server socket and instead pushing all pause/resume logic in the proxy handler for clarity
+ 
+
+ - release send buffer when transitioning to parse headers.  acquire send buffer when transitioning to format headers (and later for bidy body streaming)
+ - release recv buffer when transitioning to format headers.  acquire recv buffer whwn transitioning to parse headers (and later for bidi body streaming)
+ - lazy acquisition of recv buffers - if no recv buffer, peek for data before allocation.  if no data, just return EAGAIN.
+
+ - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
 
 
 proxy:
@@ -49,6 +61,7 @@ proxy:
  - Http origin ctor should take the size of response to send and get rid of that xml string literal thing.
 
 performance and efficiency:
+ - do not unconditionally close server sockets after sending an error response - make that configurable and add a test for it
  - modify multiplexer - first write, then read.
  - Consider compacting recvBuffer unconditionally for every ServerSocket and ClientSocket handleReadable event.  This would do more memmoves in exchange for fewer socket recvs.
  - Consider using low watermarks for compacting and filling recvBuffer
