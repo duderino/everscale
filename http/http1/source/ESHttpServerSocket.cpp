@@ -126,30 +126,14 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
 
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
                                        ESB::UInt32 *bytesAvailable) {
-    if (!bytesAvailable) {
-      return ESB_NULL_POINTER;
-    }
-
-    if (!_size) {
-      // end body, transition to flushing state
-      *bytesAvailable = 0;
-      return ESB_SUCCESS;
-    }
-
-    *bytesAvailable = _size - _bytesConsumed;
-    return 0 == *bytesAvailable ? ESB_BREAK : ESB_SUCCESS;
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
   }
 
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
                                          unsigned char *body, ESB::UInt32 bytesRequested) {
-    assert(bytesRequested <= _size - _bytesConsumed);
-    if (bytesRequested > _size - _bytesConsumed) {
-      return ESB_INVALID_ARGUMENT;
-    }
-
-    memcpy(body, _buffer + _bytesConsumed, bytesRequested);
-    _bytesConsumed += bytesRequested;
-    return ESB_SUCCESS;
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
   }
 
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
@@ -167,6 +151,7 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
 
     memcpy((void *)(_buffer + _bytesConsumed), body, bytesToCopy);
     *bytesConsumed = bytesToCopy;
+    _bytesConsumed += bytesToCopy;
     return ESB_SUCCESS;
   }
 
@@ -190,6 +175,7 @@ HttpServerSocket::HttpServerSocket(HttpServerHandler &handler, HttpMultiplexerEx
     : _state(SERVER_TRANSACTION_BEGIN),
       _bodyBytesWritten(0),
       _requestsPerConnection(0),
+      _bytesAvailable(0),
       _multiplexer(multiplexer),
       _handler(handler),
       _transaction(NULL),
@@ -311,7 +297,8 @@ ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 b
 
 #ifndef NDEBUG
   if (ESB_SUCCESS == error) {
-    assert(bytesRequested == adaptor.bytesConsumed());
+    ESB::UInt32 bytesConsumed = adaptor.bytesConsumed();
+    assert(bytesRequested == bytesConsumed);
   }
 #endif
 
@@ -342,7 +329,7 @@ ESB::Error HttpServerSocket::sendEmptyResponse(int statusCode, const char *reaso
 }
 
 ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
-  assert(!response.hasBody());
+  // assert(!response.hasBody());
   ESB_LOG_DEBUG("[%s] sending response %d %s", _socket.name(), response.statusCode(), response.reasonPhrase());
 
   ESB::Error error = _transaction->response().copy(&response, _transaction->allocator());
@@ -361,7 +348,8 @@ ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk, ESB::U
     return ESB_NULL_POINTER;
   }
 
-  if (!(_state & SERVER_FORMATTING_BODY)) {
+  int state = _state & SERVER_STATE_MASK;
+  if (state != SERVER_FORMATTING_BODY) {
     abort(true);
     return ESB_INVALID_STATE;
   }
@@ -687,6 +675,12 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
 
   // TODO - check Expect header and maybe send a 100 Continue
 
+  if (_transaction->request().hasBody()) {
+    stateTransition(SERVER_PARSING_BODY);
+  } else {
+    stateTransition(SERVER_FORMATTING_HEADERS);
+  }
+
   switch (error = _handler.receiveRequestHeaders(_multiplexer, *this)) {
     case ESB_SUCCESS:
       break;
@@ -694,7 +688,7 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
     case ESB_AGAIN:
       return ESB_PAUSE;
     case ESB_SEND_RESPONSE:
-      conditionalStateTransition(SERVER_PARSING_HEADERS, SERVER_FORMATTING_HEADERS);
+      conditionalStateTransition(SERVER_PARSING_BODY, SERVER_FORMATTING_HEADERS);
       return ESB_SUCCESS;
     default:
       ESB_LOG_DEBUG_ERRNO(error, "[%s] Server request header handler aborting connection", _socket.name());
@@ -702,13 +696,11 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
   }
 
   if (_transaction->request().hasBody()) {
-    conditionalStateTransition(SERVER_PARSING_HEADERS, SERVER_PARSING_BODY);
     return ESB_SUCCESS;
   }
 
   // pass last chunk to the handler
 
-  stateTransition(SERVER_FORMATTING_HEADERS);
   unsigned char byte = 0;
   ESB::UInt32 bytesConsumed = 0U;
   switch (error = _handler.consumeRequestBody(_multiplexer, *this, &byte, 0, &bytesConsumed)) {
@@ -752,7 +744,7 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
     // if last chunk
     if (0 == bytesAvailable) {
       stateTransition(SERVER_SKIPPING_TRAILER);
-      ESB_LOG_DEBUG("[%s] parsed response body", _socket.name());
+      ESB_LOG_DEBUG("[%s] parsed request body", _socket.name());
       unsigned char byte = 0;
       switch (error = handler.consumeRequestBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
         case ESB_SUCCESS:
@@ -794,8 +786,9 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
       ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u request chunk bytes", _socket.name(), bytesAvailable);
       return error;  // remove from multiplexer
     }
+    _bytesAvailable -= bytesConsumed;
 
-    ESB_LOG_DEBUG("[%s] handler consumed %u out of %u response chunk bytes", _socket.name(), bytesConsumed,
+    ESB_LOG_DEBUG("[%s] handler consumed %u out of %u request chunk bytes", _socket.name(), bytesConsumed,
                   bytesAvailable);
   }
 
@@ -837,6 +830,19 @@ ESB::Error HttpServerSocket::stateSendResponseHeaders() {
     if (!_sendBuffer) {
       ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] Cannot create buffer", _socket.name());
       return ESB_OUT_OF_MEMORY;  // remove from multiplexer
+    }
+  }
+
+  if (ESB_DEBUG_LOGGABLE) {
+    HttpResponse &response = _transaction->response();
+    int major = response.httpVersion() / 100;
+    int minor = response.httpVersion() % 100 / 10;
+    ESB_LOG_DEBUG("[%s] sending response status-line: HTTP%d/%d %d %s", _socket.name(), major, minor,
+                  response.statusCode(), ESB_SAFE_STR(response.reasonPhrase()));
+
+    for (HttpHeader *header = (HttpHeader *)response.headers().first(); header; header = (HttpHeader *)header->next()) {
+      ESB_LOG_DEBUG("[%s] response header: %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
+                    ESB_SAFE_STR(header->fieldValue()));
     }
   }
 
@@ -973,9 +979,23 @@ ESB::Error HttpServerSocket::stateEndTransaction() {
 }
 
 ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
+  if (0 < _bytesAvailable) {
+    *bytesAvailable = _bytesAvailable;
+    return ESB_SUCCESS;
+  }
+
+  if (_state & SERVER_LAST_CHUNK_RECEIVED) {
+    *bytesAvailable = 0;
+    return ESB_SUCCESS;
+  }
+
   switch (ESB::Error error = _transaction->getParser()->parseBody(_recvBuffer, bufferOffset, bytesAvailable)) {
     case ESB_SUCCESS:
       ESB_LOG_DEBUG("[%s] %u request bytes available in current chunk", _socket.name(), *bytesAvailable);
+      _bytesAvailable = *bytesAvailable;
+      if (0 == _bytesAvailable) {
+        addFlag(SERVER_LAST_CHUNK_RECEIVED);
+      }
       return ESB_SUCCESS;
     case ESB_AGAIN:
       ESB_LOG_DEBUG("[%s] insufficient bytes available in current chunk", _socket.name());
@@ -1339,8 +1359,7 @@ void HttpServerSocket::stateTransition(int state) {
       break;
     case SERVER_TRANSACTION_BEGIN:
       assert(currentState & SERVER_TRANSACTION_END);
-      _state &= ~SERVER_TRANSACTION_END;
-      _state |= SERVER_TRANSACTION_BEGIN;
+      _state = SERVER_TRANSACTION_BEGIN;
       ESB_LOG_DEBUG("[%s] transaction begun", _socket.name());
       break;
     case SERVER_TRANSACTION_END:

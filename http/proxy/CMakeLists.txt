@@ -53,4 +53,4 @@ set(TEST_LIBS
         )
 
 add_unit_test(http-client-server-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 60 tests/ESHttpClientServerTest.cpp ${CLIENT_FILES} ${SERVER_FILES})
-#add_unit_test(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 60 tests/ESHttpProxyTest.cpp ${CLIENT_FILES} ${SERVER_FILES})
+add_unit_test(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 60 tests/ESHttpProxyTest.cpp ${CLIENT_FILES} ${SERVER_FILES})

@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
   const char *destination = "127.0.0.1";
   const char *host = "localhost.localdomain";
   unsigned int connections = 1;  // concurrent connections
-  unsigned int iterations = 1;   // http requests per concurrent connection
+  unsigned int iterations = 2;   // http requests per concurrent connection
   bool reuseConnections = true;
   int logLevel = ESB::Logger::Debug;
   const char *method = "GET";

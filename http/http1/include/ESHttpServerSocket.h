@@ -170,6 +170,7 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
 #define SERVER_RECV_PAUSED (1 << 10)
 #define SERVER_SEND_PAUSED (1 << 11)
 #define SERVER_ABORTED (1 << 12)
+#define SERVER_LAST_CHUNK_RECEIVED (1 << 13)
 
   // Useful socket flag masks
 
@@ -237,8 +238,9 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   ESB::Error setResponse(int statusCode, const char *reasonPhrase);
 
   int _state;
-  int _bodyBytesWritten;
+  ESB::UInt32 _bodyBytesWritten;
   int _requestsPerConnection;
+  ESB::UInt32 _bytesAvailable;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerTransaction *_transaction;

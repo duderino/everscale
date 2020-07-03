@@ -102,30 +102,14 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
 
   virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                       ESB::UInt32 *bytesAvailable) {
-    if (!bytesAvailable) {
-      return ESB_NULL_POINTER;
-    }
-
-    if (!_size) {
-      // end body, transition to flushing state
-      *bytesAvailable = 0;
-      return ESB_SUCCESS;
-    }
-
-    *bytesAvailable = _size - _bytesConsumed;
-    return 0 == *bytesAvailable ? ESB_BREAK : ESB_SUCCESS;
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
   }
 
   virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                         unsigned char *body, ESB::UInt32 bytesRequested) {
-    assert(bytesRequested <= _size - _bytesConsumed);
-    if (bytesRequested > _size - _bytesConsumed) {
-      return ESB_INVALID_ARGUMENT;
-    }
-
-    memcpy(body, _buffer + _bytesConsumed, bytesRequested);
-    _bytesConsumed += bytesRequested;
-    return ESB_SUCCESS;
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
   }
 
   virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
@@ -143,6 +127,7 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
 
     memcpy((void *)(_buffer + _bytesConsumed), body, bytesToCopy);
     *bytesConsumed = bytesToCopy;
+    _bytesConsumed += bytesToCopy;
     return ESB_SUCCESS;
   }
 
@@ -171,6 +156,7 @@ HttpClientSocket::HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerEx
                                    ESB::CleanupHandler &cleanupHandler)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
+      _bytesAvailable(0),
       _multiplexer(multiplexer),
       _handler(handler),
       _transaction(NULL),
@@ -262,9 +248,23 @@ ESB::Error HttpClientSocket::handleConnect() {
 }
 
 ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
+  if (0 < _bytesAvailable) {
+    *bytesAvailable = _bytesAvailable;
+    return ESB_SUCCESS;
+  }
+
+  if (_state & LAST_CHUNK_RECEIVED) {
+    *bytesAvailable = 0;
+    return ESB_SUCCESS;
+  }
+
   switch (ESB::Error error = _transaction->getParser()->parseBody(_recvBuffer, bufferOffset, bytesAvailable)) {
     case ESB_SUCCESS:
       ESB_LOG_DEBUG("[%s] %u response bytes available in current chunk", _socket.name(), *bytesAvailable);
+      _bytesAvailable = *bytesAvailable;
+      if (0 == _bytesAvailable) {
+        addFlag(LAST_CHUNK_RECEIVED);
+      }
       return ESB_SUCCESS;
     case ESB_AGAIN:
       ESB_LOG_DEBUG("[%s] insufficient bytes available in current chunk", _socket.name());
@@ -875,6 +875,7 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
       ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u response chunk bytes", _socket.name(), bytesAvailable);
       return error;  // remove from multiplexer
     }
+    _bytesAvailable -= bytesConsumed;
 
     ESB_LOG_DEBUG("[%s] consumed %u out of %u response chunk bytes", _socket.name(), bytesConsumed, bytesAvailable);
   }

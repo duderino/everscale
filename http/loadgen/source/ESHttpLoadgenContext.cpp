@@ -9,7 +9,7 @@ ESB::SharedInt HttpLoadgenContext::_RemainingIterations;
 ESB::SharedInt HttpLoadgenContext::_CompletedIterations;
 
 HttpLoadgenContext::HttpLoadgenContext(ESB::CleanupHandler &cleanupHandler)
-    : _bytesSent(0U), _cleanupHandler(cleanupHandler) {}
+    : _bytesSent(0U), _bytesReceived(0U), _cleanupHandler(cleanupHandler) {}
 
 HttpLoadgenContext::~HttpLoadgenContext() {}
 

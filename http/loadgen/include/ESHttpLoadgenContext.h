@@ -17,9 +17,13 @@ class HttpLoadgenContext : public ESB::Object {
 
   virtual ~HttpLoadgenContext();
 
-  inline ESB::UInt32 bytesSent() { return _bytesSent; }
+  inline ESB::UInt32 bytesSent() const { return _bytesSent; }
 
   inline void setBytesSent(ESB::UInt32 bytesSent) { _bytesSent = bytesSent; }
+
+  inline ESB::UInt32 bytesReceived() const { return _bytesReceived; }
+
+  inline void setBytesRecieved(ESB::UInt32 bytesReceived) { _bytesReceived = bytesReceived; }
 
   inline ESB::CleanupHandler &cleanupHandler() const { return _cleanupHandler; }
 
@@ -56,6 +60,7 @@ class HttpLoadgenContext : public ESB::Object {
   void operator=(const HttpLoadgenContext &);
 
   ESB::UInt32 _bytesSent;
+  ESB::UInt32 _bytesReceived;
   ESB::CleanupHandler &_cleanupHandler;
   static volatile int _TotalIterations;
   static ESB::SharedInt _RemainingIterations;

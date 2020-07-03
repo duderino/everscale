@@ -53,8 +53,12 @@ ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
                                                    ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
+  HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
+  assert(context);
 
   *bytesConsumed = chunkSize;
+  context->setBytesRecieved(context->bytesReceived() + chunkSize);
+
   return ESB_SUCCESS;
 }
 
@@ -89,6 +93,12 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
       ESB_LOG_WARNING("Transaction failed at unknown state");
   }
 
+    // TODO pass in expected bytes in ctor
+#ifndef NDEBUG
+  ESB::UInt32 bytesReceived = context->bytesReceived();
+  assert(bytesReceived == 740);
+#endif
+
   HttpLoadgenContext::IncCompletedIterations();
   // returns the value pre-decrement
   int remainingIterations = HttpLoadgenContext::DecRemainingIterations();
@@ -117,6 +127,7 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
   newTransaction->setPeerAddress(stream.peerAddress());
 
   context->setBytesSent(0U);
+  context->setBytesRecieved(0U);
   newTransaction->setContext(context);
   stream.setContext(NULL);
 

@@ -84,6 +84,9 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
     return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
+  // TODO optimization: if client connection is reused from pool, immediately send http request on it instead of waiting
+  // for epoll to say it's writable
+
   // Pause the server transaction until we get the response from the client transaction
 
   return ESB_PAUSE;
@@ -108,6 +111,8 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
   const HttpResponse &clientResponse = clientStream.response();
 
   ESB_LOG_DEBUG("[%s] received response, status=%d", clientStream.logAddress(), clientResponse.statusCode());
+
+  // TODO keef this should instead populate the response headers, and then advance the state machine...
 
   switch (ESB::Error error = serverStream->sendResponse(clientResponse)) {
     case ESB_SUCCESS:

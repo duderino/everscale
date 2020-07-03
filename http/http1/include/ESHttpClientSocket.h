@@ -184,6 +184,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 #define RECV_PAUSED (1 << 10)
 #define SEND_PAUSED (1 << 11)
 #define ABORTED (1 << 12)
+#define LAST_CHUNK_RECEIVED (1 << 13)
 
   // Useful socket flag masks
 
@@ -232,7 +233,8 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   ESB::Error flushSendBuffer();
 
   int _state;
-  int _bodyBytesWritten;
+  ESB::UInt32 _bodyBytesWritten;
+  ESB::UInt32 _bytesAvailable;
   HttpMultiplexerExtended &_multiplexer;
   HttpClientHandler &_handler;
   HttpClientTransaction *_transaction;

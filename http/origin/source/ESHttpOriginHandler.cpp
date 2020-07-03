@@ -60,13 +60,21 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   *bytesConsumed = chunkSize;
   HttpResponse &response = stream.response();
 
-  if (0U == chunkSize) {
-    response.setStatusCode(200);
-    response.setReasonPhrase("OK");
-    return ESB_SEND_RESPONSE;
+  if (0 < chunkSize) {
+    return ESB_SUCCESS;
   }
 
-  return ESB_SUCCESS;
+  response.setStatusCode(200);
+  response.setReasonPhrase("OK");
+  ESB::Error error = response.addHeader("Transfer-Encoding", "chunked", stream.allocator());
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+  error = response.addHeader("Content-Type", "octet-stream", stream.allocator());
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+  return ESB_SEND_RESPONSE;
 }
 
 ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
