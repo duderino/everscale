@@ -45,6 +45,10 @@ int main(int argc, char **argv) {
   int port = 8080;
   int threads = 4;
   int logLevel = ESB::Logger::Notice;
+  const char *contentType = "octet-stream";
+  unsigned char responseBody[1024];
+
+  memset(responseBody, 'b', sizeof(responseBody));
 
   {
     int result = 0;
@@ -145,7 +149,7 @@ int main(int argc, char **argv) {
 
   // Init
 
-  HttpOriginHandler handler;
+  HttpOriginHandler handler(contentType, responseBody, sizeof(responseBody), -1);
   HttpServer server("origin", threads, handler);
 
   error = server.initialize();

@@ -3,6 +3,6 @@
 #endif
 
 namespace ES {
-HttpOriginContext::HttpOriginContext() : _bytesSent(0) {}
+HttpOriginContext::HttpOriginContext() : _bytesSent(0U), _bytesReceived(0U) {}
 HttpOriginContext::~HttpOriginContext() {}
 }  // namespace ES

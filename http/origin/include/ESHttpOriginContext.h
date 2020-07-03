@@ -13,9 +13,13 @@ class HttpOriginContext {
 
   virtual ~HttpOriginContext();
 
-  inline unsigned int getBytesSent() { return _bytesSent; }
+  inline ESB::UInt32 bytesSent() const { return _bytesSent; }
 
-  inline void addBytesSent(unsigned int bytesSent) { _bytesSent += bytesSent; }
+  inline void setBytesSent(ESB::UInt32 bytesSent) { _bytesSent = bytesSent; }
+
+  inline ESB::UInt32 bytesReceived() const { return _bytesReceived; }
+
+  inline void setBytesReceived(ESB::UInt32 bytesReceived) { _bytesReceived = bytesReceived; }
 
   /** Placement new.
    *
@@ -30,7 +34,8 @@ class HttpOriginContext {
   HttpOriginContext(const HttpOriginContext &);
   void operator=(const HttpOriginContext &);
 
-  unsigned int _bytesSent;
+  ESB::UInt32 _bytesSent;
+  ESB::UInt32 _bytesReceived;
 };
 
 }  // namespace ES

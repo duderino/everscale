@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
   // Create, initialize, and start the stack
   //
 
-  HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
+  HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body), -1);
   HttpClientSocket::SetReuseConnections(reuseConnections);
   HttpClient client("loadgen", threads, clientHandler);
 

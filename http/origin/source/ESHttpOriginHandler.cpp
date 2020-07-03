@@ -6,26 +6,11 @@
 #include <ESHttpOriginContext.h>
 #endif
 
-#define BODY                                                                \
-  "<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope "           \
-  "xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" "           \
-  "xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" "           \
-  "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "                \
-  "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "                         \
-  "xmlns:ns2=\"http://schemas.xmlsoap.org/ws/2002/07/secext\" "             \
-  "xmlns:ns3=\"urn:yahoo:ysm:aws\" "                                        \
-  "xmlns:ns1=\"urn:yahoo:ysm:aws:echo\"><SOAP-ENV:Header><ns2:Security><"   \
-  "UsernameToken><Username>foo</Username><Password>bar</Password></"        \
-  "UsernameToken></ns2:Security><ns3:licensekey>baz</ns3:licensekey></"     \
-  "SOAP-ENV:Header><SOAP-ENV:Body><ns1:EchoResponseElement><Message>box10." \
-  "burbank.corp.yahoo.com:8029:0xb7fddbb0</Message></"                      \
-  "ns1:EchoResponseElement></SOAP-ENV:Body></SOAP-ENV:Envelope>"
-
 namespace ES {
 
-static unsigned int BodySize = (sizeof(BODY) - 1);
-
-HttpOriginHandler::HttpOriginHandler() {}
+HttpOriginHandler::HttpOriginHandler(const char *contentType, const unsigned char *responseBody,
+                                     ESB::UInt32 responseSize, ESB::Int64 requestSize)
+    : _contentType(contentType), _responseBody(responseBody), _responseSize(responseSize), _requestSize(requestSize) {}
 
 HttpOriginHandler::~HttpOriginHandler() {}
 
@@ -56,8 +41,12 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
                                                  ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
+  HttpOriginContext *context = (HttpOriginContext *)stream.context();
+  assert(context);
 
   *bytesConsumed = chunkSize;
+  context->setBytesReceived(context->bytesReceived() + chunkSize);
+
   HttpResponse &response = stream.response();
 
   if (0 < chunkSize) {
@@ -66,14 +55,17 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
 
   response.setStatusCode(200);
   response.setReasonPhrase("OK");
+
   ESB::Error error = response.addHeader("Transfer-Encoding", "chunked", stream.allocator());
   if (ESB_SUCCESS != error) {
     return error;
   }
+
   error = response.addHeader("Content-Type", "octet-stream", stream.allocator());
   if (ESB_SUCCESS != error) {
     return error;
   }
+
   return ESB_SEND_RESPONSE;
 }
 
@@ -81,7 +73,7 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, Ht
                                                 ESB::UInt32 *bytesAvailable) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  *bytesAvailable = BodySize - context->getBytesSent();
+  *bytesAvailable = _responseSize - context->bytesSent();
   return ESB_SUCCESS;
 }
 
@@ -91,13 +83,13 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  assert(bytesRequested <= BodySize - context->getBytesSent());
+  assert(bytesRequested <= _responseSize - context->bytesSent());
 
-  ESB::UInt32 totalBytesRemaining = BodySize - context->getBytesSent();
+  ESB::UInt32 totalBytesRemaining = _responseSize - context->bytesSent();
   ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
 
-  memcpy(chunk, ((unsigned char *)BODY) + context->getBytesSent(), bytesToSend);
-  context->addBytesSent(bytesToSend);
+  memcpy(chunk, ((unsigned char *)_responseBody) + context->bytesSent(), bytesToSend);
+  context->setBytesSent(context->bytesSent() + bytesToSend);
   return ESB_SUCCESS;
 }
 
@@ -112,24 +104,37 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
-      ESB_LOG_INFO("[%s] Transaction failed at begin state", stream.logAddress());
+      assert(!"Transaction failed at begin state");
+      ESB_LOG_ERROR("[%s] Transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
-      ESB_LOG_INFO("[%s] Transaction failed at request header parse state", stream.logAddress());
+      // Can fail here when the server connection is waiting for the next request
+      // assert(!"Transaction failed at request header parse state");
+      // ESB_LOG_ERROR("[%s] Transaction failed at request header parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
-      ESB_LOG_INFO("[%s] Transaction failed at request body parse state", stream.logAddress());
+      assert(!"Transaction failed at request body parse state");
+      ESB_LOG_ERROR("[%s] Transaction failed at request body parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
-      ESB_LOG_INFO("[%s] Transaction failed at response header send state", stream.logAddress());
+      assert(!"Transaction failed at response header send state");
+      ESB_LOG_ERROR("[%s] Transaction failed at response header send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
-      ESB_LOG_INFO("[%s] Transaction failed at response header send state", stream.logAddress());
+      assert(!"Transaction failed at response body send state");
+      ESB_LOG_ERROR("[%s] Transaction failed at response body send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
+#ifndef NDEBUG
+      if (0 <= _requestSize) {
+        ESB::UInt32 bytesReceived = context->bytesReceived();
+        assert(bytesReceived == _requestSize);
+      }
+#endif
       break;
     default:
-      ESB_LOG_WARNING("[%s] Transaction failed at unknown state", stream.logAddress());
+      assert(!"Transaction failed at unknown state");
+      ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
 }
 

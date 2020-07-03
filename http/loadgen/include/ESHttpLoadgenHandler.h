@@ -21,8 +21,8 @@ namespace ES {
 
 class HttpLoadgenHandler : public HttpClientHandler {
  public:
-  HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType, const unsigned char *body,
-                     int bodySize);
+  HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType, const unsigned char *requestBody,
+                     ESB::UInt32 requestSize, ESB::Int64 responseSize);
 
   virtual ~HttpLoadgenHandler();
 
@@ -53,8 +53,9 @@ class HttpLoadgenHandler : public HttpClientHandler {
   const char *_absPath;
   const char *_method;
   const char *_contentType;
-  const unsigned char *_body;
-  const int _bodySize;
+  const unsigned char *_requestBody;
+  const ESB::UInt32 _requestSize;
+  const ESB::Int64 _responseSize;
   ESB::SharedInt _completedTransactions;
 };
 

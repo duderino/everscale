@@ -9,12 +9,14 @@
 namespace ES {
 
 HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType,
-                                       const unsigned char *body, int bodySize)
+                                       const unsigned char *requestBody, ESB::UInt32 requestSize,
+                                       ESB::Int64 responseSize)
     : _absPath(absPath),
       _method(method),
       _contentType(contentType),
-      _body(body),
-      _bodySize(bodySize),
+      _requestBody(requestBody),
+      _requestSize(requestSize),
+      _responseSize(responseSize),
       _completedTransactions() {}
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
@@ -24,7 +26,7 @@ ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, Ht
   assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
-  *maxChunkSize = _bodySize - context->bytesSent();
+  *maxChunkSize = _requestSize - context->bytesSent();
   return ESB_SUCCESS;
 }
 
@@ -34,12 +36,12 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
-  assert(bytesRequested <= _bodySize - context->bytesSent());
+  assert(bytesRequested <= _requestSize - context->bytesSent());
 
-  ESB::UInt32 totalBytesRemaining = _bodySize - context->bytesSent();
+  ESB::UInt32 totalBytesRemaining = _requestSize - context->bytesSent();
   ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
 
-  memcpy(chunk, _body + context->bytesSent(), bytesToSend);
+  memcpy(chunk, _requestBody + context->bytesSent(), bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
   return ESB_SUCCESS;
 }
@@ -68,36 +70,44 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
-      ESB_LOG_INFO("Transaction failed at begin state");
+      assert(!"Transaction failed at begin state");
+      ESB_LOG_ERROR("Transaction failed at begin state");
       break;
     case ES_HTTP_CLIENT_HANDLER_RESOLVE:
-      ESB_LOG_INFO("Transaction failed at resolve state");
+      assert(!"Transaction failed at resolve state");
+      ESB_LOG_ERROR("Transaction failed at resolve state");
       break;
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
-      ESB_LOG_INFO("Transaction failed at connect state");
+      assert(!"Transaction failed at connect state");
+      ESB_LOG_ERROR("Transaction failed at connect state");
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
-      ESB_LOG_INFO("Transaction failed at send request headers state");
+      assert(!"Transaction failed at send request headers state");
+      ESB_LOG_ERROR("Transaction failed at send request headers state");
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
-      ESB_LOG_INFO("Transaction failed at send request body state");
+      assert(!"Transaction failed at send request body state");
+      ESB_LOG_ERROR("Transaction failed at send request body state");
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
-      ESB_LOG_INFO("Transaction failed at receive response headers state");
+      assert(!"Transaction failed at receive response headers state");
+      ESB_LOG_ERROR("Transaction failed at receive response headers state");
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
-      ESB_LOG_INFO("Transaction failed at receive response body state");
+      assert(!"Transaction failed at receive response body state");
+      ESB_LOG_ERROR("Transaction failed at receive response body state");
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
+#ifndef NDEBUG
+      if (0 <= _responseSize) {
+        ESB::UInt32 bytesReceived = context->bytesReceived();
+        assert(bytesReceived == _responseSize);
+      }
+#endif
       break;
     default:
-      ESB_LOG_WARNING("Transaction failed at unknown state");
+      assert(!"Transaction failed at unknown state");
+      ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
-
-    // TODO pass in expected bytes in ctor
-#ifndef NDEBUG
-  ESB::UInt32 bytesReceived = context->bytesReceived();
-  assert(bytesReceived == 740);
-#endif
 
   HttpLoadgenContext::IncCompletedIterations();
   // returns the value pre-decrement

@@ -107,9 +107,11 @@ int main(int argc, char **argv) {
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
-  unsigned char body[1024];
+  unsigned char requestBody[1024];
+  unsigned char responseBody[1024];
 
-  memset(body, 42, sizeof(body));
+  memset(requestBody, 'a', sizeof(requestBody));
+  memset(responseBody, 'b', sizeof(responseBody));
 
   {
     int result = 0;
@@ -215,7 +217,7 @@ int main(int argc, char **argv) {
   // Init client, server, and proxy
   //
 
-  HttpOriginHandler serverHandler;
+  HttpOriginHandler serverHandler(contentType, responseBody, sizeof(responseBody), sizeof(requestBody));
   HttpServer originServer("origin", serverThreads, serverHandler);
 
   error = originServer.initialize();
@@ -224,7 +226,8 @@ int main(int argc, char **argv) {
     return -4;
   }
 
-  HttpLoadgenHandler clientHandler(absPath, method, contentType, body, sizeof(body));
+  HttpLoadgenHandler clientHandler(absPath, method, contentType, requestBody, sizeof(requestBody),
+                                   sizeof(responseBody));
   HttpClientSocket::SetReuseConnections(reuseConnections);
   HttpClient client("loadgen", clientThreads, clientHandler);
 

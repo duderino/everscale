@@ -9,7 +9,8 @@ namespace ES {
 
 class HttpOriginHandler : public HttpServerHandler {
  public:
-  HttpOriginHandler();
+  HttpOriginHandler(const char *contentType, const unsigned char *responseBody, ESB::UInt32 responseSize,
+                    ESB::Int64 requestSize);
 
   virtual ~HttpOriginHandler();
 
@@ -32,6 +33,11 @@ class HttpOriginHandler : public HttpServerHandler {
   // Disabled
   HttpOriginHandler(const HttpOriginHandler &);
   void operator=(const HttpOriginHandler &);
+
+  const char *_contentType;
+  const unsigned char *_responseBody;
+  const ESB::UInt32 _responseSize;
+  const ESB::Int64 _requestSize;
 };
 
 }  // namespace ES
