@@ -544,10 +544,10 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           case ESB_AGAIN:
             return ESB_AGAIN;  // don't try to write to a socket with full send buffers twice in a row.
           case ESB_SUCCESS:
-            if (ESB_SUCCESS != (error = pauseSend(false))) {
+            /*if (ESB_SUCCESS != (error = pauseSend(false))) {
               abort(updateMultiplexer);
               return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-            }
+            }*/
             if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
               abort(updateMultiplexer);
               return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;

@@ -479,7 +479,12 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
 
     switch (state) {
       case SERVER_TRANSACTION_BEGIN:
-        error = stateBeginTransaction();
+        if (ESB_SUCCESS == (error = stateBeginTransaction())) {
+          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
+            abort(updateMultiplexer);
+            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+          }
+        }
         break;
       case SERVER_PARSING_HEADERS:
         error = stateReceiveRequestHeaders();
@@ -490,14 +495,14 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
       case SERVER_SKIPPING_TRAILER:
         if (ESB_SUCCESS == (error = stateSkipTrailer())) {
           clearFlag(SERVER_RECV_PAUSED);
-          if (ESB_SUCCESS != (error = pauseRecv(false))) {
+          /*if (ESB_SUCCESS != (error = pauseRecv(false))) {
             abort(updateMultiplexer);
             return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-          if (ESB_SUCCESS != (error = resumeSend(updateMultiplexer))) {
+          }*/
+          /*if (ESB_SUCCESS != (error = resumeSend(updateMultiplexer))) {
             abort(updateMultiplexer);
             return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
+          }*/
         }
         break;
       case SERVER_FORMATTING_HEADERS:
@@ -518,14 +523,14 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
             return ESB_CLEANUP;
           case ESB_SUCCESS:
             // reuse connection
-            if (ESB_SUCCESS != (error = pauseSend(false))) {
+            /*if (ESB_SUCCESS != (error = pauseSend(false))) {
               abort(updateMultiplexer);
               return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
             }
             if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
               abort(updateMultiplexer);
               return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-            }
+            }*/
           default:
             break;
         }
@@ -837,8 +842,10 @@ ESB::Error HttpServerSocket::stateSendResponseHeaders() {
     HttpResponse &response = _transaction->response();
     int major = response.httpVersion() / 100;
     int minor = response.httpVersion() % 100 / 10;
-    ESB_LOG_DEBUG("[%s] sending response status-line: HTTP%d/%d %d %s", _socket.name(), major, minor,
-                  response.statusCode(), ESB_SAFE_STR(response.reasonPhrase()));
+    int statusCode = response.statusCode();
+    const char *reasonPhrase = ESB_SAFE_STR(response.reasonPhrase());
+    ESB_LOG_DEBUG("[%s] sending response status-line: HTTP%d/%d %d %s", _socket.name(), major, minor, statusCode,
+                  reasonPhrase);
 
     for (HttpHeader *header = (HttpHeader *)response.headers().first(); header; header = (HttpHeader *)header->next()) {
       ESB_LOG_DEBUG("[%s] response header: %s: %s", _socket.name(), ESB_SAFE_STR(header->fieldName()),
@@ -857,7 +864,7 @@ ESB::Error HttpServerSocket::stateSendResponseHeaders() {
       ESB_LOG_DEBUG("[%s] partially formatted response headers", _socket.name());
       return ESB_AGAIN;
     default:
-      ESB_LOG_INFO_ERRNO(error, "[%s] error formatting response header", _socket.name());
+      ESB_LOG_CRITICAL_ERRNO(error, "[%s] error formatting response header", _socket.name());
       return error;
   }
 }
@@ -1195,9 +1202,11 @@ ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  if (!(_state & SERVER_RECV_PAUSED)) {
+  // TODO audit resume/pause logic and then remove this... currently a little borked - something is resuming but not
+  // updating the multiplexer
+  /*if (!(_state & SERVER_RECV_PAUSED)) {
     return ESB_SUCCESS;
-  }
+  }*/
 
   ESB_LOG_DEBUG("[%s] resuming server request receive", _socket.name());
 
@@ -1245,9 +1254,11 @@ ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  if (!(_state & SERVER_SEND_PAUSED)) {
+  // TODO audit resume/pause logic and then remove this... currently a little borked - something is resuming but not
+  // updating the multiplexer
+  /*if (!(_state & SERVER_SEND_PAUSED)) {
     return ESB_SUCCESS;
-  }
+  }*/
 
   ESB_LOG_DEBUG("[%s] resuming server request send", _socket.name());
 

@@ -96,12 +96,12 @@ class HttpFixedRouter : public HttpRouter {
 using namespace ES;
 
 int main(int argc, char **argv) {
-  int clientThreads = 1;
-  int serverThreads = 1;
+  int clientThreads = 3;
+  int serverThreads = 3;
   const char *destination = "127.0.0.1";
   const char *host = "localhost.localdomain";
-  unsigned int connections = 1;  // concurrent connections
-  unsigned int iterations = 2;   // http requests per concurrent connection
+  unsigned int connections = 3;  // concurrent connections
+  unsigned int iterations = 3;   // http requests per concurrent connection
   bool reuseConnections = true;
   int logLevel = ESB::Logger::Debug;
   const char *method = "GET";

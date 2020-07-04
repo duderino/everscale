@@ -1,34 +1,15 @@
 stat:
+ - Remove all send/resume calls from the client and server sockets... move entirely into the proxy handler.  Ensure that proxy handler has enough callbacks to resume.
+   - put pause/resume private function in handler.  Private function does this:
+     - when client recv blocks:  resume client recv, pause server send
+     - when server recv blocks:  resume server recv, pause client send
+     - when server send blcoks:  resume server send, pause client recv
+     - when client send blocks:  resume client send, pause server rec
  - add trace id extension header, copy across all transactions, and include in log messages
- - proxy-server connections are not registered for read interest after completing a transaction
- - implement HttpServerSocket::formatResponseBody
- - Problem:  sendResponse calls handleWritable which finishes transaction because the handler produces no data... and doesn't update multiplexer
-ES::HttpServerSocket::handleWritable
-ES::HttpServerSocket::sendResponse
-ES::HttpServerSocket::sendResponse
-ES::HttpRoutingProxyHandler::receiveResponseHeaders
-ES::HttpClientSocket::stateReceiveResponseHeaders
-ES::HttpClientSocket::advanceStateMachine
-ES::HttpClientSocket::handleReadable
-ESB::EpollMultiplexer::run
-
- - combine reactive and proactive state machine in client socket.
-   - pass down whether reactive or proactive in the stack - use this to determine when to update multiplexer.
-   - wrap buffers to send or read in server/client handler callbacks
- - propagate client socket changes to server socket
- - In proxy handler:
-  // TODO audit anything that can pause a stream (any EAGAIN or ESB_PAUSE) so that it can be resumed later
-  // If clientStream->readResponseBody pauses the serverStream, then resume the serverStream in
-  // this->consumeResponseBody.  Build up a table of pause/resume pairs.
- - consider removing pause resume calls from client and server socket and instead pushing all pause/resume logic in the proxy handler for clarity
- 
-
  - release send buffer when transitioning to parse headers.  acquire send buffer when transitioning to format headers (and later for bidy body streaming)
  - release recv buffer when transitioning to format headers.  acquire recv buffer whwn transitioning to parse headers (and later for bidi body streaming)
  - lazy acquisition of recv buffers - if no recv buffer, peek for data before allocation.  if no data, just return EAGAIN.
-
  - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
-
 
 proxy:
  - origin server and loadgen should send configurably sized response.  loadgen should assert that it received the entire origin response.  origin should assert it received the entire loagden request.
@@ -53,6 +34,7 @@ proxy:
    - proxy/client: servers that listen but never accept connections
    - use netem to simulate lots of tiny reads, packet loss, etc.
    - lots of tiny chunks
+   - peers close sockets while pooled/paused
  - Implement proxy handler and proxy context.  Pass in ephemeral destination port.  Copy from inbound to outbound and vice versa.
  - proxy handler should remember inbound and outbound streams...  and pause and resume and close them appropriately.  
  - close would be called when relaying a remote close from the other stream.  must take care to ensure subsequent events from the same event loop are discarded...  can we set _events[i].data.ptr; to NULL and then skip in the event loop?
