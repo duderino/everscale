@@ -55,6 +55,11 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   HttpRoutingProxyHandler(const HttpRoutingProxyHandler &);
   void operator=(const HttpRoutingProxyHandler &);
 
+  ESB::Error onClientRecvBlocked(HttpServerStream &serverStream, HttpClientStream &clientStream);
+  ESB::Error onServerRecvBlocked(HttpServerStream &serverStream, HttpClientStream &clientStream);
+  ESB::Error onClientSendBlocked(HttpServerStream &serverStream, HttpClientStream &clientStream);
+  ESB::Error onServerSendBlocked(HttpServerStream &serverStream, HttpClientStream &clientStream);
+
   HttpRouter &_router;
 };
 

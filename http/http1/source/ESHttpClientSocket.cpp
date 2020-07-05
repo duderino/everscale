@@ -120,9 +120,17 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
     }
 
     ESB::UInt32 bytesToCopy = ESB_MIN(_size - _bytesConsumed, bytesOffered);
-    if (0 >= bytesToCopy) {
+
+    if (0 == bytesOffered) {
+      // last chunk so advance state machine
       *bytesConsumed = 0U;
       return ESB_SUCCESS;
+    }
+
+    if (0 == bytesToCopy) {
+      // we've filled the buffer but more body remains
+      *bytesConsumed = 0U;
+      return ESB_BREAK;
     }
 
     memcpy((void *)(_buffer + _bytesConsumed), body, bytesToCopy);
@@ -292,14 +300,6 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
     case ESB_SUCCESS:
       return ESB_SUCCESS;
     case ESB_AGAIN:
-      //
-      // Since this function isn't invoked by the multiplexer, we have to explicitly
-      // adjust the registered interest events here.
-      //
-      if (ESB_SUCCESS != (error = resumeRecv(true))) {
-        abort(true);
-        return error;
-      }
       return ESB_AGAIN;
     default:
       ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot parse response body", _socket.name());
@@ -497,11 +497,11 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
     bool inSendState = _state & SEND_STATE_MASK;
 
     if (inRecvState && !(flags & ADVANCE_RECV)) {
-      return ESB_SUCCESS;  // TODO maybe do a resumeRecv(updateMultiplexer);
+      return ESB_SUCCESS;
     }
 
     if (inSendState && !(flags & ADVANCE_SEND)) {
-      return ESB_SUCCESS;  // TODO maybe do a resumeSend(updateMultiplexer);
+      return ESB_SUCCESS;
     }
 
     if (fillRecvBuffer) {
@@ -510,10 +510,6 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           fillRecvBuffer = false;
           break;
         case ESB_AGAIN:
-          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
           return ESB_AGAIN;
         case ESB_CLOSED:
           handleRemoteClose();
@@ -544,14 +540,6 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           case ESB_AGAIN:
             return ESB_AGAIN;  // don't try to write to a socket with full send buffers twice in a row.
           case ESB_SUCCESS:
-            /*if (ESB_SUCCESS != (error = pauseSend(false))) {
-              abort(updateMultiplexer);
-              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-            }*/
-            if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
-              abort(updateMultiplexer);
-              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-            }
             fillRecvBuffer = true;
             break;
           default:
@@ -577,24 +565,15 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
       case ESB_SUCCESS:
         break;
       case ESB_BREAK:
+        // For proactive/synchronous calls, the handler has finished sending or receiving the requested amount of data
         return ESB_SUCCESS;
       case ESB_AGAIN:
         fillRecvBuffer = inRecvState;
         drainSendBuffer = inSendState;
         break;
       case ESB_PAUSE:
-        if (inRecvState) {
-          if (ESB_SUCCESS != (error = pauseRecv(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-        } else if (inSendState) {
-          if (ESB_SUCCESS != (error = pauseSend(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-        }
-        return ESB_AGAIN;
+        // The handler cannot make progress
+        return ESB_PAUSE;
       default:
         abort(updateMultiplexer);
         return error;
@@ -606,9 +585,6 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           drainSendBuffer = false;
           break;
         case ESB_AGAIN:
-          if (ESB_SUCCESS != (error = resumeSend(updateMultiplexer))) {
-            return error;
-          }
           return ESB_AGAIN;
         default:
           abort(updateMultiplexer);
@@ -802,6 +778,8 @@ ESB::Error HttpClientSocket::stateReceiveResponseHeaders() {
   unsigned char byte = 0;
   ESB::UInt32 bytesConsumed = 0;
   switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte, 0, &bytesConsumed)) {
+    case ESB_BREAK:
+      return ESB_BREAK;
     case ESB_SUCCESS:
       return ESB_SUCCESS;
     case ESB_PAUSE:
@@ -841,6 +819,8 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
       ESB_LOG_DEBUG("[%s] parsed response body", _socket.name());
       unsigned char byte = 0;
       switch (error = handler.consumeResponseBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
+        case ESB_BREAK:
+          return ESB_BREAK;
         case ESB_SUCCESS:
           return ESB_SUCCESS;
         case ESB_PAUSE:
@@ -856,6 +836,8 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
 
     switch (error = handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
                                                 bytesAvailable, &bytesConsumed)) {
+      case ESB_BREAK:
+        return ESB_BREAK;
       case ESB_SUCCESS:
         if (0 == bytesConsumed) {
           ESB_LOG_DEBUG("[%s] pausing response body receive until handler is ready", _socket.name());
@@ -896,10 +878,6 @@ ESB::Error HttpClientSocket::fillReceiveBuffer() {
     }
   }
 
-  if (_recvBuffer->isReadable()) {
-    return ESB_SUCCESS;
-  }
-
   // If there is no data in the recv buffer, read some more from the socket
   // If there is no space left in the recv buffer, make room if possible
   if (!_recvBuffer->isWritable()) {
@@ -936,6 +914,8 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
     ESB_LOG_INFO("[%s] request formatter jammed", _socket.name());
     return ESB_OVERFLOW;  // remove from multiplexer
   }
+
+  ESB_LOG_DEBUG("[%s] %u bytes in output buffer", _socket.name(), _sendBuffer->readable());
 
   while (!_multiplexer.shutdown() && _sendBuffer->isReadable()) {
     ESB::SSize bytesSent = _socket.send(_sendBuffer);

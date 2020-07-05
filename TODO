@@ -1,22 +1,11 @@
 stat:
- - Remove all send/resume calls from the client and server sockets... move entirely into the proxy handler.  Ensure that proxy handler has enough callbacks to resume.
-   - put pause/resume private function in handler.  Private function does this:
-     - when client recv blocks:  resume client recv, pause server send
-     - when server recv blocks:  resume server recv, pause client send
-     - when server send blcoks:  resume server send, pause client recv
-     - when client send blocks:  resume client send, pause server rec
- - add trace id extension header, copy across all transactions, and include in log messages
- - release send buffer when transitioning to parse headers.  acquire send buffer when transitioning to format headers (and later for bidy body streaming)
- - release recv buffer when transitioning to format headers.  acquire recv buffer whwn transitioning to parse headers (and later for bidi body streaming)
- - lazy acquisition of recv buffers - if no recv buffer, peek for data before allocation.  if no data, just return EAGAIN.
- - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
+ - add aborts on error to either proactive client and server functions or to handler
+ - pause/resume and possibly abort should always update the multiplexer
 
 proxy:
- - origin server and loadgen should send configurably sized response.  loadgen should assert that it received the entire origin response.  origin should assert it received the entire loagden request.
  - for proxy initiated connections, do not blindly relay connection close headers and content-length/transfer encoding headers from the client and server.
  - relay error codes to handler.endTransaction().  Instead of returning true|false in handleRead(), etc, return ESB::Error to the multiplexer and pass these back to the handlers.
- - add test and support for http pipelining.
- - implement idle check - and make it work with paused sockets
+ - implement idle check - and make it work with paused sockets? (or not - the other socket in the inbound/outbound pair should timeout and propagate the timeout by calling abort)
  - move HttpServerHandler, HttpClientHandler, HttpMultiplexer and their deps into http-common.  Leave HttpMultiplexerExtended in http1
  - do not wait to receive entire request body before sending response body.  Instead stream them concurrently
  - add protocol coverage/interoperability tests:
@@ -34,15 +23,11 @@ proxy:
    - proxy/client: servers that listen but never accept connections
    - use netem to simulate lots of tiny reads, packet loss, etc.
    - lots of tiny chunks
-   - peers close sockets while pooled/paused
- - Implement proxy handler and proxy context.  Pass in ephemeral destination port.  Copy from inbound to outbound and vice versa.
- - proxy handler should remember inbound and outbound streams...  and pause and resume and close them appropriately.  
- - close would be called when relaying a remote close from the other stream.  must take care to ensure subsequent events from the same event loop are discarded...  can we set _events[i].data.ptr; to NULL and then skip in the event loop?
-  - handleRead and handleWrite should be prepared to be called when closed (local or remote) but not removed
-  - sockets to be removed should be added to a epoll to be removed list.  removals should be called at the end of the event loop before calling epoll_wait again.
- - Route callback for proxy handler.  given the server trans request headers, pick a destionation address for the client trans.
+   - peers close sockets while pooled/paused or at other random times
  - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
- - Http origin ctor should take the size of response to send and get rid of that xml string literal thing.
+ - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
+ - release send buffer when transitioning to parse headers.  acquire send buffer when transitioning to format headers (and later for bidy body streaming)
+ - release recv buffer when transitioning to format headers.  acquire recv buffer whwn transitioning to parse headers (and later for bidi body streaming)
 
 performance and efficiency:
  - do not unconditionally close server sockets after sending an error response - make that configurable and add a test for it
@@ -62,7 +47,6 @@ connection pool rework:
 
 code health:
  - Share more code between HttpClientSocket and HttpServerSocket
- - Share more code between proactive and reactive parsing and formatting functions in HttpClientSocket and HttpServerSocket
  - replace all these memcpy's of ESB::Buffer internals with a convenience function
  - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
@@ -165,6 +149,7 @@ xds support
 
 logging
  - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
+ - add trace id extension header, copy across all transactions, and include in log messages
 
 perf counters
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio

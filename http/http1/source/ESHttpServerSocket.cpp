@@ -144,9 +144,17 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
     }
 
     ESB::UInt32 bytesToCopy = ESB_MIN(_size - _bytesConsumed, bytesOffered);
-    if (0 >= bytesToCopy) {
+
+    if (0 == bytesOffered) {
+      // last chunk so advance state machine
       *bytesConsumed = 0U;
       return ESB_SUCCESS;
+    }
+
+    if (0 == bytesToCopy) {
+      // we've filled the buffer but more body remains
+      *bytesConsumed = 0U;
+      return ESB_BREAK;
     }
 
     memcpy((void *)(_buffer + _bytesConsumed), body, bytesToCopy);
@@ -266,14 +274,6 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable, E
     case ESB_SUCCESS:
       return ESB_SUCCESS;
     case ESB_AGAIN:
-      //
-      // Since this function isn't invoked by the multiplexer, we have to explicitly
-      // adjust the registered interest events here.
-      //
-      if (ESB_SUCCESS != (error = resumeRecv(true))) {
-        abort(true);
-        return error;
-      }
       return ESB_AGAIN;
     default:
       ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot parse request body", _socket.name());
@@ -288,8 +288,6 @@ ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 b
   if (!chunk) {
     return ESB_NULL_POINTER;
   }
-
-  // TODO remove bufferOffset
 
   HttpRequestBodyConsumer adaptor(chunk, bytesRequested);
 
@@ -445,11 +443,11 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
     bool inSendState = _state & SERVER_SEND_STATE_MASK;
 
     if (inRecvState && !(flags & SERVER_ADVANCE_RECV)) {
-      return ESB_SUCCESS;  // TODO maybe do a resumeRecv(updateMultiplexer);
+      return ESB_SUCCESS;
     }
 
     if (inSendState && !(flags & SERVER_ADVANCE_SEND)) {
-      return ESB_SUCCESS;  // TODO maybe do a resumeSend(updateMultiplexer);
+      return ESB_SUCCESS;
     }
 
     if (fillRecvBuffer) {
@@ -458,10 +456,6 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
           fillRecvBuffer = false;
           break;
         case ESB_AGAIN:
-          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
           return ESB_AGAIN;
         case ESB_CLOSED:
           handleRemoteClose();
@@ -479,12 +473,7 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
 
     switch (state) {
       case SERVER_TRANSACTION_BEGIN:
-        if (ESB_SUCCESS == (error = stateBeginTransaction())) {
-          if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-        }
+        error = stateBeginTransaction();
         break;
       case SERVER_PARSING_HEADERS:
         error = stateReceiveRequestHeaders();
@@ -493,17 +482,7 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
         error = stateReceiveRequestBody(handler);
         break;
       case SERVER_SKIPPING_TRAILER:
-        if (ESB_SUCCESS == (error = stateSkipTrailer())) {
-          clearFlag(SERVER_RECV_PAUSED);
-          /*if (ESB_SUCCESS != (error = pauseRecv(false))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }*/
-          /*if (ESB_SUCCESS != (error = resumeSend(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }*/
-        }
+        error = stateSkipTrailer();
         break;
       case SERVER_FORMATTING_HEADERS:
         error = stateSendResponseHeaders();
@@ -517,23 +496,7 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
         }
         break;
       case SERVER_TRANSACTION_END:
-        switch (error = stateEndTransaction()) {
-          case ESB_CLEANUP:
-            // close connection
-            return ESB_CLEANUP;
-          case ESB_SUCCESS:
-            // reuse connection
-            /*if (ESB_SUCCESS != (error = pauseSend(false))) {
-              abort(updateMultiplexer);
-              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-            }
-            if (ESB_SUCCESS != (error = resumeRecv(updateMultiplexer))) {
-              abort(updateMultiplexer);
-              return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-            }*/
-          default:
-            break;
-        }
+        error = stateEndTransaction();
         break;
       default:
         assert(!"invalid state");
@@ -543,27 +506,21 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
     }
 
     switch (error) {
+      case ESB_CLEANUP:
+        // close connection
+        return ESB_CLEANUP;
       case ESB_SUCCESS:
         break;
       case ESB_BREAK:
+        // For proactive/synchronous calls, the handler has finished sending or receiving the requested amount of data
         return ESB_SUCCESS;
       case ESB_AGAIN:
         fillRecvBuffer = inRecvState;
         drainSendBuffer = inSendState;
         break;
       case ESB_PAUSE:
-        if (inRecvState) {
-          if (ESB_SUCCESS != (error = pauseRecv(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-        } else if (inSendState) {
-          if (ESB_SUCCESS != (error = pauseSend(updateMultiplexer))) {
-            abort(updateMultiplexer);
-            return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-          }
-        }
-        return ESB_AGAIN;
+        // The handler cannot make progress
+        return ESB_PAUSE;
       default:
         abort(updateMultiplexer);
         return error;
@@ -575,9 +532,6 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
           drainSendBuffer = false;
           break;
         case ESB_AGAIN:
-          if (ESB_SUCCESS != (error = resumeSend(updateMultiplexer))) {
-            return error;
-          }
           return ESB_AGAIN;
         default:
           abort(updateMultiplexer);
@@ -709,6 +663,8 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
   unsigned char byte = 0;
   ESB::UInt32 bytesConsumed = 0U;
   switch (error = _handler.consumeRequestBody(_multiplexer, *this, &byte, 0, &bytesConsumed)) {
+    case ESB_BREAK:
+      return ESB_BREAK;
     case ESB_SUCCESS:
     case ESB_SEND_RESPONSE:
       clearFlag(SERVER_CANNOT_REUSE_CONNECTION);
@@ -752,6 +708,8 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
       ESB_LOG_DEBUG("[%s] parsed request body", _socket.name());
       unsigned char byte = 0;
       switch (error = handler.consumeRequestBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
+        case ESB_BREAK:
+          return ESB_BREAK;
         case ESB_SUCCESS:
         case ESB_SEND_RESPONSE:
           return ESB_SUCCESS;
@@ -768,6 +726,8 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
 
     switch (error = handler.consumeRequestBody(_multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
                                                bytesAvailable, &bytesConsumed)) {
+      case ESB_BREAK:
+        return ESB_BREAK;
       case ESB_SUCCESS:
         if (0 == bytesConsumed) {
           ESB_LOG_DEBUG("[%s] pausing request body receive until handler is ready", _socket.name());
@@ -1057,10 +1017,6 @@ ESB::Error HttpServerSocket::fillReceiveBuffer() {
     }
   }
 
-  if (_recvBuffer->isReadable()) {
-    return ESB_SUCCESS;
-  }
-
   // If there is no data in the recv buffer, read some more from the socket
   // If there is no space left in the recv buffer, make room if possible
   if (!_recvBuffer->isWritable()) {
@@ -1202,11 +1158,9 @@ ESB::Error HttpServerSocket::resumeRecv(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  // TODO audit resume/pause logic and then remove this... currently a little borked - something is resuming but not
-  // updating the multiplexer
-  /*if (!(_state & SERVER_RECV_PAUSED)) {
+  if (!(_state & SERVER_RECV_PAUSED)) {
     return ESB_SUCCESS;
-  }*/
+  }
 
   ESB_LOG_DEBUG("[%s] resuming server request receive", _socket.name());
 
@@ -1254,11 +1208,9 @@ ESB::Error HttpServerSocket::resumeSend(bool updateMultiplexer) {
     return ESB_INVALID_STATE;
   }
 
-  // TODO audit resume/pause logic and then remove this... currently a little borked - something is resuming but not
-  // updating the multiplexer
-  /*if (!(_state & SERVER_SEND_PAUSED)) {
+  if (!(_state & SERVER_SEND_PAUSED)) {
     return ESB_SUCCESS;
-  }*/
+  }
 
   ESB_LOG_DEBUG("[%s] resuming server request send", _socket.name());
 

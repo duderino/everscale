@@ -100,10 +100,10 @@ int main(int argc, char **argv) {
   int serverThreads = 3;
   const char *destination = "127.0.0.1";
   const char *host = "localhost.localdomain";
-  unsigned int connections = 3;  // concurrent connections
-  unsigned int iterations = 3;   // http requests per concurrent connection
+  unsigned int connections = 500;  // concurrent connections
+  unsigned int iterations = 500;   // http requests per concurrent connection
   bool reuseConnections = true;
-  int logLevel = ESB::Logger::Debug;
+  int logLevel = ESB::Logger::Notice;
   const char *method = "GET";
   const char *contentType = "octet-stream";
   const char *absPath = "/";
