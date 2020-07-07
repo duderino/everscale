@@ -43,6 +43,7 @@ FetchContent_GetProperties(googletest)
 if (NOT googletest_POPULATED)
     FetchContent_Populate(googletest)
     add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+    include_directories(${gtest_SOURCE_DIR}/include)
 endif ()
 
 include(GoogleTest)
