@@ -8,22 +8,25 @@ int main(int argc, char **argv) {
   HttpIntegrationTest::TestParams params;
   params.connections(500).iterations(500).clientThreads(3).proxyThreads(3).originThreads(3).logLevel(
       ESB::Logger::Notice);
-  params.override(argc, argv);
-  HttpIntegrationTest test(params);
-
-  ESB::Error error = test.run();
+  ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  const ESB::UInt32 totalSuccesses = test.clientCounters().getSuccesses()->queries();
-  const ESB::UInt32 totalFailures = test.clientCounters().getFailures()->queries();
+  HttpIntegrationTest test(params);
+  error = test.run();
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
 
   //
   // Assert all requests succeeded
   //
 
-  ESB::UInt32 totalTransactions = params.connections() * params.iterations();
+  const ESB::UInt32 totalSuccesses = test.clientCounters().getSuccesses()->queries();
+  const ESB::UInt32 totalFailures = test.clientCounters().getFailures()->queries();
+  const ESB::UInt32 totalTransactions = params.connections() * params.iterations();
+
   if (totalSuccesses != totalTransactions || 0 < totalFailures) {
     ESB_LOG_CRITICAL("TEST FAILURE: expected %u successes but got %u successes and %u failures", totalTransactions,
                      totalSuccesses, totalFailures);

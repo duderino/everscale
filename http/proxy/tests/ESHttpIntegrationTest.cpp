@@ -318,7 +318,7 @@ HttpIntegrationTest::TestParams &HttpIntegrationTest::TestParams::responseSize(E
 
 ESB::Error HttpIntegrationTest::TestParams::override(int argc, char **argv) {
   while (true) {
-    int result = getopt(argc, argv, "l:t:c:i:r:");
+    int result = getopt(argc, argv, "l:c:o:p:s:i:r:");
 
     if (0 > result) {
       break;
@@ -342,12 +342,16 @@ ESB::Error HttpIntegrationTest::TestParams::override(int argc, char **argv) {
             return ESB_INVALID_ARGUMENT;
         }
         break;
-      case 't':
-        _clientThreads = atoi(optarg);
-        _proxyThreads = _clientThreads;
-        _originThreads = _clientThreads;
-        break;
       case 'c':
+        _clientThreads = atoi(optarg);
+        break;
+      case 'o':
+        _originThreads = atoi(optarg);
+        break;
+      case 'p':
+        _proxyThreads = atoi(optarg);
+        break;
+      case 's':
         _connections = atoi(optarg);
         break;
       case 'i':
@@ -356,6 +360,12 @@ ESB::Error HttpIntegrationTest::TestParams::override(int argc, char **argv) {
       case 'r':
         _reuseConnections = 0 != atoi(optarg);
         break;
+      default:
+        fprintf(stderr,
+                "Usage: %s -l <log level> -c <client threads> -o <origin threads> -p <proxy threads> "
+                "-s <concurrent sockets> -i <requests per socket> -r <reuse connections>\n",
+                argv[0]);
+        return ESB_INVALID_ARGUMENT;
     }
   }
 
