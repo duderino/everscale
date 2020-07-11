@@ -5,12 +5,15 @@
 #include <ESHttpServerHandler.h>
 #endif
 
+#ifndef ES_HTTP_TEST_PARAMS_H
+#include <ESHttpTestParams.h>
+#endif
+
 namespace ES {
 
 class HttpOriginHandler : public HttpServerHandler {
  public:
-  HttpOriginHandler(const char *contentType, const unsigned char *responseBody, ESB::UInt32 responseSize,
-                    ESB::Int64 requestSize);
+  HttpOriginHandler(HttpTestParams &params);
 
   virtual ~HttpOriginHandler();
 
@@ -34,10 +37,7 @@ class HttpOriginHandler : public HttpServerHandler {
   HttpOriginHandler(const HttpOriginHandler &);
   void operator=(const HttpOriginHandler &);
 
-  const char *_contentType;
-  const unsigned char *_responseBody;
-  const ESB::UInt32 _responseSize;
-  const ESB::Int64 _requestSize;
+  HttpTestParams &_params;
 };
 
 }  // namespace ES

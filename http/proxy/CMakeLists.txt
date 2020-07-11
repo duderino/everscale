@@ -31,6 +31,7 @@ target_compile_options(proxy PUBLIC ${CPP_FLAGS})
 set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../../base/include"
+        "${PROJECT_SOURCE_DIR}/../http-test-common/include"
         "${PROJECT_SOURCE_DIR}/../http-common/include"
         "${PROJECT_SOURCE_DIR}/../http1/include"
         "${PROJECT_SOURCE_DIR}/../multiplexers/include"
@@ -49,11 +50,13 @@ set(TEST_LIBS
         multiplexers
         http1
         http-common
+        http-test-common
         base
         )
 
 set(TEST_FILES
 	tests/ESHttpIntegrationTest.cpp
+	tests/ESHttpFixedRouter.cpp
 	)
 
 add_unit_test(http-client-server-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 60 tests/ESHttpClientServerTest.cpp ${TEST_FILES})

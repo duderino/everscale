@@ -5,13 +5,15 @@
 #include <ESHttpClientCommand.h>
 #endif
 
+#ifndef ES_HTTP_TEST_PARAMS_H
+#include <ESHttpTestParams.h>
+#endif
+
 namespace ES {
 
 class HttpLoadgenSeedCommand : public HttpClientCommand {
  public:
-  HttpLoadgenSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations, ESB::SocketAddress &destination,
-                         ESB::Int32 port, const char *host, const char *absPath, const char *method,
-                         const char *contentType, ESB::CleanupHandler &cleanupHandler);
+  HttpLoadgenSeedCommand(ESB::SocketAddress &destination, HttpTestParams &params, ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpLoadgenSeedCommand();
 
@@ -29,12 +31,7 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
   ESB::Error buildRequest(HttpClientTransaction *transaction);
 
   ESB::SocketAddress _destination;
-  const ESB::UInt32 _connections;
-  const ESB::UInt32 _iterations;
-  const char *_host;
-  const char *_absPath;
-  const char *_method;
-  const char *_contentType;
+  HttpTestParams &_params;
   ESB::CleanupHandler &_cleanupHandler;
 };
 

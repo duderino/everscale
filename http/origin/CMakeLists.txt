@@ -12,6 +12,7 @@ target_include_directories(origin PRIVATE
         "${PROJECT_SOURCE_DIR}/src"
         "${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http-test-common/include"
         "${PROJECT_SOURCE_DIR}/../http1/include"
         "${PROJECT_SOURCE_DIR}/../multiplexers/include"
         )
@@ -24,11 +25,12 @@ target_compile_options(origin PUBLIC ${CPP_FLAGS})
 
 add_executable(http-origin source/ESHttpOrigin.cpp)
 target_compile_options(http-origin PUBLIC ${CPP_FLAGS})
-target_link_libraries(http-origin -pthread unit-tf origin multiplexers http1 http-common base)
+target_link_libraries(http-origin -pthread unit-tf origin multiplexers http1 http-common http-test-common base)
 target_include_directories(http-origin PRIVATE
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http-test-common/include"
         "${PROJECT_SOURCE_DIR}/../http1/include"
         "${PROJECT_SOURCE_DIR}/../multiplexers/include"
         "${PROJECT_SOURCE_DIR}/include"

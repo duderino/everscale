@@ -17,12 +17,15 @@
 #include <ESHttpConnectionPool.h>
 #endif
 
+#ifndef ES_HTTP_TEST_PARAMS_H
+#include <ESHttpTestParams.h>
+#endif
+
 namespace ES {
 
 class HttpLoadgenHandler : public HttpClientHandler {
  public:
-  HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType, const unsigned char *requestBody,
-                     ESB::UInt32 requestSize, ESB::Int64 responseSize);
+  HttpLoadgenHandler(HttpTestParams &params);
 
   virtual ~HttpLoadgenHandler();
 
@@ -50,12 +53,7 @@ class HttpLoadgenHandler : public HttpClientHandler {
   HttpLoadgenHandler(const HttpLoadgenHandler &);
   void operator=(const HttpLoadgenHandler &);
 
-  const char *_absPath;
-  const char *_method;
-  const char *_contentType;
-  const unsigned char *_requestBody;
-  const ESB::UInt32 _requestSize;
-  const ESB::Int64 _responseSize;
+  HttpTestParams &_params;
   ESB::SharedInt _completedTransactions;
 };
 

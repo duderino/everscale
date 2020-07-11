@@ -8,16 +8,7 @@
 
 namespace ES {
 
-HttpLoadgenHandler::HttpLoadgenHandler(const char *absPath, const char *method, const char *contentType,
-                                       const unsigned char *requestBody, ESB::UInt32 requestSize,
-                                       ESB::Int64 responseSize)
-    : _absPath(absPath),
-      _method(method),
-      _contentType(contentType),
-      _requestBody(requestBody),
-      _requestSize(requestSize),
-      _responseSize(responseSize),
-      _completedTransactions() {}
+HttpLoadgenHandler::HttpLoadgenHandler(HttpTestParams &params) : _params(params), _completedTransactions() {}
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
@@ -26,7 +17,7 @@ ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, Ht
   assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
-  *maxChunkSize = _requestSize - context->bytesSent();
+  *maxChunkSize = _params.requestSize() - context->bytesSent();
   return ESB_SUCCESS;
 }
 
@@ -36,12 +27,12 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
-  assert(bytesRequested <= _requestSize - context->bytesSent());
+  assert(bytesRequested <= _params.requestSize() - context->bytesSent());
 
-  ESB::UInt32 totalBytesRemaining = _requestSize - context->bytesSent();
+  ESB::UInt32 totalBytesRemaining = _params.requestSize() - context->bytesSent();
   ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
 
-  memcpy(chunk, _requestBody + context->bytesSent(), bytesToSend);
+  memcpy(chunk, _params.requestBody() + context->bytesSent(), bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
   return ESB_SUCCESS;
 }
@@ -98,9 +89,9 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
 #ifndef NDEBUG
-      if (0 <= _responseSize) {
+      if (0 <= _params.responseSize()) {
         ESB::UInt32 bytesReceived = context->bytesReceived();
-        assert(bytesReceived == _responseSize);
+        assert(bytesReceived == _params.responseSize());
       }
 #endif
       break;

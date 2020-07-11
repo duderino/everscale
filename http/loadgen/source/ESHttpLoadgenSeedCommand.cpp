@@ -7,23 +7,15 @@
 #endif
 
 namespace ES {
-HttpLoadgenSeedCommand::HttpLoadgenSeedCommand(ESB::UInt32 connections, ESB::UInt32 iterations,
-                                               ESB::SocketAddress &destination, ESB::Int32 port, const char *host,
-                                               const char *absPath, const char *method, const char *contentType,
+
+HttpLoadgenSeedCommand::HttpLoadgenSeedCommand(ESB::SocketAddress &destination, HttpTestParams &params,
                                                ESB::CleanupHandler &cleanupHandler)
-    : _destination(destination),
-      _connections(connections),
-      _iterations(iterations),
-      _host(host),
-      _absPath(absPath),
-      _method(method),
-      _contentType(contentType),
-      _cleanupHandler(cleanupHandler) {}
+    : _destination(destination), _params(params), _cleanupHandler(cleanupHandler) {}
 
 HttpLoadgenSeedCommand::~HttpLoadgenSeedCommand() {}
 
 ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
-  for (ESB::UInt32 i = 0; i < _connections; ++i) {
+  for (ESB::UInt32 i = 0; i < _params.connections(); ++i) {
     if (0 > HttpLoadgenContext::DecRemainingIterations()) {
       break;
     }
@@ -55,17 +47,18 @@ ESB::Error HttpLoadgenSeedCommand::buildRequest(HttpClientTransaction *transacti
   HttpRequestUri &requestUri = request.requestUri();
 
   requestUri.setType(HttpRequestUri::ES_URI_HTTP);
-  requestUri.setAbsPath(_absPath);
-  request.setMethod(_method);
+  requestUri.setAbsPath(_params.absPath());
+  request.setMethod(_params.method());
 
-  ESB::Error error = request.addHeader(transaction->allocator(), "Host", "%s:%d", _host, _destination.port());
+  ESB::Error error =
+      request.addHeader(transaction->allocator(), "Host", "%s:%d", _params.hostHeader(), _destination.port());
 
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  if (_contentType) {
-    error = request.addHeader("Content-Type", _contentType, transaction->allocator());
+  if (_params.contentType()) {
+    error = request.addHeader("Content-Type", _params.contentType(), transaction->allocator());
     if (ESB_SUCCESS != error) {
       return error;
     }

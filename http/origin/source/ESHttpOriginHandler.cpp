@@ -8,9 +8,7 @@
 
 namespace ES {
 
-HttpOriginHandler::HttpOriginHandler(const char *contentType, const unsigned char *responseBody,
-                                     ESB::UInt32 responseSize, ESB::Int64 requestSize)
-    : _contentType(contentType), _responseBody(responseBody), _responseSize(responseSize), _requestSize(requestSize) {}
+HttpOriginHandler::HttpOriginHandler(HttpTestParams &params) : _params(params) {}
 
 HttpOriginHandler::~HttpOriginHandler() {}
 
@@ -73,7 +71,7 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, Ht
                                                 ESB::UInt32 *bytesAvailable) {
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  *bytesAvailable = _responseSize - context->bytesSent();
+  *bytesAvailable = _params.responseSize() - context->bytesSent();
   return ESB_SUCCESS;
 }
 
@@ -83,12 +81,12 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  assert(bytesRequested <= _responseSize - context->bytesSent());
+  assert(bytesRequested <= _params.responseSize() - context->bytesSent());
 
-  ESB::UInt32 totalBytesRemaining = _responseSize - context->bytesSent();
+  ESB::UInt32 totalBytesRemaining = _params.responseSize() - context->bytesSent();
   ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
 
-  memcpy(chunk, ((unsigned char *)_responseBody) + context->bytesSent(), bytesToSend);
+  memcpy(chunk, ((unsigned char *)_params.responseBody()) + context->bytesSent(), bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
   return ESB_SUCCESS;
 }
@@ -126,9 +124,9 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
       break;
     case ES_HTTP_SERVER_HANDLER_END:
 #ifndef NDEBUG
-      if (0 <= _requestSize) {
+      if (0 <= _params.requestSize()) {
         ESB::UInt32 bytesReceived = context->bytesReceived();
-        assert(bytesReceived == _requestSize);
+        assert(bytesReceived == _params.requestSize());
       }
 #endif
       break;
