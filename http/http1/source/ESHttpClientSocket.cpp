@@ -92,7 +92,7 @@ class HttpRequestBodyProducer : public HttpClientHandler {
 class HttpResponseBodyConsumer : public HttpClientHandler {
  public:
   HttpResponseBodyConsumer(unsigned const char *buffer, ESB::UInt32 size)
-      : _buffer(buffer), _size(size), _bytesConsumed(0) {}
+      : _buffer(buffer), _size(size), _bytesConsumed(0), _bytesOffered(0) {}
   virtual ~HttpResponseBodyConsumer() {}
 
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
@@ -119,6 +119,7 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
       return ESB_NULL_POINTER;
     }
 
+    _bytesOffered = bytesOffered;
     ESB::UInt32 bytesToCopy = ESB_MIN(_size - _bytesConsumed, bytesOffered);
 
     if (0 == bytesOffered) {
@@ -150,6 +151,8 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
 
   inline ESB::UInt32 bytesConsumed() const { return _bytesConsumed; };
 
+  inline ESB::UInt32 bytesOffered() const { return _bytesOffered; }
+
  private:
   HttpResponseBodyConsumer(const HttpResponseBodyConsumer &disabled);
   void operator=(const HttpResponseBodyConsumer &disabled);
@@ -157,6 +160,7 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
   unsigned const char *_buffer;
   ESB::UInt32 _size;
   ESB::UInt32 _bytesConsumed;
+  ESB::UInt32 _bytesOffered;
 };
 
 HttpClientSocket::HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,
@@ -288,24 +292,11 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
     return ESB_NULL_POINTER;
   }
 
-  ESB::Error error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
-  if (ESB_AGAIN == error) {
-    if (ESB_SUCCESS == (error = fillReceiveBuffer())) {
-      assert(_recvBuffer->isReadable());
-      error = currentChunkBytesAvailable(bytesAvailable, bufferOffset);
-    }
-  }
+  HttpResponseBodyConsumer adaptor(NULL, 0);
 
-  switch (error) {
-    case ESB_SUCCESS:
-      return ESB_SUCCESS;
-    case ESB_AGAIN:
-      return ESB_AGAIN;
-    default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot parse response body", _socket.name());
-      abort(true);
-      return error;
-  }
+  ESB::Error error = advanceStateMachine(adaptor, UPDATE_MULTIPLEXER | ADVANCE_RECV);
+  *bytesAvailable = adaptor.bytesOffered();
+  return error;
 }
 
 ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested,
@@ -839,10 +830,6 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
       case ESB_BREAK:
         return ESB_BREAK;
       case ESB_SUCCESS:
-        if (0 == bytesConsumed) {
-          ESB_LOG_DEBUG("[%s] pausing response body receive until handler is ready", _socket.name());
-          return ESB_PAUSE;
-        }
         break;
       case ESB_AGAIN:
       case ESB_PAUSE:

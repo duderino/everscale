@@ -48,11 +48,11 @@ class HttpProxyTest : public ::testing::Test {
 
 TEST_F(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
-  params.connections(500)
+  params.connections(50)
       .iterations(50)
-      .clientThreads(3)
+      .clientThreads(1)
       .proxyThreads(0)
-      .originThreads(3)
+      .originThreads(1)
       .requestSize(1024)
       .responseSize(1024)
       .logLevel(ESB::Logger::Warning);
@@ -68,13 +68,79 @@ TEST_F(HttpProxyTest, ClientToServer) {
 
 TEST_F(HttpProxyTest, ClientToProxyToServer) {
   HttpTestParams params;
-  params.connections(500)
+  params.connections(50)
       .iterations(50)
-      .clientThreads(3)
-      .proxyThreads(3)
-      .originThreads(3)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
       .requestSize(1024)
       .responseSize(1024)
+      .logLevel(ESB::Logger::Warning);
+
+  HttpFixedRouter router(_originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
+
+TEST_F(HttpProxyTest, EmptyChunkedRequestAndResponse) {
+  HttpTestParams params;
+  params.connections(50)
+      .iterations(50)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
+      .requestSize(0)
+      .responseSize(0)
+      .logLevel(ESB::Logger::Warning);
+
+  HttpFixedRouter router(_originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
+
+TEST_F(HttpProxyTest, EmptyChunkedRequest) {
+  HttpTestParams params;
+  params.connections(50)
+      .iterations(50)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
+      .requestSize(0)
+      .responseSize(1024)
+      .logLevel(ESB::Logger::Warning);
+
+  HttpFixedRouter router(_originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
+
+TEST_F(HttpProxyTest, EmptyChunkedResponse) {
+  HttpTestParams params;
+  params.connections(50)
+      .iterations(50)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
+      .requestSize(1024)
+      .responseSize(0)
       .logLevel(ESB::Logger::Warning);
 
   HttpFixedRouter router(_originListener.localDestination());

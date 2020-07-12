@@ -59,5 +59,5 @@ set(TEST_FILES
 	tests/ESHttpFixedRouter.cpp
 	)
 
-add_unit_test(http-proxy-test-main "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 60 tests/ESHttpProxyTestMain.cpp ${TEST_FILES})
+add_unit_test(http-proxy-test-main "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 120 tests/ESHttpProxyTestMain.cpp ${TEST_FILES})
 add_gtest(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESHttpProxyTest.cpp ${TEST_FILES})

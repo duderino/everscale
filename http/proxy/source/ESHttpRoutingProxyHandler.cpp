@@ -111,6 +111,7 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
   context->setClientStream(&clientStream);
 
   HttpServerStream &serverStream = *context->serverStream();
+
   ESB::Error error = serverStream.resumeRecv(true);
   if (ESB_SUCCESS != error) {
     ESB_LOG_WARNING_ERRNO(error, "[%s] cannot resume server stream", serverStream.logAddress());
