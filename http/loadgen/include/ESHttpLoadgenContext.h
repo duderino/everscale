@@ -49,6 +49,12 @@ class HttpLoadgenContext : public ESB::Object {
     return _TotalIterations <= completedIterations;
   }
 
+  static inline void Reset() {
+    _CompletedIterations.set(0);
+    _TotalIterations = 0;
+    _RemainingIterations.set(0);
+  }
+
   static inline void SetTotalIterations(int totalIterations) {
     _TotalIterations = totalIterations;
     _RemainingIterations.set(totalIterations);

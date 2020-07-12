@@ -13,7 +13,7 @@
 namespace ES {
 
 HttpTestParams::HttpTestParams()
-    : _port(8080),
+    : _port(0),
       _clientThreads(0),
       _originThreads(0),
       _proxyThreads(0),
@@ -109,7 +109,7 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
           case ESB::Logger::Notice:
           case ESB::Logger::Info:
           case ESB::Logger::Debug:
-            _logLevel = (ESB::Logger::Severity)v;
+            logLevel((ESB::Logger::Severity)v);
             break;
           default:
             printUsage(argv[0]);
@@ -117,25 +117,25 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
         }
         break;
       case 'c':
-        _clientThreads = atoi(optarg);
+        clientThreads(atoi(optarg));
         break;
       case 'o':
-        _originThreads = atoi(optarg);
+        originThreads(atoi(optarg));
         break;
       case 'p':
-        _proxyThreads = atoi(optarg);
+        proxyThreads(atoi(optarg));
         break;
       case 's':
-        _connections = atoi(optarg);
+        connections(atoi(optarg));
         break;
       case 'i':
-        _iterations = atoi(optarg);
+        iterations(atoi(optarg));
         break;
       case 'r':
-        _reuseConnections = 0 != atoi(optarg);
+        reuseConnections(0 != atoi(optarg));
         break;
       case 't':
-        _port = atoi(optarg);
+        port(atoi(optarg));
         break;
       case 'h':
         printUsage(argv[0]);
@@ -146,8 +146,8 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
     }
   }
 
-  if (0 < _clientThreads && _connections % _clientThreads) {
-    _connections = _connections / _clientThreads * _clientThreads + _clientThreads;
+  if (0 < clientThreads() && connections() % clientThreads()) {
+    connections(connections() / clientThreads() * clientThreads() + clientThreads());
   }
 
   dump();
@@ -155,7 +155,6 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
 }
 
 void HttpTestParams::dump() {
-  ESB::Logger::Instance().setSeverity(logLevel());
   ESB_LOG_NOTICE(
       "[params] clientThreads=%u, originThreads=%u, proxyThreads=%u, connections=%u, iterations=%u, requestSize=%u, "
       "responseSize=%u, reuseConnections=%d, destination=%s",

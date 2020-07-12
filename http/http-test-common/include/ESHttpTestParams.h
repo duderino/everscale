@@ -64,6 +64,7 @@ class HttpTestParams {
   }
 
   inline HttpTestParams &logLevel(ESB::Logger::Severity logLevel) {
+    ESB::Logger::Instance().setSeverity(logLevel);
     _logLevel = logLevel;
     return *this;
   }

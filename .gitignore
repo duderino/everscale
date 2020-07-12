@@ -21,3 +21,4 @@ _deps
 *_tests.cmake
 http-loadgen
 http-origin
+http-proxy-test-main
