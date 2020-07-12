@@ -14,13 +14,13 @@ namespace ES {
 
 HttpTestParams::HttpTestParams()
     : _port(8080),
-      _clientThreads(1),
-      _originThreads(1),
-      _proxyThreads(1),
-      _connections(1),
-      _iterations(1),
-      _requestSize(1024),
-      _responseSize(1024),
+      _clientThreads(0),
+      _originThreads(0),
+      _proxyThreads(0),
+      _connections(0),
+      _iterations(0),
+      _requestSize(0),
+      _responseSize(0),
       _reuseConnections(true),
       _logLevel(ESB::Logger::Notice),
       _destinationAddress("127.0.0.1"),
@@ -42,27 +42,13 @@ HttpTestParams::~HttpTestParams() {
   }
 }
 
-const unsigned char *HttpTestParams::requestBody() {
-  if (!_requestBody) {
-    _requestBody = (const unsigned char *)malloc(_requestSize);
-    memset((void *)_requestBody, 'a', _requestSize);
-  }
-  return _requestBody;
-}
-
-const unsigned char *HttpTestParams::responseBody() {
-  if (!_responseBody) {
-    _responseBody = (const unsigned char *)malloc(_responseSize);
-    memset((void *)_responseBody, 'b', _responseSize);
-  }
-  return _responseBody;
-}
-
 HttpTestParams &HttpTestParams::requestSize(ESB::UInt32 requestSize) {
   if (_requestBody) {
     free((void *)_requestBody);
-    _requestBody = NULL;
   }
+
+  _requestBody = (const unsigned char *)malloc(requestSize);
+  memset((void *)_requestBody, 'a', requestSize);
   _requestSize = requestSize;
   return *this;
 }
@@ -70,8 +56,10 @@ HttpTestParams &HttpTestParams::requestSize(ESB::UInt32 requestSize) {
 HttpTestParams &HttpTestParams::responseSize(ESB::UInt32 responseSize) {
   if (_responseBody) {
     free((void *)_responseBody);
-    _responseBody = NULL;
   }
+
+  _responseBody = (const unsigned char *)malloc(responseSize);
+  memset((void *)_responseBody, 'a', responseSize);
   _responseSize = responseSize;
   return *this;
 }
@@ -124,7 +112,6 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
             _logLevel = (ESB::Logger::Severity)v;
             break;
           default:
-            ESB_LOG_WARNING_ERRNO(ESB_INVALID_ARGUMENT, "unknown log level %d", v);
             printUsage(argv[0]);
             return ESB_INVALID_ARGUMENT;
         }
@@ -159,11 +146,21 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
     }
   }
 
-  // don't lazy init these or else tsan errors
-  requestBody();
-  responseBody();
+  if (0 < _clientThreads && _connections % _clientThreads) {
+    _connections = _connections / _clientThreads * _clientThreads + _clientThreads;
+  }
 
+  dump();
   return ESB_SUCCESS;
+}
+
+void HttpTestParams::dump() {
+  ESB::Logger::Instance().setSeverity(logLevel());
+  ESB_LOG_NOTICE(
+      "[params] clientThreads=%u, originThreads=%u, proxyThreads=%u, connections=%u, iterations=%u, requestSize=%u, "
+      "responseSize=%u, reuseConnections=%d, destination=%s",
+      _clientThreads, _originThreads, _proxyThreads, _connections, _iterations, _requestSize, _responseSize,
+      _reuseConnections, _destinationAddress);
 }
 
 }  // namespace ES

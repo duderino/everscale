@@ -6,6 +6,10 @@
 #include <ESBConfig.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -95,6 +99,15 @@ UInt32 SystemConfig::socketSoftMax() { return SoftLimit(RLIMIT_NOFILE); }
 
 UInt32 SystemConfig::socketHardMax() { return HardLimit(RLIMIT_NOFILE); }
 
-Error SystemConfig::setSocketSoftMax(UInt32 limit) { return SetSoftLimit(RLIMIT_NOFILE, limit); }
+Error SystemConfig::setSocketSoftMax(UInt32 limit) {
+  ESB::Error error = SetSoftLimit(RLIMIT_NOFILE, limit);
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_WARNING_ERRNO(error, "cannot raise maximum sockets to %u", limit);
+  }
+
+  ESB_LOG_NOTICE("[conf] maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
+  return error;
+}
 
 }  // namespace ESB

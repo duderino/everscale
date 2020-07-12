@@ -2,6 +2,10 @@
 #include <ESBLogger.h>
 #endif
 
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
+#endif
+
 #ifndef ESB_NULL_LOGGER_H
 #include <ESBNullLogger.h>
 #endif
@@ -9,7 +13,8 @@
 namespace ESB {
 
 static NullLogger NullInstance;
-Logger *Logger::_Instance = &NullInstance;
+static SimpleFileLogger SimpleInstance;
+Logger *Logger::_Instance = &SimpleInstance;
 
 Logger::Logger() {}
 

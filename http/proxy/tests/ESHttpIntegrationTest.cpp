@@ -109,7 +109,7 @@ class HttpNullProxyHandler : public HttpProxyHandler {
 static HttpNullProxyHandler NullProxyHandler;
 static ESB::ListeningTCPSocket NullListener("null-listener");
 
-HttpIntegrationTest::HttpIntegrationTest(HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
+HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
                                          ESB::ListeningTCPSocket &_proxyListener, HttpClientHandler &clientHandler,
                                          HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler)
     : _params(testParams),
@@ -125,10 +125,10 @@ HttpIntegrationTest::HttpIntegrationTest(HttpTestParams &testParams, ESB::Listen
   HttpClientSocket::SetReuseConnections(_params.reuseConnections());
 }
 
-HttpIntegrationTest::HttpIntegrationTest(HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
+HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
                                          HttpClientHandler &clientHandler, HttpServerHandler &serverHandler)
     : HttpIntegrationTest(testParams, originListener, NullListener, clientHandler, NullProxyHandler, serverHandler) {
-  _params.proxyThreads(0);
+  assert(0 == _params.proxyThreads());
 }
 
 HttpIntegrationTest::~HttpIntegrationTest() {
@@ -144,9 +144,6 @@ ESB::Error HttpIntegrationTest::run() {
   HttpLoadgenContext::SetTotalIterations(totalTransactions);
 
   ESB::Time::Instance().start();
-  ESB::SimpleFileLogger logger(stdout);
-  logger.setSeverity(_params.logLevel());
-  ESB::Logger::SetInstance(&logger);
 
   //
   // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
@@ -167,8 +164,6 @@ ESB::Error HttpIntegrationTest::run() {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot raise max fd limit");
     return error;
   }
-
-  ESB_LOG_NOTICE("maximum sockets %u", ESB::SystemConfig::Instance().socketSoftMax());
 
   //
   // Init client, server, and proxy
@@ -257,7 +252,7 @@ ESB::Error HttpIntegrationTest::run() {
     sleep(1);
   }
 
-  ESB_LOG_NOTICE("test finished");
+  ESB_LOG_NOTICE("[test] finished");
 
   //
   // Stop client, server, and proxy

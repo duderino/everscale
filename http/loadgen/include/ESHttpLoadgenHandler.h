@@ -25,7 +25,7 @@ namespace ES {
 
 class HttpLoadgenHandler : public HttpClientHandler {
  public:
-  HttpLoadgenHandler(HttpTestParams &params);
+  HttpLoadgenHandler(const HttpTestParams &params);
 
   virtual ~HttpLoadgenHandler();
 
@@ -53,7 +53,7 @@ class HttpLoadgenHandler : public HttpClientHandler {
   HttpLoadgenHandler(const HttpLoadgenHandler &);
   void operator=(const HttpLoadgenHandler &);
 
-  HttpTestParams &_params;
+  const HttpTestParams &_params;
   ESB::SharedInt _completedTransactions;
 };
 

@@ -14,13 +14,15 @@ class HttpTestParams {
   virtual ~HttpTestParams();
 
   /**
-   * Override test params with command line arguments
+   * Override test params with command line arguments, check for consistency, and log
    *
    * @param argc the argc passed to main()
    * @param argv the argv passed to main()
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
   ESB::Error override(int argc, char **argv);
+
+  void dump();
 
   inline HttpTestParams &port(ESB::UInt16 port) {
     _port = port;
@@ -121,9 +123,9 @@ class HttpTestParams {
 
   inline const char *absPath() const { return _absPath; }
 
-  const unsigned char *requestBody();
+  inline const unsigned char *requestBody() const { return _requestBody; }
 
-  const unsigned char *responseBody();
+  inline const unsigned char *responseBody() const { return _responseBody; }
 
  private:
   // Disabled

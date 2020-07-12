@@ -8,7 +8,7 @@
 
 namespace ES {
 
-HttpLoadgenHandler::HttpLoadgenHandler(HttpTestParams &params) : _params(params), _completedTransactions() {}
+HttpLoadgenHandler::HttpLoadgenHandler(const HttpTestParams &params) : _params(params), _completedTransactions() {}
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 

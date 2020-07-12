@@ -13,7 +13,8 @@ namespace ES {
 
 class HttpLoadgenSeedCommand : public HttpClientCommand {
  public:
-  HttpLoadgenSeedCommand(ESB::SocketAddress &destination, HttpTestParams &params, ESB::CleanupHandler &cleanupHandler);
+  HttpLoadgenSeedCommand(const ESB::SocketAddress &destination, const HttpTestParams &params,
+                         ESB::CleanupHandler &cleanupHandler);
 
   virtual ~HttpLoadgenSeedCommand();
 
@@ -31,7 +32,7 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
   ESB::Error buildRequest(HttpClientTransaction *transaction);
 
   ESB::SocketAddress _destination;
-  HttpTestParams &_params;
+  const HttpTestParams &_params;
   ESB::CleanupHandler &_cleanupHandler;
 };
 

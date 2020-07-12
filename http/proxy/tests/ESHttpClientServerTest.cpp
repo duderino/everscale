@@ -22,7 +22,13 @@ using namespace ES;
 
 int main(int argc, char **argv) {
   HttpTestParams params;
-  params.connections(500).iterations(500).clientThreads(3).originThreads(3).logLevel(ESB::Logger::Notice);
+  params.connections(500)
+      .iterations(500)
+      .clientThreads(3)
+      .originThreads(3)
+      .requestSize(1024)
+      .responseSize(1024)
+      .logLevel(ESB::Logger::Notice);
 
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {

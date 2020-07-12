@@ -8,14 +8,14 @@
 
 namespace ES {
 
-HttpLoadgenSeedCommand::HttpLoadgenSeedCommand(ESB::SocketAddress &destination, HttpTestParams &params,
+HttpLoadgenSeedCommand::HttpLoadgenSeedCommand(const ESB::SocketAddress &destination, const HttpTestParams &params,
                                                ESB::CleanupHandler &cleanupHandler)
     : _destination(destination), _params(params), _cleanupHandler(cleanupHandler) {}
 
 HttpLoadgenSeedCommand::~HttpLoadgenSeedCommand() {}
 
 ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
-  for (ESB::UInt32 i = 0; i < _params.connections(); ++i) {
+  for (ESB::UInt32 i = 0; i < _params.connections() / _params.clientThreads(); ++i) {
     if (0 > HttpLoadgenContext::DecRemainingIterations()) {
       break;
     }

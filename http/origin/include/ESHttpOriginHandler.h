@@ -13,7 +13,7 @@ namespace ES {
 
 class HttpOriginHandler : public HttpServerHandler {
  public:
-  HttpOriginHandler(HttpTestParams &params);
+  HttpOriginHandler(const HttpTestParams &params);
 
   virtual ~HttpOriginHandler();
 
@@ -37,7 +37,7 @@ class HttpOriginHandler : public HttpServerHandler {
   HttpOriginHandler(const HttpOriginHandler &);
   void operator=(const HttpOriginHandler &);
 
-  HttpTestParams &_params;
+  const HttpTestParams &_params;
 };
 
 }  // namespace ES

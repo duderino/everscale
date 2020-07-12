@@ -37,10 +37,10 @@ namespace ES {
 
 class HttpIntegrationTest {
  public:
-  HttpIntegrationTest(HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
+  HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
                       ESB::ListeningTCPSocket &_proxyListener, HttpClientHandler &clientHandler,
                       HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler);
-  HttpIntegrationTest(HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
+  HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
                       HttpClientHandler &clientHandler, HttpServerHandler &serverHandler);
   virtual ~HttpIntegrationTest();
 
@@ -53,7 +53,7 @@ class HttpIntegrationTest {
   HttpIntegrationTest(const HttpIntegrationTest &);
   void operator=(const HttpIntegrationTest &);
 
-  HttpTestParams &_params;
+  const HttpTestParams &_params;
   ESB::ListeningTCPSocket &_proxyListener;
   ESB::ListeningTCPSocket &_originListener;
   HttpClientHandler &_clientHandler;

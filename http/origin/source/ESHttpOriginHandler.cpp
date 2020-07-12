@@ -8,7 +8,7 @@
 
 namespace ES {
 
-HttpOriginHandler::HttpOriginHandler(HttpTestParams &params) : _params(params) {}
+HttpOriginHandler::HttpOriginHandler(const HttpTestParams &params) : _params(params) {}
 
 HttpOriginHandler::~HttpOriginHandler() {}
 
