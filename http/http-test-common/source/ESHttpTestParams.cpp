@@ -80,13 +80,10 @@ static void printUsage(const char *progName) {
   fprintf(stderr, "Usage: %s <options>\n", progName);
   fprintf(stderr, "\n");
   fprintf(stderr, "\tOptions:\n");
-  fprintf(stderr,
-          "\t-l <logLevel>     Defaults to 7 / INFO.  See below for other "
-          "levels.\n");
+  fprintf(stderr, "\t-l <logLevel>      Defaults to 7 (INFO)\n");
   fprintf(stderr, "\t-c <clientThreads> Defaults to 1.\n");
   fprintf(stderr, "\t-o <originThreads> Defaults to 1.\n");
-  fprintf(stderr, "\t-c <proxyThreads>  Defaults to 1.\n");
-  fprintf(stderr, "\t-c <clientThreads> Defaults to 1.\n");
+  fprintf(stderr, "\t-p <proxyThreads>  Defaults to 1.\n");
   fprintf(stderr, "\t-s <connections>   Defaults to 1 connection\n");
   fprintf(stderr, "\t-i <iterations>    Defaults to 1 request per connection\n");
   fprintf(stderr, "\t-r <reuse 1 or 0>  Defaults to 1 (reuse connections)\n");
@@ -107,7 +104,7 @@ static void printUsage(const char *progName) {
 
 ESB::Error HttpTestParams::override(int argc, char **argv) {
   while (true) {
-    int result = getopt(argc, argv, "l:c:o:p:s:i:r:");
+    int result = getopt(argc, argv, "l:c:o:p:s:i:r:t:");
 
     if (0 > result) {
       break;
@@ -161,6 +158,10 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
         return ESB_INVALID_ARGUMENT;
     }
   }
+
+  // don't lazy init these or else tsan errors
+  requestBody();
+  responseBody();
 
   return ESB_SUCCESS;
 }

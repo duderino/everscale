@@ -126,6 +126,10 @@ class HttpTestParams {
   const unsigned char *responseBody();
 
  private:
+  // Disabled
+  HttpTestParams(const HttpTestParams &);
+  void operator=(const HttpTestParams &);
+
   ESB::UInt16 _port;
   ESB::UInt32 _clientThreads;
   ESB::UInt32 _originThreads;

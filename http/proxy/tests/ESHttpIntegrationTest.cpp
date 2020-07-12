@@ -113,12 +113,12 @@ HttpIntegrationTest::HttpIntegrationTest(HttpTestParams &testParams, ESB::Listen
                                          ESB::ListeningTCPSocket &_proxyListener, HttpClientHandler &clientHandler,
                                          HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler)
     : _params(testParams),
-      _logger(stdout),
       _proxyListener(_proxyListener),
       _originListener(originListener),
       _clientHandler(clientHandler),
       _proxyHandler(proxyHandler),
       _originHandler(serverHandler),
+      _logger(stdout),
       _client("loadgen", _params.clientThreads(), _clientHandler),
       _proxy("proxy", _params.proxyThreads(), _proxyHandler),
       _origin("origin", _params.originThreads(), _originHandler) {

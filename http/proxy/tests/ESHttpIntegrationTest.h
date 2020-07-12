@@ -53,13 +53,13 @@ class HttpIntegrationTest {
   HttpIntegrationTest(const HttpIntegrationTest &);
   void operator=(const HttpIntegrationTest &);
 
-  HttpTestParams _params;
-  ESB::SimpleFileLogger _logger;
+  HttpTestParams &_params;
   ESB::ListeningTCPSocket &_proxyListener;
   ESB::ListeningTCPSocket &_originListener;
   HttpClientHandler &_clientHandler;
   HttpProxyHandler &_proxyHandler;
   HttpServerHandler &_originHandler;
+  ESB::SimpleFileLogger _logger;
   HttpClient _client;
   HttpProxy _proxy;
   HttpServer _origin;
