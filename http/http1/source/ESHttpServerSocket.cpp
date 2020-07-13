@@ -144,7 +144,7 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
     }
 
     _bytesOffered = bytesOffered;
-    ESB::UInt32 bytesToCopy = ESB_MIN(_size - _bytesConsumed, bytesOffered);
+    ESB::UInt32 bytesToCopy = MIN(_size - _bytesConsumed, bytesOffered);
 
     if (0 == bytesOffered) {
       // last chunk so advance state machine
@@ -860,7 +860,7 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
       return error;
     }
 
-    ESB::UInt32 chunkSize = ESB_MIN(offeredSize, maxChunkSize);
+    ESB::UInt32 chunkSize = MIN(offeredSize, maxChunkSize);
 
     // ask the handler to produce chunkSize bytes of body data
 

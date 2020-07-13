@@ -12,10 +12,6 @@
 
 namespace ES {
 
-#ifndef MIN
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-#endif
-
 #define ES_FORMATTING_START_LINE (1 << 0)
 #define ES_FORMATTING_FIELD_NAME (1 << 1)
 #define ES_FORMATTING_FIELD_VALUE (1 << 2)
@@ -367,11 +363,13 @@ ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer, ESB::UInt
   // + 2 for the CRLF in the chunk-size production + 2 for the CRLF after
   // the chunk data.
 
-  if (0 >= outputBuffer->writable() - 12) {
+  ESB::Int64 outputBufferSpace = MAX(((ESB::Int64)outputBuffer->writable()) - 12, 0);
+
+  if (0 >= outputBufferSpace) {
     return ESB_AGAIN;
   }
 
-  *availableSize = MIN(requestedSize, outputBuffer->writable() - 12);
+  *availableSize = MIN(requestedSize, outputBufferSpace);
 
   assert(0 < *availableSize);
 

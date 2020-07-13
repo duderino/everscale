@@ -252,8 +252,8 @@ int ConnectedTCPSocket::BytesReadable(SOCKET socketDescriptor) {
 
 void ConnectedTCPSocket::formatPrefix(const char *namePrefix, const char *nameSuffix) {
   int desired = snprintf(_logAddress, ESB_NAME_PREFIX_SIZE, "%s-%s:", namePrefix, nameSuffix);
-  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
-  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
+  _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
+  _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
 }
 
 }  // namespace ESB

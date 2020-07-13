@@ -22,7 +22,7 @@ SharedEmbeddedMap::Callbacks::~Callbacks() {}
 SharedEmbeddedMap::SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets, UInt32 numLocks, Allocator &allocator)
     : _numElements(),
       _numBuckets(numBuckets),
-      _numLocks(ESB_MIN(numBuckets, numLocks)),
+      _numLocks(MIN(numBuckets, numLocks)),
       _callbacks(callbacks),
       _buckets(NULL),
       _locks(NULL),

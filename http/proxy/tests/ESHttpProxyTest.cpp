@@ -30,6 +30,10 @@
 #include <ESHttpLoadgenContext.h>
 #endif
 
+#ifndef ESB_SHARED_INT_H
+#include <ESBSharedInt.h>
+#endif
+
 #include <gtest/gtest.h>
 
 using namespace ES;
@@ -50,9 +54,9 @@ TEST_F(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
-      .clientThreads(1)
+      .clientThreads(2)
       .proxyThreads(0)
-      .originThreads(1)
+      .originThreads(2)
       .requestSize(1024)
       .responseSize(1024)
       .logLevel(ESB::Logger::Warning);
@@ -70,9 +74,9 @@ TEST_F(HttpProxyTest, ClientToProxyToServer) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
       .requestSize(1024)
       .responseSize(1024)
       .logLevel(ESB::Logger::Warning);
@@ -92,9 +96,9 @@ TEST_F(HttpProxyTest, EmptyChunkedRequestAndResponse) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
       .requestSize(0)
       .responseSize(0)
       .logLevel(ESB::Logger::Warning);
@@ -114,9 +118,9 @@ TEST_F(HttpProxyTest, EmptyChunkedRequest) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
       .requestSize(0)
       .responseSize(1024)
       .logLevel(ESB::Logger::Warning);
@@ -136,12 +140,113 @@ TEST_F(HttpProxyTest, EmptyChunkedResponse) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
       .requestSize(1024)
       .responseSize(0)
       .logLevel(ESB::Logger::Warning);
+
+  HttpFixedRouter router(_originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
+
+class HttpSmallChunkOriginHandler : public HttpOriginHandler {
+ public:
+  HttpSmallChunkOriginHandler(const HttpTestParams &params, ESB::UInt32 maxChunkSize)
+      : HttpOriginHandler(params), _counter(), _maxChunkSize(maxChunkSize) {}
+
+  virtual ~HttpSmallChunkOriginHandler() {}
+
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
+                                       ESB::UInt32 *bytesAvailable) {
+    ESB::Error error = HttpOriginHandler::offerResponseBody(multiplexer, stream, bytesAvailable);
+    if (ESB_SUCCESS != error) {
+      return error;
+    }
+
+    ESB::UInt32 iteration = (ESB::UInt32)_counter.inc();
+    *bytesAvailable = MIN(*bytesAvailable, iteration % _maxChunkSize + 1);
+    return ESB_SUCCESS;
+  }
+
+ private:
+  // Disabled
+  HttpSmallChunkOriginHandler(const HttpSmallChunkOriginHandler &);
+  void operator=(const HttpSmallChunkOriginHandler &);
+
+  ESB::SharedInt _counter;
+  const ESB::UInt32 _maxChunkSize;
+};
+
+class HttpSmallChunkLoadgenHandler : public HttpLoadgenHandler {
+ public:
+  HttpSmallChunkLoadgenHandler(const HttpTestParams &params, ESB::UInt32 maxChunkSize)
+      : HttpLoadgenHandler(params), _counter(), _maxChunkSize(maxChunkSize) {}
+
+  virtual ~HttpSmallChunkLoadgenHandler() {}
+
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
+                                       ESB::UInt32 *bytesAvailable) {
+    ESB::Error error = HttpLoadgenHandler::offerRequestBody(multiplexer, stream, bytesAvailable);
+    if (ESB_SUCCESS != error) {
+      return error;
+    }
+
+    ESB::UInt32 iteration = (ESB::UInt32)_counter.inc();
+    *bytesAvailable = MIN(*bytesAvailable, iteration % _maxChunkSize + 1);
+    return ESB_SUCCESS;
+  }
+
+ private:
+  // Disabled
+  HttpSmallChunkLoadgenHandler(const HttpSmallChunkLoadgenHandler &);
+  void operator=(const HttpSmallChunkLoadgenHandler &);
+
+  ESB::SharedInt _counter;
+  const ESB::UInt32 _maxChunkSize;
+};
+
+TEST_F(HttpProxyTest, SmallChunks) {
+  HttpTestParams params;
+  params.connections(50)
+      .iterations(50)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
+      .requestSize(1024)
+      .responseSize(1024)
+      .logLevel(ESB::Logger::Warning);
+  const ESB::UInt32 maxChunkSize = 42;
+
+  HttpFixedRouter router(_originListener.localDestination());
+  HttpSmallChunkLoadgenHandler loadgenHandler(params, maxChunkSize);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpSmallChunkOriginHandler originHandler(params, maxChunkSize);
+  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
+
+TEST_F(HttpProxyTest, LargeChunks) {
+  HttpTestParams params;
+  params.connections(3)
+      .iterations(3)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
+      .requestSize(1024 * 1024)
+      .responseSize(1024 * 1024)
+      .logLevel(ESB::Logger::Debug);
 
   HttpFixedRouter router(_originListener.localDestination());
   HttpLoadgenHandler loadgenHandler(params);

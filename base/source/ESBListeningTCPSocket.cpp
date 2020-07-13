@@ -262,8 +262,8 @@ const char *ListeningTCPSocket::name() const { return _logAddress; }
 
 void ListeningTCPSocket::formatPrefix(const char *namePrefix) {
   int desired = snprintf(_logAddress, ESB_NAME_PREFIX_SIZE, "%s:", namePrefix);
-  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
-  _logAddress[ESB_MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
+  _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
+  _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
 }
 
 }  // namespace ESB

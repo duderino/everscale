@@ -155,8 +155,13 @@ typedef SSIZE_T SSize;
 #define ESB_ALIGN(value, size) (((value) % (size)) ? (((value) & ~((size)-1)) + (size)) : (value))
 #define ESB_WORD_ALIGN(value) ESB_ALIGN(value, sizeof(ESB::Word))
 
-#define ESB_MIN(a, b) ((a) > (b) ? (b) : (a))
-#define ESB_MAX(a, b) ((a) > (b) ? (a) : (b))
+#ifndef MIN
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+#endif
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
 #define ESB_NAME_PREFIX_SIZE 16
 #define ESB_LOG_ADDRESS_SIZE (ESB_IPV6_PRESENTATION_SIZE + 17 + ESB_NAME_PREFIX_SIZE)

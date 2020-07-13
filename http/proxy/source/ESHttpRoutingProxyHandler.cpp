@@ -154,8 +154,8 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiple
 
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
   assert(context);
-  assert(context->clientStream());
   if (!context || !context->clientStream()) {
+    assert(context->clientStream());
     return ESB_INVALID_STATE;
   }
 
