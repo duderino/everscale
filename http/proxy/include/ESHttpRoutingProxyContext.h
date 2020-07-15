@@ -24,9 +24,15 @@ class HttpRoutingProxyContext {
   inline HttpServerStream *serverStream() { return _serverStream; }
   inline HttpClientStream *clientStream() { return _clientStream; }
 
-  inline void setServerStream(HttpServerStream *serverStream) { _serverStream = serverStream; }
+  inline void setServerStream(HttpServerStream *serverStream) {
+    assert(serverStream);
+    _serverStream = serverStream;
+  }
 
-  inline void setClientStream(HttpClientStream *clientStream) { _clientStream = clientStream; }
+  inline void setClientStream(HttpClientStream *clientStream) {
+    assert(clientStream);
+    _clientStream = clientStream;
+  }
 
   inline ESB::UInt32 clientStreamResponseOffset() const { return _clientStreamResponseOffset; }
 
@@ -38,6 +44,12 @@ class HttpRoutingProxyContext {
 
   inline void setServerStreamRequestOffset(ESB::UInt32 serverStreamRequestOffset) {
     _serverStreamRequestOffset = serverStreamRequestOffset;
+  }
+
+  inline bool receivedOutboundResponse() const { return _receivedOutboundResponse; }
+
+  inline void setReceivedOutboundResponse(bool receivedOutboundResponse) {
+    _receivedOutboundResponse = receivedOutboundResponse;
   }
 
   /** Placement new.
@@ -53,6 +65,7 @@ class HttpRoutingProxyContext {
   HttpRoutingProxyContext(const HttpRoutingProxyContext &);
   void operator=(const HttpRoutingProxyContext &);
 
+  bool _receivedOutboundResponse;
   HttpServerStream *_serverStream;
   HttpClientStream *_clientStream;
   ESB::UInt32 _clientStreamResponseOffset;

@@ -32,16 +32,16 @@ TCPSocket::State::State()
     : EmbeddedMapElement(),
       _isBlocking(false),
       _socketDescriptor(INVALID_SOCKET),
-      _listeningAddress(),
+      _localAddress(),
       _peerAddress(),
       _cleanupHandler(NULL) {}
 
-TCPSocket::State::State(bool isBlocking, SOCKET sockFd, const SocketAddress &listeningAddress,
+TCPSocket::State::State(bool isBlocking, SOCKET sockFd, const SocketAddress &localAddress,
                         const SocketAddress &peerAddress, CleanupHandler *cleanupHandler)
     : EmbeddedMapElement(),
       _isBlocking(isBlocking),
       _socketDescriptor(sockFd),
-      _listeningAddress(listeningAddress),
+      _localAddress(localAddress),
       _peerAddress(peerAddress),
       _cleanupHandler(cleanupHandler) {}
 
@@ -50,7 +50,7 @@ TCPSocket::State::~State() {}
 TCPSocket::State::State(const TCPSocket::State &state) {
   _isBlocking = state._isBlocking;
   _socketDescriptor = state._socketDescriptor;
-  _listeningAddress = state._listeningAddress;
+  _localAddress = state._localAddress;
   _peerAddress = state._peerAddress;
   // do not copy cleanup handler
 }
@@ -58,7 +58,7 @@ TCPSocket::State::State(const TCPSocket::State &state) {
 TCPSocket::State &TCPSocket::State::operator=(const TCPSocket::State &state) {
   _isBlocking = state._isBlocking;
   _socketDescriptor = state._socketDescriptor;
-  _listeningAddress = state._listeningAddress;
+  _localAddress = state._localAddress;
   _peerAddress = state._peerAddress;
   // do not copy cleanup handler
   return *this;

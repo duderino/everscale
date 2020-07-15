@@ -33,6 +33,8 @@ class HttpLoadgenHandler : public HttpClientHandler {
   // ES::HttpClientHandler
   //
 
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
+
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream);
 
   virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,

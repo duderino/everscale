@@ -38,6 +38,7 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   // ES::HttpClientHandler via ES:HttpProxyHandler
   //
 
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
   virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                       ESB::UInt32 *bytesAvailable);

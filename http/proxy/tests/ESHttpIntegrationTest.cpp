@@ -33,75 +33,81 @@ static void SignalHandler(int signal) { IsRunning = 0; }
 
 class HttpNullProxyHandler : public HttpProxyHandler {
  public:
-  ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) override {
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
+  virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                              ESB::UInt32 *bytesAvailable) override {
+  virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                      ESB::UInt32 *bytesAvailable) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream, unsigned char *body,
-                                ESB::UInt32 bytesRequested) override {
+  virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                        unsigned char *body, ESB::UInt32 bytesRequested) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                 const unsigned char *body, ESB::UInt32 bytesOffered,
-                                 ESB::UInt32 *bytesConsumed) override {
+  virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                                         const unsigned char *body, ESB::UInt32 bytesOffered,
+                                         ESB::UInt32 *bytesConsumed) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) override {
+  virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                      HttpClientHandler::State state) override {
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
+                              HttpClientHandler::State state) {
     assert(!"should not be called");
   }
 
-  ESB::Error acceptConnection(HttpMultiplexer &multiplexer, ESB::SocketAddress *address) override {
-    assert(!"should not be called");
-    return ESB_NOT_IMPLEMENTED;
-  }
-
-  ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream) override {
+  virtual ESB::Error acceptConnection(HttpMultiplexer &multiplexer, ESB::SocketAddress *address) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error receiveRequestHeaders(HttpMultiplexer &multiplexer, HttpServerStream &serverStream) override {
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream, unsigned const char *body,
-                                ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed) override {
+  virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &multiplexer, HttpServerStream &serverStream) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                               ESB::UInt32 *bytesAvailable) override {
+  virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                        unsigned const char *body, ESB::UInt32 bytesOffered,
+                                        ESB::UInt32 *bytesConsumed) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream, unsigned char *body,
-                                 ESB::UInt32 bytesRequested) override {
+  virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                       ESB::UInt32 *bytesAvailable) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
-  void endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                      HttpServerHandler::State state) override {
+  virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                                         unsigned char *body, ESB::UInt32 bytesRequested) {
+    assert(!"should not be called");
+    return ESB_NOT_IMPLEMENTED;
+  }
+
+  virtual void endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
+                              HttpServerHandler::State state) {
     assert(!"should not be called");
   }
 };
@@ -119,9 +125,9 @@ HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::
       _proxyHandler(proxyHandler),
       _originHandler(serverHandler),
       _logger(stdout),
-      _client("loadgen", _params.clientThreads(), _clientHandler),
-      _proxy("proxy", _params.proxyThreads(), _proxyHandler),
-      _origin("origin", _params.originThreads(), _originHandler) {
+      _client("load", _params.clientThreads(), _clientHandler),
+      _proxy("prox", _params.proxyThreads(), _proxyHandler),
+      _origin("orig", _params.originThreads(), _originHandler) {
   HttpClientSocket::SetReuseConnections(_params.reuseConnections());
 }
 

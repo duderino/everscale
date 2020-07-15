@@ -12,6 +12,10 @@ HttpLoadgenHandler::HttpLoadgenHandler(const HttpTestParams &params) : _params(p
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
+ESB::Error HttpLoadgenHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+  return ESB_SUCCESS;
+}
+
 ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                                 ESB::UInt32 *maxChunkSize) {
   assert(maxChunkSize);
@@ -90,8 +94,11 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
     case ES_HTTP_CLIENT_HANDLER_END:
 #ifndef NDEBUG
       if (0 <= _params.responseSize()) {
-        ESB::UInt32 bytesReceived = context->bytesReceived();
-        assert(bytesReceived == _params.responseSize());
+        if (context->bytesReceived() != _params.responseSize()) {
+          ESB_LOG_ERROR("[%s] expected %u byte response, got %u byte response", stream.logAddress(),
+                        _params.responseSize(), context->bytesReceived());
+        }
+        assert(context->bytesReceived() == _params.responseSize());
       }
 #endif
       break;

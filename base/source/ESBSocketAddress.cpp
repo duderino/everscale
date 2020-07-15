@@ -128,19 +128,30 @@ void SocketAddress::presentationAddress(char *address, int size) const {
   address[ESB_IPV6_PRESENTATION_SIZE - 1] = 0;
 }
 
-void SocketAddress::logAddress(char *address, int size, int fd) const {
+int SocketAddress::logAddress(char *address, int size, int fd) const {
   assert(address);
-  assert(size >= ESB_LOG_ADDRESS_SIZE - ESB_NAME_PREFIX_SIZE);
-  // TODO support IPv6
-  if (!address || (ESB_LOG_ADDRESS_SIZE - ESB_NAME_PREFIX_SIZE) > size) {
-    return;
-  }
-
   char buffer[ESB_IPV6_PRESENTATION_SIZE];
   presentationAddress(buffer, sizeof(buffer));
 
-  snprintf(address, size, "%s:%u,%d", buffer, port(), fd);
-  address[ESB_LOG_ADDRESS_SIZE - ESB_NAME_PREFIX_SIZE - 1] = 0;
+  int bytesWrittenExcludingNull = 0;
+
+  if (INVALID_SOCKET != fd) {
+    assert(size >= ESB_ADDRESS_PORT_SIZE + 1 + ESB_MAX_UINT32_STRING_LENGTH);
+    if (!address || (ESB_ADDRESS_PORT_SIZE + 1 + ESB_MAX_UINT32_STRING_LENGTH) > size) {
+      return 0;
+    }
+    bytesWrittenExcludingNull = snprintf(address, size, "%s:%u,%d", buffer, port(), fd);
+    address[ESB_ADDRESS_PORT_SIZE + 1 + ESB_MAX_UINT32_STRING_LENGTH - 1] = 0;
+  } else {
+    assert(size >= ESB_ADDRESS_PORT_SIZE);
+    if (!address || ESB_ADDRESS_PORT_SIZE > size) {
+      return 0;
+    }
+    bytesWrittenExcludingNull = snprintf(address, size, "%s:%u", buffer, port());
+    address[ESB_ADDRESS_PORT_SIZE - 1] = 0;
+  }
+
+  return bytesWrittenExcludingNull;
 }
 
 UInt16 SocketAddress::port() const {

@@ -23,6 +23,11 @@ class HttpRequestBodyProducer : public HttpClientHandler {
       : _buffer(buffer), _size(size), _bytesProduced(0) {}
   virtual ~HttpRequestBodyProducer() {}
 
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
     assert(!"function should not be called");
     return ESB_OPERATION_NOT_SUPPORTED;
@@ -94,6 +99,11 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
   HttpResponseBodyConsumer(unsigned const char *buffer, ESB::UInt32 size)
       : _buffer(buffer), _size(size), _bytesConsumed(0), _bytesOffered(0) {}
   virtual ~HttpResponseBodyConsumer() {}
+
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
 
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
     assert(!"function should not be called");
@@ -254,6 +264,12 @@ ESB::Error HttpClientSocket::handleConnect() {
   assert(_socket.isConnected());
 
   ESB_LOG_INFO("[%s] Connected to peer", _socket.name());
+
+  ESB::Error error = _handler.beginTransaction(_multiplexer, *this);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction immediately after connecting", _socket.name());
+    return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+  }
 
   stateTransition(TRANSACTION_BEGIN);
   return handleWritable();
@@ -602,6 +618,12 @@ ESB::Error HttpClientSocket::stateBeginTransaction() {
 
   // TODO add user agent, etc headers
 
+  ESB::Error error = _handler.beginTransaction(_multiplexer, *this);
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction immediately after connecting", _socket.name());
+    return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+  }
+
   stateTransition(FORMATTING_HEADERS);
 
   return ESB_SUCCESS;
@@ -929,9 +951,8 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
 const char *HttpClientSocket::logAddress() const { return _socket.name(); }
 
 ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
-  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
-  if (_state & (INACTIVE | ABORTED)) {
+  if (_state & ABORTED) {
     return ESB_INVALID_STATE;
   }
 

@@ -125,8 +125,11 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
     case ES_HTTP_SERVER_HANDLER_END:
 #ifndef NDEBUG
       if (0 <= _params.requestSize()) {
-        ESB::UInt32 bytesReceived = context->bytesReceived();
-        assert(bytesReceived == _params.requestSize());
+        if (context->bytesReceived() != _params.requestSize()) {
+          ESB_LOG_ERROR("[%s] expected %u byte response, got %u byte response", stream.logAddress(),
+                        _params.requestSize(), context->bytesReceived());
+        }
+        assert(context->bytesReceived() == _params.requestSize());
       }
 #endif
       break;

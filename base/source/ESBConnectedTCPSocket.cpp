@@ -2,6 +2,10 @@
 #include <ESBConnectedTCPSocket.h>
 #endif
 
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
+#endif
+
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -28,27 +32,17 @@
 
 namespace ESB {
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix)
-    : TCPSocket(), _isConnected(false), _listenerAddress(), _peerAddress() {
-  formatPrefix(namePrefix, nameSuffix);
-}
+#define ESB_SOCK_IS_CONNECTED (1 << 0)
 
 ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
-    : TCPSocket(isBlocking), _isConnected(false), _listenerAddress(), _peerAddress() {
+    : TCPSocket(isBlocking), _flags(0), _localAddress(), _peerAddress() {
   formatPrefix(namePrefix, nameSuffix);
 }
 
 ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
                                        bool isBlocking)
-    : TCPSocket(isBlocking), _isConnected(false), _listenerAddress() {
+    : TCPSocket(isBlocking), _flags(0), _localAddress(), _peerAddress(peer) {
   formatPrefix(namePrefix, nameSuffix);
-  setPeerAddress(peer);
-}
-
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const State &state)
-    : TCPSocket(state), _isConnected(true), _listenerAddress(state.listeningAddress()) {
-  formatPrefix(namePrefix, nameSuffix);
-  setPeerAddress(state.peerAddress());
 }
 
 ConnectedTCPSocket::~ConnectedTCPSocket() {}
@@ -62,16 +56,38 @@ Error ConnectedTCPSocket::reset(const State &acceptData) {
     return error;
   }
 
-  _isConnected = true;
-  _listenerAddress = acceptData.listeningAddress();
-  setPeerAddress(acceptData.peerAddress());
+  _flags |= ESB_SOCK_IS_CONNECTED;
+
+  _peerAddress = acceptData.peerAddress();
+  error = updateLocalAddress();
+  if (ESB_SUCCESS != error) {
+    close();
+    return error;
+  }
+  updateName();
 
   return ESB_SUCCESS;
 }
 
-void ConnectedTCPSocket::setPeerAddress(const SocketAddress &address) {
-  _peerAddress = address;
+ESB::Error ConnectedTCPSocket::updateLocalAddress() {
+  SocketAddress::Address address;
 
+#if defined HAVE_GETSOCKNAME
+  socklen_t socklen = sizeof(address);
+  if (SOCKET_ERROR == ::getsockname(_sockFd, (sockaddr *)&address, &socklen)) {
+    close();
+    return LastError();
+  }
+#else
+#error "getsockname or equivalent is required"
+#endif
+
+  _localAddress.updatePrimitiveAddress(&address);
+
+  return ESB_SUCCESS;
+}
+
+void ConnectedTCPSocket::updateName() {
   char *p = _logAddress;
   for (; *p && *p != ':'; ++p) {
   }
@@ -80,13 +96,15 @@ void ConnectedTCPSocket::setPeerAddress(const SocketAddress &address) {
     return;
   }
 
-  ++p;
+  ++p;  // skip ':'
+  p += _localAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), INVALID_SOCKET);
+  *p++ = '-';
   _peerAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), _sockFd);
 }
 
 const SocketAddress &ConnectedTCPSocket::peerAddress() const { return _peerAddress; }
 
-const SocketAddress &ConnectedTCPSocket::listeningAddress() const { return _listenerAddress; }
+const SocketAddress &ConnectedTCPSocket::localAddress() const { return _localAddress; }
 
 Error ConnectedTCPSocket::connect() {
   Error error = ESB_SUCCESS;
@@ -105,13 +123,10 @@ Error ConnectedTCPSocket::connect() {
     return LastError();
   }
 
-  setPeerAddress(_peerAddress);
-
   error = setBlocking(_isBlocking);
 
   if (ESB_SUCCESS != error) {
     close();
-
     return error;
   }
 
@@ -123,12 +138,23 @@ Error ConnectedTCPSocket::connect() {
     if (!_isBlocking) {
 #if defined UNIX_NONBLOCKING_CONNECT_ERROR
       if (ESB_INPROGRESS == error) {
+        error = updateLocalAddress();
+        if (ESB_SUCCESS != error) {
+          close();
+          return error;
+        }
+        updateName();
         return ESB_SUCCESS;
       }
 #elif defined WIN32_NONBLOCKING_CONNECT_ERROR
-      if (ESB_AGAIN == error) {
-        return ESB_SUCCESS;
+      error = updateLocalAddress();
+      if (ESB_SUCCESS != error) {
+        close();
+        return error;
       }
+      updateName();
+      return ESB_SUCCESS;
+    }
 #else
 #error "Non-blocking connect error codes must be handled"
 #endif
@@ -142,15 +168,22 @@ Error ConnectedTCPSocket::connect() {
 #error "connect and sockaddr or equivalent is required"
 #endif
 
-  _isConnected = true;
+  error = updateLocalAddress();
+  if (ESB_SUCCESS != error) {
+    close();
+    return error;
+  }
+  updateName();
+
+  _flags |= ESB_SOCK_IS_CONNECTED;
 
   return ESB_SUCCESS;
-}
+}  // namespace ESB
 
 void ConnectedTCPSocket::close() {
   TCPSocket::close();
 
-  _isConnected = false;
+  _flags &= ~ESB_SOCK_IS_CONNECTED;
 }
 
 bool ConnectedTCPSocket::isConnected() {
@@ -158,7 +191,7 @@ bool ConnectedTCPSocket::isConnected() {
     return false;
   }
 
-  if (_isConnected) {
+  if (_flags & ESB_SOCK_IS_CONNECTED) {
     return true;
   }
 
@@ -172,16 +205,16 @@ bool ConnectedTCPSocket::isConnected() {
 
 #if defined HAVE_GETPEERNAME
   if (SOCKET_ERROR != getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
-    _isConnected = true;
+    _flags |= ESB_SOCK_IS_CONNECTED;
   }
 #else
 #error "getpeername or equivalent is required"
 #endif
 
-  return _isConnected;
+  return _flags & ESB_SOCK_IS_CONNECTED;
 }
 
-bool ConnectedTCPSocket::isClient() const { return 0 != _listenerAddress.port(); }
+bool ConnectedTCPSocket::isClient() const { return 0 != _localAddress.port(); }
 
 SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
 #if defined HAVE_RECV

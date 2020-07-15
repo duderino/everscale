@@ -73,7 +73,7 @@ ESB::Error HttpListeningSocket::handleAccept() {
   }
 
   if (ESB_INFO_LOGGABLE) {
-    char buffer[ESB_LOG_ADDRESS_SIZE];
+    char buffer[ESB_ADDRESS_PORT_SIZE + 1 + ESB_MAX_UINT32_STRING_LENGTH];
     state.peerAddress().logAddress(buffer, sizeof(buffer), state.socketDescriptor());
     ESB_LOG_INFO("[%s] accepted new connection [%s]", _socket.name(), buffer);
   }

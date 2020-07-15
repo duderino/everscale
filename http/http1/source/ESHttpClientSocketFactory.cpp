@@ -145,7 +145,13 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
     return 0;
   }
 
-  if (!socket->isConnected()) {
+  if (socket->isConnected()) {
+    ESB::Error error = _handler.beginTransaction(_multiplexer, *socket);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction immediately after connecting", socket->name());
+      return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
+    }
+  } else {
     ESB::Error error = socket->connect();
 
     if (ESB_SUCCESS != error) {

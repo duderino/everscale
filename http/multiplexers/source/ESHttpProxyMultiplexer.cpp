@@ -10,6 +10,11 @@ namespace ES {
 
 class HttpNullClientHandler : public HttpClientHandler {
  public:
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+    assert(!"function should not be called");
+    return ESB_OPERATION_NOT_SUPPORTED;
+  }
+
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
     assert(0 == "HttpNullClientHandler called");
     return ESB_NOT_IMPLEMENTED;

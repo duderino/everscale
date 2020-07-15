@@ -28,6 +28,8 @@ ESB::Error HttpRoutingProxyHandler::beginTransaction(HttpMultiplexer &multiplexe
   serverStream.setContext(context);
   context->setServerStream(&serverStream);
 
+  ESB_LOG_DEBUG("[%s] begin server transaction", serverStream.logAddress());
+
   return ESB_SUCCESS;
 }
 
@@ -99,8 +101,7 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
   return ESB_PAUSE;
 }
 
-ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer,
-                                                           HttpClientStream &clientStream) {
+ESB::Error HttpRoutingProxyHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
   assert(context);
   assert(context->serverStream());
@@ -109,7 +110,22 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
   }
 
   context->setClientStream(&clientStream);
+  ESB_LOG_DEBUG("inbound [%s] has been paired with outbound [%s]", context->serverStream()->logAddress(),
+                clientStream.logAddress());
+  return ESB_SUCCESS;
+}
 
+ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer,
+                                                           HttpClientStream &clientStream) {
+  HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
+  assert(context);
+  assert(context->serverStream());
+  assert(context->clientStream());
+  if (!context || !context->serverStream() || !context->clientStream()) {
+    return ESB_INVALID_STATE;
+  }
+
+  context->setReceivedOutboundResponse(true);
   HttpServerStream &serverStream = *context->serverStream();
 
   ESB::Error error = serverStream.resumeRecv(true);
@@ -128,6 +144,8 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
       break;
     case ESB_AGAIN:
       return ESB_AGAIN;
+    case ESB_PAUSE:
+      return ESB_PAUSE;
     default:
       ESB_LOG_WARNING_ERRNO(error, "[%s] cannot send server response", serverStream.logAddress());
       serverStream.abort(true);
@@ -153,13 +171,25 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiple
   }
 
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
-  assert(context);
   if (!context || !context->clientStream()) {
+    ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] consumed inbound request body before outbound response received",
+                          serverStream.logAddress());
+    assert(context);
     assert(context->clientStream());
     return ESB_INVALID_STATE;
   }
 
   HttpClientStream &clientStream = *context->clientStream();
+
+  if (!context->receivedOutboundResponse()) {
+    // Pause the server transaction until we get the response from the client transaction
+    ESB_LOG_DEBUG("[%s] client send blocked on %u request body bytes", clientStream.logAddress(), *bytesConsumed);
+    ESB::Error error = onClientSendBlocked(serverStream, clientStream);
+    if (ESB_SUCCESS != error) {
+      return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+    }
+    return ESB_AGAIN;
+  }
 
   switch (ESB::Error error = clientStream.sendRequestBody(body, bytesOffered, bytesConsumed)) {
     case ESB_SUCCESS:
@@ -402,6 +432,7 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
     // The server transaction has already received the endTransaction() and cleaned up
     return;
   }
+  clientStream.setContext(NULL);
 
   // The client transaction is the first to receive endTransaction(), so abort the server transaction
 
@@ -410,10 +441,10 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
   if (!serverStream) {
     return;
   }
+  serverStream->setContext(NULL);
 
   context->~HttpRoutingProxyContext();
   serverStream->allocator().deallocate(context);
-  serverStream->setContext(NULL);
 
   ESB::Error error = serverStream->abort(true);
   if (ESB_SUCCESS != error) {
@@ -452,18 +483,19 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
     // The client transaction has already received the endTransaction() and cleaned up
     return;
   }
+  serverStream.setContext(NULL);
 
   // The server transaction is the first to receive endTransaction(), so abort the client transaction
-
-  context->~HttpRoutingProxyContext();
-  serverStream.allocator().deallocate(context);
-  serverStream.setContext(NULL);
 
   HttpClientStream *clientStream = context->clientStream();
   assert(clientStream);
   if (!clientStream) {
     return;
   }
+  clientStream->setContext(NULL);
+
+  context->~HttpRoutingProxyContext();
+  serverStream.allocator().deallocate(context);
 
   ESB::Error error = clientStream->abort(true);
   if (ESB_SUCCESS != error) {

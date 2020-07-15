@@ -1093,9 +1093,8 @@ ESB::Error HttpServerSocket::setResponse(int statusCode, const char *reasonPhras
 const char *HttpServerSocket::logAddress() const { return _socket.name(); }
 
 ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
-  assert(!(SERVER_INACTIVE & _state));
   assert(!(SERVER_ABORTED & _state));
-  if (_state & (SERVER_INACTIVE | SERVER_ABORTED)) {
+  if (_state & SERVER_ABORTED) {
     return ESB_INVALID_STATE;
   }
 

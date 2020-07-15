@@ -119,8 +119,9 @@ class SocketAddress {
    *  @param address A character array of at least ESB_LOG_ADDRESS_SIZE bytes
    *  @param size The size of the character array.
    *  @param fd an optional file descriptor to include in the log address
+   *  @return bytes written to address excluding terminating NULL character
    */
-  void logAddress(char *address, int size, int fd) const;
+  int logAddress(char *address, int size, int fd) const;
 
   /** Update the IP address with an address in presentation format (e.g.,
    * "192.168.0.0").

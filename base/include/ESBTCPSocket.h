@@ -36,7 +36,7 @@ class TCPSocket {
   class State : public EmbeddedMapElement {
    public:
     State();
-    State(bool isBlocking, SOCKET sockFd, const SocketAddress &listeningAddress, const SocketAddress &peerAddress,
+    State(bool isBlocking, SOCKET sockFd, const SocketAddress &localAddress, const SocketAddress &peerAddress,
           CleanupHandler *cleanupHandler = NULL);
     virtual ~State();
 
@@ -44,7 +44,7 @@ class TCPSocket {
 
     inline SOCKET socketDescriptor() const { return _socketDescriptor; }
 
-    inline const SocketAddress &listeningAddress() const { return _listeningAddress; }
+    inline const SocketAddress &localAddress() const { return _localAddress; }
 
     inline const SocketAddress &peerAddress() const { return _peerAddress; }
 
@@ -54,7 +54,7 @@ class TCPSocket {
 
     inline void setSocketDescriptor(SOCKET sockFd) { _socketDescriptor = sockFd; }
 
-    inline void setListeningAddress(const SocketAddress &listeningAddress) { _listeningAddress = listeningAddress; }
+    inline void setListeningAddress(const SocketAddress &listeningAddress) { _localAddress = listeningAddress; }
 
     inline void setPeerAddress(const SocketAddress &peerAddress) { _peerAddress = peerAddress; }
 
@@ -69,7 +69,7 @@ class TCPSocket {
 
     bool _isBlocking;
     SOCKET _socketDescriptor;
-    SocketAddress _listeningAddress;
+    SocketAddress _localAddress;
     SocketAddress _peerAddress;
     CleanupHandler *_cleanupHandler;
   };

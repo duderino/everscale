@@ -153,7 +153,8 @@ class ListeningTCPSocket : public TCPSocket {
   int _backlog;
   SocketState _state;
   SocketAddress _listeningAddress;
-  mutable char _logAddress[ESB_LOG_ADDRESS_SIZE];
+  // <prefix>:<ip addr>:<port>,<fd>
+  mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_MAX_UINT32_STRING_LENGTH];
 };
 
 }  // namespace ESB

@@ -34,6 +34,10 @@
 #include <ESBSharedInt.h>
 #endif
 
+#ifndef ES_HTTP_CONFIG_H
+#include <ESHttpConfig.h>
+#endif
+
 #include <gtest/gtest.h>
 
 using namespace ES;
@@ -49,6 +53,28 @@ class HttpProxyTest : public ::testing::Test {
   EphemeralListener _originListener;
   EphemeralListener _proxyListener;
 };
+
+TEST_F(HttpProxyTest, LargeChunks) {
+  HttpTestParams params;
+  params.connections(100)
+      .iterations(3)
+      .clientThreads(3)
+      .proxyThreads(3)
+      .originThreads(3)
+      .requestSize(HttpConfig::Instance().ioBufferSize() * 42)
+      .responseSize(HttpConfig::Instance().ioBufferSize() * 42)
+      .logLevel(ESB::Logger::Notice);
+
+  HttpFixedRouter router(_originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
 
 TEST_F(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
@@ -230,28 +256,6 @@ TEST_F(HttpProxyTest, SmallChunks) {
   HttpSmallChunkLoadgenHandler loadgenHandler(params, maxChunkSize);
   HttpRoutingProxyHandler proxyHandler(router);
   HttpSmallChunkOriginHandler originHandler(params, maxChunkSize);
-  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
-
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
-}
-
-TEST_F(HttpProxyTest, LargeChunks) {
-  HttpTestParams params;
-  params.connections(3)
-      .iterations(3)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
-      .requestSize(1024 * 1024)
-      .responseSize(1024 * 1024)
-      .logLevel(ESB::Logger::Debug);
-
-  HttpFixedRouter router(_originListener.localDestination());
-  HttpLoadgenHandler loadgenHandler(params);
-  HttpRoutingProxyHandler proxyHandler(router);
-  HttpOriginHandler originHandler(params);
   HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());

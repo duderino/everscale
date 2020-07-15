@@ -29,6 +29,16 @@ class HttpClientHandler {
   virtual ~HttpClientHandler();
 
   /**
+   * Handle the beginning of a transaction.
+   *
+   * @param multiplexer An API for the thread's multiplexer
+   * @param clientStream The client stream, including request and response objects
+   * @return ESB_SUCCESS if successful, another error code otherwise.  Any
+   * return value other than ESB_SUCCESS will abort the current transaction.
+   */
+  virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) = 0;
+
+  /**
    * Process the HTTP headers of a received response.
    *
    * @param multiplexer An API for the thread's multiplexer

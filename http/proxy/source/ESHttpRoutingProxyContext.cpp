@@ -5,8 +5,15 @@
 namespace ES {
 
 HttpRoutingProxyContext::HttpRoutingProxyContext()
-    : _serverStream(NULL), _clientStream(NULL), _clientStreamResponseOffset(0U), _serverStreamRequestOffset(0U) {}
+    : _receivedOutboundResponse(false),
+      _serverStream(NULL),
+      _clientStream(NULL),
+      _clientStreamResponseOffset(0U),
+      _serverStreamRequestOffset(0U) {}
 
-HttpRoutingProxyContext::~HttpRoutingProxyContext() {}
+HttpRoutingProxyContext::~HttpRoutingProxyContext() {
+  assert(!_serverStream);
+  assert(!_clientStream);
+}
 
 }  // namespace ES

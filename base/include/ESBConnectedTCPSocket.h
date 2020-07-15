@@ -36,16 +36,12 @@ class ListeningTCPSocket;
  */
 class ConnectedTCPSocket : public TCPSocket {
  public:
-  /** Construct an uninitialized ConnectedTCPSocket.
-   */
-  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix);
-
-  /** Construct a new client ConnectedTCPSocket.  This instance's
+  /** Construct a new server ConnectedTCPSocket.  This instance's
    *  peer will be left uninitialized by this call.
    *
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking);
+  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking = false);
 
   /** Construct a new client ConnectedTCPSocket.  This instance will
    *  connect (attempt to connect) to the peer identified by the
@@ -54,14 +50,8 @@ class ConnectedTCPSocket : public TCPSocket {
    *  @param peer The peer that this socket will attempt to connect to.
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer, bool isBlocking);
-
-  /** Construct a new server ConnectedTCPSocket.
-   *
-   * @param state An object populated by ListeningTCPSockets
-   *  when accepting a new connection.
-   */
-  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const State &state);
+  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
+                     bool isBlocking = false);
 
   /** Destroy the connected socket.  Will close the socket if it has not
    *  already been closed.
@@ -83,13 +73,6 @@ class ConnectedTCPSocket : public TCPSocket {
    */
   virtual Error reset(const State &acceptData);
 
-  /** Set the address of the peer.  A client socket will attempt to connect
-   *  to this address.
-   *
-   *  @param address The address of the peer.
-   */
-  void setPeerAddress(const SocketAddress &address);
-
   /** Get the address of the peer.
    *
    *  @return address The address of the peer.
@@ -103,7 +86,7 @@ class ConnectedTCPSocket : public TCPSocket {
    *      socket.  If this socket was not created by a listening socket,
    *      the address will be uninitialized (i.e., all fields will be 0).
    */
-  const SocketAddress &listeningAddress() const;
+  const SocketAddress &localAddress() const;
 
   /** Attempt to connect to the peer.
    *
@@ -218,11 +201,15 @@ class ConnectedTCPSocket : public TCPSocket {
   ConnectedTCPSocket &operator=(const ConnectedTCPSocket &);
 
   void formatPrefix(const char *namePrefix, const char *nameSuffix);
+  void updateName();
+  ESB::Error updateLocalAddress();
 
-  bool _isConnected;
-  SocketAddress _listenerAddress;
+  int _flags;
+  SocketAddress _localAddress;
   SocketAddress _peerAddress;
-  mutable char _logAddress[ESB_LOG_ADDRESS_SIZE];
+  // <prefix>:<ip addr>:<port>-<ip addr>:<port>,<port>
+  mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 +
+                           ESB_MAX_UINT32_STRING_LENGTH];
 };
 
 }  // namespace ESB
