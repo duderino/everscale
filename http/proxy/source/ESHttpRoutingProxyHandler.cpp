@@ -193,7 +193,9 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiple
 
   switch (ESB::Error error = clientStream.sendRequestBody(body, bytesOffered, bytesConsumed)) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] Forwarded %u request body bytes", clientStream.logAddress(), *bytesConsumed);
+      context->addRequestBodyBytesForwarded(*bytesConsumed);
+      ESB_LOG_DEBUG("[%s] forwarding %u/%u request body bytes", clientStream.logAddress(), *bytesConsumed,
+                    context->requestBodyBytesForwarded());
       return ESB_SUCCESS;
     case ESB_PAUSE:
       ESB_LOG_DEBUG("[%s] server recv blocked on %u request body bytes", clientStream.logAddress(), *bytesConsumed);
@@ -208,7 +210,7 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiple
       }
       return ESB_AGAIN;
     default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot forward request body", clientStream.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot forward request body", clientStream.logAddress());
       return error;
   }
 }
@@ -272,7 +274,9 @@ ESB::Error HttpRoutingProxyHandler::produceResponseBody(HttpMultiplexer &multipl
   switch (ESB::Error error =
               clientStream.readResponseBody(body, bytesRequested, context->clientStreamResponseOffset())) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] read %u response body bytes", clientStream.logAddress(), bytesRequested);
+      context->addResponseBodyBytesForwarded(bytesRequested);
+      ESB_LOG_DEBUG("[%s] forwarding %u/%u response body bytes", serverStream.logAddress(), bytesRequested,
+                    context->responseBodyBytesForwarded());
       return ESB_SUCCESS;
     case ESB_PAUSE:
       if (ESB_SUCCESS != (error = onServerSendBlocked(serverStream, clientStream))) {
@@ -348,7 +352,9 @@ ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiple
 
   switch (ESB::Error error = serverStream.readRequestBody(body, bytesRequested, context->serverStreamRequestOffset())) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] read %u request body bytes", serverStream.logAddress(), bytesRequested);
+      context->addRequestBodyBytesForwarded(bytesRequested);
+      ESB_LOG_DEBUG("[%s] forwarding %u/%u request body bytes", clientStream.logAddress(), bytesRequested,
+                    context->requestBodyBytesForwarded());
       return ESB_SUCCESS;
     case ESB_PAUSE:
       if (ESB_SUCCESS != (error = onClientSendBlocked(serverStream, clientStream))) {
@@ -384,7 +390,9 @@ ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multipl
 
   switch (ESB::Error error = serverStream.sendResponseBody(body, bytesOffered, bytesConsumed)) {
     case ESB_SUCCESS:
-      ESB_LOG_DEBUG("[%s] Forwarded %u response body bytes", serverStream.logAddress(), *bytesConsumed);
+      context->addResponseBodyBytesForwarded(*bytesConsumed);
+      ESB_LOG_DEBUG("[%s] forwarding %u/%u response body bytes", serverStream.logAddress(), *bytesConsumed,
+                    context->responseBodyBytesForwarded());
       return ESB_SUCCESS;
     case ESB_PAUSE:
       if (ESB_SUCCESS != (error = onClientRecvBlocked(serverStream, clientStream))) {
@@ -397,7 +405,7 @@ ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multipl
       }
       return ESB_AGAIN;
     default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] Cannot forward response body", serverStream.logAddress());
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot forward response body", serverStream.logAddress());
       return error;
   }
 }

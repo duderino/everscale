@@ -162,15 +162,6 @@ class ConnectedTCPSocket : public TCPSocket {
    */
   SSize send(Buffer *buffer);
 
-  /** Determine whether this is a client or a server socket.  That is,
-   *  whether this socket was actively created with the
-   *  ConnectedTCPSocket::connect() method or whether it was passively
-   *  created by the ListeningTCPSocket::accept() method.
-   *
-   *  @return true if this socket is a client socket, false otherwise.
-   */
-  bool isClient() const;
-
   /** Get the number of bytes of data that could be read from this socket.
    *
    *  @return The number of bytes that could be read or SOCKET_ERROR if

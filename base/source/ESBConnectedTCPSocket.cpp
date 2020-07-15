@@ -98,7 +98,7 @@ void ConnectedTCPSocket::updateName() {
 
   ++p;  // skip ':'
   p += _localAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), INVALID_SOCKET);
-  *p++ = '-';
+  *p++ = '>';
   _peerAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), _sockFd);
 }
 
@@ -213,8 +213,6 @@ bool ConnectedTCPSocket::isConnected() {
 
   return _flags & ESB_SOCK_IS_CONNECTED;
 }
-
-bool ConnectedTCPSocket::isClient() const { return 0 != _localAddress.port(); }
 
 SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
 #if defined HAVE_RECV
