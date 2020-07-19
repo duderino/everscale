@@ -35,21 +35,39 @@ ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack, Http
 }
 
 ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                 unsigned const char *chunk, ESB::UInt32 chunkSize,
+                                                 const unsigned char *chunk, ESB::UInt32 chunkSize,
                                                  ESB::UInt32 *bytesConsumed) {
   assert(chunk);
   assert(bytesConsumed);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
 
+#ifndef NDEBUG
+  for (int i = 0; i < chunkSize; ++i) {
+    char expected = 'a' + (context->bytesReceived() + i) % 26;
+    if (expected != chunk[i]) {
+      assert(chunk[i] == expected);
+    }
+  }
+#endif
+
   *bytesConsumed = chunkSize;
   context->setBytesReceived(context->bytesReceived() + chunkSize);
+
+  ESB_LOG_DEBUG("[%s] received %u or %u/%u request body bytes", stream.logAddress(), chunkSize,
+                context->bytesReceived(), _params.requestSize());
 
   HttpResponse &response = stream.response();
 
   if (0 < chunkSize) {
     return ESB_SUCCESS;
   }
+
+  if (0 <= _params.requestSize() && _params.requestSize() != context->bytesReceived()) {
+    ESB_LOG_ERROR("[%s] missing %u bytes from %u byte response body", stream.logAddress(),
+                  _params.requestSize() - context->bytesReceived(), _params.requestSize());
+  }
+  assert(context->bytesReceived() == _params.requestSize());
 
   response.setStatusCode(200);
   response.setReasonPhrase("OK");
@@ -88,6 +106,10 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
 
   memcpy(chunk, ((unsigned char *)_params.responseBody()) + context->bytesSent(), bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
+
+  ESB_LOG_DEBUG("[%s] sent %u or %u/%u response body bytes", stream.logAddress(), bytesToSend, context->bytesSent(),
+                _params.responseSize());
+
   return ESB_SUCCESS;
 }
 
@@ -123,15 +145,6 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
       ESB_LOG_ERROR("[%s] Transaction failed at response body send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
-#ifndef NDEBUG
-      if (0 <= _params.requestSize()) {
-        if (context->bytesReceived() != _params.requestSize()) {
-          ESB_LOG_ERROR("[%s] expected %u byte response, got %u byte response", stream.logAddress(),
-                        _params.requestSize(), context->bytesReceived());
-        }
-        assert(context->bytesReceived() == _params.requestSize());
-      }
-#endif
       break;
     default:
       assert(!"Transaction failed at unknown state");

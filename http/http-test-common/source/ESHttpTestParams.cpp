@@ -47,8 +47,10 @@ HttpTestParams &HttpTestParams::requestSize(ESB::UInt32 requestSize) {
     free((void *)_requestBody);
   }
 
-  _requestBody = (const unsigned char *)malloc(requestSize);
-  memset((void *)_requestBody, 'a', requestSize);
+  _requestBody = (unsigned char *)malloc(requestSize);
+  for (int i = 0; i < requestSize; ++i) {
+    _requestBody[i] = 'a' + i % 26;
+  }
   _requestSize = requestSize;
   return *this;
 }
@@ -58,8 +60,10 @@ HttpTestParams &HttpTestParams::responseSize(ESB::UInt32 responseSize) {
     free((void *)_responseBody);
   }
 
-  _responseBody = (const unsigned char *)malloc(responseSize);
-  memset((void *)_responseBody, 'a', responseSize);
+  _responseBody = (unsigned char *)malloc(responseSize);
+  for (int i = 0; i < responseSize; ++i) {
+    _responseBody[i] = 'A' + i % 26;
+  }
   _responseSize = responseSize;
   return *this;
 }

@@ -33,7 +33,7 @@ using namespace ES;
  *
  * Example of client -> proxy -> server:
  *
- * ./http/proxy/http-proxy-test -c 3 -p 3 -o 3 -s 500 -i 5000 -r 1
+ * ./http/proxy/http-proxy-test-main -c 3 -p 3 -o 3 -s 500 -i 5000 -r 1
  *
  * 3 client threads (-c 3) sending to 3 proxy threads (-p3) sending to three origin server threads (-o 3)
  * 500 concurrent connections (-s 500)
@@ -42,7 +42,7 @@ using namespace ES;
  *
  * Example of client -> server (good for distinguishing stack issues from proxy errors):
  *
- * ./http/proxy/http-proxy-test -c 3 -p 0 -o 3 -s 500 -i 5000 -r 1
+ * ./http/proxy/http-proxy-test-main -c 3 -p 0 -o 3 -s 500 -i 5000 -r 1
  *
  * 3 client threads (-c 3) sending to three origin server threads (-o 3)
  * 0 proxy threads (-p 0) configures the client threads to send directly to origin threads.

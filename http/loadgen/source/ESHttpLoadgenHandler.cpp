@@ -38,6 +38,10 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, 
 
   memcpy(chunk, _params.requestBody() + context->bytesSent(), bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
+
+  ESB_LOG_DEBUG("[%s] sent %u or %u/%u request body bytes", stream.logAddress(), bytesToSend, context->bytesSent(),
+                _params.requestSize());
+
   return ESB_SUCCESS;
 }
 
@@ -53,8 +57,20 @@ ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
 
+#ifndef NDEBUG
+  for (int i = 0; i < chunkSize; ++i) {
+    char expected = 'A' + (context->bytesReceived() + i) % 26;
+    if (expected != chunk[i]) {
+      assert(chunk[i] == expected);
+    }
+  }
+#endif
+
   *bytesConsumed = chunkSize;
   context->setBytesRecieved(context->bytesReceived() + chunkSize);
+
+  ESB_LOG_DEBUG("[%s] received %u or %u/%u response body bytes", stream.logAddress(), chunkSize,
+                context->bytesReceived(), _params.responseSize());
 
   return ESB_SUCCESS;
 }
@@ -92,15 +108,11 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
       ESB_LOG_ERROR("Transaction failed at receive response body state");
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
-#ifndef NDEBUG
-      if (0 <= _params.responseSize()) {
-        if (context->bytesReceived() != _params.responseSize()) {
-          ESB_LOG_ERROR("[%s] expected %u byte response, got %u byte response", stream.logAddress(),
-                        _params.responseSize(), context->bytesReceived());
-        }
-        assert(context->bytesReceived() == _params.responseSize());
+      if (0 <= _params.responseSize() && _params.responseSize() != context->bytesReceived()) {
+        ESB_LOG_ERROR("[%s] missing %u bytes from %u byte response body", stream.logAddress(),
+                      _params.responseSize() - context->bytesReceived(), _params.responseSize());
       }
-#endif
+      assert(context->bytesReceived() == _params.responseSize());
       break;
     default:
       assert(!"Transaction failed at unknown state");

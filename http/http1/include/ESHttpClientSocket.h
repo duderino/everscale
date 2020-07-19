@@ -226,7 +226,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
     _state &= ~flag;
   }
 
-  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
+  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable);
   ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);
   ESB::Error formatEndChunk();
   ESB::Error fillReceiveBuffer();

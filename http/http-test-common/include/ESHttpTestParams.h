@@ -148,8 +148,8 @@ class HttpTestParams {
   const char *_method;
   const char *_contentType;
   const char *_absPath;
-  const unsigned char *_requestBody;
-  const unsigned char *_responseBody;
+  unsigned char *_requestBody;
+  unsigned char *_responseBody;
 };
 
 }  // namespace ES

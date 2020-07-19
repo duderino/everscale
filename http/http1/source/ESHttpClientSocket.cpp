@@ -46,7 +46,11 @@ class HttpRequestBodyProducer : public HttpClientHandler {
     }
 
     *bytesAvailable = _size - _bytesProduced;
-    return 0 == *bytesAvailable ? ESB_BREAK : ESB_SUCCESS;
+    if (0 == *bytesAvailable) {
+      return ESB_BREAK;
+    } else {
+      return ESB_SUCCESS;
+    }
   }
 
   virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
@@ -275,7 +279,7 @@ ESB::Error HttpClientSocket::handleConnect() {
   return handleWritable();
 }
 
-ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
+ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable) {
   if (0 < _bytesAvailable) {
     *bytesAvailable = _bytesAvailable;
     return ESB_SUCCESS;
@@ -286,11 +290,13 @@ ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
     return ESB_SUCCESS;
   }
 
-  switch (ESB::Error error = _transaction->getParser()->parseBody(_recvBuffer, bufferOffset, bytesAvailable)) {
+  ESB::UInt32 bufferOffset = 0U;  // TODO can probably kill bufferOffset entirely
+  switch (ESB::Error error = _transaction->getParser()->parseBody(_recvBuffer, &bufferOffset, bytesAvailable)) {
     case ESB_SUCCESS:
       ESB_LOG_DEBUG("[%s] %u response bytes available in current chunk", _socket.name(), *bytesAvailable);
       _bytesAvailable = *bytesAvailable;
       if (0 == _bytesAvailable) {
+        ESB_LOG_DEBUG("[%s] parsed last chunk", _socket.name());
         addFlag(LAST_CHUNK_RECEIVED);
       }
       return ESB_SUCCESS;
@@ -668,6 +674,8 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
       case ESB_AGAIN:
       case ESB_PAUSE:
         return ESB_PAUSE;
+      case ESB_BREAK:
+        return ESB_BREAK;
       case ESB_SUCCESS:
         ESB_LOG_DEBUG("[%s] handler offers request chunk of %u bytes", _socket.name(), offeredSize);
         break;
@@ -677,6 +685,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
     }
 
     if (0 == offeredSize) {
+      ESB_LOG_DEBUG("[%s] sending last chunk", _socket.name());
       error = _transaction->getFormatter()->endBody(_sendBuffer);
       switch (error) {
         case ESB_SUCCESS:
@@ -817,19 +826,18 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
   //
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt32 bufferOffset = 0U;
     ESB::UInt32 bytesAvailable = 0U;
     ESB::UInt32 bytesConsumed = 0U;
     ESB::Error error = ESB_SUCCESS;
 
-    if (ESB_SUCCESS != (error = currentChunkBytesAvailable(&bytesAvailable, &bufferOffset))) {
+    if (ESB_SUCCESS != (error = currentChunkBytesAvailable(&bytesAvailable))) {
       return error;
     }
 
     // if last chunk
     if (0 == bytesAvailable) {
+      ESB_LOG_DEBUG("[%s] offering last chunk", _socket.name());
       stateTransition(TRANSACTION_END);
-      ESB_LOG_DEBUG("[%s] parsed response body", _socket.name());
       unsigned char byte = 0;
       switch (error = handler.consumeResponseBody(_multiplexer, *this, &byte, 0U, &bytesConsumed)) {
         case ESB_BREAK:
@@ -847,8 +855,9 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
 
     ESB_LOG_DEBUG("[%s] offering response chunk of size %u", _socket.name(), bytesAvailable);
 
-    switch (error = handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + bufferOffset,
-                                                bytesAvailable, &bytesConsumed)) {
+    switch (error =
+                handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + _recvBuffer->readPosition(),
+                                            bytesAvailable, &bytesConsumed)) {
       case ESB_BREAK:
         return ESB_BREAK;
       case ESB_SUCCESS:
