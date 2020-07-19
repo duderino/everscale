@@ -137,7 +137,7 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
 
   virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
   virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable);
-  virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested);
+  virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead);
 
  private:
   // Disabled

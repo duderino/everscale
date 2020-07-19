@@ -70,10 +70,12 @@ class HttpServerStream : public HttpStream {
    * @param body Data should be written here
    * @param bytesRequested The amount of data to write.  This must be <= the
    * bytesAvailable result returned by requestBodyAvailable().
-   * @return ESB_SUCCESS if successful, ESB_INVALID_ARGUMENT if bytesRequested
-   * exceeds bytesAvailable, another error code otherwise.
+   * @paran bytesRead The bytes actually written to the body buffer.
+   * @return ESB_SUCCESS and byteRead == bytesRequested if successful, ESB_AGAIN and a bytesRead >= 0 may also be
+   * returned, ESB_INVALID_ARGUMENT if bytesRequested exceeds bytesAvailable (use requestBodyAvailable() first), another
+   * error code otherwise.
    */
-  virtual ESB::Error readRequestBody(unsigned char *body, ESB::UInt32 bytesRequested) = 0;
+  virtual ESB::Error readRequestBody(unsigned char *body, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead) = 0;
 
  private:
   // Disabled

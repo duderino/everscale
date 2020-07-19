@@ -321,23 +321,16 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable) 
   return error;
 }
 
-ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested) {
+ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested,
+                                              ESB::UInt32 *bytesRead) {
   assert(chunk);
   if (!chunk) {
     return ESB_NULL_POINTER;
   }
 
-  // TODO remove bufferOffset
-
   HttpResponseBodyConsumer adaptor(chunk, bytesRequested);
-
   ESB::Error error = advanceStateMachine(adaptor, UPDATE_MULTIPLEXER | ADVANCE_RECV);
-
-#ifndef NDEBUG
-  if (ESB_SUCCESS == error) {
-    assert(bytesRequested == adaptor.bytesConsumed());
-  }
-#endif
+  *bytesRead = adaptor.bytesConsumed();
 
   return error;
 }
@@ -707,14 +700,14 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
 
     // let the handler consume chunkSize bytes of body data
 
+    // TODO KEEF extract bytes actually produce and pass to buffer instead of asserting the full amount is produced.
+
     switch (error = handler.produceRequestBody(_multiplexer, *this,
                                                _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize)) {
       case ESB_SUCCESS:
-        break;
       case ESB_AGAIN:
       case ESB_PAUSE:
-        assert(!"crap! I formatted a start chunk but didn't write enough bytes");
-        return ESB_PAUSE;
+        break;
       default:
         ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket.name(), chunkSize);
         return error;

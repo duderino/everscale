@@ -273,22 +273,15 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
   return error;
 }
 
-ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested) {
+ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead) {
   assert(chunk);
   if (!chunk) {
     return ESB_NULL_POINTER;
   }
 
   HttpRequestBodyConsumer adaptor(chunk, bytesRequested);
-
   ESB::Error error = advanceStateMachine(adaptor, SERVER_UPDATE_MULTIPLEXER | SERVER_ADVANCE_RECV);
-
-#ifndef NDEBUG
-  if (ESB_SUCCESS == error) {
-    ESB::UInt32 bytesConsumed = adaptor.bytesConsumed();
-    assert(bytesRequested == bytesConsumed);
-  }
-#endif
+  *bytesRead = adaptor.bytesConsumed();
 
   return error;
 }
@@ -317,7 +310,6 @@ ESB::Error HttpServerSocket::sendEmptyResponse(int statusCode, const char *reaso
 }
 
 ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
-  // assert(!response.hasBody());
   ESB_LOG_DEBUG("[%s] sending response %d %s", _socket.name(), response.statusCode(), response.reasonPhrase());
 
   ESB::Error error = _transaction->response().copy(&response, _transaction->allocator());
@@ -326,6 +318,7 @@ ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
     return error;
   }
 
+  // This can send the full response including body
   return advanceStateMachine(_handler, SERVER_ADVANCE_SEND);
 }
 
@@ -865,14 +858,14 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
 
     // ask the handler to produce chunkSize bytes of body data
 
+    // TODO KEEF extract bytes actually produce and pass to buffer instead of asserting the full amount is produced.
+
     switch (error = handler.produceResponseBody(_multiplexer, *this,
                                                 _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize)) {
       case ESB_SUCCESS:
-        break;
       case ESB_AGAIN:
       case ESB_PAUSE:
-        assert(!"crap! I formatted a start chunk but didn't write enough bytes");
-        return ESB_PAUSE;
+        break;
       default:
         ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response chunk of size %u", _socket.name(), chunkSize);
         return error;

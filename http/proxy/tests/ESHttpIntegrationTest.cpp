@@ -286,11 +286,11 @@ ESB::Error HttpIntegrationTest::run() {
 
   // Dump performance metrics
 
-  _client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
-  _origin.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  _client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Warning);
+  _origin.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Warning);
 
   if (0 < _params.proxyThreads()) {
-    _proxy.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+    _proxy.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Warning);
   }
 
   ESB::Time::Instance().stop();

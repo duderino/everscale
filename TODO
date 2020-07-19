@@ -1,9 +1,7 @@
 stat:
  - add aborts on error to either proactive client and server functions or to handler
  - pause/resume and possibly abort should always update the multiplexer
- - something in the proy occasionally does not write anything after the chunk header or doesn't advance the write mark and whatever is written gets clobbered:
-    GET / HTTP/1.1\r\nHost: localhost.localdomain:39923\r\nContent-Type: octet-stream\r\nTransfer-Encoding: chunked\r\n\r\n7f46\r\n7f40\r\nefghijklmnopqrstuvwxy
-                                                                                                                               ^ lost message here 
+ - modify produceRequestBody and produceResponseBody to return bytes actually produced, and incorporate into client and server sockets.
 
 proxy:
  - for proxy initiated connections, do not blindly relay connection close headers and content-length/transfer encoding headers from the client and server.
