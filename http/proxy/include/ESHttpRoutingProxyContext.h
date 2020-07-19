@@ -34,18 +34,6 @@ class HttpRoutingProxyContext {
     _clientStream = clientStream;
   }
 
-  inline ESB::UInt32 clientStreamResponseOffset() const { return _clientStreamResponseOffset; }
-
-  inline void setClientStreamResponseOffset(ESB::UInt32 clientStreamResponseOffset) {
-    _clientStreamResponseOffset = clientStreamResponseOffset;
-  }
-
-  inline ESB::UInt32 serverStreamRequestOffset() const { return _serverStreamRequestOffset; }
-
-  inline void setServerStreamRequestOffset(ESB::UInt32 serverStreamRequestOffset) {
-    _serverStreamRequestOffset = serverStreamRequestOffset;
-  }
-
   bool receivedOutboundResponse() const;
 
   void setReceivedOutboundResponse(bool receivedOutboundResponse);
@@ -78,8 +66,6 @@ class HttpRoutingProxyContext {
   HttpServerStream *_serverStream;
   HttpClientStream *_clientStream;
   int _flags;
-  ESB::UInt32 _clientStreamResponseOffset;
-  ESB::UInt32 _serverStreamRequestOffset;
   ESB::UInt32 _requestBodyBytesForwarded;
   ESB::UInt32 _responseBodyBytesForwarded;
 };

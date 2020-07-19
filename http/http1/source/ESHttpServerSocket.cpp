@@ -261,8 +261,8 @@ ESB::Error HttpServerSocket::handleConnect() {
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
-  if (!bytesAvailable || !bufferOffset) {
+ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+  if (!bytesAvailable) {
     return ESB_NULL_POINTER;
   }
 
@@ -273,8 +273,7 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable, E
   return error;
 }
 
-ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested,
-                                             ESB::UInt32 bufferOffset) {
+ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
   if (!chunk) {
     return ESB_NULL_POINTER;
@@ -872,6 +871,7 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
         break;
       case ESB_AGAIN:
       case ESB_PAUSE:
+        assert(!"crap! I formatted a start chunk but didn't write enough bytes");
         return ESB_PAUSE;
       default:
         ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response chunk of size %u", _socket.name(), chunkSize);

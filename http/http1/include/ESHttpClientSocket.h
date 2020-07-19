@@ -144,8 +144,8 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   //
 
   virtual ESB::Error sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset);
-  virtual ESB::Error readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 bufferOffset);
+  virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable);
+  virtual ESB::Error readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested);
 
   //
   // ESB::EmbeddedMapElement (for connection pool lookups)

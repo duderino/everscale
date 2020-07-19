@@ -309,8 +309,8 @@ ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
   }
 }
 
-ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, ESB::UInt32 *bufferOffset) {
-  if (!bytesAvailable || !bufferOffset) {
+ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable) {
+  if (!bytesAvailable) {
     return ESB_NULL_POINTER;
   }
 
@@ -321,8 +321,7 @@ ESB::Error HttpClientSocket::responseBodyAvailable(ESB::UInt32 *bytesAvailable, 
   return error;
 }
 
-ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested,
-                                              ESB::UInt32 bufferOffset) {
+ESB::Error HttpClientSocket::readResponseBody(unsigned char *chunk, ESB::UInt32 bytesRequested) {
   assert(chunk);
   if (!chunk) {
     return ESB_NULL_POINTER;
@@ -714,6 +713,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
         break;
       case ESB_AGAIN:
       case ESB_PAUSE:
+        assert(!"crap! I formatted a start chunk but didn't write enough bytes");
         return ESB_PAUSE;
       default:
         ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket.name(), chunkSize);

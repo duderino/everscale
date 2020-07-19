@@ -229,11 +229,9 @@ ESB::Error HttpRoutingProxyHandler::offerResponseBody(HttpMultiplexer &multiplex
   }
 
   HttpClientStream &clientStream = *context->clientStream();
-  ESB::UInt32 bufferOffset = 0U;
 
-  switch (ESB::Error error = clientStream.responseBodyAvailable(bytesAvailable, &bufferOffset)) {
+  switch (ESB::Error error = clientStream.responseBodyAvailable(bytesAvailable)) {
     case ESB_SUCCESS:
-      context->setClientStreamResponseOffset(bufferOffset);
       ESB_LOG_DEBUG("[%s] %u response body bytes are available", clientStream.logAddress(), *bytesAvailable);
       return ESB_SUCCESS;
     case ESB_PAUSE:
@@ -271,8 +269,7 @@ ESB::Error HttpRoutingProxyHandler::produceResponseBody(HttpMultiplexer &multipl
 
   HttpClientStream &clientStream = *context->clientStream();
 
-  switch (ESB::Error error =
-              clientStream.readResponseBody(body, bytesRequested, context->clientStreamResponseOffset())) {
+  switch (ESB::Error error = clientStream.readResponseBody(body, bytesRequested)) {
     case ESB_SUCCESS:
       context->addResponseBodyBytesForwarded(bytesRequested);
       ESB_LOG_DEBUG("[%s] forwarding %u/%u response body bytes", serverStream.logAddress(), bytesRequested,
@@ -308,11 +305,9 @@ ESB::Error HttpRoutingProxyHandler::offerRequestBody(HttpMultiplexer &multiplexe
   }
 
   HttpServerStream &serverStream = *context->serverStream();
-  ESB::UInt32 bufferOffset = 0U;
 
-  switch (ESB::Error error = serverStream.requestBodyAvailable(bytesAvailable, &bufferOffset)) {
+  switch (ESB::Error error = serverStream.requestBodyAvailable(bytesAvailable)) {
     case ESB_SUCCESS:
-      context->setServerStreamRequestOffset(bufferOffset);
       ESB_LOG_DEBUG("[%s] %u request body bytes are available", serverStream.logAddress(), *bytesAvailable);
       return ESB_SUCCESS;
     case ESB_PAUSE:
@@ -350,7 +345,7 @@ ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiple
 
   HttpServerStream &serverStream = *context->serverStream();
 
-  switch (ESB::Error error = serverStream.readRequestBody(body, bytesRequested, context->serverStreamRequestOffset())) {
+  switch (ESB::Error error = serverStream.readRequestBody(body, bytesRequested)) {
     case ESB_SUCCESS:
       context->addRequestBodyBytesForwarded(bytesRequested);
       ESB_LOG_DEBUG("[%s] forwarding %u/%u request body bytes", clientStream.logAddress(), bytesRequested,

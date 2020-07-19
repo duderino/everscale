@@ -10,8 +10,6 @@ HttpRoutingProxyContext::HttpRoutingProxyContext()
     : _serverStream(NULL),
       _clientStream(NULL),
       _flags(0),
-      _clientStreamResponseOffset(0U),
-      _serverStreamRequestOffset(0U),
       _requestBodyBytesForwarded(0U),
       _responseBodyBytesForwarded(0U) {}
 
