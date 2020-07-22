@@ -72,14 +72,23 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   response.setStatusCode(200);
   response.setReasonPhrase("OK");
 
-  ESB::Error error = response.addHeader("Transfer-Encoding", "chunked", stream.allocator());
+  ESB::Error error;
+
+  if (_params.useContentLengthHeader()) {
+    error = response.addHeader(stream.allocator(), "Content-Length", "%u", _params.requestSize());
+  } else {
+    error = response.addHeader("Transfer-Encoding", "chunked", stream.allocator());
+  }
+
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  error = response.addHeader("Content-Type", "octet-stream", stream.allocator());
-  if (ESB_SUCCESS != error) {
-    return error;
+  if (_params.contentType()) {
+    error = response.addHeader("Content-Type", _params.contentType(), stream.allocator());
+    if (ESB_SUCCESS != error) {
+      return error;
+    }
   }
 
   return ESB_SEND_RESPONSE;
@@ -124,7 +133,6 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
-      assert(!"Transaction failed at begin state");
       ESB_LOG_ERROR("[%s] Transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
@@ -133,21 +141,17 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
       // ESB_LOG_ERROR("[%s] Transaction failed at request header parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
-      assert(!"Transaction failed at request body parse state");
       ESB_LOG_ERROR("[%s] Transaction failed at request body parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
-      assert(!"Transaction failed at response header send state");
       ESB_LOG_ERROR("[%s] Transaction failed at response header send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
-      assert(!"Transaction failed at response body send state");
       ESB_LOG_ERROR("[%s] Transaction failed at response body send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
       break;
     default:
-      assert(!"Transaction failed at unknown state");
       ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
 }

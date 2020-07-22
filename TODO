@@ -1,4 +1,6 @@
 stat:
+ - do not pass 0 as last chunk to consume request/response handlers for content-length=0 requests/responses
+ - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
  - add aborts on error to either proactive client and server functions or to handler
  - pause/resume and possibly abort should always update the multiplexer
  - modify produceRequestBody and produceResponseBody to return bytes actually produced, and incorporate into client and server sockets.
@@ -10,7 +12,7 @@ proxy:
  - move HttpServerHandler, HttpClientHandler, HttpMultiplexer and their deps into http-common.  Leave HttpMultiplexerExtended in http1
  - do not wait to receive entire request body before sending response body.  Instead stream them concurrently
  - add protocol coverage/interoperability tests:
-   - (no request body, unencoded request body, chunked request body) X (client,server) X (request,response)
+   - (no request body/wait for socket close, unencoded request body / content length 0, chunked request body) X (client,server) X (request,response)
    - pipelining client that doesn't wait for the current transaction to complete before sending the next request
    - concurrent request/response streaming
    - correct handling when the server sends a response early... when shoudl it close the connection before finishing the response?
@@ -26,7 +28,6 @@ proxy:
    - lots of tiny chunks
    - peers close sockets while pooled/paused or at other random times
  - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
- - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
  - release send buffer when transitioning to parse headers.  acquire send buffer when transitioning to format headers (and later for bidy body streaming)
  - release recv buffer when transitioning to format headers.  acquire recv buffer whwn transitioning to parse headers (and later for bidi body streaming)
 

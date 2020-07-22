@@ -24,15 +24,9 @@ class HttpRoutingProxyContext {
   inline HttpServerStream *serverStream() { return _serverStream; }
   inline HttpClientStream *clientStream() { return _clientStream; }
 
-  inline void setServerStream(HttpServerStream *serverStream) {
-    assert(serverStream);
-    _serverStream = serverStream;
-  }
+  inline void setServerStream(HttpServerStream *serverStream) { _serverStream = serverStream; }
 
-  inline void setClientStream(HttpClientStream *clientStream) {
-    assert(clientStream);
-    _clientStream = clientStream;
-  }
+  inline void setClientStream(HttpClientStream *clientStream) { _clientStream = clientStream; }
 
   bool receivedOutboundResponse() const;
 

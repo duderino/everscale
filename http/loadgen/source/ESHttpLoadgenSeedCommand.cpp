@@ -64,13 +64,13 @@ ESB::Error HttpLoadgenSeedCommand::buildRequest(HttpClientTransaction *transacti
     }
   }
 
-  error = request.addHeader("Transfer-Encoding", "chunked", transaction->allocator());
-
-  if (ESB_SUCCESS != error) {
-    return error;
+  if (_params.useContentLengthHeader()) {
+    error = request.addHeader(transaction->allocator(), "Content-Length", "%u", _params.requestSize());
+  } else {
+    error = request.addHeader("Transfer-Encoding", "chunked", transaction->allocator());
   }
 
-  return ESB_SUCCESS;
+  return error;
 }
 
 }  // namespace ES

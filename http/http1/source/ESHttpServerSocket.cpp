@@ -620,6 +620,7 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
   if (_transaction->request().hasBody()) {
     stateTransition(SERVER_PARSING_BODY);
   } else {
+    clearFlag(SERVER_CANNOT_REUSE_CONNECTION);
     stateTransition(SERVER_FORMATTING_HEADERS);
   }
 

@@ -81,31 +81,24 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
-      assert(!"Transaction failed at begin state");
-      ESB_LOG_ERROR("Transaction failed at begin state");
+      ESB_LOG_ERROR("[%s] transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RESOLVE:
-      assert(!"Transaction failed at resolve state");
-      ESB_LOG_ERROR("Transaction failed at resolve state");
+      ESB_LOG_ERROR("[%s] transaction failed at resolve state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
-      assert(!"Transaction failed at connect state");
-      ESB_LOG_ERROR("Transaction failed at connect state");
+      ESB_LOG_ERROR("[%s] transaction failed at connect state", stream.logAddress());
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
-      assert(!"Transaction failed at send request headers state");
-      ESB_LOG_ERROR("Transaction failed at send request headers state");
+      ESB_LOG_ERROR("[%s] transaction failed at send request headers state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
-      assert(!"Transaction failed at send request body state");
-      ESB_LOG_ERROR("Transaction failed at send request body state");
+      ESB_LOG_ERROR("[%s] transaction failed at send request body state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
-      assert(!"Transaction failed at receive response headers state");
-      ESB_LOG_ERROR("Transaction failed at receive response headers state");
+      ESB_LOG_ERROR("[%s] transaction failed at receive response headers state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
-      assert(!"Transaction failed at receive response body state");
-      ESB_LOG_ERROR("Transaction failed at receive response body state");
+      ESB_LOG_ERROR("[%s] transaction failed at receive response body state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
       if (0 <= _params.responseSize() && _params.responseSize() != context->bytesReceived()) {

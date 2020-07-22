@@ -21,6 +21,7 @@ HttpTestParams::HttpTestParams()
       _iterations(0),
       _requestSize(0),
       _responseSize(0),
+      _useContentLengthHeader(false),
       _reuseConnections(true),
       _logLevel(ESB::Logger::Notice),
       _destinationAddress("127.0.0.1"),

@@ -410,7 +410,7 @@ ESB::Error HttpMessageParser::parseUnencodedBody(ESB::Buffer *inputBuffer, ESB::
 
   assert((ES_PARSING_UNENCODED_BODY | ES_PARSING_BODY_UNTIL_CLOSE) & _state);
 
-  if (false == inputBuffer->isReadable()) {
+  if (!inputBuffer->isReadable()) {
     return ESB_AGAIN;
   }
 
@@ -715,7 +715,7 @@ ESB::Error HttpMessageParser::postParse(HttpMessage &message) {
       // non-identity transfer-coding. If the message does include a non-
       // identity transfer-coding, the Content-Length MUST be ignored.
 
-      if (0 == header->fieldValue()) {
+      if (!header->fieldValue()) {
         continue;
       }
 
@@ -735,7 +735,7 @@ ESB::Error HttpMessageParser::postParse(HttpMessage &message) {
       // range specifiers from a 1.1 client implies that the client can parse
       // multipart/byteranges responses.
 
-      if (0 == header->fieldValue()) {
+      if (!header->fieldValue()) {
         continue;
       }
 

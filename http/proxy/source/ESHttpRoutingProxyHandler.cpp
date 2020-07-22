@@ -37,7 +37,8 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
                                                           HttpServerStream &serverStream) {
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
   assert(context);
-  if (!context) {
+  assert(context->serverStream());
+  if (!context || !context->serverStream()) {
     return ESB_INVALID_STATE;
   }
 
@@ -76,7 +77,10 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
   }
 
   // Pause the server transaction until we get the response from the client transaction
-  error = serverStream.pauseRecv(true);
+  error = serverStream.pauseRecv(false);
+  if (ESB_SUCCESS == error) {
+    error = serverStream.pauseSend(true);
+  }
   if (ESB_SUCCESS != error) {
     multiplexer.destroyClientTransaction(clientTransaction);
     ESB_LOG_WARNING_ERRNO(error, "[%s] cannot pause server stream", serverStream.logAddress());
@@ -141,9 +145,15 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
 
   switch (error = serverStream.sendResponse(clientResponse)) {
     case ESB_SUCCESS:
-      // prepare server stream for reuse
-      serverStream.resumeRecv(false);
-      serverStream.pauseSend(true);
+      // response has been fully sent, so prepare server stream for reuse
+      error = serverStream.resumeRecv(false);
+      if (ESB_SUCCESS != error) {
+        return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+      }
+      error = serverStream.pauseSend(true);
+      if (ESB_SUCCESS != error) {
+        return error == ESB_AGAIN ? ESB_OTHER_ERROR : error;
+      }
       break;
     case ESB_PAUSE:
       if (ESB_SUCCESS != (error = onClientRecvBlocked(serverStream, clientStream))) {
@@ -386,6 +396,7 @@ ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiple
   return error;
 }
 
+// TODO KEEF DO NOT CALL CONSUME REQUEST/RESPONSE BODY WITH 0 FOR CONTENT-LENGTH 0 responses.
 ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                                         const unsigned char *body, ESB::UInt32 bytesOffered,
                                                         ESB::UInt32 *bytesConsumed) {

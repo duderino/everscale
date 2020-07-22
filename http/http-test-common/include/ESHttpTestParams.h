@@ -58,6 +58,11 @@ class HttpTestParams {
 
   HttpTestParams &responseSize(ESB::UInt32 responseSize);
 
+  inline HttpTestParams &useContentLengthHeader(bool useContentLengthHeader) {
+    _useContentLengthHeader = useContentLengthHeader;
+    return *this;
+  }
+
   inline HttpTestParams &reuseConnections(bool reuseConnections) {
     _reuseConnections = reuseConnections;
     return *this;
@@ -110,6 +115,8 @@ class HttpTestParams {
 
   inline ESB::UInt32 responseSize() const { return _responseSize; }
 
+  inline bool useContentLengthHeader() const { return _useContentLengthHeader; }
+
   inline bool reuseConnections() const { return _reuseConnections; }
 
   inline ESB::Logger::Severity logLevel() const { return _logLevel; }
@@ -141,6 +148,7 @@ class HttpTestParams {
   ESB::UInt32 _iterations;  // requests per connection
   ESB::UInt32 _requestSize;
   ESB::UInt32 _responseSize;
+  bool _useContentLengthHeader;  // if true use content-length header, else use chunked transfer encoding
   bool _reuseConnections;
   ESB::Logger::Severity _logLevel;
   const char *_destinationAddress;
