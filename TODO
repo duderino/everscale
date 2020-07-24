@@ -1,6 +1,4 @@
 stat:
- - do not pass 0 as last chunk to consume request/response handlers for content-length=0 requests/responses
- - when proactive and reactive modes are mixed, recv last chunk handler is called reactively when the request has no body, but not called when a body is present.  too confusing?  buggy?
  - add aborts on error to either proactive client and server functions or to handler
  - pause/resume and possibly abort should always update the multiplexer
  - modify produceRequestBody and produceResponseBody to return bytes actually produced, and incorporate into client and server sockets.

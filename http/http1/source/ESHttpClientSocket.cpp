@@ -285,7 +285,7 @@ ESB::Error HttpClientSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
     return ESB_SUCCESS;
   }
 
-  if (_state & LAST_CHUNK_RECEIVED) {
+  if (_state & LAST_CHUNK_RECEIVED || !_transaction->response().hasBody()) {
     *bytesAvailable = 0;
     return ESB_SUCCESS;
   }
@@ -769,15 +769,11 @@ ESB::Error HttpClientSocket::stateReceiveResponseHeaders() {
     }
   }
 
-  if (_transaction->response().hasBody()) {
-    stateTransition(PARSING_BODY);
-  } else {
-    stateTransition(TRANSACTION_END);
-  }
+  stateTransition(PARSING_BODY);
 
   switch (error = _handler.receiveResponseHeaders(_multiplexer, *this)) {
     case ESB_SUCCESS:
-      break;
+      return ESB_SUCCESS;
     case ESB_AGAIN:
     case ESB_PAUSE:
       return ESB_PAUSE;
@@ -785,31 +781,11 @@ ESB::Error HttpClientSocket::stateReceiveResponseHeaders() {
       ESB_LOG_DEBUG_ERRNO(error, "[%s] Client request header handler aborting connection", _socket.name());
       return error;  // remove from multiplexer
   }
-
-  if (_transaction->response().hasBody()) {
-    return ESB_SUCCESS;
-  }
-
-  unsigned char byte = 0;
-  ESB::UInt32 bytesConsumed = 0;
-  switch (error = _handler.consumeResponseBody(_multiplexer, *this, &byte, 0, &bytesConsumed)) {
-    case ESB_BREAK:
-      return ESB_BREAK;
-    case ESB_SUCCESS:
-      return ESB_SUCCESS;
-    case ESB_PAUSE:
-    case ESB_AGAIN:
-      return ESB_PAUSE;
-    default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] client body handler aborted connection", _socket.name());
-      return error;
-  }
 }
 
 ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler) {
   assert(_transaction);
   assert(_state & PARSING_BODY);
-  assert(_transaction->response().hasBody());
 
   //
   // Until the body is read or either the parser or handler return ESB_AGAIN,

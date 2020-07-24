@@ -615,18 +615,13 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
     }
   }
 
-  // TODO - check Expect header and maybe send a 100 Continue
+  stateTransition(SERVER_PARSING_BODY);
 
-  if (_transaction->request().hasBody()) {
-    stateTransition(SERVER_PARSING_BODY);
-  } else {
-    clearFlag(SERVER_CANNOT_REUSE_CONNECTION);
-    stateTransition(SERVER_FORMATTING_HEADERS);
-  }
+  // TODO - check Expect header and maybe send a 100 Continue
 
   switch (error = _handler.receiveRequestHeaders(_multiplexer, *this)) {
     case ESB_SUCCESS:
-      break;
+      return ESB_SUCCESS;
     case ESB_PAUSE:
     case ESB_AGAIN:
       return ESB_PAUSE;
@@ -637,34 +632,10 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
       ESB_LOG_DEBUG_ERRNO(error, "[%s] Server request header handler aborting connection", _socket.name());
       return error;
   }
-
-  if (_transaction->request().hasBody()) {
-    return ESB_SUCCESS;
-  }
-
-  // pass last chunk to the handler
-
-  unsigned char byte = 0;
-  ESB::UInt32 bytesConsumed = 0U;
-  switch (error = _handler.consumeRequestBody(_multiplexer, *this, &byte, 0, &bytesConsumed)) {
-    case ESB_BREAK:
-      return ESB_BREAK;
-    case ESB_SUCCESS:
-    case ESB_SEND_RESPONSE:
-      clearFlag(SERVER_CANNOT_REUSE_CONNECTION);
-      return ESB_SUCCESS;
-    case ESB_PAUSE:
-    case ESB_AGAIN:
-      return ESB_PAUSE;
-    default:
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] server body handler aborted connection", _socket.name());
-      return error;
-  }
 }
 
 ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler) {
   assert(_transaction);
-  assert(_transaction->request().hasBody());
   assert(_socket.isConnected());
   assert(_recvBuffer);
   assert(_state & SERVER_PARSING_BODY);
@@ -741,7 +712,6 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
 
 ESB::Error HttpServerSocket::stateSkipTrailer() {
   assert(_transaction);
-  assert(_transaction->request().hasBody());
   assert(_socket.isConnected());
   assert(_state & SERVER_SKIPPING_TRAILER);
 
@@ -934,7 +904,7 @@ ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
     return ESB_SUCCESS;
   }
 
-  if (_state & SERVER_LAST_CHUNK_RECEIVED) {
+  if (_state & SERVER_LAST_CHUNK_RECEIVED || !_transaction->request().hasBody()) {
     *bytesAvailable = 0;
     return ESB_SUCCESS;
   }

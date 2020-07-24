@@ -402,9 +402,7 @@ ESB::Error HttpMessageParser::parseUnencodedBody(ESB::Buffer *inputBuffer, ESB::
 
   if (ES_BODY_PARSE_COMPLETE & _state) {
     _state &= ~(ES_PARSING_UNENCODED_BODY | ES_PARSING_BODY_UNTIL_CLOSE);
-
     *chunkSize = 0;
-
     return ESB_SUCCESS;
   }
 

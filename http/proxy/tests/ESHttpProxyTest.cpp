@@ -79,30 +79,7 @@ TEST_P(HttpProxyTest, MessageBodies) {
 
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest,
                          ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
-                                            ::testing::Values(false)));
-
-TEST_F(HttpProxyTest, ClientToProxyToServerContentLength) {
-  HttpTestParams params;
-  params.connections(1)
-      .iterations(1)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
-      .requestSize(0)
-      .responseSize(0)
-      .useContentLengthHeader(true)
-      .logLevel(ESB::Logger::Debug);
-
-  HttpFixedRouter router(_originListener.localDestination());
-  HttpLoadgenHandler loadgenHandler(params);
-  HttpRoutingProxyHandler proxyHandler(router);
-  HttpOriginHandler originHandler(params);
-  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
-
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
-}
+                                            ::testing::Values(false, true)));
 
 TEST_F(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
