@@ -14,4 +14,6 @@ void NullLogger::setSeverity(Severity severity) {}
 
 Error NullLogger::log(Severity severity, const char *format, ...) { return ESB_SUCCESS; }
 
+UInt32 NullLogger::now() { return 0; }
+
 }  // namespace ESB

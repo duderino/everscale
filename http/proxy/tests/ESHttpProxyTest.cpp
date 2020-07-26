@@ -52,6 +52,11 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bo
  protected:
   EphemeralListener _originListener;
   EphemeralListener _proxyListener;
+
+ private:
+  // Disabled
+  HttpProxyTest(const HttpProxyTest &);
+  HttpProxyTest &operator=(const HttpProxyTest &);
 };
 
 TEST_P(HttpProxyTest, MessageBodies) {

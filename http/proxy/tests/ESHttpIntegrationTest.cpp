@@ -124,7 +124,8 @@ HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::
       _clientHandler(clientHandler),
       _proxyHandler(proxyHandler),
       _originHandler(serverHandler),
-      _logger(stdout),
+      _timeSourceCache(ESB::SystemTimeSource::Instance()),
+      _logger(stdout, _timeSourceCache),
       _client("load", _params.clientThreads(), _clientHandler),
       _proxy("prox", _params.proxyThreads(), _proxyHandler),
       _origin("orig", _params.originThreads(), _originHandler) {
@@ -149,7 +150,10 @@ ESB::Error HttpIntegrationTest::run() {
   const ESB::UInt32 totalTransactions = _params.connections() * _params.iterations();
   HttpLoadgenContext::SetTotalIterations(totalTransactions);
 
-  ESB::Time::Instance().start();
+  ESB::Error error = _timeSourceCache.start();
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
 
   //
   // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
@@ -165,7 +169,7 @@ ESB::Error HttpIntegrationTest::run() {
   // Max out open files
   //
 
-  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
+  error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot raise max fd limit");
     return error;
@@ -293,8 +297,8 @@ ESB::Error HttpIntegrationTest::run() {
     _proxy.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Warning);
   }
 
-  ESB::Time::Instance().stop();
-  error = ESB::Time::Instance().join();
+  _timeSourceCache.stop();
+  error = _timeSourceCache.join();
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot stop time thread");
     return error;

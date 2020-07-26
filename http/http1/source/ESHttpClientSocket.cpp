@@ -427,38 +427,38 @@ bool HttpClientSocket::handleRemove() {
   switch (state) {
     case TRANSACTION_BEGIN:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
       break;
     case CONNECTING:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
       break;
     case FORMATTING_HEADERS:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
       break;
     case FORMATTING_BODY:
     case FLUSHING_BODY:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
       break;
     case PARSING_HEADERS:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
       break;
     case PARSING_BODY:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
       break;
     case TRANSACTION_END:
       assert(_transaction);
-      _counters.getSuccesses()->record(_transaction->startTime(), ESB::Date::Now());
+      _counters.getSuccesses()->record(_transaction->startTime(), ESB::Time::Instance().now());
       if (GetReuseConnections() && !(_state & ABORTED)) {
         const HttpHeader *header = _transaction->response().findHeader("Connection");
         reuseConnection = !(header && header->fieldValue() && !strcasecmp("close", (const char *)header->fieldValue()));

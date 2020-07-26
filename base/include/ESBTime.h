@@ -1,76 +1,31 @@
 #ifndef ESB_TIME_H
 #define ESB_TIME_H
 
-#ifndef ESB_DATE_H
-#include <ESBDate.h>
-#endif
-
-#ifndef ESB_THREAD_H
-#include <ESBThread.h>
-#endif
-
-#ifndef ESB_SHARED_INT_H
-#include <ESBSharedInt.h>
+#ifndef ESB_TIME_SOURCE_H
+#include <ESBTimeSource.h>
 #endif
 
 namespace ESB {
-
-/** @defgroup util Utilities */
 
 /** Time is a second resolution clock that caches time-related system calls.
  *
  *  @ingroup util
  */
-class Time : public Thread {
+class Time {
  public:
+  /** Constructor */
   static inline Time &Instance() { return _Instance; }
 
-  /** Default destructor. */
+  /** Destructor. */
   virtual ~Time();
 
-  /** Get a new date object initialized to the current system time, truncated
-   *  to the second.
+  /** Get a new date object initialized to the current time
    *
-   *  @return date object set to the current time, truncated to the second.
+   *  @return date object set to the current time.
    */
-  inline Date now() {
-    Int32 milliSeconds = _time.get();
-    Date now;
-    now.setMicroSeconds(_basis.microSeconds() + milliSeconds * 1000);
-    now.setSeconds(_basis.seconds() + milliSeconds / 1000);
-    return now;
-  }
+  inline Date now() { return _source->now(); }
 
-  inline UInt32 resolutionMilliSeconds() const { return _resolutionMilliSeconds; }
-
-  inline void setResolutionMilliSeconds(UInt32 resolutionMilliSeconds) {
-    _resolutionMilliSeconds = resolutionMilliSeconds;
-  }
-
-  /** Get the current system time in seconds.
-   *
-   *  @return system time in seconds.
-   */
-  inline UInt64 nowSec() { return now().seconds(); }
-
-  /**
-   * Used by time-based test cases
-   *
-   * @param seconds Set the global system time.
-   */
-  inline void setNow(UInt32 milliSeconds) { _time.set(milliSeconds); }
-
-  /**
-   * Used by time-based test cases
-   *
-   * @param seconds Set the global system time.
-   */
-  inline void addNow(UInt32 milliSeconds) { _time.add(milliSeconds); }
-
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
- protected:
-  virtual void run();
+  inline void setTimeSource(TimeSource &source) { _source = &source; }
 
  private:
   //  Disabled
@@ -78,9 +33,7 @@ class Time : public Thread {
   Time(const Time &);
   Time &operator=(const Time &);
 
-  Date _basis;
-  SharedInt _time;
-  ESB::UInt32 _resolutionMilliSeconds;
+  TimeSource *_source;
   static Time _Instance;
 };
 

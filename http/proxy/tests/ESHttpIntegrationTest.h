@@ -33,6 +33,14 @@
 #include <ESHttpProxyHandler.h>
 #endif
 
+#ifndef ESB_TIME_SOURCE_CACHE_H
+#include <ESBTimeSourceCache.h>
+#endif
+
+#ifndef ESB_SYSTEM_TIME_SOURCE_H
+#include <ESBSystemTimeSource.h>
+#endif
+
 namespace ES {
 
 class HttpIntegrationTest {
@@ -59,6 +67,7 @@ class HttpIntegrationTest {
   HttpClientHandler &_clientHandler;
   HttpProxyHandler &_proxyHandler;
   HttpServerHandler &_originHandler;
+  ESB::TimeSourceCache _timeSourceCache;
   ESB::SimpleFileLogger _logger;
   HttpClient _client;
   HttpProxy _proxy;

@@ -30,6 +30,10 @@
 #include <ESHttpClientSocket.h>
 #endif
 
+#ifndef ESB_TIME_SOURCE_CACHE_H
+#include <ESBTimeSourceCache.h>
+#endif
+
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
@@ -57,8 +61,13 @@ int main(int argc, char **argv) {
 
   HttpLoadgenContext::SetTotalIterations(params.connections() * params.iterations());
 
-  ESB::Time::Instance().start();
-  ESB::SimpleFileLogger logger(stdout);
+  ESB::TimeSourceCache timeSource(ESB::SystemTimeSource::Instance());
+  error = timeSource.start();
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  ESB::SimpleFileLogger logger(stdout, timeSource);
   logger.setSeverity(params.logLevel());
   ESB::Logger::SetInstance(&logger);
 
@@ -117,6 +126,13 @@ int main(int argc, char **argv) {
 
   error = client.stop();
   if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  timeSource.stop();
+  error = timeSource.join();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "cannot stop time thread");
     return error;
   }
 

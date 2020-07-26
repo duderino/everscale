@@ -15,7 +15,7 @@ TEST(TimeSeries, Basic) {
   const UInt16 maxWindows = 1;
   const UInt16 windowSizeSec = 1;
   TimeSeries timeSeries("ts-test", maxWindows, windowSizeSec);
-  Date start(Date::Now());
+  Date start(Time::Instance().now());
   Date stop(start.seconds(), start.microSeconds() + 1000);
 
   for (int i = 0; i < queries; ++i) {
@@ -32,7 +32,7 @@ TEST(TimeSeries, MultipleWindows) {
   const UInt16 maxWindows = 2;
   const UInt16 windowSizeSec = 10;
   TimeSeries timeSeries("ts-test", maxWindows, windowSizeSec);
-  Date start(Date::Now());
+  Date start(Time::Instance().now());
   Date stop(start + 1);
 
   for (int i = 0; i < queries; ++i) {
@@ -61,7 +61,7 @@ TEST(TimeSeries, ExceedMaxWindows) {
   const UInt16 maxWindows = 1;
   const UInt16 windowSizeSec = 10;
   TimeSeries timeSeries("ts-test", maxWindows, windowSizeSec);
-  Date start(Date::Now());
+  Date start(Time::Instance().now());
   Date stop(start + 1);
 
   for (int i = 0; i < queries; ++i) {

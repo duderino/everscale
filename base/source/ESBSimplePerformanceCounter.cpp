@@ -33,7 +33,7 @@ double SimplePerformanceCounter::queriesPerSecNoLock() const {
   Date window;
 
   if (0 == _windowStop.seconds() && 0 == _windowStop.microSeconds()) {
-    window = Date::Now() - _windowStart;
+    window = ESB::Time::Instance().now() - _windowStart;
   } else {
     window = _windowStop - _windowStart;
   }
@@ -51,7 +51,7 @@ void SimplePerformanceCounter::record(const Date &start, const Date &stop) {
     WriteScopeLock lock(_lock);
 
     if (0 == _windowStart.seconds() && 0 == _windowStart.microSeconds()) {
-      _windowStart = Date::Now();
+      _windowStart = ESB::Time::Instance().now();
     }
 
     _latencyMsec.add(diffMSec);

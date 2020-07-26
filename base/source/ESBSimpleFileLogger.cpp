@@ -25,7 +25,8 @@
 
 namespace ESB {
 
-SimpleFileLogger::SimpleFileLogger(FILE *file) : _severity(None), _file(file) {}
+SimpleFileLogger::SimpleFileLogger(FILE *file, TimeSource &source)
+    : _timeSource(source), _severity(None), _file(file) {}
 
 SimpleFileLogger::~SimpleFileLogger() {}
 
@@ -53,5 +54,7 @@ Error SimpleFileLogger::log(Severity severity, const char *format, ...) {
 
   return ESB_SUCCESS;
 }
+
+UInt32 SimpleFileLogger::now() { return _timeSource.now().seconds(); }
 
 }  // namespace ESB

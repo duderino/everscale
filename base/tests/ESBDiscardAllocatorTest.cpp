@@ -50,6 +50,10 @@
 #include <ESBThread.h>
 #endif
 
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
+#endif
+
 namespace ESB {
 
 /** DiscardAllocatorTest is the unit test for DiscardAllocator.
@@ -113,7 +117,7 @@ static const int Iterations = 10;
 static const int AllocationsPerIteration = 10000;
 
 DiscardAllocatorTest::DiscardAllocatorTest()
-    : _rand(ESB::Date::Now().microSeconds() + Thread::CurrentThreadId()),
+    : _rand(Time::Instance().now().microSeconds() + Thread::CurrentThreadId()),
       _allocator(ChunkSize, ESB_CACHE_LINE_SIZE, 1, SystemAllocator::Instance(), true) {}
 
 DiscardAllocatorTest::~DiscardAllocatorTest() {}

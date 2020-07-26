@@ -2,13 +2,17 @@
 #include <ESBDate.h>
 #endif
 
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
+#endif
+
 #include <gtest/gtest.h>
 
 using namespace ESB;
 
 TEST(Date, SecondAddition) {
   const Date second(1, 0);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   var += 1;
@@ -30,7 +34,7 @@ TEST(Date, SecondAddition) {
 
 TEST(Date, MicroSecondAddition) {
   const Date microsecond(0, 1);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   var = orig;
@@ -47,7 +51,7 @@ TEST(Date, MicroSecondAddition) {
 
 TEST(Date, MicroSecondAdditionWrap) {
   const Date nearSecond(0, 999999);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   var = orig;
@@ -64,7 +68,7 @@ TEST(Date, MicroSecondAdditionWrap) {
 
 TEST(Date, SecondSubtraction) {
   const Date second(1, 0);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   var -= 1;
@@ -86,7 +90,7 @@ TEST(Date, SecondSubtraction) {
 
 TEST(Date, MicroSecondSubtraction) {
   const Date microsecond(0, 1);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   var = orig;
@@ -103,7 +107,7 @@ TEST(Date, MicroSecondSubtraction) {
 
 TEST(Date, MicroSecondSubtractionWrap) {
   const Date nearSecond(0, 999999);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   var = orig;
@@ -119,7 +123,7 @@ TEST(Date, MicroSecondSubtractionWrap) {
 }
 
 TEST(Date, SecondComparisons) {
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   EXPECT_TRUE(orig == var);
@@ -147,7 +151,7 @@ TEST(Date, SecondComparisons) {
 
 TEST(Date, MicroSecondWrapComparisons) {
   const Date nearSecond(0, 999999);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   EXPECT_TRUE(orig == var);
@@ -175,7 +179,7 @@ TEST(Date, MicroSecondWrapComparisons) {
 
 TEST(Date, MicroSecondComparisons) {
   const Date usec(0, 1);
-  const Date orig(Date::Now());
+  const Date orig(Time::Instance().now());
   Date var(orig);
 
   EXPECT_TRUE(orig == var);
