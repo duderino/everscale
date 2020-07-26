@@ -2,8 +2,8 @@
 #include <ESBTime.h>
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+#ifndef ESB_LOGGER_H
+#include <ESBLogger.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -13,28 +13,25 @@
 namespace ESB {
 
 Time Time::_Instance;
-UInt32 Time::_Basis = 946641600;  // second since epoch at turn of millennium
 
-Time::Time() : Thread() {
-#ifdef HAVE_TIME
-  _time.set((int)(time(0) - _Basis));
-#else
-#error "time() or equivalent is required"
-#endif
-}
+Time::Time() : Thread(), _basis(Date::Now()), _time(0), _resolutionMilliSeconds(100) {}
 
 Time::~Time() {}
 
 void Time::run() {
   while (_isRunning.get()) {
-#ifdef HAVE_TIME
-    _time.set((int)(time(0) - _Basis));
-#else
-#error "time() or equivalent is required"
-#endif
+    Date now = Date::Now() - _basis;
+    ESB::Int32 milliSeconds = now.seconds() * 1000 + now.microSeconds() / 1000;
+
+    if (0 > milliSeconds) {
+      ESB_LOG_CRITICAL("Process exceeded max millisecond lifetime");
+      return;
+    }
+
+    _time.set(milliSeconds);
 
 #ifdef HAVE_USLEEP
-    usleep(333 * 1000);
+    usleep(_resolutionMilliSeconds * 1000);
 #endif
   }
 }
