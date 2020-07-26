@@ -122,13 +122,15 @@ int main(int argc, char **argv) {
   // Wait for ctrl-C
 
   while (ESB::SignalHandler::Instance().running()) {
-    sleep(1);
+    usleep(100);
   }
 
   // Stop server
 
-  error = server.stop();
+  server.stop();
+  timeCache.stop();
 
+  error = server.join();
   if (ESB_SUCCESS != error) {
     return error;
   }
@@ -136,7 +138,6 @@ int main(int argc, char **argv) {
   server.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   server.destroy();
 
-  timeCache.stop();
   error = timeCache.join();
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot join time cache thread");

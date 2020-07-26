@@ -59,7 +59,9 @@ class HttpClient {
 
   ESB::Error start();
 
-  ESB::Error stop();
+  void stop();
+
+  ESB::Error join();
 
   void destroy();
 
@@ -74,7 +76,8 @@ class HttpClient {
     ES_HTTP_CLIENT_IS_INITIALIZED = 0,
     ES_HTTP_CLIENT_IS_STARTED = 1,
     ES_HTTP_CLIENT_IS_STOPPED = 2,
-    ES_HTTP_CLIENT_IS_DESTROYED = 3
+    ES_HTTP_CLIENT_IS_JOINED = 3,
+    ES_HTTP_CLIENT_IS_DESTROYED = 4
   } HttpClientState;
 
   ESB::UInt32 _threads;

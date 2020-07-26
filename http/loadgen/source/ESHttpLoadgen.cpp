@@ -114,10 +114,13 @@ int main(int argc, char **argv) {
   }
 
   while (ESB::SignalHandler::Instance().running() && !HttpLoadgenContext::IsFinished()) {
-    sleep(1);
+    usleep(100);
   }
 
-  error = client.stop();
+  client.stop();
+  timeCache.stop();
+
+  error = client.join();
   if (ESB_SUCCESS != error) {
     return error;
   }
@@ -125,7 +128,6 @@ int main(int argc, char **argv) {
   client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   client.destroy();
 
-  timeCache.stop();
   error = timeCache.join();
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot join time cache thread");

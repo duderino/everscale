@@ -58,11 +58,16 @@ class ThreadPool {
    */
   Error start();
 
-  /** Stop the thread pool immediately.  Each queued command that is
-   *  not executed will be passed to a cleanup handler.  Function
-   *  will return after all worker threads have exited.
+  /** Stop the thread pool immediately but do not wait for all threads in the threadpool to exit.
    */
   void stop();
+
+  /**
+   * Wait for all threads in the thread pool to exit.  This should be called after stop().
+   *
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  Error join();
 
   /** Run a command in the thread pool.  If the thread pool has
    *  not been started, the commands will just sit in an internal

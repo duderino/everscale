@@ -55,6 +55,7 @@ Error ThreadPool::start() {
       ESB_LOG_CRITICAL_ERRNO(error, "[%s:%d] cannot start worker", _name, i + 1);
       _numThreads = i;
       stop();
+      join();
       return error;
     }
   }
@@ -74,21 +75,21 @@ void ThreadPool::stop() {
   for (int i = 0; i < _numThreads; ++i) {
     _threads[i]->stop();
   }
+}
 
-  Error error;
-
+Error ThreadPool::join() {
   for (int i = 0; i < _numThreads; ++i) {
     ESB_LOG_DEBUG("[%s:%d} joining worker", _name, i + 1);
-
-    error = _threads[i]->join();
-
+    Error error = _threads[i]->join();
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "[%s:%d] error joining worker", _name, i + 1);
+      return error;
     }
   }
 
   destroyWorkerThreads();
   ESB_LOG_NOTICE("[%s] stopped", _name);
+  return ESB_SUCCESS;
 }
 
 bool ThreadPool::createWorkerThreads() {

@@ -247,7 +247,7 @@ ESB::Error HttpIntegrationTest::run() {
   //
 
   while (ESB::SignalHandler::Instance().running() && !HttpLoadgenContext::IsFinished()) {
-    sleep(1);
+    usleep(100);
   }
 
   ESB_LOG_NOTICE("[test] finished");
@@ -256,21 +256,27 @@ ESB::Error HttpIntegrationTest::run() {
   // Stop client, server, and proxy
   //
 
-  error = _client.stop();
+  _client.stop();
+  if (0 < _params.proxyThreads()) {
+    _proxy.stop();
+  }
+  _origin.stop();
+
+  error = _client.join();
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot stop client");
     return error;
   }
 
   if (0 < _params.proxyThreads()) {
-    error = _proxy.stop();
+    error = _proxy.join();
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "cannot stop proxy");
       return error;
     }
   }
 
-  error = _origin.stop();
+  error = _origin.join();
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot stop origin server");
     return error;

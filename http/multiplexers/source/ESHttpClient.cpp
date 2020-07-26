@@ -102,19 +102,29 @@ ESB::Error HttpClient::start() {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpClient::stop() {
+void HttpClient::stop() {
   assert(ES_HTTP_CLIENT_IS_STARTED == _state.get());
-  _state.set(ES_HTTP_CLIENT_IS_STOPPED);
-
   ESB_LOG_DEBUG("[%s] stopping", _name);
   _threadPool.stop();
-  ESB_LOG_DEBUG("[%s] stopped", _name);
+  _state.set(ES_HTTP_CLIENT_IS_STOPPED);
+}
 
+ESB::Error HttpClient::join() {
+  assert(ES_HTTP_CLIENT_IS_STOPPED == _state.get());
+
+  ESB::Error error = _threadPool.join();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_WARNING_ERRNO(error, "[%s] cannot join thread pool", _name);
+    return error;
+  }
+
+  _state.set(ES_HTTP_CLIENT_IS_JOINED);
+  ESB_LOG_DEBUG("[%s] stopped", _name);
   return ESB_SUCCESS;
 }
 
 void HttpClient::destroy() {
-  assert(ES_HTTP_CLIENT_IS_STOPPED == _state.get());
+  assert(ES_HTTP_CLIENT_IS_JOINED == _state.get());
   _state.set(ES_HTTP_CLIENT_IS_DESTROYED);
 
   for (ESB::ListIterator it = _multiplexers.frontIterator(); !it.isNull(); it = it.next()) {
