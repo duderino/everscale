@@ -121,15 +121,17 @@ int main(int argc, char **argv) {
   }
 
   while (IsRunning && !HttpLoadgenContext::IsFinished()) {
-    sleep(1);
+    usleep(100);
   }
 
-  error = client.stop();
+  client.stop();
+  timeSource.stop();
+
+  error = client.join();
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  timeSource.stop();
   error = timeSource.join();
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot stop time thread");

@@ -74,7 +74,9 @@ class HttpServer {
 
   ESB::Error start();
 
-  ESB::Error stop();
+  void stop2();
+
+  ESB::Error join();
 
   void destroy();
 
@@ -111,7 +113,8 @@ class HttpServer {
     ES_HTTP_SERVER_IS_INITIALIZED = 0,
     ES_HTTP_SERVER_IS_STARTED = 1,
     ES_HTTP_SERVER_IS_STOPPED = 2,
-    ES_HTTP_SERVER_IS_DESTROYED = 3
+    ES_HTTP_SERVER_IS_JOINED = 3,
+    ES_HTTP_SERVER_IS_DESTROYED = 4
   } HttpServerState;
 
   ESB::UInt32 _threads;
