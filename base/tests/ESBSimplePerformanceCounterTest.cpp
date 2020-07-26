@@ -7,7 +7,7 @@
 using namespace ESB;
 
 TEST(SimplePerformanceCounter, QPS) {
-  Date start(Date::Now());
+  Date start(Time::Instance().now());
   Date stop(start.seconds(), start.microSeconds() + 1000);
   SimplePerformanceCounter counter("qps-test", start, stop);
   const int queries = 6;
@@ -27,7 +27,7 @@ TEST(SimplePerformanceCounter, QPS) {
 
 TEST(SimplePerformanceCounter, LatencySec) {
   SimplePerformanceCounter counter("latency-sec-test");
-  Date start(Date::Now());
+  Date start(Time::Instance().now());
   Date stop(start);
   double totalMsec = 0.0;
   const int queries = 6;
@@ -59,7 +59,7 @@ TEST(SimplePerformanceCounter, LatencySec) {
 
 TEST(SimplePerformanceCounter, LatencyMsec) {
   SimplePerformanceCounter counter("latency-msec-test");
-  Date start(Date::Now());
+  Date start(Time::Instance().now());
   double totalMsec = 0UL;
   const int queries = 6;
 

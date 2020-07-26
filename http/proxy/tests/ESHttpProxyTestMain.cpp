@@ -34,6 +34,14 @@
 #include <ESBServerTLSSocket.h>
 #endif
 
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
+#endif
+
+#ifndef ESB_TIME_SOURCE_CACHE_H
+#include <ESBTimeSourceCache.h>
+#endif
+
 using namespace ES;
 
 /**
@@ -76,6 +84,16 @@ int main(int argc, char **argv) {
     return error;
   }
 
+  ESB::TimeSourceCache timeCache(ESB::SystemTimeSource::Instance());
+  error = timeCache.start();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot start time cache thread");
+    return error;
+  }
+
+  ESB::SimpleFileLogger logger(stdout, params.logLevel(), timeCache);
+  ESB::Logger::SetInstance(&logger);
+
   EphemeralListener originListener("origin-listener", params.secure());
   EphemeralListener proxyListener("proxy-listener", params.secure());
   HttpFixedRouter router(originListener.localDestination());
@@ -86,13 +104,13 @@ int main(int argc, char **argv) {
   error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
-    exit(error);
+    return error;
   }
 
   error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
-    exit(error);
+    return error;
   }
 
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
@@ -113,6 +131,13 @@ int main(int argc, char **argv) {
     ESB_LOG_CRITICAL("TEST FAILURE: expected %u successes but got %u successes and %u failures", totalTransactions,
                      totalSuccesses, totalFailures);
     return ESB_OTHER_ERROR;
+  }
+
+  timeCache.stop();
+  error = timeCache.join();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot join time cache thread");
+    return error;
   }
 
   return ESB_SUCCESS;

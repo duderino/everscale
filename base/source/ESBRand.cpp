@@ -2,8 +2,8 @@
 #include <ESBRand.h>
 #endif
 
-#ifndef ESB_DATE_H
-#include <ESBDate.h>
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
 #endif
 
 #ifdef HAVE_STDLIB_H
@@ -18,7 +18,7 @@ namespace ESB {
 
 Rand::Rand() {
 #ifdef HAVE_RAND_R
-  _seed = Date::Now().seconds();
+  _seed = ESB::Time::Instance().now().seconds();
 #endif
 }
 

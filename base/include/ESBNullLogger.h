@@ -21,31 +21,17 @@ class NullLogger : public Logger {
    */
   virtual ~NullLogger();
 
-  /** Determine whether a log message will really be logged.
-   *
-   * @param severity The severity of the message to be logged
-   * @return true if the messages will really be logged, false otherwise.
-   */
   virtual bool isLoggable(Severity severity);
 
-  /** Set the severity level at which messages will be logged.
-   *
-   *  @param severity Messages with a severity greater than or equal to
-   *      this severity level will be logged
-   */
   virtual void setSeverity(Severity severity);
 
-  /** Log a message.
-   *
-   *  @param severity The severity of the event.
-   *  @param file The name of the file logging the message.
-   *  @param line The line of the file that the message was logged.
-   *  @param format A printf-style format string.
-   *  @return ESB_SUCCESS if successful, another value otherwise.
-   */
   virtual Error log(Severity severity, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
   virtual void flush();
+
+  virtual UInt32 now();
+
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   // Disabled

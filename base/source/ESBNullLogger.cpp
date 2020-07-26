@@ -16,4 +16,6 @@ Error NullLogger::log(Severity severity, const char *format, ...) { return ESB_S
 
 void NullLogger::flush() {}
 
+UInt32 NullLogger::now() { return 0; }
+
 }  // namespace ESB

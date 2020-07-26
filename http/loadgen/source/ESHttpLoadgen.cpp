@@ -30,6 +30,10 @@
 #include <ESHttpClientSocket.h>
 #endif
 
+#ifndef ESB_TIME_SOURCE_CACHE_H
+#include <ESBTimeSourceCache.h>
+#endif
+
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
@@ -44,8 +48,6 @@
 
 using namespace ES;
 
-static ESB::SimpleFileLogger SimpleLogger(stdout, ESB::Logger::Warning);
-
 int main(int argc, char **argv) {
   HttpTestParams params;
   params.connections(1).requestsPerConnection(3).clientThreads(3).logLevel(ESB::Logger::Notice);
@@ -54,18 +56,19 @@ int main(int argc, char **argv) {
     return error;
   }
 
-  SimpleLogger.setSeverity(params.logLevel());
-  ESB::Logger::SetInstance(&SimpleLogger);
+  ESB::TimeSourceCache timeCache(ESB::SystemTimeSource::Instance());
+  error = timeCache.start();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot start time cache thread");
+    return error;
+  }
+
+  ESB::SimpleFileLogger logger(stdout, params.logLevel(), timeCache);
+  ESB::Logger::SetInstance(&logger);
 
   error = ESB::SignalHandler::Instance().initialize();
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot install signal handlers");
-    return error;
-  }
-
-  error = ESB::Time::Instance().start();
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "cannot start time thread");
     return error;
   }
 
@@ -121,6 +124,13 @@ int main(int argc, char **argv) {
 
   client.clientCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
   client.destroy();
+
+  timeCache.stop();
+  error = timeCache.join();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot join time cache thread");
+    return error;
+  }
 
   return ESB_SUCCESS;
 }

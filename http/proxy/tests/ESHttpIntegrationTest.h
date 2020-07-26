@@ -45,10 +45,6 @@ class HttpIntegrationTest {
   inline const HttpClientCounters &clientCounters() const { return _client.clientCounters(); }
 
  private:
-  // Disabled
-  HttpIntegrationTest(const HttpIntegrationTest &);
-  void operator=(const HttpIntegrationTest &);
-
   const HttpTestParams &_params;
   ESB::ListeningSocket &_proxyListener;
   ESB::ListeningSocket &_originListener;
@@ -58,6 +54,8 @@ class HttpIntegrationTest {
   HttpClient _client;
   HttpProxy _proxy;
   HttpServer _origin;
+
+  ESB_DISABLE_COPY(HttpIntegrationTest);
 };
 
 }  // namespace ES

@@ -56,6 +56,8 @@ class TestLogger : public Logger {
 
   virtual void flush() {}
 
+  virtual UInt32 now() { return 0; }
+
   inline Severity getLastSeverity() { return _lastSeverity; }
 
   inline const char *getLastFormat() { return _lastFormat; }

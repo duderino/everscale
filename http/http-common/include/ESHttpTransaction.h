@@ -33,6 +33,10 @@
 #include <ESBPerformanceCounter.h>
 #endif
 
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
+#endif
+
 namespace ES {
 
 #ifndef ES_HTTP_PARSE_BUFFER_SIZE
@@ -82,7 +86,7 @@ class HttpTransaction : public ESB::EmbeddedListElement {
 
   inline unsigned char *duplicate(unsigned char *value) { return HttpUtil::Duplicate(&_allocator, value); }
 
-  inline void setStartTime() { _start = ESB::Date::Now(); }
+  inline void setStartTime() { _start = ESB::Time::Instance().now(); }
 
   inline const ESB::Date &startTime() const { return _start; }
 

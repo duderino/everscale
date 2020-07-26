@@ -50,6 +50,10 @@
 #include <ESBSimpleFileLogger.h>
 #endif
 
+#ifndef ESB_SYSTEM_TIME_SOURCE_H
+#include <ESBSystemTimeSource.h>
+#endif
+
 #include <gtest/gtest.h>
 
 using namespace ES;
@@ -63,8 +67,14 @@ static void LogCurrentWorkingDirectory(ESB::Logger::Severity severity) {
   }
 }
 
+static ESB::SimpleFileLogger TestLogger(stdout, ESB::Logger::Warning);
+
 class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
  public:
+  HttpProxyTest(){};
+
+  virtual ~HttpProxyTest(){};
+
   // Run before each HttpProxyTest test case
   virtual void SetUp() { HttpLoadgenContext::Reset(); }
 
@@ -73,9 +83,9 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
 
   // Run before all HttpProxyTest test cases
   static void SetUpTestSuite() {
-    ESB::Logger::SetInstance(&_Logger);
-    HttpTestParams params;
+    ESB::Logger::SetInstance(&TestLogger);
 
+    HttpTestParams params;
     ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
@@ -98,11 +108,8 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
     ESB::Logger::SetInstance(NULL);
   }
 
- private:
-  static ESB::SimpleFileLogger _Logger;
+  ESB_DISABLE_COPY(HttpProxyTest);
 };
-
-ESB::SimpleFileLogger HttpProxyTest::_Logger(stdout, ESB::Logger::Warning);
 
 // use secure if true
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
@@ -241,6 +248,10 @@ TEST_P(HttpProxyTest, SmallChunks) {
 
 class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
  public:
+  HttpProxyTestMessageBody() {}
+
+  virtual ~HttpProxyTestMessageBody() {}
+
   // Run before each HttpProxyTestMessageBody test case
   virtual void SetUp() { HttpLoadgenContext::Reset(); }
 
@@ -249,9 +260,9 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
 
   // Run before all HttpProxyTestMessageBody test cases
   static void SetUpTestSuite() {
-    ESB::Logger::SetInstance(&_Logger);
-    HttpTestParams params;
+    ESB::Logger::SetInstance(&TestLogger);
 
+    HttpTestParams params;
     ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
@@ -274,11 +285,8 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
     ESB::Logger::SetInstance(NULL);
   }
 
- private:
-  static ESB::SimpleFileLogger _Logger;
+  ESB_DISABLE_COPY(HttpProxyTestMessageBody);
 };
-
-ESB::SimpleFileLogger HttpProxyTestMessageBody::_Logger(stdout, ESB::Logger::Warning);
 
 // body-size variations X use content-length header if true X use secure if
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,

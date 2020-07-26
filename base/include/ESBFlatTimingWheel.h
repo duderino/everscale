@@ -46,7 +46,8 @@ class FlatTimingWheel {
   Error insert(DelayedCommand *command, UInt32 delayMilliSeconds, bool maskErrors = false);
 
   /**
-   * Remove/cancel a delayed command.  O(1).
+   * Remove/cancel a delayed command.  O(1) assuming every command has a unique tick, O(n) for all commands that share
+   * the same tick.  Here a 'tick' is a time unit expressed in milliseconds passed to the constructor.
    *
    * @param command to remove.
    * @return

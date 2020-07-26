@@ -271,12 +271,6 @@ class Date {
    */
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
-  /** Get a new date object initialized to the current system time.
-   *
-   *    @return date object set to the current time.
-   */
-  static Date Now();
-
  private:
   UInt32 _seconds;
   UInt32 _microSeconds;

@@ -151,12 +151,6 @@ ESB::Error HttpIntegrationTest::run() {
     return error;
   }
 
-  error = ESB::Time::Instance().start();
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "cannot start time thread");
-    return error;
-  }
-
   //
   // Max out open files
   //
@@ -289,13 +283,6 @@ ESB::Error HttpIntegrationTest::run() {
 
   if (0 < _params.proxyThreads()) {
     _proxy.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Warning);
-  }
-
-  ESB::Time::Instance().stop();
-  error = ESB::Time::Instance().join();
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "cannot stop time thread");
-    return error;
   }
 
   return ESB_SUCCESS;

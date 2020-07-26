@@ -26,8 +26,8 @@
 
 namespace ESB {
 
-SimpleFileLogger::SimpleFileLogger(FILE *file, Severity severity, bool flushable)
-    : _flushable(flushable), _severity(severity), _file(file) {}
+SimpleFileLogger::SimpleFileLogger(FILE *file, Severity severity, TimeSource &source, bool flushable)
+    : _flushable(flushable), _timeSource(source), _severity(severity), _file(file) {}
 
 SimpleFileLogger::~SimpleFileLogger() {}
 
@@ -65,5 +65,7 @@ void SimpleFileLogger::flush() {
 #endif
   }
 }
+
+UInt32 SimpleFileLogger::now() { return _timeSource.now().seconds(); }
 
 }  // namespace ESB
