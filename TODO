@@ -100,9 +100,6 @@ cmake:
  - addr space randomization
  - more *san (undefined behavior detector, etc)
 
-docs:
- - fix license - 3 levels of derivation
-
 async dns client:
  - cares
  - start with caching sync impl and async interface.  cache according to the dns record ttl and LRU
