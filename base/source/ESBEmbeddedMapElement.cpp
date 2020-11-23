@@ -6,6 +6,4 @@ namespace ESB {
 EmbeddedMapElement::EmbeddedMapElement() : EmbeddedListElement() {}
 
 EmbeddedMapElement::~EmbeddedMapElement() {}
-
-const void *EmbeddedMapElement::key() const { return NULL; }
 }  // namespace ESB

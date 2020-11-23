@@ -5,8 +5,8 @@
 #include <ESHttpSocket.h>
 #endif
 
-#ifndef ESB_CONNECTED_TCP_SOCKET_H
-#include <ESBConnectedTCPSocket.h>
+#ifndef ESB_CONNECTED_SOCKET_H
+#include <ESBConnectedSocket.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_COUNTERS_H
@@ -39,7 +39,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
  public:
   /** Constructor
    */
-  HttpClientSocket(HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer, ESB::SocketAddress &peerAddress,
+  HttpClientSocket(ESB::ConnectedSocket *socket, HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,
                    HttpClientCounters &counters, ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
@@ -55,11 +55,15 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
    */
   ESB::Error reset(bool reused, HttpClientTransaction *transaction);
 
-  inline void close() { _socket.close(); }
+  inline void close() { _socket->close(); }
 
-  inline ESB::Error connect() { return _socket.connect(); }
+  inline ESB::Error connect() { return _socket->connect(); }
 
-  inline bool isConnected() { return _socket.isConnected(); }
+  inline bool secure() { return _socket->secure(); }
+
+  inline bool connected() { return _socket->connected(); }
+
+  inline ESB::ConnectedSocket *socket() { return _socket; }
 
   /** Placement new.
    *
@@ -68,6 +72,14 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
   inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
+
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param memory The object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
   static inline void SetReuseConnections(bool reuseConnections) { _ReuseConnections = reuseConnections; }
 
@@ -151,7 +163,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   // ESB::EmbeddedMapElement (for connection pool lookups)
   //
 
-  virtual const void *key() const { return &_socket.peerAddress(); }
+  virtual const void *key() const { return &_socket->peerAddress(); }
 
  private:
   // Disabled
@@ -242,7 +254,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   ESB::CleanupHandler &_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;
-  ESB::ConnectedTCPSocket _socket;
+  ESB::ConnectedSocket *_socket;
   static bool _ReuseConnections;
 };
 

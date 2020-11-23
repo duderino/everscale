@@ -44,6 +44,7 @@ connection pool rework:
  - fix regression caused by switch from rb tree to hash table for connection pool.  https://docs.google.com/spreadsheets/d/1UOR-96YUOYD5poKrTPQv_GthBPWZb_fJzd6D4k0aNIk/edit#gid=2084099544
  - create option of global or per-silo connection pool and set default to better performing option.
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
+ - enforce max connections per destination address (ip + port + transport + encrypted tuple)
 
 code health:
  - Share more code between HttpClientSocket and HttpServerSocket

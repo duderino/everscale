@@ -5,8 +5,8 @@
 #include <ESBConfig.h>
 #endif
 
-#ifndef ESB_SOCKET_H
-#include <ESBSocket.h>
+#ifndef ESB_SOCKET_TYPE_H
+#include <ESBSocketType.h>
 #endif
 
 #ifndef ESB_ERROR_H

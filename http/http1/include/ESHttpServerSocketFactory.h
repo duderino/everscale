@@ -36,7 +36,7 @@ class HttpServerSocketFactory {
 
   virtual ~HttpServerSocketFactory();
 
-  HttpServerSocket *create(ESB::TCPSocket::State &state);
+  HttpServerSocket *create(ESB::Socket::State &state);
 
   void release(HttpServerSocket *socket);
 
@@ -52,6 +52,8 @@ class HttpServerSocketFactory {
   // Disabled
   HttpServerSocketFactory(const HttpServerSocketFactory &);
   HttpServerSocketFactory &operator=(const HttpServerSocketFactory &);
+
+  void releaseSocket(ESB::ConnectedSocket *socket);
 
   class CleanupHandler : public ESB::CleanupHandler {
    public:
@@ -81,7 +83,9 @@ class HttpServerSocketFactory {
   HttpServerHandler &_handler;
   HttpServerCounters &_counters;
   ESB::Allocator &_allocator;
-  ESB::EmbeddedList _sockets;
+  ESB::EmbeddedList _deconstructedServerSockets;
+  ESB::EmbeddedList _deconstructedTCPSockets;
+  ESB::EmbeddedList _deconstructedTLSSockets;
   CleanupHandler _cleanupHandler;
 };
 

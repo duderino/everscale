@@ -25,7 +25,7 @@ class EmbeddedMapElement : public EmbeddedListElement {
    *
    * @return The element's key.
    */
-  virtual const void *key() const;
+  virtual const void *key() const = 0;
 
  private:
   // Disabled

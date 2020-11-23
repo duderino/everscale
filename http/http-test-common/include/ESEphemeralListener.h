@@ -1,13 +1,13 @@
 #ifndef ES_EPHEMERAL_LISTENER_H
 #define ES_EPHEMERAL_LISTENER_H
 
-#ifndef ESB_LISTENING_TCP_SOCKET_H
-#include <ESBListeningTCPSocket.h>
+#ifndef ESB_LISTENING_SOCKET_H
+#include <ESBListeningSocket.h>
 #endif
 
 namespace ES {
 
-class EphemeralListener : public ESB::ListeningTCPSocket {
+class EphemeralListener : public ESB::ListeningSocket {
  public:
   EphemeralListener(const char *name);
 

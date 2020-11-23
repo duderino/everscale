@@ -29,8 +29,8 @@
 #include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ESB_SHARED_EMBEDDED_MAP_H
-#include <ESBSharedEmbeddedMap.h>
+#ifndef ESB_CONNECTION_POOL_H
+#include <ESBConnectionPool.h>
 #endif
 
 namespace ES {
@@ -64,6 +64,12 @@ class HttpClientSocketFactory {
    */
   ESB::Error executeClientTransaction(HttpClientTransaction *transaction);
 
+  /**
+   * Return a socket to the factory.  If the socket is still connected, it will be reused.  If disconnected, the
+   * memory will be reclaimed.
+   *
+   * @param socket The socket to release
+   */
   void release(HttpClientSocket *socket);
 
  private:
@@ -73,7 +79,7 @@ class HttpClientSocketFactory {
 
   const char *name() const;
 
-  // To cleanup client sockets created by this factory.  Cleanup returns the
+  // To cleanup client sockets created by this factory.  The CleanupHandler returns the
   // socket to the factory for subsequent reuse.
   class CleanupHandler : public ESB::CleanupHandler {
    public:
@@ -99,30 +105,12 @@ class HttpClientSocketFactory {
     HttpClientSocketFactory &_factory;
   };
 
-  // Callbacks for the hash table-based connection pool
-  class SocketAddressCallbacks : public ESB::SharedEmbeddedMap::Callbacks {
-   public:
-    SocketAddressCallbacks(ESB::Allocator &allocator);
-
-    virtual int compare(const void *f, const void *s) const;
-    virtual ESB::UInt32 hash(const void *key) const;
-    virtual void cleanup(ESB::EmbeddedMapElement *element);
-
-   private:
-    // Disabled
-    SocketAddressCallbacks(const SocketAddressCallbacks &);
-    SocketAddressCallbacks &operator=(const SocketAddressCallbacks &);
-
-    ESB::Allocator &_allocator;
-  };
-
   HttpMultiplexerExtended &_multiplexer;
   HttpClientHandler &_handler;
   HttpClientCounters &_counters;
   ESB::Allocator &_allocator;
-  SocketAddressCallbacks _callbacks;
-  ESB::SharedEmbeddedMap _map;
-  ESB::EmbeddedList _sockets;
+  ESB::ConnectionPool _connectionPool;
+  ESB::EmbeddedList _deconstructedHttpSockets;
   CleanupHandler _cleanupHandler;
 };
 

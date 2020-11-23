@@ -155,8 +155,8 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
   virtual HttpServerTransaction *createServerTransaction();
   virtual void destroyServerTransaction(HttpServerTransaction *transaction);
 
-  virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state);
-  virtual ESB::Error addListeningSocket(ESB::ListeningTCPSocket &socket);
+  virtual ESB::Error addServerSocket(ESB::Socket::State &state);
+  virtual ESB::Error addListeningSocket(ESB::ListeningSocket &socket);
   virtual HttpServerCounters &serverCounters();
 
   virtual ESB::SocketMultiplexer &multiplexer();

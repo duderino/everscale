@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(base VERSION ${VERSION} LANGUAGES CXX)
 
+FILE(GLOB_RECURSE LOCAL_SOURCES . *.cpp *.h)
+SET(FORMAT_FILES ${FORMAT_FILES} ${LOCAL_SOURCES} PARENT_SCOPE)
+
 set(SOURCE_FILES
         source/ESBAllocator.cpp
         source/ESBBuddyAllocator.cpp
@@ -10,7 +13,8 @@ set(SOURCE_FILES
         source/ESBCommandThread.cpp
         source/ESBComparator.cpp
         source/ESBSimpleFileLogger.cpp
-        source/ESBConnectedTCPSocket.cpp
+        source/ESBConnectedSocket.cpp
+        source/ESBConnectionPool.cpp
         source/ESBCountingSemaphore.cpp
         source/ESBDate.cpp
         source/ESBEmbeddedListElement.cpp
@@ -18,7 +22,7 @@ set(SOURCE_FILES
         source/ESBError.cpp
         source/ESBFixedAllocator.cpp
         source/ESBList.cpp
-        source/ESBListeningTCPSocket.cpp
+        source/ESBListeningSocket.cpp
         source/ESBLockable.cpp
         source/ESBLogger.cpp
         source/ESBMap.cpp
@@ -40,7 +44,7 @@ set(SOURCE_FILES
         source/ESBThread.cpp
         source/ESBThreadPool.cpp
         source/ESBSocketAddress.cpp
-        source/ESBTCPSocket.cpp
+        source/ESBSocket.cpp
         source/ESBDiscardAllocator.cpp
         source/ESBEpollMultiplexer.cpp
         source/ESBDnsClient.cpp
@@ -77,7 +81,7 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../unit-tf/include"
         )
 
-set(TEST_LIBS -pthread unit-tf base)
+set(TEST_LIBS -pthread unit-tf base ssl)
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
@@ -101,3 +105,5 @@ add_gtest(time-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests t
 add_gtest(map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBMapTest2.cpp)
 add_gtest(system-config-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSystemConfigTest.cpp)
 add_gtest(socket-address-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSocketAddressTest.cpp)
+add_gtest(boringssl-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBBoringSSLTest.cpp)
+add_gtest(connection-pool-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBConnectionPoolTest.cpp)

@@ -17,12 +17,12 @@
 #include <ESBBuffer.h>
 #endif
 
-#ifndef ESB_TCP_SOCKET_H
-#include <ESBTCPSocket.h>
+#ifndef ESB_SOCKET_H
+#include <ESBSocket.h>
 #endif
 
-#ifndef ESB_LISTENING_TCP_SOCKET_H
-#include <ESBListeningTCPSocket.h>
+#ifndef ESB_LISTENING_SOCKET_H
+#include <ESBListeningSocket.h>
 #endif
 
 #ifndef ESB_SOCKET_MULTIPLEXER_H
@@ -57,7 +57,7 @@ class HttpMultiplexerExtended : public HttpMultiplexer {
    * @param state The os-level socket state including a live file descriptor.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  virtual ESB::Error addServerSocket(ESB::TCPSocket::State &state) = 0;
+  virtual ESB::Error addServerSocket(ESB::Socket::State &state) = 0;
 
   /**
    * Construct a new listening socket and immediately add it to the multiplexer
@@ -65,7 +65,7 @@ class HttpMultiplexerExtended : public HttpMultiplexer {
    * @param socket A live TCP listening socket (post bind and post listen)
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  virtual ESB::Error addListeningSocket(ESB::ListeningTCPSocket &socket) = 0;
+  virtual ESB::Error addListeningSocket(ESB::ListeningSocket &socket) = 0;
 
   virtual ESB::SocketMultiplexer &multiplexer() = 0;
 

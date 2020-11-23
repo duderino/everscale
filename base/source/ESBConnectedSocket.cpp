@@ -1,5 +1,5 @@
-#ifndef ESB_CONNECTED_TCP_SOCKET_H
-#include <ESBConnectedTCPSocket.h>
+#ifndef ESB_CONNECTED_SOCKET_H
+#include <ESBConnectedSocket.h>
 #endif
 
 #ifndef ESB_LOGGER_H
@@ -34,23 +34,23 @@ namespace ESB {
 
 #define ESB_SOCK_IS_CONNECTED (1 << 0)
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
-    : TCPSocket(isBlocking), _flags(0), _localAddress(), _peerAddress() {
+ConnectedSocket::ConnectedSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
+    : Socket(isBlocking), _flags(0), _localAddress(), _peerAddress() {
   formatPrefix(namePrefix, nameSuffix);
 }
 
-ConnectedTCPSocket::ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
-                                       bool isBlocking)
-    : TCPSocket(isBlocking), _flags(0), _localAddress(), _peerAddress(peer) {
+ConnectedSocket::ConnectedSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
+                                 bool isBlocking)
+    : Socket(isBlocking), _flags(0), _localAddress(), _peerAddress(peer) {
   formatPrefix(namePrefix, nameSuffix);
 }
 
-ConnectedTCPSocket::~ConnectedTCPSocket() {}
+ConnectedSocket::~ConnectedSocket() {}
 
-const char *ConnectedTCPSocket::name() const { return _logAddress; }
+const char *ConnectedSocket::name() const { return _logAddress; }
 
-Error ConnectedTCPSocket::reset(const State &acceptData) {
-  Error error = TCPSocket::reset(acceptData);
+Error ConnectedSocket::reset(const State &acceptData) {
+  Error error = Socket::reset(acceptData);
 
   if (ESB_SUCCESS != error) {
     return error;
@@ -69,7 +69,7 @@ Error ConnectedTCPSocket::reset(const State &acceptData) {
   return ESB_SUCCESS;
 }
 
-ESB::Error ConnectedTCPSocket::updateLocalAddress() {
+ESB::Error ConnectedSocket::updateLocalAddress() {
   SocketAddress::Address address;
 
 #if defined HAVE_GETSOCKNAME
@@ -87,7 +87,7 @@ ESB::Error ConnectedTCPSocket::updateLocalAddress() {
   return ESB_SUCCESS;
 }
 
-void ConnectedTCPSocket::updateName() {
+void ConnectedSocket::updateName() {
   char *p = _logAddress;
   for (; *p && *p != ':'; ++p) {
   }
@@ -102,11 +102,11 @@ void ConnectedTCPSocket::updateName() {
   _peerAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), _sockFd);
 }
 
-const SocketAddress &ConnectedTCPSocket::peerAddress() const { return _peerAddress; }
+const SocketAddress &ConnectedSocket::peerAddress() const { return _peerAddress; }
 
-const SocketAddress &ConnectedTCPSocket::localAddress() const { return _localAddress; }
+const SocketAddress &ConnectedSocket::localAddress() const { return _localAddress; }
 
-Error ConnectedTCPSocket::connect() {
+Error ConnectedSocket::connect() {
   Error error = ESB_SUCCESS;
 
   if (INVALID_SOCKET != _sockFd) {
@@ -180,13 +180,13 @@ Error ConnectedTCPSocket::connect() {
   return ESB_SUCCESS;
 }  // namespace ESB
 
-void ConnectedTCPSocket::close() {
-  TCPSocket::close();
+void ConnectedSocket::close() {
+  Socket::close();
 
   _flags &= ~ESB_SOCK_IS_CONNECTED;
 }
 
-bool ConnectedTCPSocket::isConnected() {
+bool ConnectedSocket::connected() {
   if (INVALID_SOCKET == _sockFd) {
     return false;
   }
@@ -214,7 +214,7 @@ bool ConnectedTCPSocket::isConnected() {
   return _flags & ESB_SOCK_IS_CONNECTED;
 }
 
-SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
+SSize ConnectedSocket::receive(char *buffer, Size bufferSize) {
 #if defined HAVE_RECV
   return recv(_sockFd, buffer, bufferSize, 0);
 #else
@@ -222,7 +222,7 @@ SSize ConnectedTCPSocket::receive(char *buffer, Size bufferSize) {
 #endif
 }
 
-SSize ConnectedTCPSocket::receive(Buffer *buffer) {
+SSize ConnectedSocket::receive(Buffer *buffer) {
   SSize size = receive((char *)buffer->buffer() + buffer->writePosition(), buffer->writable());
 
   if (0 >= size) {
@@ -234,7 +234,7 @@ SSize ConnectedTCPSocket::receive(Buffer *buffer) {
   return size;
 }
 
-SSize ConnectedTCPSocket::send(const char *buffer, Size bufferSize) {
+SSize ConnectedSocket::send(const char *buffer, Size bufferSize) {
 #if defined HAVE_SEND
   return ::send(_sockFd, buffer, bufferSize, 0);
 #else
@@ -242,7 +242,7 @@ SSize ConnectedTCPSocket::send(const char *buffer, Size bufferSize) {
 #endif
 }
 
-SSize ConnectedTCPSocket::send(Buffer *buffer) {
+SSize ConnectedSocket::send(Buffer *buffer) {
   Size size = send((char *)buffer->buffer() + buffer->readPosition(), buffer->readable());
 
   if (0 >= size) {
@@ -255,9 +255,9 @@ SSize ConnectedTCPSocket::send(Buffer *buffer) {
   return size;
 }
 
-int ConnectedTCPSocket::bytesReadable() { return BytesReadable(_sockFd); }
+int ConnectedSocket::bytesReadable() { return BytesReadable(_sockFd); }
 
-int ConnectedTCPSocket::BytesReadable(SOCKET socketDescriptor) {
+int ConnectedSocket::BytesReadable(SOCKET socketDescriptor) {
   if (INVALID_SOCKET == socketDescriptor) {
     return 0;
   }
@@ -281,10 +281,14 @@ int ConnectedTCPSocket::BytesReadable(SOCKET socketDescriptor) {
   return bytesReadable;
 }
 
-void ConnectedTCPSocket::formatPrefix(const char *namePrefix, const char *nameSuffix) {
+void ConnectedSocket::formatPrefix(const char *namePrefix, const char *nameSuffix) {
   int desired = snprintf(_logAddress, ESB_NAME_PREFIX_SIZE, "%s-%s:", namePrefix, nameSuffix);
   _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
   _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
 }
+
+bool ConnectedSocket::secure() { return false; }
+
+const void *ConnectedSocket::key() const { return &_peerAddress; }
 
 }  // namespace ESB

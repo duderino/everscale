@@ -58,8 +58,8 @@ ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpServer::addListener(ESB::ListeningTCPSocket &listener) {
-  if (ESB::ListeningTCPSocket::SocketState::BOUND != listener.state()) {
+ESB::Error HttpServer::addListener(ESB::ListeningSocket &listener) {
+  if (ESB::ListeningSocket::SocketState::BOUND != listener.state()) {
     return ESB_INVALID_ARGUMENT;
   }
 

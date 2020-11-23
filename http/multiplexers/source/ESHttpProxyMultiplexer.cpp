@@ -362,7 +362,7 @@ ESB::Buffer *HttpProxyMultiplexer::acquireBuffer() { return _ioBufferPool.acquir
 
 void HttpProxyMultiplexer::releaseBuffer(ESB::Buffer *buffer) { _ioBufferPool.releaseBuffer(buffer); }
 
-ESB::Error HttpProxyMultiplexer::addServerSocket(ESB::TCPSocket::State &state) {
+ESB::Error HttpProxyMultiplexer::addServerSocket(ESB::Socket::State &state) {
   HttpServerSocket *socket = _serverSocketFactory.create(state);
 
   if (!socket) {
@@ -379,7 +379,7 @@ ESB::Error HttpProxyMultiplexer::addServerSocket(ESB::TCPSocket::State &state) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpProxyMultiplexer::addListeningSocket(ESB::ListeningTCPSocket &socket) {
+ESB::Error HttpProxyMultiplexer::addListeningSocket(ESB::ListeningSocket &socket) {
   HttpListeningSocket *listener =
       new (_factoryAllocator) HttpListeningSocket(*this, _serverHandler, _factoryAllocator.cleanupHandler());
 

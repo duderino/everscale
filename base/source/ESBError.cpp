@@ -95,7 +95,8 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Response must be sent",
                                           "Must be closed",
                                           "Not implemented",
-                                          "Do not call again"};
+                                          "Do not call again",
+                                          "Unsupported transport"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

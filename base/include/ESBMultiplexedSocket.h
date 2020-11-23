@@ -9,8 +9,8 @@
 #include <ESBEmbeddedMapElement.h>
 #endif
 
-#ifndef ESB_SOCKET_H
-#include <ESBSocket.h>
+#ifndef ESB_SOCKET_TYPE_H
+#include <ESBSocketType.h>
 #endif
 
 #ifndef ESB_SOCKET_MULTIPLEXER_H

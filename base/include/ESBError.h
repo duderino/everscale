@@ -237,6 +237,12 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_BREAK (-30)
 
+/** Operation was passed an unsupported transport
+ *
+ *  @ingroup error
+ */
+#define ESB_UNSUPPORTED_TRANSPORT (-31)
+
 }  // namespace ESB
 
 #endif

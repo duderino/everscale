@@ -134,4 +134,6 @@ ESB::CleanupHandler *HttpCommandSocket::cleanupHandler() { return NULL; }
 
 const char *HttpCommandSocket::name() const { return _name; }
 
+const void *HttpCommandSocket::key() const { return _name; }
+
 }  // namespace ES

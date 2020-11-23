@@ -5,8 +5,8 @@
 #include <ESHttpSocket.h>
 #endif
 
-#ifndef ESB_CONNECTED_TCP_SOCKET_H
-#include <ESBConnectedTCPSocket.h>
+#ifndef ESB_CONNECTED_SOCKET_H
+#include <ESBConnectedSocket.h>
 #endif
 
 #ifndef ES_HTTP_SERVER_HANDLER_H
@@ -39,12 +39,14 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
  public:
   /** Constructor
    */
-  HttpServerSocket(HttpServerHandler &handler, HttpMultiplexerExtended &multiplexer, HttpServerCounters &counters,
-                   ESB::CleanupHandler &cleanupHandler);
+  HttpServerSocket(ESB::ConnectedSocket *socket, HttpServerHandler &handler, HttpMultiplexerExtended &multiplexer,
+                   HttpServerCounters &counters, ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
   virtual ~HttpServerSocket();
+
+  virtual const void *key() const;
 
   /** Reset the server socket
    *
@@ -52,7 +54,9 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
    *  when accepting a new connection.
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error reset(ESB::TCPSocket::State &state);
+  ESB::Error reset(ESB::Socket::State &state);
+
+  inline ESB::ConnectedSocket *socket() { return _socket; }
 
   /** Placement new.
    *
@@ -61,6 +65,14 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
   inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
+
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param memory The object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
   //
   // ESB::MultiplexedSocket
@@ -248,7 +260,7 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   ESB::CleanupHandler &_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;
-  ESB::ConnectedTCPSocket _socket;
+  ESB::ConnectedSocket *_socket;
 };
 
 }  // namespace ES

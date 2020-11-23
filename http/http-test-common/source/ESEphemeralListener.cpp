@@ -8,7 +8,8 @@
 
 namespace ES {
 
-EphemeralListener::EphemeralListener(const char *name) : ListeningTCPSocket(name, 0, ESB_UINT16_MAX) {
+EphemeralListener::EphemeralListener(const char *name)
+    : ListeningSocket(name, ESB::SocketAddress("0.0.0.0", 0, ESB::SocketAddress::TCP), ESB_UINT16_MAX) {
   ESB::Error error = bind();
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", name);

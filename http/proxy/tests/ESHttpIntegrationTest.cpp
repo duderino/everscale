@@ -113,10 +113,10 @@ class HttpNullProxyHandler : public HttpProxyHandler {
 };
 
 static HttpNullProxyHandler NullProxyHandler;
-static ESB::ListeningTCPSocket NullListener("null-listener");
+static ESB::ListeningSocket NullListener("null-listener");
 
-HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
-                                         ESB::ListeningTCPSocket &_proxyListener, HttpClientHandler &clientHandler,
+HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningSocket &originListener,
+                                         ESB::ListeningSocket &_proxyListener, HttpClientHandler &clientHandler,
                                          HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler)
     : _params(testParams),
       _proxyListener(_proxyListener),
@@ -131,7 +131,7 @@ HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::
   HttpClientSocket::SetReuseConnections(_params.reuseConnections());
 }
 
-HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningTCPSocket &originListener,
+HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningSocket &originListener,
                                          HttpClientHandler &clientHandler, HttpServerHandler &serverHandler)
     : HttpIntegrationTest(testParams, originListener, NullListener, clientHandler, NullProxyHandler, serverHandler) {
   assert(0 == _params.proxyThreads());

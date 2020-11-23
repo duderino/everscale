@@ -5,8 +5,8 @@
 #include <ESBMultiplexedSocket.h>
 #endif
 
-#ifndef ESB_LISTENING_TCP_SOCKET_H
-#include <ESBListeningTCPSocket.h>
+#ifndef ESB_LISTENING_SOCKET_H
+#include <ESBListeningSocket.h>
 #endif
 
 #ifndef ES_HTTP_MULTIPLEXER_EXTENDED_H
@@ -30,6 +30,12 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   /** Destructor.
    */
   virtual ~HttpListeningSocket();
+
+  //
+  // ESB::EmbeddedMapElement
+  //
+
+  virtual const void *key() const;
 
   //
   // ESB::MultiplexedSocket
@@ -67,7 +73,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
 
   virtual const char *name() const;
 
-  ESB::Error initialize(ESB::ListeningTCPSocket &socket);
+  ESB::Error initialize(ESB::ListeningSocket &socket);
 
   /** Placement new.
    *
@@ -82,7 +88,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   HttpListeningSocket(const HttpListeningSocket &);
   HttpListeningSocket &operator=(const HttpListeningSocket &);
 
-  ESB::ListeningTCPSocket _socket;
+  ESB::ListeningSocket _socket;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   ESB::CleanupHandler &_cleanupHandler;

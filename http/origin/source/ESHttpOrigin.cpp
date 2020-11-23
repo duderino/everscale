@@ -22,6 +22,10 @@
 #include <ESBSystemConfig.h>
 #endif
 
+#ifndef ESB_SOCKET_ADDRESS_H
+#include <ESBSocketAddress.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -72,7 +76,8 @@ int main(int argc, char **argv) {
   // Create listening socket
   //
 
-  ESB::ListeningTCPSocket listener("origin-listener", params.port(), ESB_UINT16_MAX);
+  ESB::ListeningSocket listener("origin-listener",
+                                ESB::SocketAddress("0.0.0.0", params.port(), ESB::SocketAddress::TCP), ESB_UINT16_MAX);
 
   error = listener.bind();
   if (ESB_SUCCESS != error) {

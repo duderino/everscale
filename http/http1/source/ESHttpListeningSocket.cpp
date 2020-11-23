@@ -24,7 +24,7 @@ HttpListeningSocket::HttpListeningSocket(HttpMultiplexerExtended &stack, HttpSer
 
 HttpListeningSocket::~HttpListeningSocket() {}
 
-ESB::Error HttpListeningSocket::initialize(ESB::ListeningTCPSocket &socket) { return _socket.duplicate(socket); }
+ESB::Error HttpListeningSocket::initialize(ESB::ListeningSocket &socket) { return _socket.duplicate(socket); }
 
 bool HttpListeningSocket::wantAccept() {
   // todo return false if at max sockets...
@@ -42,7 +42,7 @@ bool HttpListeningSocket::isIdle() { return false; }
 ESB::Error HttpListeningSocket::handleAccept() {
   assert(!_socket.isBlocking());
 
-  ESB::TCPSocket::State state;
+  ESB::Socket::State state;
   ESB::Error error = _socket.accept(&state);
 
   if (ESB_AGAIN == error) {
@@ -61,7 +61,7 @@ ESB::Error HttpListeningSocket::handleAccept() {
 
   if (ESB_SUCCESS != error) {
     ESB_LOG_INFO_ERRNO(error, "[%s] Handler rejected connection", _socket.name());
-    ESB::TCPSocket::Close(state.socketDescriptor());
+    ESB::Socket::Close(state.socketDescriptor());
     return ESB_AGAIN;  // keep calling accept until the OS returns EAGAIN
   }
 
@@ -114,5 +114,7 @@ SOCKET HttpListeningSocket::socketDescriptor() const { return _socket.socketDesc
 ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() { return &_cleanupHandler; }
 
 const char *HttpListeningSocket::name() const { return _socket.name(); }
+
+const void *HttpListeningSocket::key() const { return _socket.key(); }
 
 }  // namespace ES

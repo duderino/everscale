@@ -2,8 +2,8 @@
 #include <ESBSocketAddress.h>
 #endif
 
-#ifndef ESB_SOCKET_H
-#include <ESBSocket.h>
+#ifndef ESB_SOCKET_TYPE_H
+#include <ESBSocketType.h>
 #endif
 
 #ifdef HAVE_STRING_H
@@ -173,6 +173,14 @@ void SocketAddress::setPort(UInt16 port) {
 SocketAddress::TransportType SocketAddress::type() const { return _transport; }
 
 void SocketAddress::setType(TransportType transport) { _transport = transport; }
+
+bool SocketAddress::operator==(const SocketAddress &address) const {
+  if (_transport != address._transport) {
+    return false;
+  }
+
+  return 0 == ::memcmp(&_address, &address._address, sizeof(_address));
+}
 
 bool SocketAddress::operator<(const SocketAddress &address) const {
   if (0 > ::memcmp(&_address, &address._address, sizeof(_address))) {

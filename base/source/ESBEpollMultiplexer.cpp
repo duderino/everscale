@@ -30,8 +30,8 @@
 #include <string.h>
 #endif
 
-#ifndef ESB_CONNECTED_TCP_SOCKET_H
-#include <ESBConnectedTCPSocket.h>
+#ifndef ESB_CONNECTED_SOCKET_H
+#include <ESBConnectedSocket.h>
 #endif
 
 #ifndef HAVE_EPOLL_CREATE
@@ -449,7 +449,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          ESB::Error error = TCPSocket::LastSocketError(fd);
+          ESB::Error error = Socket::LastSocketError(fd);
           ESB_LOG_ERROR_ERRNO(error, "[%s] listening socket error", socket->name());
           socket->handleError(error);
           keepInMultiplexer = false;
@@ -488,7 +488,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          ESB::Error error = TCPSocket::LastSocketError(fd);
+          ESB::Error error = Socket::LastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "[%s] connecting socket error", socket->name());
           keepInMultiplexer = false;
           socket->handleError(error);
@@ -497,10 +497,10 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           keepInMultiplexer = false;
           socket->handleRemoteClose();
         } else if (_events[i].events & EPOLLIN) {
-          int bytesReadable = ConnectedTCPSocket::BytesReadable(fd);
+          int bytesReadable = ConnectedSocket::BytesReadable(fd);
 
           if (0 > bytesReadable) {
-            ESB::Error error = TCPSocket::LastSocketError(fd);
+            ESB::Error error = Socket::LastSocketError(fd);
             ESB_LOG_INFO_ERRNO(error, "[%s] connecting socket error", socket->name());
             keepInMultiplexer = false;
             socket->handleError(error);
@@ -542,7 +542,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         //
 
         if (_events[i].events & EPOLLERR) {
-          ESB::Error error = TCPSocket::LastSocketError(fd);
+          ESB::Error error = Socket::LastSocketError(fd);
           ESB_LOG_INFO_ERRNO(error, "[%s] socket error", socket->name());
           keepInMultiplexer = false;
           socket->handleError(error);

@@ -61,7 +61,7 @@ class HttpServer {
    * @param listener A listening socket to add to each multiplexer thread
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error addListener(ESB::ListeningTCPSocket &listener);
+  ESB::Error addListener(ESB::ListeningSocket &listener);
 
   /**
    * Get the number of multiplexer threads (1 multiplexer per thread).
@@ -82,7 +82,7 @@ class HttpServer {
 
   class AddListeningSocketCommand : public HttpServerCommand {
    public:
-    AddListeningSocketCommand(ESB::ListeningTCPSocket &socket, ESB::CleanupHandler &cleanupHandler)
+    AddListeningSocketCommand(ESB::ListeningSocket &socket, ESB::CleanupHandler &cleanupHandler)
         : _socket(socket), _cleanupHandler(cleanupHandler) {}
 
     virtual ~AddListeningSocketCommand(){};
@@ -98,7 +98,7 @@ class HttpServer {
     AddListeningSocketCommand(const AddListeningSocketCommand &);
     AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
 
-    ESB::ListeningTCPSocket &_socket;
+    ESB::ListeningSocket &_socket;
     ESB::CleanupHandler &_cleanupHandler;
   };
 

@@ -1,5 +1,5 @@
-#ifndef ESB_LISTENING_TCP_SOCKET_H
-#include <ESBListeningTCPSocket.h>
+#ifndef ESB_LISTENING_SOCKET_H
+#include <ESBListeningSocket.h>
 #endif
 
 #ifndef ESB_LOGGER_H
@@ -24,34 +24,26 @@
 
 namespace ESB {
 
-ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix)
-    : TCPSocket(), _backlog(42), _state(SocketState::CLOSED), _listeningAddress() {
+ListeningSocket::ListeningSocket(const char *namePrefix)
+    : Socket(), _backlog(42), _state(SocketState::CLOSED), _listeningAddress() {
   formatPrefix(namePrefix);
 }
 
-ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix, UInt16 port, int backlog, bool isBlocking)
-    : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress() {
-  _listeningAddress.setPort(port);
-  _listeningAddress.setType(SocketAddress::TCP);
+ListeningSocket::ListeningSocket(const char *namePrefix, const SocketAddress &address, int backlog, bool isBlocking)
+    : Socket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress(address) {
   formatPrefix(namePrefix);
 }
 
-ListeningTCPSocket::ListeningTCPSocket(const char *namePrefix, const SocketAddress &address, int backlog,
-                                       bool isBlocking)
-    : TCPSocket(isBlocking), _backlog(backlog), _state(SocketState::CLOSED), _listeningAddress(address) {
-  formatPrefix(namePrefix);
-}
+ListeningSocket::~ListeningSocket() {}
 
-ListeningTCPSocket::~ListeningTCPSocket() {}
+ListeningSocket::ListeningSocket(const ListeningSocket &socket) { duplicate(socket); }
 
-ListeningTCPSocket::ListeningTCPSocket(const ListeningTCPSocket &socket) { duplicate(socket); }
-
-ListeningTCPSocket &ListeningTCPSocket::operator=(const ListeningTCPSocket &socket) {
+ListeningSocket &ListeningSocket::operator=(const ListeningSocket &socket) {
   duplicate(socket);
   return *this;
 }
 
-Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
+Error ListeningSocket::duplicate(const ListeningSocket &socket) {
   _isBlocking = socket._isBlocking;
   _backlog = socket._backlog;
   _listeningAddress = socket._listeningAddress;
@@ -101,7 +93,7 @@ Error ListeningTCPSocket::duplicate(const ListeningTCPSocket &socket) {
   return ESB_SUCCESS;
 }
 
-Error ListeningTCPSocket::bind() {
+Error ListeningSocket::bind() {
   if (SocketState::CLOSED != _state) {
     return ESB_SUCCESS;
   }
@@ -184,7 +176,7 @@ Error ListeningTCPSocket::bind() {
   return ESB_SUCCESS;
 }
 
-Error ListeningTCPSocket::listen() {
+Error ListeningSocket::listen() {
   switch (_state) {
     case BOUND:
       break;
@@ -208,12 +200,12 @@ Error ListeningTCPSocket::listen() {
   return ESB_SUCCESS;
 }
 
-void ListeningTCPSocket::close() {
-  TCPSocket::close();
+void ListeningSocket::close() {
+  Socket::close();
   _state = SocketState::CLOSED;
 }
 
-Error ListeningTCPSocket::accept(State *data) {
+Error ListeningSocket::accept(State *data) {
   if (SocketState::LISTENING != _state) {
     assert(0 == "Attempted to accept on an invalid socket.");
     return ESB_INVALID_STATE;
@@ -241,29 +233,32 @@ Error ListeningTCPSocket::accept(State *data) {
   }
 
   if (!_isBlocking) {
-    Error error = TCPSocket::SetBlocking(data->socketDescriptor(), _isBlocking);
+    Error error = Socket::SetBlocking(data->socketDescriptor(), _isBlocking);
 
     if (ESB_SUCCESS != error) {
-      TCPSocket::Close(data->socketDescriptor());
+      Socket::Close(data->socketDescriptor());
       data->setSocketDescriptor(-1);
       return error;
     }
   }
 
+  data->peerAddress().setType(_listeningAddress.type());
   data->setListeningAddress(_listeningAddress);
   data->setIsBlocking(_isBlocking);
 
   return ESB_SUCCESS;
 }
 
-const SocketAddress &ListeningTCPSocket::listeningAddress() const { return _listeningAddress; }
+const SocketAddress &ListeningSocket::listeningAddress() const { return _listeningAddress; }
 
-const char *ListeningTCPSocket::name() const { return _logAddress; }
+const char *ListeningSocket::name() const { return _logAddress; }
 
-void ListeningTCPSocket::formatPrefix(const char *namePrefix) {
+void ListeningSocket::formatPrefix(const char *namePrefix) {
   int desired = snprintf(_logAddress, ESB_NAME_PREFIX_SIZE, "%s:", namePrefix);
   _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 2, desired - 1)] = ':';
   _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
 }
+
+const void *ListeningSocket::key() const { return &_listeningAddress; }
 
 }  // namespace ESB

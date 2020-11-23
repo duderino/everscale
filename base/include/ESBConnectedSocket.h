@@ -1,12 +1,12 @@
-#ifndef ESB_CONNECTED_TCP_SOCKET_H
-#define ESB_CONNECTED_TCP_SOCKET_H
+#ifndef ESB_CONNECTED_SOCKET_H
+#define ESB_CONNECTED_SOCKET_H
 
 #ifndef ESB_CONFIG_H
 #include <ESBConfig.h>
 #endif
 
-#ifndef ESB_SOCKET_H
-#include <ESBSocket.h>
+#ifndef ESB_SOCKET_TYPE_H
+#include <ESBSocketType.h>
 #endif
 
 #ifndef ESB_SOCKET_ADDRESS_H
@@ -17,8 +17,8 @@
 #include <ESBError.h>
 #endif
 
-#ifndef ESB_TCP_SOCKET_H
-#include <ESBTCPSocket.h>
+#ifndef ESB_SOCKET_H
+#include <ESBSocket.h>
 #endif
 
 #ifndef ESB_BUFFER_H
@@ -27,36 +27,37 @@
 
 namespace ESB {
 
-class ListeningTCPSocket;
+class ListeningSocket;
 
-/** ConnectedTCPSockets are used to connect to other TCP endpoints and
+/** ConnectedSockets are used to connect to other TCP endpoints and
  *  send and receive data across the resulting channel.
  *
  *  @ingroup network
  */
-class ConnectedTCPSocket : public TCPSocket {
+class ConnectedSocket : public Socket {
  public:
-  /** Construct a new server ConnectedTCPSocket.  This instance's
+  /** Construct a new server ConnectedSocket.  This instance's
    *  peer will be left uninitialized by this call.
    *
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking = false);
+  ConnectedSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking = false);
 
-  /** Construct a new client ConnectedTCPSocket.  This instance will
+  /** Construct a new client ConnectedSocket.  This instance will
    *  connect (attempt to connect) to the peer identified by the
    *  SocketAddress instance.
    *
    *  @param peer The peer that this socket will attempt to connect to.
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedTCPSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
-                     bool isBlocking = false);
+  ConnectedSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer, bool isBlocking = false);
 
   /** Destroy the connected socket.  Will close the socket if it has not
    *  already been closed.
    */
-  virtual ~ConnectedTCPSocket();
+  virtual ~ConnectedSocket();
+
+  virtual const void *key() const;
 
   /* Get the socket peer's ipaddr+port in human-friendly presentation format.
    *
@@ -101,13 +102,20 @@ class ConnectedTCPSocket : public TCPSocket {
    */
   virtual void close();
 
+  /**
+   * Determine whether the socket uses encryption
+   *
+   * @return true if the socket uses encryption
+   */
+  virtual bool secure();
+
   /** Determine whether there is a communications channel currently open
    *  between this socket and the peer.  This is useful for knowing when a
    *  non-blocking connect has succeeded.
    *
    *  @return true if the socket is connected, false otherwise.
    */
-  bool isConnected();
+  bool connected();
 
   /** Read up to bufferSize bytes into a caller supplied buffer.  This
    *  method returns the number of bytes actually read.  If this is a
@@ -186,10 +194,18 @@ class ConnectedTCPSocket : public TCPSocket {
    */
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param memory The object's memory.
+   *  @return Memory for the new object or NULL if the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
+
  private:
   // Disabled
-  ConnectedTCPSocket(const ConnectedTCPSocket &);
-  ConnectedTCPSocket &operator=(const ConnectedTCPSocket &);
+  ConnectedSocket(const ConnectedSocket &);
+  ConnectedSocket &operator=(const ConnectedSocket &);
 
   void formatPrefix(const char *namePrefix, const char *nameSuffix);
   void updateName();

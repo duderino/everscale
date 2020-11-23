@@ -14,11 +14,10 @@ set(SOURCE_FILES
         source/ESHttpClientTransactionFactory.cpp
         source/ESHttpCommandSocket.cpp
         source/ESHttpConnectionPool.cpp
-        source/ESHttpListeningSocket.cpp
         source/ESHttpMessageFormatter.cpp
         source/ESHttpMessageParser.cpp
-	source/ESHttpMultiplexer.cpp
-	source/ESHttpMultiplexerExtended.cpp
+        source/ESHttpMultiplexer.cpp
+        source/ESHttpMultiplexerExtended.cpp
         source/ESHttpProxyHandler.cpp
         source/ESHttpRequestFormatter.cpp
         source/ESHttpRequestParser.cpp
@@ -35,8 +34,9 @@ set(SOURCE_FILES
         source/ESHttpServerSocketFactory.cpp
         source/ESHttpServerTransaction.cpp
         source/ESHttpServerTransactionFactory.cpp
-		source/ESHttpSocket.cpp
-        )
+        source/ESHttpSocket.cpp
+		source/ESHttpListeningSocket.cpp
+		)
 
 add_library(http1 STATIC ${SOURCE_FILES})
 

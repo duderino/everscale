@@ -1,24 +1,24 @@
-#ifndef ESB_LISTENING_TCP_SOCKET_H
-#define ESB_LISTENING_TCP_SOCKET_H
+#ifndef ESB_LISTENING_SOCKET_H
+#define ESB_LISTENING_SOCKET_H
 
 #ifndef ESB_CONFIG_H
 #include <ESBConfig.h>
 #endif
 
-#ifndef ESB_SOCKET_H
-#include <ESBSocket.h>
+#ifndef ESB_SOCKET_TYPE_H
+#include <ESBSocketType.h>
 #endif
 
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
 #endif
 
-#ifndef ESB_TCP_SOCKET_H
-#include <ESBTCPSocket.h>
+#ifndef ESB_SOCKET_H
+#include <ESBSocket.h>
 #endif
 
-#ifndef ESB_CONNECTED_TCP_SOCKET_H
-#include <ESBConnectedTCPSocket.h>
+#ifndef ESB_CONNECTED_SOCKET_H
+#include <ESBConnectedSocket.h>
 #endif
 
 #ifndef ESB_ERROR_H
@@ -31,35 +31,21 @@ namespace ESB {
  *  bind to INADDR_ANY
  */
 
-/** ListeningTCPSockets are used to receive connections from other TCP
+/** ListeningSockets are used to receive connections from other TCP
  *  endpoints.  New connections are wrapped in ConnectedTCPSockets.
  *
  *  @ingroup network
  */
-class ListeningTCPSocket : public TCPSocket {
+class ListeningSocket : public Socket {
  public:
   enum SocketState { CLOSED = 0, BOUND = 1, LISTENING = 2 };
 
   /**
    * Constructor
    */
-  ListeningTCPSocket(const char *namePrefix);
+  ListeningSocket(const char *namePrefix);
 
-  /** Construct a new ListeningTCPSocket instance.  This socket will
-   *  listen on the specified port and let the kernel choose the IP address
-   *  of the listening socket (INADDR_ANY).
-   *
-   *  @param port The port to listen on.  If 0 then pick an ephemeral port.
-   *  @param backlog The length of the incoming connection queue.  Some
-   *      platforms (e.g., Win32) will silently cap this value at 5.
-   *  @param isBlocking whether or not this socket is blocking.  Blocking
-   *      listening sockets will create blocking connected sockets,
-   *      non-blocking listening sockets will create non-blocking connected
-   *      sockets.
-   */
-  ListeningTCPSocket(const char *namePrefix, UInt16 port, int backlog, bool isBlocking = false);
-
-  /** Construct a new ListeningTCPSocket instance.  This socket will
+  /** Construct a new ListeningSocket instance.  This socket will
    *  listen on the port and ip address specified in the SocketAddress
    *  argument.
    *
@@ -71,7 +57,7 @@ class ListeningTCPSocket : public TCPSocket {
    *      non-blocking listening sockets will create non-blocking connected
    *      sockets.
    */
-  ListeningTCPSocket(const char *namePrefix, const SocketAddress &address, int backlog, bool isBlocking = false);
+  ListeningSocket(const char *namePrefix, const SocketAddress &address, int backlog, bool isBlocking = false);
 
   /**
    * Duplicate an existing bound and listening socket by creating a new file
@@ -80,12 +66,14 @@ class ListeningTCPSocket : public TCPSocket {
    * @param socket The socket to duplicate
    * @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  Error duplicate(const ListeningTCPSocket &socket);
+  Error duplicate(const ListeningSocket &socket);
 
   /** Destroy the listening socket.  Will close the socket if it has not
    *  already been closed.
    */
-  virtual ~ListeningTCPSocket();
+  virtual ~ListeningSocket();
+
+  virtual const void *key() const;
 
   /* Get the listening socket's ipaddr+port in human-friendly presentation
    * format.
@@ -145,8 +133,8 @@ class ListeningTCPSocket : public TCPSocket {
 
  private:
   // disabled
-  ListeningTCPSocket(const ListeningTCPSocket &socket);
-  ListeningTCPSocket &operator=(const ListeningTCPSocket &socket);
+  ListeningSocket(const ListeningSocket &socket);
+  ListeningSocket &operator=(const ListeningSocket &socket);
 
   void formatPrefix(const char *namePrefix);
 

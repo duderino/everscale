@@ -81,6 +81,13 @@ class SocketAddress {
    */
   SocketAddress &operator=(const SocketAddress &address);
 
+  /** Equality operator
+   *
+   * @param address The lhs instance
+   * @return true if this instance is equal to address
+   */
+  bool operator==(const SocketAddress &address) const;
+
   /** Less than operator
    *
    * @param address The lhs instance

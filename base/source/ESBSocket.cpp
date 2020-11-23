@@ -1,5 +1,5 @@
-#ifndef ESB_TCP_SOCKET_H
-#include <ESBTCPSocket.h>
+#ifndef ESB_SOCKET_H
+#include <ESBSocket.h>
 #endif
 
 #ifdef HAVE_STRING_H
@@ -28,26 +28,15 @@
 
 namespace ESB {
 
-TCPSocket::State::State()
-    : EmbeddedMapElement(),
-      _isBlocking(false),
-      _socketDescriptor(INVALID_SOCKET),
-      _localAddress(),
-      _peerAddress(),
-      _cleanupHandler(NULL) {}
+Socket::State::State() : _isBlocking(false), _socketDescriptor(INVALID_SOCKET), _localAddress(), _peerAddress() {}
 
-TCPSocket::State::State(bool isBlocking, SOCKET sockFd, const SocketAddress &localAddress,
-                        const SocketAddress &peerAddress, CleanupHandler *cleanupHandler)
-    : EmbeddedMapElement(),
-      _isBlocking(isBlocking),
-      _socketDescriptor(sockFd),
-      _localAddress(localAddress),
-      _peerAddress(peerAddress),
-      _cleanupHandler(cleanupHandler) {}
+Socket::State::State(bool isBlocking, SOCKET sockFd, const SocketAddress &localAddress,
+                     const SocketAddress &peerAddress)
+    : _isBlocking(isBlocking), _socketDescriptor(sockFd), _localAddress(localAddress), _peerAddress(peerAddress) {}
 
-TCPSocket::State::~State() {}
+Socket::State::~State() {}
 
-TCPSocket::State::State(const TCPSocket::State &state) {
+Socket::State::State(const Socket::State &state) {
   _isBlocking = state._isBlocking;
   _socketDescriptor = state._socketDescriptor;
   _localAddress = state._localAddress;
@@ -55,7 +44,7 @@ TCPSocket::State::State(const TCPSocket::State &state) {
   // do not copy cleanup handler
 }
 
-TCPSocket::State &TCPSocket::State::operator=(const TCPSocket::State &state) {
+Socket::State &Socket::State::operator=(const Socket::State &state) {
   _isBlocking = state._isBlocking;
   _socketDescriptor = state._socketDescriptor;
   _localAddress = state._localAddress;
@@ -64,31 +53,27 @@ TCPSocket::State &TCPSocket::State::operator=(const TCPSocket::State &state) {
   return *this;
 }
 
-CleanupHandler *TCPSocket::State::cleanupHandler() { return _cleanupHandler; }
+Socket::Socket() : _isBlocking(false), _sockFd(INVALID_SOCKET) {}
 
-const void *TCPSocket::State::key() const { return &_peerAddress; }
+Socket::Socket(bool isBlocking) : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
-TCPSocket::TCPSocket() : _isBlocking(false), _sockFd(INVALID_SOCKET) {}
+Socket::Socket(const State &state) : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
 
-TCPSocket::TCPSocket(bool isBlocking) : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
+Socket::~Socket() { close(); }
 
-TCPSocket::TCPSocket(const State &state) : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
-
-TCPSocket::~TCPSocket() { close(); }
-
-Error TCPSocket::reset(const State &state) {
+Error Socket::reset(const State &state) {
   close();
   _isBlocking = state.isBlocking();
   _sockFd = state.socketDescriptor();
   return ESB_SUCCESS;
 }
 
-void TCPSocket::close() {
+void Socket::close() {
   Close(_sockFd);
   _sockFd = INVALID_SOCKET;
 }
 
-void TCPSocket::Close(SOCKET socket) {
+void Socket::Close(SOCKET socket) {
   if (INVALID_SOCKET == socket) {
     return;
   }
@@ -102,7 +87,7 @@ void TCPSocket::Close(SOCKET socket) {
 #endif
 }
 
-Error TCPSocket::setBlocking(bool isBlocking) {
+Error Socket::setBlocking(bool isBlocking) {
 #if defined HAVE_FCNTL && defined USE_FCNTL_FOR_NONBLOCK
 
   int value = fcntl(_socketDescriptor, F_GETFL, 0);
@@ -148,7 +133,7 @@ Error TCPSocket::setBlocking(bool isBlocking) {
   return ESB_SUCCESS;
 }
 
-Error TCPSocket::SetBlocking(SOCKET sockFd, bool isBlocking) {
+Error Socket::SetBlocking(SOCKET sockFd, bool isBlocking) {
 #if defined HAVE_FCNTL && defined USE_FCNTL_FOR_NONBLOCK
 
   int value = fcntl(sockFd, F_GETFL, 0);
@@ -190,7 +175,7 @@ Error TCPSocket::SetBlocking(SOCKET sockFd, bool isBlocking) {
   return ESB_SUCCESS;
 }
 
-Error TCPSocket::LastSocketError(SOCKET socket) {
+Error Socket::LastSocketError(SOCKET socket) {
   if (0 > socket) {
     return ESB_INVALID_ARGUMENT;
   }
@@ -215,5 +200,7 @@ Error TCPSocket::LastSocketError(SOCKET socket) {
 
   return ConvertError(error);
 }
+
+CleanupHandler *Socket::cleanupHandler() { return NULL; }
 
 }  // namespace ESB

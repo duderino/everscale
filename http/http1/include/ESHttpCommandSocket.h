@@ -34,6 +34,8 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
    */
   virtual ~HttpCommandSocket();
 
+  virtual const void *key() const;
+
   //
   // ESB::MultiplexedSocket
   //
