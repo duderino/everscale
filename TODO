@@ -1,3 +1,6 @@
+tls:
+ - add secure/insecure bit to connected socket log address
+
 stat:
  - add aborts on error to either proactive client and server functions or to handler
  - pause/resume and possibly abort should always update the multiplexer

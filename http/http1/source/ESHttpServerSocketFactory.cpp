@@ -2,6 +2,10 @@
 #include <ESHttpServerSocketFactory.h>
 #endif
 
+#ifndef ESB_BORING_SSL_SOCKET_H
+#include <ESBBoringSSLSocket.h>
+#endif
+
 #ifndef ESB_SYSTEM_CONFIG_H
 #include <ESBSystemConfig.h>
 #endif
@@ -18,18 +22,18 @@ HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexerExtended &multip
       _handler(handler),
       _counters(counters),
       _allocator(allocator),
-      _deconstructedServerSockets(),
-      _deconstructedTCPSockets(),
+      _deconstructedHTTPSockets(),
+      _deconstructedClearSockets(),
       _deconstructedTLSSockets(),
       _cleanupHandler(*this) {}
 
 HttpServerSocketFactory::~HttpServerSocketFactory() {
-  for (ESB::EmbeddedListElement *e = _deconstructedServerSockets.removeFirst(); e;
-       e = _deconstructedServerSockets.removeFirst()) {
+  for (ESB::EmbeddedListElement *e = _deconstructedHTTPSockets.removeFirst(); e;
+       e = _deconstructedHTTPSockets.removeFirst()) {
     _allocator.deallocate(e);
   }
-  for (ESB::EmbeddedListElement *e = _deconstructedTCPSockets.removeFirst(); e;
-       e = _deconstructedTCPSockets.removeFirst()) {
+  for (ESB::EmbeddedListElement *e = _deconstructedClearSockets.removeFirst(); e;
+       e = _deconstructedClearSockets.removeFirst()) {
     _allocator.deallocate(e);
   }
   for (ESB::EmbeddedListElement *e = _deconstructedTLSSockets.removeFirst(); e;
@@ -43,10 +47,19 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
   ESB::Error error = ESB_SUCCESS;
 
   switch (state.peerAddress().type()) {
-    case ESB::SocketAddress::TLS:
-      assert(!"support TLS");
+    case ESB::SocketAddress::TLS: {
+      ESB::EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
+      socket = memory
+                   ? new (memory)
+                         ESB::BoringSSLSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false)
+                   : new (_allocator)
+                         ESB::BoringSSLSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false);
+      if (!socket) {
+        error = ESB_OUT_OF_MEMORY;
+      }
+    } break;
     case ESB::SocketAddress::TCP: {
-      ESB::EmbeddedListElement *memory = _deconstructedTCPSockets.removeLast();
+      ESB::EmbeddedListElement *memory = _deconstructedClearSockets.removeLast();
       socket = memory
                    ? new (memory)
                          ESB::ConnectedSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false)
@@ -70,7 +83,7 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
     return NULL;
   }
 
-  ESB::EmbeddedListElement *memory = _deconstructedServerSockets.removeFirst();
+  ESB::EmbeddedListElement *memory = _deconstructedHTTPSockets.removeFirst();
   HttpServerSocket *serverSocket =
       memory ? new (memory) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler)
              : new (_allocator) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler);
@@ -98,7 +111,7 @@ void HttpServerSocketFactory::release(HttpServerSocket *serverSocket) {
 
   releaseSocket(serverSocket->socket());
   serverSocket->~HttpServerSocket();
-  _deconstructedServerSockets.addLast(serverSocket);
+  _deconstructedHTTPSockets.addLast(serverSocket);
 }
 
 void HttpServerSocketFactory::releaseSocket(ESB::ConnectedSocket *socket) {
@@ -113,7 +126,7 @@ void HttpServerSocketFactory::releaseSocket(ESB::ConnectedSocket *socket) {
       _deconstructedTLSSockets.addLast(socket);
       break;
     case ESB::SocketAddress::TCP:
-      _deconstructedTCPSockets.addLast(socket);
+      _deconstructedClearSockets.addLast(socket);
       break;
     default:
       _allocator.deallocate(socket);

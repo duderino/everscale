@@ -144,6 +144,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   // ES::HttpServerStream
   //
 
+  virtual bool secure() const;
+
   virtual ESB::Error sendEmptyResponse(int statusCode, const char *reasonPhrase);
   virtual ESB::Error sendResponse(const HttpResponse &response);
 

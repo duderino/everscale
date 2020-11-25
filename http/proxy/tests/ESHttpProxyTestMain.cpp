@@ -59,14 +59,16 @@ int main(int argc, char **argv) {
       .originThreads(3)
       .requestSize(1024)
       .responseSize(1024)
+      .reuseConnections(true)
+      .secure(true)
       .logLevel(ESB::Logger::Notice);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  EphemeralListener originListener("origin-listener");
-  EphemeralListener proxyListener("proxy-listener");
+  EphemeralListener originListener("origin-listener", params.secure());
+  EphemeralListener proxyListener("proxy-listener", params.secure());
   HttpFixedRouter router(originListener.localDestination());
   HttpLoadgenHandler loadgenHandler(params);
   HttpRoutingProxyHandler proxyHandler(router);

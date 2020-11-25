@@ -32,6 +32,13 @@ class HttpStream {
   virtual ~HttpStream();
 
   /**
+   * Determine whether the stream uses a secure transport.
+   *
+   * @return true if the stream uses a secure transport
+   */
+  virtual bool secure() const = 0;
+
+  /**
    * Abort a stream in any state.  Note: your handler implementation must be
    * reentrant if you call this function because calling this function may in
    * turn call other handle* functions including handleRemove.

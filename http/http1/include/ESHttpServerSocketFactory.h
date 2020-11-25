@@ -83,8 +83,8 @@ class HttpServerSocketFactory {
   HttpServerHandler &_handler;
   HttpServerCounters &_counters;
   ESB::Allocator &_allocator;
-  ESB::EmbeddedList _deconstructedServerSockets;
-  ESB::EmbeddedList _deconstructedTCPSockets;
+  ESB::EmbeddedList _deconstructedHTTPSockets;
+  ESB::EmbeddedList _deconstructedClearSockets;
   ESB::EmbeddedList _deconstructedTLSSockets;
   CleanupHandler _cleanupHandler;
 };

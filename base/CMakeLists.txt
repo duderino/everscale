@@ -6,6 +6,7 @@ SET(FORMAT_FILES ${FORMAT_FILES} ${LOCAL_SOURCES} PARENT_SCOPE)
 
 set(SOURCE_FILES
         source/ESBAllocator.cpp
+        source/ESBBoringSSLSocket.cpp
         source/ESBBuddyAllocator.cpp
         source/ESBBuffer.cpp
         source/ESBBufferPool.cpp

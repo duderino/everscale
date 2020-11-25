@@ -8,8 +8,10 @@
 
 namespace ES {
 
-EphemeralListener::EphemeralListener(const char *name)
-    : ListeningSocket(name, ESB::SocketAddress("0.0.0.0", 0, ESB::SocketAddress::TCP), ESB_UINT16_MAX) {
+EphemeralListener::EphemeralListener(const char *name, bool secure)
+    : ListeningSocket(name,
+                      ESB::SocketAddress("0.0.0.0", 0, secure ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP),
+                      ESB_UINT16_MAX) {
   ESB::Error error = bind();
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", name);
@@ -23,7 +25,7 @@ EphemeralListener::EphemeralListener(const char *name)
 EphemeralListener::~EphemeralListener() {}
 
 ESB::SocketAddress EphemeralListener::localDestination() {
-  ESB::SocketAddress originAddress("127.0.0.1", listeningAddress().port(), ESB::SocketAddress::TransportType::TCP);
+  ESB::SocketAddress originAddress("127.0.0.1", listeningAddress().port(), listeningAddress().type());
   return originAddress;
 }
 

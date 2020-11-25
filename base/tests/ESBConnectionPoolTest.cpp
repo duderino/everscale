@@ -79,9 +79,9 @@ TEST_F(ConnectionPoolTest, AcquireRelease) {
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, pool.hits());
   EXPECT_EQ(1, pool.misses());
-  EXPECT_EQ(true, connection->connected());
+  EXPECT_TRUE(connection->connected());
   EXPECT_EQ(0, pool.size());
-  EXPECT_EQ(false, reused);
+  EXPECT_FALSE(reused);
 
   for (int i = 0; i < 42; ++i) {
     pool.release(connection);
@@ -92,9 +92,9 @@ TEST_F(ConnectionPoolTest, AcquireRelease) {
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(i + 1, pool.hits());
     EXPECT_EQ(1, pool.misses());
-    EXPECT_EQ(true, connection->connected());
+    EXPECT_TRUE(connection->connected());
     EXPECT_EQ(0, pool.size());
-    EXPECT_EQ(true, reused);
+    EXPECT_TRUE(reused);
   }
 
   DestroyConnection(connection);
@@ -110,9 +110,9 @@ TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, pool.hits());
   EXPECT_EQ(1, pool.misses());
-  EXPECT_EQ(true, connection->connected());
+  EXPECT_TRUE(connection->connected());
   EXPECT_EQ(0, pool.size());
-  EXPECT_EQ(false, reused);
+  EXPECT_FALSE(reused);
 
   for (int i = 0; i < 42; ++i) {
     connection->close();
@@ -124,9 +124,9 @@ TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(0, pool.hits());
     EXPECT_EQ(1 + i + 1, pool.misses());
-    EXPECT_EQ(true, connection->connected());
+    EXPECT_TRUE(connection->connected());
     EXPECT_EQ(0, pool.size());
-    EXPECT_EQ(false, reused);
+    EXPECT_FALSE(reused);
   }
 
   DestroyConnection(connection);
@@ -145,9 +145,14 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(0, pool.hits());
     EXPECT_EQ(i + 1, pool.misses());
-    EXPECT_EQ(true, connection->connected());
+    EXPECT_TRUE(connection->connected());
     EXPECT_EQ(0, pool.size());
-    EXPECT_EQ(false, reused);
+    EXPECT_FALSE(reused);
+    if (i % 2) {
+      EXPECT_FALSE(connection->secure());
+    } else {
+      EXPECT_TRUE(connection->secure());
+    }
 
     connections.addLast(connection);
   }
@@ -165,9 +170,10 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
     EXPECT_EQ(SocketAddress::TLS, connection->peerAddress().type());
     EXPECT_EQ(i + 1, pool.hits());
     EXPECT_EQ(42, pool.misses());
-    EXPECT_EQ(true, connection->connected());
+    EXPECT_TRUE(connection->connected());
     EXPECT_EQ(42 - i - 1, pool.size());
-    EXPECT_EQ(true, reused);
+    EXPECT_TRUE(reused);
+    EXPECT_TRUE(connection->secure());
 
     DestroyConnection(connection);
   }
@@ -178,9 +184,10 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
     EXPECT_EQ(SocketAddress::TLS, connection->peerAddress().type());
     EXPECT_EQ(21, pool.hits());
     EXPECT_EQ(42 + 1, pool.misses());
-    EXPECT_EQ(true, connection->connected());
+    EXPECT_TRUE(connection->connected());
     EXPECT_EQ(21, pool.size());
-    EXPECT_EQ(false, reused);
+    EXPECT_FALSE(reused);
+    EXPECT_TRUE(connection->secure());
 
     DestroyConnection(connection);
   }
@@ -192,9 +199,10 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
     EXPECT_EQ(SocketAddress::TCP, connection->peerAddress().type());
     EXPECT_EQ(i + 1 + 21, pool.hits());
     EXPECT_EQ(42 + 1, pool.misses());
-    EXPECT_EQ(true, connection->connected());
+    EXPECT_TRUE(connection->connected());
     EXPECT_EQ(21 - i - 1, pool.size());
-    EXPECT_EQ(true, reused);
+    EXPECT_TRUE(reused);
+    EXPECT_FALSE(connection->secure());
 
     DestroyConnection(connection);
   }
@@ -211,8 +219,13 @@ TEST_F(ConnectionPoolTest, CleanupLiveConnections) {
                         : pool.acquire(_securePeerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
-    EXPECT_EQ(true, connection->connected());
-    EXPECT_EQ(false, reused);
+    EXPECT_TRUE(connection->connected());
+    EXPECT_FALSE(reused);
+    if (i % 2) {
+      EXPECT_FALSE(connection->secure());
+    } else {
+      EXPECT_TRUE(connection->secure());
+    }
 
     connections.addLast(connection);
   }
@@ -237,8 +250,13 @@ TEST_F(ConnectionPoolTest, CleanupDeadConnections) {
                         : pool.acquire(_securePeerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
-    EXPECT_EQ(true, connection->connected());
-    EXPECT_EQ(false, reused);
+    EXPECT_TRUE(connection->connected());
+    EXPECT_FALSE(reused);
+    if (i % 2) {
+      EXPECT_FALSE(connection->secure());
+    } else {
+      EXPECT_TRUE(connection->secure());
+    }
 
     connections.addLast(connection);
   }

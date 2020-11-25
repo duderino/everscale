@@ -1180,4 +1180,6 @@ void HttpClientSocket::stateTransition(int state) {
   }
 }
 
+bool HttpClientSocket::secure() const { return _socket->secure(); }
+
 }  // namespace ES

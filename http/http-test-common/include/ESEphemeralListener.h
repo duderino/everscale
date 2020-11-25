@@ -9,7 +9,7 @@ namespace ES {
 
 class EphemeralListener : public ESB::ListeningSocket {
  public:
-  EphemeralListener(const char *name);
+  EphemeralListener(const char *name, bool secure);
 
   virtual ~EphemeralListener();
 

@@ -56,7 +56,7 @@ class ConnectionPool {
    */
   void release(ConnectedSocket *connection);
 
-  inline int size() const { return _activeConnections.size(); }
+  inline int size() const { return _activeSockets.size(); }
 
   inline int hits() const { return _hits.get(); }
 
@@ -98,9 +98,9 @@ class ConnectionPool {
   SharedInt _hits;
   SharedInt _misses;
   SocketAddressCallbacks _callbacks;
-  SharedEmbeddedMap _activeConnections;
-  EmbeddedList _deconstructedTCPConnections;
-  EmbeddedList _deconstructedTLSConnections;
+  SharedEmbeddedMap _activeSockets;
+  EmbeddedList _deconstructedClearSockets;
+  EmbeddedList _deconstructedTLSSockets;
 };
 
 }  // namespace ESB

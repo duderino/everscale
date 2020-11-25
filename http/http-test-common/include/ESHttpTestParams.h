@@ -68,6 +68,11 @@ class HttpTestParams {
     return *this;
   }
 
+  inline HttpTestParams &secure(bool secure) {
+    _secure = secure;
+    return *this;
+  }
+
   inline HttpTestParams &logLevel(ESB::Logger::Severity logLevel) {
     ESB::Logger::Instance().setSeverity(logLevel);
     _logLevel = logLevel;
@@ -119,6 +124,8 @@ class HttpTestParams {
 
   inline bool reuseConnections() const { return _reuseConnections; }
 
+  inline bool secure() const { return _secure; }
+
   inline ESB::Logger::Severity logLevel() const { return _logLevel; }
 
   inline const char *destinationAddress() const { return _destinationAddress; }
@@ -150,6 +157,7 @@ class HttpTestParams {
   ESB::UInt32 _responseSize;
   bool _useContentLengthHeader;  // if true use content-length header, else use chunked transfer encoding
   bool _reuseConnections;
+  bool _secure;
   ESB::Logger::Severity _logLevel;
   const char *_destinationAddress;
   const char *_hostHeader;

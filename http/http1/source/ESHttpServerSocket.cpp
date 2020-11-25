@@ -1310,4 +1310,6 @@ ESB::Error HttpServerSocket::updateInterestList(bool updateMultiplexer) {
 
 const void *HttpServerSocket::key() const { return _socket->key(); }
 
+bool HttpServerSocket::secure() const { return _socket->secure(); }
+
 }  // namespace ES

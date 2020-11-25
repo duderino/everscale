@@ -59,8 +59,6 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 
   inline ESB::Error connect() { return _socket->connect(); }
 
-  inline bool secure() { return _socket->secure(); }
-
   inline bool connected() { return _socket->connected(); }
 
   inline ESB::ConnectedSocket *socket() { return _socket; }
@@ -154,6 +152,8 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   //
   // ES::HttpClientStream
   //
+
+  virtual bool secure() const;
 
   virtual ESB::Error sendRequestBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
   virtual ESB::Error responseBodyAvailable(ESB::UInt32 *bytesAvailable);

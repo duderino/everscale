@@ -42,46 +42,27 @@
 
 using namespace ES;
 
-class HttpProxyTest : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool>> {
+class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
  public:
-  HttpProxyTest() : _originListener("origin-listener"), _proxyListener("proxy-listener") {}
-
   // Sets up the test fixture.
   virtual void SetUp() { HttpLoadgenContext::Reset(); }
-
- protected:
-  EphemeralListener _originListener;
-  EphemeralListener _proxyListener;
 };
 
-TEST_P(HttpProxyTest, MessageBodies) {
-  HttpTestParams params;
-  params.connections(50)
-      .iterations(50)
-      .clientThreads(2)
-      .proxyThreads(2)
-      .originThreads(2)
-      .requestSize(std::get<0>(GetParam()))
-      .responseSize(std::get<0>(GetParam()))
-      .useContentLengthHeader(std::get<1>(GetParam()))
-      .logLevel(ESB::Logger::Warning);
+// use clear or not
+INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
 
-  HttpFixedRouter router(_originListener.localDestination());
-  HttpLoadgenHandler loadgenHandler(params);
-  HttpRoutingProxyHandler proxyHandler(router);
-  HttpOriginHandler originHandler(params);
-  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
+ public:
+  // Sets up the test fixture.
+  virtual void SetUp() { HttpLoadgenContext::Reset(); }
+};
 
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
-}
-
-INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest,
+// body-size variations X use content-length header or not X use clear or not
+INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
                          ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
-                                            ::testing::Values(false, true)));
+                                            ::testing::Values(false, true), ::testing::Values(false, true)));
 
-TEST_F(HttpProxyTest, ClientToServer) {
+TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
@@ -92,16 +73,17 @@ TEST_F(HttpProxyTest, ClientToServer) {
       .responseSize(1024)
       .logLevel(ESB::Logger::Warning);
 
+  EphemeralListener originListener("origin-listener", std::get<0>(GetParam()));
   HttpLoadgenHandler loadgenHandler(params);
   HttpOriginHandler originHandler(params);
-  HttpIntegrationTest test(params, _originListener, loadgenHandler, originHandler);
+  HttpIntegrationTest test(params, originListener, loadgenHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
   EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
   EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
 }
 
-TEST_F(HttpProxyTest, ClientToProxyToServer) {
+TEST_P(HttpProxyTest, ClientToProxyToServer) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
@@ -112,11 +94,13 @@ TEST_F(HttpProxyTest, ClientToProxyToServer) {
       .responseSize(1024)
       .logLevel(ESB::Logger::Warning);
 
-  HttpFixedRouter router(_originListener.localDestination());
+  EphemeralListener originListener("origin-listener", std::get<0>(GetParam()));
+  EphemeralListener proxyListener("proxy-listener", std::get<0>(GetParam()));
+  HttpFixedRouter router(originListener.localDestination());
   HttpLoadgenHandler loadgenHandler(params);
   HttpRoutingProxyHandler proxyHandler(router);
   HttpOriginHandler originHandler(params);
-  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
   EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
@@ -179,7 +163,7 @@ class HttpSmallChunkLoadgenHandler : public HttpLoadgenHandler {
   const ESB::UInt32 _maxChunkSize;
 };
 
-TEST_F(HttpProxyTest, SmallChunks) {
+TEST_P(HttpProxyTest, SmallChunks) {
   HttpTestParams params;
   params.connections(50)
       .iterations(50)
@@ -191,11 +175,38 @@ TEST_F(HttpProxyTest, SmallChunks) {
       .logLevel(ESB::Logger::Warning);
   const ESB::UInt32 maxChunkSize = 42;
 
-  HttpFixedRouter router(_originListener.localDestination());
+  EphemeralListener originListener("origin-listener", std::get<0>(GetParam()));
+  EphemeralListener proxyListener("proxy-listener", std::get<0>(GetParam()));
+  HttpFixedRouter router(originListener.localDestination());
   HttpSmallChunkLoadgenHandler loadgenHandler(params, maxChunkSize);
   HttpRoutingProxyHandler proxyHandler(router);
   HttpSmallChunkOriginHandler originHandler(params, maxChunkSize);
-  HttpIntegrationTest test(params, _originListener, _proxyListener, loadgenHandler, proxyHandler, originHandler);
+  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  EXPECT_EQ(ESB_SUCCESS, test.run());
+  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+}
+
+TEST_P(HttpProxyTestMessageBody, BodySizes) {
+  HttpTestParams params;
+  params.connections(50)
+      .iterations(50)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
+      .requestSize(std::get<0>(GetParam()))
+      .responseSize(std::get<0>(GetParam()))
+      .useContentLengthHeader(std::get<1>(GetParam()))
+      .logLevel(ESB::Logger::Warning);
+
+  EphemeralListener originListener("origin-listener", std::get<2>(GetParam()));
+  EphemeralListener proxyListener("proxy-listener", std::get<2>(GetParam()));
+  HttpFixedRouter router(originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
   EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
