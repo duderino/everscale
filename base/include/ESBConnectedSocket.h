@@ -130,7 +130,7 @@ class ConnectedSocket : public Socket {
    *  @return The number of bytes read
    *  @see TCPSocket::getLastError to get the last error on the socket.
    */
-  SSize receive(char *buffer, Size bufferSize);
+  virtual SSize receive(char *buffer, Size bufferSize);
 
   /** Fill up to al of the free space in a buffer.  This
    *  method returns the number of bytes actually read.  If this is a
@@ -156,7 +156,7 @@ class ConnectedSocket : public Socket {
    *  @return The number of bytes sent.
    *  @see TCPSocket::getLastError to get the last error on the socket.
    */
-  SSize send(const char *buffer, Size bufferSize);
+  virtual SSize send(const char *buffer, Size bufferSize);
 
   /** Send up to all of the used space in a buffer.  This
    *  method returns the number of bytes actually sent.  If a
@@ -175,7 +175,7 @@ class ConnectedSocket : public Socket {
    *  @return The number of bytes that could be read or SOCKET_ERROR if
    *      an error occurred.
    */
-  int bytesReadable();
+  virtual int bytesReadable();
 
   /** Get the number of bytes of data that could be read from a socket
    *  descriptor.
@@ -202,6 +202,15 @@ class ConnectedSocket : public Socket {
    */
   inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
+ protected:
+#define ESB_SOCK_INITIALIZED (0)
+#define ESB_SOCK_CONNECTING (1 << 0)
+#define ESB_SOCK_CONNECTED (1 << 1)
+
+  int _flags;
+  SocketAddress _localAddress;
+  SocketAddress _peerAddress;
+
  private:
   // Disabled
   ConnectedSocket(const ConnectedSocket &);
@@ -211,9 +220,6 @@ class ConnectedSocket : public Socket {
   void updateName();
   ESB::Error updateLocalAddress();
 
-  int _flags;
-  SocketAddress _localAddress;
-  SocketAddress _peerAddress;
   // <prefix>:<ip addr>:<port>-<ip addr>:<port>,<port>
   mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 +
                            ESB_MAX_UINT32_STRING_LENGTH];

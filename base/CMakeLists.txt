@@ -108,3 +108,9 @@ add_gtest(system-config-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR
 add_gtest(socket-address-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSocketAddressTest.cpp)
 add_gtest(boringssl-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBBoringSSLTest.cpp)
 add_gtest(connection-pool-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBConnectionPoolTest.cpp)
+
+# Generate certs and private keys
+
+add_custom_command(TARGET boringssl-gtest POST_BUILD
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/create-certs.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests)

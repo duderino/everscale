@@ -32,16 +32,14 @@
 
 namespace ESB {
 
-#define ESB_SOCK_IS_CONNECTED (1 << 0)
-
 ConnectedSocket::ConnectedSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
-    : Socket(isBlocking), _flags(0), _localAddress(), _peerAddress() {
+    : Socket(isBlocking), _flags(ESB_SOCK_INITIALIZED), _localAddress(), _peerAddress() {
   formatPrefix(namePrefix, nameSuffix);
 }
 
 ConnectedSocket::ConnectedSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
                                  bool isBlocking)
-    : Socket(isBlocking), _flags(0), _localAddress(), _peerAddress(peer) {
+    : Socket(isBlocking), _flags(ESB_SOCK_INITIALIZED), _localAddress(), _peerAddress(peer) {
   formatPrefix(namePrefix, nameSuffix);
 }
 
@@ -56,7 +54,7 @@ Error ConnectedSocket::reset(const State &acceptData) {
     return error;
   }
 
-  _flags |= ESB_SOCK_IS_CONNECTED;
+  _flags = ESB_SOCK_CONNECTED;
 
   _peerAddress = acceptData.peerAddress();
   error = updateLocalAddress();
@@ -144,6 +142,7 @@ Error ConnectedSocket::connect() {
           return error;
         }
         updateName();
+        _flags = ESB_SOCK_CONNECTING;
         return ESB_SUCCESS;
       }
 #elif defined WIN32_NONBLOCKING_CONNECT_ERROR
@@ -175,15 +174,14 @@ Error ConnectedSocket::connect() {
   }
   updateName();
 
-  _flags |= ESB_SOCK_IS_CONNECTED;
+  _flags = ESB_SOCK_CONNECTED;
 
   return ESB_SUCCESS;
 }  // namespace ESB
 
 void ConnectedSocket::close() {
   Socket::close();
-
-  _flags &= ~ESB_SOCK_IS_CONNECTED;
+  _flags = ESB_SOCK_INITIALIZED;
 }
 
 bool ConnectedSocket::connected() {
@@ -191,7 +189,7 @@ bool ConnectedSocket::connected() {
     return false;
   }
 
-  if (_flags & ESB_SOCK_IS_CONNECTED) {
+  if (_flags & ESB_SOCK_CONNECTED) {
     return true;
   }
 
@@ -205,13 +203,13 @@ bool ConnectedSocket::connected() {
 
 #if defined HAVE_GETPEERNAME
   if (SOCKET_ERROR != getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
-    _flags |= ESB_SOCK_IS_CONNECTED;
+    _flags |= ESB_SOCK_CONNECTED;
   }
 #else
 #error "getpeername or equivalent is required"
 #endif
 
-  return _flags & ESB_SOCK_IS_CONNECTED;
+  return _flags & ESB_SOCK_CONNECTED;
 }
 
 SSize ConnectedSocket::receive(char *buffer, Size bufferSize) {

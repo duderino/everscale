@@ -1,5 +1,28 @@
 tls:
  - add secure/insecure bit to connected socket log address
+ - Integration tests generate root CA, intermediate CAs, trust stores, private keys, and test certs locally if not already there
+ - unify socket and ssl error reporting in connected socket interface - map TLS errors onto a few well known error codes, log the rest
+ - library initialization, read, write, close, destroy - use password protected private keys
+ - client-side validation - verify issuer chain and verify CN and SANs
+ - server-side validation - verify issuer chain iff client cert is presented
+ - Create integration test that exceeds chain length X client and server
+ - Create integration test that presents valid cert for different CN and different SAN
+ - Create integration test that presents cert for valid CN/valid SAN that is signed by a non-trusted CA
+ - Create integration test that presents expired TTL
+ - Create integration test that presents tampered cert
+ - Create integration test that presents tampered private key
+ - SNI-based server certificate presentation
+ - client side session resumption
+ - server side session resumption
+
+daemon:
+ - Base class with preFork and postFork functions.  Subclass can bind to privileged ports in preFork
+ - If configured, drop privs after postFork
+ - Slurp keystore readable only by root into memory before dropping privs.  Use for private key password
+ - start() takes over thread and waits for sigchild... restarting child processes that exit non-zero
+ - catch SIGTERM and relay SIGTERM to child pid
+ - maintain counters that track restarts
+ - crash loop handling - exponential backoff with jitter?
 
 stat:
  - add aborts on error to either proactive client and server functions or to handler
@@ -26,7 +49,6 @@ proxy:
    - client: mangled http server
    - proxy/client: servers that listen but never accept connections
    - use netem to simulate lots of tiny reads, packet loss, etc.
-   - lots of tiny chunks
    - peers close sockets while pooled/paused or at other random times
  - Reduce proxy handler copying with a swapping rule (from recv to send):  swap iff send is empty and recv has no data from the next transaction in it.  Else copy
  - release send buffer when transitioning to parse headers.  acquire send buffer when transitioning to format headers (and later for bidy body streaming)
@@ -45,7 +67,7 @@ performance and efficiency:
 
 connection pool rework:
  - fix regression caused by switch from rb tree to hash table for connection pool.  https://docs.google.com/spreadsheets/d/1UOR-96YUOYD5poKrTPQv_GthBPWZb_fJzd6D4k0aNIk/edit#gid=2084099544
- - create option of global or per-silo connection pool and set default to better performing option.
+ - create option of global or per-silo connection pool and set default to per-silo.
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
  - enforce max connections per destination address (ip + port + transport + encrypted tuple)
 

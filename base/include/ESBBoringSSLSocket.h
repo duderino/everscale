@@ -14,6 +14,8 @@ namespace ESB {
  */
 class BoringSSLSocket : public ConnectedSocket {
  public:
+  static Error Initialize();
+
   /** Construct a new server socket.  This instance's
    *  peer will be left uninitialized by this call.
    *
@@ -35,7 +37,15 @@ class BoringSSLSocket : public ConnectedSocket {
    */
   virtual ~BoringSSLSocket();
 
+  //
+  // ESB::ConnectedSocket
+  //
+
+  virtual void close();
   virtual bool secure();
+  virtual SSize receive(char *buffer, Size bufferSize);
+  virtual SSize send(const char *buffer, Size bufferSize);
+  virtual int bytesReadable();
 
   /** Placement new.
    *
