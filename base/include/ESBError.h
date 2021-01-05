@@ -243,6 +243,24 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_UNSUPPORTED_TRANSPORT (-31)
 
+/** A recoverable TLS error has occurred
+ *
+ *  @ingroup error
+ */
+#define ESB_RECOVERABLE_TLS_SESSION_ERROR (-32)
+
+/** A non-recoverable TLS error has occurred
+ *
+ *  @ingroup error
+ */
+#define ESB_NON_RECOVERABLE_TLS_SESION_ERROR (-33)
+
+/** A general TLS error not tied to a specific session has occurred
+ *
+ * @ingroup error
+ */
+#define ESB_GENERAL_TLS_ERROR (-34)
+
 }  // namespace ESB
 
 #endif

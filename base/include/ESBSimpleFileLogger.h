@@ -33,7 +33,7 @@ class SimpleFileLogger : public Logger {
    *
    * @param file All log messages will be written to this file handle.
    */
-  SimpleFileLogger(FILE *file = stdout);
+  SimpleFileLogger(FILE *file = stdout, Severity severity = Logger::Warning);
 
   /** Destructor
    */

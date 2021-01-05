@@ -2,6 +2,10 @@
 #include <ESSynchronousDnsHttpRouter.h>
 #endif
 
+#ifndef ESB_TYPES_H
+#include <ESBTypes.h>
+#endif
+
 namespace ES {
 
 SynchronousDnsHttpRouter::SynchronousDnsHttpRouter() {}
@@ -11,7 +15,7 @@ SynchronousDnsHttpRouter::~SynchronousDnsHttpRouter() {}
 ESB::Error SynchronousDnsHttpRouter::route(const HttpServerStream &serverStream,
                                            HttpClientTransaction &clientTransaction, ESB::SocketAddress &destination) {
   // TODO Make resolver async
-  unsigned char hostname[1024];
+  char hostname[ESB_MAX_HOSTNAME + 1];
   hostname[0] = 0;
   ESB::UInt16 port = 0;
   bool isSecure = false;

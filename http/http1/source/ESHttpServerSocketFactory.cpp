@@ -2,8 +2,8 @@
 #include <ESHttpServerSocketFactory.h>
 #endif
 
-#ifndef ESB_BORING_SSL_SOCKET_H
-#include <ESBBoringSSLSocket.h>
+#ifndef ESB_SERVER_TLS_SOCKET_H
+#include <ESBServerTLSSocket.h>
 #endif
 
 #ifndef ESB_SYSTEM_CONFIG_H
@@ -49,11 +49,11 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
   switch (state.peerAddress().type()) {
     case ESB::SocketAddress::TLS: {
       ESB::EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
-      socket = memory
-                   ? new (memory)
-                         ESB::BoringSSLSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false)
-                   : new (_allocator)
-                         ESB::BoringSSLSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false);
+      socket =
+          memory ? new (memory)
+                       ESB::ServerTLSSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false)
+                 : new (_allocator)
+                       ESB::ServerTLSSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false);
       if (!socket) {
         error = ESB_OUT_OF_MEMORY;
       }
@@ -99,7 +99,7 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
     return NULL;
   }
 
-  socket->reset(state);
+  serverSocket->reset(state);
 
   return serverSocket;
 }

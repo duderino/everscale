@@ -14,7 +14,7 @@ SystemDnsClient::SystemDnsClient() : DnsClient() {}
 
 SystemDnsClient::~SystemDnsClient() {}
 
-Error SystemDnsClient::resolve(SocketAddress &address, const unsigned char *hostname, UInt16 port, bool isSecure) {
+Error SystemDnsClient::resolve(SocketAddress &address, const char *hostname, UInt16 port, bool isSecure) {
   if (0 == hostname) {
     return ESB_NULL_POINTER;
   }

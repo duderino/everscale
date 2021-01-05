@@ -17,6 +17,10 @@
 #include <ESBError.h>
 #endif
 
+#ifndef ESB_STRING_H
+#include <ESBString.h>
+#endif
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -81,21 +85,40 @@ class SocketAddress {
    */
   SocketAddress &operator=(const SocketAddress &address);
 
-  /** Equality operator
+  /**
+   * Compare two socket addresses.
    *
-   * @param address The lhs instance
-   * @return true if this instance is equal to address
+   * @param address the other address to compare this to
+   * @return 0 if equal, less than zero if this address is less than the other address, greater than zero if this address is greater than the other address.
    */
-  bool operator==(const SocketAddress &address) const;
+  inline int compare(const SocketAddress &address) const {
+    if (_transport != address._transport) {
+      return _transport - address._transport;
+    }
 
-  /** Less than operator
+    int result = memcmp(&_address, &address._address, sizeof(_address));
+
+    if (0 != result) {
+      return result;
+    }
+
+    return strcmp(host(), address.host());
+  }
+
+  /**
+   * Get a one-way hash representation of this object.
    *
-   * @param address The lhs instance
-   * @return true if this instance is less than address
+   * @return a hash code
    */
-  bool operator<(const SocketAddress &address) const;
+  inline ESB::UInt32 hash() const {
+    // TODO not IPv6 safe, for IPv6 take the low order bits of the address
+    ESB::UInt32 hash = _address.sin_addr.s_addr;
+    hash |= _address.sin_port << 16;
+    hash |= _address.sin_family << 30;
+    hash |= _transport << 31;
 
-  /** @todo Add setAddress member - wrap inet_pton, etc. */
+    return (hash * 31 + StringHash(host()));
+  }
 
   /** Get the address of SocketAddress for use by the platform's socket
    *  API.  On most UNIXes this is actually the sockaddr_in structure.
@@ -161,6 +184,12 @@ class SocketAddress {
    *  @param transport The transport type.
    */
   void setType(TransportType transport);
+
+  /** Get the hostname (fqdn) associated with the SocketAddress, if any
+   *
+   * @return The hostname associated with the SocketAddress.  If no associated hostname, returns non-NULL empty string.
+   */
+  virtual const char *host() const;
 
   /** Placement new.
    *

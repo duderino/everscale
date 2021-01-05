@@ -25,6 +25,10 @@
 #include <ESBError.h>
 #endif
 
+#ifndef ESB_ANY_PORT
+#define ESB_ANY_PORT 0
+#endif
+
 namespace ESB {
 
 /** @todo allow binding to a SocketAddress - bind() with no args will

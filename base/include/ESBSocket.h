@@ -66,22 +66,17 @@ class Socket : public EmbeddedMapElement {
     SocketAddress _peerAddress;
   };
 
-  /** Construct an uninitialized Socket.
+  /** Construct a server Socket
+   *
+   * @param acceptState init parameters created by the ListeningSocket
    */
-  Socket();
+  Socket(const State &acceptState);
 
-  /** Construct a new Socket.
+  /** Construct a client Socket.
    *
    *  @param isBlocking true if this socket is a blocking socket.
    */
-  Socket(bool isBlocking);
-
-  /** Construct a new server Socket.
-   *
-   * @param acceptData An object populated by ListeningSockets
-   *  when accepting a new connection.
-   */
-  Socket(const State &state);
+  Socket(bool isBlocking = false);
 
   /** Destroy the socket.  Will close the socket if it has not
    *  already been closed.
@@ -89,15 +84,6 @@ class Socket : public EmbeddedMapElement {
   virtual ~Socket();
 
   virtual CleanupHandler *cleanupHandler();
-
-  /** Reset a  socket.  If the socket is currently open, this will close
-   *  it as a side-effect.
-   *
-   * @param acceptData An object created by ListeningTCPSockets
-   *  when accepting a new connection.
-   * @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  virtual Error reset(const State &acceptData);
 
   /** Close the socket.
    */

@@ -5,12 +5,16 @@
 #include <ESBSharedEmbeddedMap.h>
 #endif
 
-#ifndef ESB_CONNECTED_SOCKET_H
-#include <ESBConnectedSocket.h>
-#endif
-
 #ifndef ESB_SHARED_INT_H
 #include <ESBSharedInt.h>
+#endif
+
+#ifndef ESB_HOST_ADDRESS_H
+#include <ESBHostAddress.h>
+#endif
+
+#ifndef ESB_CONNECTED_SOCKET_H
+#include <ESBConnectedSocket.h>
 #endif
 
 namespace ESB {
@@ -24,13 +28,11 @@ class ConnectionPool {
   /** Constructor.
    *
    * @param namePrefix connected sockets created by this pool will have names prefixed by this string
-   * @param nameSuffix connected sockets created by this pool will have this string appended to the end
    * @param numBuckets more buckets, fewer collisions, more memory.
    * @param numLocks more locks, less contention, more memory.  if 0, no
    * internal locking will be performed
    */
-  ConnectionPool(const char *namePrefix, const char *nameSuffix, UInt32 numBuckets, UInt32 numLocks,
-                 Allocator &allocator = SystemAllocator::Instance());
+  ConnectionPool(const char *namePrefix, UInt32 numBuckets, UInt32 numLocks, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.  No cleanup handlers are called
    */
@@ -40,15 +42,23 @@ class ConnectionPool {
    */
   void clear();
 
-  /** Find a connection in the connection pool
+  /** Remove a clear text connection to a peer from the connection pool, or create a new one if none can be found.
    *
    *  @param peerAddress The peer address
-   *  @param connection Either set to a connection already connected to the peerAddress, or NULL if no connection could
-   * be found.
+   *  @param connection On success, will be set to a established (if found) or establishing (if new) connection the peer address.
    *  @param reused Set to true if the connection was taken from the pool or false if a new connection was created.
    *  @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  Error acquire(const SocketAddress &peerAddress, ConnectedSocket **connection, bool *reused);
+  Error acquireClearSocket(const SocketAddress &peerAddress, ConnectedSocket **connection, bool *reused);
+
+  /** Remove a TLS encrypted connection to a peer from the connection pool, or create a new one if none can be found.
+ *
+ *  @param peerAddress The peer address
+ *  @param connection On success, will be set to a established (if found) or establishing (if new) connection the peer address.
+ *  @param reused Set to true if the connection was taken from the pool or false if a new connection was created.
+ *  @return ESB_SUCCESS if successful, another error code otherwise.
+ */
+  Error acquireTLSSocket(const HostAddress &peerAddress, ConnectedSocket **connection, bool *reused);
 
   /** Return a connection to the connection pool
    *
@@ -92,8 +102,7 @@ class ConnectionPool {
     Allocator &_allocator;
   };
 
-  const char *_namePrefix;
-  const char *_nameSuffix;
+  const char *_prefix;
   Allocator &_allocator;
   SharedInt _hits;
   SharedInt _misses;

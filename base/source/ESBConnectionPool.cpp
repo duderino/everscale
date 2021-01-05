@@ -6,16 +6,18 @@
 #include <ESBLogger.h>
 #endif
 
-#ifndef ESB_BORING_SSL_SOCKET_H
-#include <ESBBoringSSLSocket.h>
+#ifndef ESB_CLIENT_TLS_SOCKET_H
+#include <ESBClientTLSSocket.h>
+#endif
+
+#ifndef ESB_CLEAR_SOCKET_H
+#include <ESBClearSocket.h>
 #endif
 
 namespace ESB {
 
-ConnectionPool::ConnectionPool(const char *namePrefix, const char *nameSuffix, UInt32 numBuckets, UInt32 numLocks,
-                               Allocator &allocator)
-    : _namePrefix(namePrefix),
-      _nameSuffix(nameSuffix),
+ConnectionPool::ConnectionPool(const char *prefix, UInt32 numBuckets, UInt32 numLocks, Allocator &allocator)
+    : _prefix(prefix),
       _allocator(allocator),
       _hits(0),
       _misses(0),
@@ -37,95 +39,114 @@ void ConnectionPool::clear() {
   _misses.set(0);
 }
 
-Error ConnectionPool::acquire(const SocketAddress &peerAddress, ConnectedSocket **connection, bool *reused) {
+Error ConnectionPool::acquireClearSocket(const SocketAddress &peerAddress,
+                                         ConnectedSocket **connection,
+                                         bool *reused) {
   if (!connection || !reused) {
     return ESB_NULL_POINTER;
   }
 
-  {
-    ConnectedSocket *socket = (ConnectedSocket *)_activeSockets.remove(&peerAddress);
+  assert(SocketAddress::TCP == peerAddress.type());
+  if (SocketAddress::TCP != peerAddress.type()) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  ClearSocket *socket = (ClearSocket *)_activeSockets.remove(&peerAddress);
+
+  if (socket) {
+    assert(0 == socket->peerAddress().compare(peerAddress));
+    _hits.inc();
+    *reused = true;
+    *connection = socket;
+    return ESB_SUCCESS;
+  }
+
+  _misses.inc();
+
+  EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
+
+  if (memory) {
+    socket = new (memory) ClearSocket(peerAddress, _prefix);
+  } else {
+    socket = new (_allocator) ClearSocket(peerAddress, _prefix);
+  }
+
+  if (!socket) {
+    if (ESB_ERROR_LOGGABLE) {
+      char presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
+      peerAddress.presentationAddress(presentationAddress, sizeof(presentationAddress));
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "cannot connect to [%s:%u]", presentationAddress, peerAddress.port());
+    }
+    return ESB_OUT_OF_MEMORY;
+  }
+
+  Error error = socket->connect();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot connect to peer", socket->name());
+    socket->~ClearSocket();
+    _deconstructedTLSSockets.addLast(socket);
+    *connection = NULL;
+    return error;
+  }
+
+  *reused = false;
+  *connection = socket;
+  return ESB_SUCCESS;
+}
+
+Error ConnectionPool::acquireTLSSocket(const HostAddress &peerAddress, ConnectedSocket **connection, bool *reused) {
+  if (!connection || !reused) {
+    return ESB_NULL_POINTER;
+  }
+
+  assert(SocketAddress::TLS == peerAddress.type());
+  if (SocketAddress::TLS != peerAddress.type()) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  ClientTLSSocket *socket = (ClientTLSSocket *)_activeSockets.remove(&peerAddress);
 
     if (socket) {
-      assert(socket->peerAddress() == peerAddress);
+      assert(0 == socket->peerAddress().compare(peerAddress));
       _hits.inc();
       *reused = true;
       *connection = socket;
       return ESB_SUCCESS;
     }
-  }
 
   _misses.inc();
 
-  switch (peerAddress.type()) {
-    case SocketAddress::TLS: {
-      EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
-      BoringSSLSocket *socket = NULL;
+  EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
 
-      if (memory) {
-        socket = new (memory) BoringSSLSocket(_namePrefix, _nameSuffix, peerAddress, false);
-      } else {
-        socket = new (_allocator) BoringSSLSocket(_namePrefix, _nameSuffix, peerAddress, false);
-      }
-
-      if (!socket) {
-        if (ESB_ERROR_LOGGABLE) {
-          char presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
-          peerAddress.presentationAddress(presentationAddress, sizeof(presentationAddress));
-          ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "cannot connect to [%s:%u]", presentationAddress, peerAddress.port());
-        }
-        return ESB_OUT_OF_MEMORY;
-      }
-
-      Error error = socket->connect();
-
-      if (ESB_SUCCESS != error) {
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot connect to peer", socket->name());
-        socket->~BoringSSLSocket();
-        _deconstructedTLSSockets.addLast(socket);
-        *connection = NULL;
-        return error;
-      }
-
-      *reused = false;
-      *connection = socket;
-      return ESB_SUCCESS;
-    }
-    case SocketAddress::TCP: {
-      EmbeddedListElement *memory = _deconstructedClearSockets.removeLast();
-      ConnectedSocket *socket = NULL;
-
-      if (memory) {
-        socket = new (memory) ConnectedSocket(_namePrefix, _nameSuffix, peerAddress, false);
-      } else {
-        socket = new (_allocator) ConnectedSocket(_namePrefix, _nameSuffix, peerAddress, false);
-      }
-
-      if (!socket) {
-        if (ESB_ERROR_LOGGABLE) {
-          char presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
-          peerAddress.presentationAddress(presentationAddress, sizeof(presentationAddress));
-          ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "cannot connect to [%s:%u]", presentationAddress, peerAddress.port());
-        }
-        return ESB_OUT_OF_MEMORY;
-      }
-
-      Error error = socket->connect();
-
-      if (ESB_SUCCESS != error) {
-        ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot connect to peer", socket->name());
-        socket->~ConnectedSocket();
-        _deconstructedClearSockets.addLast(socket);
-        *connection = NULL;
-        return error;
-      }
-
-      *reused = false;
-      *connection = socket;
-      return ESB_SUCCESS;
-    }
-    default:
-      return ESB_UNSUPPORTED_TRANSPORT;
+  if (memory) {
+    socket = new (memory) ClientTLSSocket(peerAddress, _prefix);
+  } else {
+    socket = new (_allocator) ClientTLSSocket(peerAddress, _prefix);
   }
+
+  if (!socket) {
+    if (ESB_ERROR_LOGGABLE) {
+      char presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
+      peerAddress.presentationAddress(presentationAddress, sizeof(presentationAddress));
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "cannot connect to [%s:%u]", presentationAddress, peerAddress.port());
+    }
+    return ESB_OUT_OF_MEMORY;
+  }
+
+  Error error = socket->connect();
+
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot connect to peer", socket->name());
+    socket->~ClientTLSSocket();
+    _deconstructedTLSSockets.addLast(socket);
+    *connection = NULL;
+    return error;
+  }
+
+  *reused = false;
+  *connection = socket;
+  return ESB_SUCCESS;
 }
 
 void ConnectionPool::release(ConnectedSocket *connection) {
@@ -143,9 +164,10 @@ void ConnectionPool::release(ConnectedSocket *connection) {
   }
 
   assert(!connection->connected());
+  SocketAddress::TransportType type = connection->peerAddress().type();
   connection->~ConnectedSocket();
 
-  switch (connection->peerAddress().type()) {
+  switch (type) {
     case ESB::SocketAddress::TCP:
       _deconstructedClearSockets.addLast(connection);
       break;
@@ -160,27 +182,11 @@ void ConnectionPool::release(ConnectedSocket *connection) {
 ConnectionPool::SocketAddressCallbacks::SocketAddressCallbacks(ESB::Allocator &allocator) : _allocator(allocator) {}
 
 int ConnectionPool::SocketAddressCallbacks::compare(const void *f, const void *s) const {
-  ESB::SocketAddress *first = (ESB::SocketAddress *)f;
-  ESB::SocketAddress *second = (ESB::SocketAddress *)s;
-
-  if (first->type() != second->type()) {
-    return first->type() - second->type();
-  }
-
-  // TODO not IPv6 safe
-  return memcmp(first->primitiveAddress(), second->primitiveAddress(), sizeof(ESB::SocketAddress::Address));
+  return ((ESB::SocketAddress *)f)->compare(*((ESB::SocketAddress *) s));
 }
 
 ESB::UInt32 ConnectionPool::SocketAddressCallbacks::hash(const void *key) const {
-  ESB::SocketAddress *addr = (ESB::SocketAddress *)key;
-
-  // TODO not IPv6 safe, for IPv6 take the low order bits of the address
-  ESB::UInt32 hash = addr->primitiveAddress()->sin_addr.s_addr;
-  hash |= addr->primitiveAddress()->sin_port << 16;
-  hash |= addr->primitiveAddress()->sin_family << 30;
-  hash |= addr->type() << 31;
-
-  return hash;
+  return ((ESB::SocketAddress *)key)->hash();
 }
 
 void ConnectionPool::SocketAddressCallbacks::cleanup(ESB::EmbeddedMapElement *element) {

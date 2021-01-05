@@ -6,15 +6,18 @@ SET(FORMAT_FILES ${FORMAT_FILES} ${LOCAL_SOURCES} PARENT_SCOPE)
 
 set(SOURCE_FILES
         source/ESBAllocator.cpp
-        source/ESBBoringSSLSocket.cpp
         source/ESBBuddyAllocator.cpp
         source/ESBBuffer.cpp
         source/ESBBufferPool.cpp
+        source/ESBClearSocket.cpp
         source/ESBCommand.cpp
         source/ESBCommandThread.cpp
         source/ESBComparator.cpp
         source/ESBSimpleFileLogger.cpp
         source/ESBConnectedSocket.cpp
+        source/ESBTLSSocket.cpp
+        source/ESBClientTLSSocket.cpp
+        source/ESBServerTLSSocket.cpp
         source/ESBConnectionPool.cpp
         source/ESBCountingSemaphore.cpp
         source/ESBDate.cpp
@@ -22,6 +25,7 @@ set(SOURCE_FILES
         source/ESBEmbeddedList.cpp
         source/ESBError.cpp
         source/ESBFixedAllocator.cpp
+        source/ESBHostAddress.cpp
         source/ESBList.cpp
         source/ESBListeningSocket.cpp
         source/ESBLockable.cpp
@@ -41,6 +45,7 @@ set(SOURCE_FILES
         source/ESBSmartPointer.cpp
         source/ESBSmartPointerDebugger.cpp
         source/ESBSocketMultiplexer.cpp
+        source/ESBString.cpp
         source/ESBSystemAllocator.cpp
         source/ESBThread.cpp
         source/ESBThreadPool.cpp
@@ -62,6 +67,7 @@ set(SOURCE_FILES
         source/ESBEventSocket.cpp
         )
 add_library(base STATIC ${SOURCE_FILES})
+add_dependencies(base bssl)
 
 target_include_directories(base PRIVATE
         "${PROJECT_SOURCE_DIR}/source"
@@ -82,7 +88,7 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../unit-tf/include"
         )
 
-set(TEST_LIBS -pthread unit-tf base ssl)
+set(TEST_LIBS -pthread unit-tf base bssl_ssl bssl_crypto)
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
@@ -106,8 +112,10 @@ add_gtest(time-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests t
 add_gtest(map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBMapTest2.cpp)
 add_gtest(system-config-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSystemConfigTest.cpp)
 add_gtest(socket-address-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSocketAddressTest.cpp)
-add_gtest(boringssl-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBBoringSSLTest.cpp)
+add_gtest(boringssl-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBConnectedTLSSocketTest.cpp)
 add_gtest(connection-pool-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBConnectionPoolTest.cpp)
+add_gtest(clear-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBClearSocketTest.cpp)
+add_gtest(tls-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBTLSSocketTest.cpp)
 
 # Generate certs and private keys
 

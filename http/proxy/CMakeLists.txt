@@ -52,6 +52,8 @@ set(TEST_LIBS
         http-common
         http-test-common
         base
+		bssl_ssl
+		bssl_crypto
         )
 
 set(TEST_FILES

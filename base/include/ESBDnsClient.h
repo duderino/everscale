@@ -13,8 +13,7 @@ class DnsClient {
 
   virtual ~DnsClient();
 
-  virtual Error resolve(SocketAddress &address, const unsigned char *hostname, UInt16 port = 0,
-                        bool isSecure = false) = 0;
+  virtual Error resolve(SocketAddress &address, const char *hostname, UInt16 port = 0, bool isSecure = false) = 0;
 
  private:
   // Disabled

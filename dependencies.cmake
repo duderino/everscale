@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 include(FetchContent)
+include(ExternalProject)
 set(FETCHCONTENT_QUIET OFF)
 
 #
@@ -44,29 +45,25 @@ mark_as_advanced(
 # BoringSSL
 #
 
-FetchContent_Declare(
-        boringssl
+ExternalProject_Add(bssl
+        PREFIX bssl
+        SOURCE_DIR ${bssl_SOURCE_DIR}
+        BUILD_IN_SOURCE 1
         GIT_REPOSITORY https://boringssl.googlesource.com/boringssl
         GIT_TAG fips-20190808
-)
+        CMAKE_CACHE_ARGS -DFIPS:BOOL=1
+        INSTALL_COMMAND ""
+        )
 
-#FetchContent_MakeAvailable(boringssl)
+add_library(bssl_ssl STATIC IMPORTED GLOBAL)
+add_library(bssl_crypto STATIC IMPORTED GLOBAL)
+include_directories(${PROJECT_SOURCE_DIR}/bssl/src/bssl/include)
 
-FetchContent_GetProperties(boringssl)
-if (NOT boringssl_POPULATED)
-    FetchContent_Populate(boringssl)
-    add_subdirectory(${boringssl_SOURCE_DIR} ${boringssl_BINARY_DIR})
-    include_directories(${boringssl_SOURCE_DIR}/include)
-endif ()
-
-#
-# gRPC
-#
-
-#FetchContent_Declare(
-#        gRPC
-#        GIT_REPOSITORY https://github.com/grpc/grpc
-#        GIT_TAG        v1.28.0
-#)
-#FetchContent_MakeAvailable(gRPC)
-
+set_property(TARGET bssl_ssl
+        PROPERTY IMPORTED_LOCATION
+        ${PROJECT_SOURCE_DIR}/bssl/src/bssl/ssl/libssl.a
+        )
+set_property(TARGET bssl_crypto
+        PROPERTY IMPORTED_LOCATION
+        ${PROJECT_SOURCE_DIR}/bssl/src/bssl/crypto/libcrypto.a
+        )

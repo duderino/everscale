@@ -157,7 +157,7 @@ if (HAVE_SC_LEVEL1_DCACHE_LINESIZE)
 endif ()
 
 check_include_file("sys/param.h" HAVE_SYS_PARAM_H)
-check_symbol_exists(MAXHOSTNAMELEN "sys/param.h" HAVE_MAXHOSTNAMELEN)
+# use 255 across all platforms. check_symbol_exists(MAXHOSTNAMELEN "sys/param.h" HAVE_MAXHOSTNAMELEN)
 
 check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("inttypes.h" HAVE_INTTYPES_H)

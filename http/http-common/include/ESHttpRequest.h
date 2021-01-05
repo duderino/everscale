@@ -44,7 +44,7 @@ class HttpRequest : public HttpMessage {
    * @return ESB_SUCCESS if the request contained enough information to
    * determine the peer address, another error code otherwise
    */
-  ESB::Error parsePeerAddress(unsigned char *hostname, int size, ESB::UInt16 *port, bool *isSecure) const;
+  ESB::Error parsePeerAddress(char *hostname, int size, ESB::UInt16 *port, bool *isSecure) const;
 
  private:
   // Disabled

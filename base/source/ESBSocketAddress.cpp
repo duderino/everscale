@@ -36,6 +36,9 @@
 
 namespace ESB {
 
+static const char NULL_TERMINATOR = 0;
+static const char *EMPTY_STRING = &NULL_TERMINATOR;
+
 SocketAddress::SocketAddress() {
 #ifdef HAVE_MEMSET
   memset(&_address, 0, sizeof(Address));
@@ -174,22 +177,6 @@ SocketAddress::TransportType SocketAddress::type() const { return _transport; }
 
 void SocketAddress::setType(TransportType transport) { _transport = transport; }
 
-bool SocketAddress::operator==(const SocketAddress &address) const {
-  if (_transport != address._transport) {
-    return false;
-  }
-
-  return 0 == ::memcmp(&_address, &address._address, sizeof(_address));
-}
-
-bool SocketAddress::operator<(const SocketAddress &address) const {
-  if (0 > ::memcmp(&_address, &address._address, sizeof(_address))) {
-    return true;
-  }
-
-  return 0 > _transport - address._transport;
-}
-
 void SocketAddress::updatePrimitiveAddress(SocketAddress::Address *address) {
   if (!address) {
     return;
@@ -221,5 +208,7 @@ ESB::Error SocketAddress::setAddress(const char *presentation) {
 
   return ESB_SUCCESS;
 }
+
+const char *SocketAddress::host() const { return EMPTY_STRING; }
 
 }  // namespace ESB

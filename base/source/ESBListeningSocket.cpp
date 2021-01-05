@@ -207,7 +207,7 @@ void ListeningSocket::close() {
 
 Error ListeningSocket::accept(State *data) {
   if (SocketState::LISTENING != _state) {
-    assert(0 == "Attempted to accept on an invalid socket.");
+    assert(!"Attempted to accept on an invalid socket.");
     return ESB_INVALID_STATE;
   }
 
@@ -242,7 +242,21 @@ Error ListeningSocket::accept(State *data) {
     }
   }
 
-  data->peerAddress().setType(_listeningAddress.type());
+  SocketAddress peerAddress;
+
+#if defined HAVE_GETSOCKNAME
+  addressSize = sizeof(SocketAddress::Address);
+  if (SOCKET_ERROR == ::getsockname(data->socketDescriptor(), (sockaddr *) peerAddress.primitiveAddress(), &addressSize)) {
+    Socket::Close(data->socketDescriptor());
+    return LastError();
+  }
+#else
+#error "getsockname or equivalent is required"
+#endif
+
+  peerAddress.setType(_listeningAddress.type());
+
+  data->setPeerAddress(peerAddress);
   data->setListeningAddress(_listeningAddress);
   data->setIsBlocking(_isBlocking);
 

@@ -1,4 +1,10 @@
+stat:
+ - TCP_NODELAY on all connected sockets by default
+ - Reduce the number of hostname copies in HttpClientSocketFactory (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress -> ClientTLSConnection)
+ - Create generic socket test base class, use for ClearSocket, ClientTLSSocket, and ServerTLSSocket
+
 tls:
+ - relay current profile (optimization, symbols, asan/tsan) to boringssl cmake build
  - add secure/insecure bit to connected socket log address
  - Integration tests generate root CA, intermediate CAs, trust stores, private keys, and test certs locally if not already there
  - unify socket and ssl error reporting in connected socket interface - map TLS errors onto a few well known error codes, log the rest
@@ -14,6 +20,15 @@ tls:
  - SNI-based server certificate presentation
  - client side session resumption
  - server side session resumption
+ - can boringssl lib's memory be reconciled?
+ - enable ASLR
+ - audit initialization for FIPS
+ - Configure and maintain maps of CNs to ServerContexts (for SNI) and CNs to ClientContexts (client map must support one-level wildcard matching).
+   Alternatively maintain maps of initialized privatekey+cert+CA tuples and register them with individual SSL contexts when needed.
+ - Add support and tests for certificate chains and certificate chain verification
+ - add support for mTLS while supporting use of local CA + well-known CA bundle
+ - Add test to ensure that client rejects server if server doesn't return a cert
+ - Ensure wantRead and wantWrite are set appropriately during handshaking else deadlock
 
 daemon:
  - Base class with preFork and postFork functions.  Subclass can bind to privileged ports in preFork
@@ -137,6 +152,7 @@ tcp proxy stuff:
  - turn into a unit test over loopback/same proc
 
 http stuff
+ - merge duplicate headers
  - add user agent/server agent headers
  - remove sensitive headers while proxying
  - fix double add of Transfer-Encoding: chunked.... strip headers that control connection lifetime during proxying

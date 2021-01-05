@@ -43,7 +43,7 @@ ESB::Error HttpRequest::copy(const ES::HttpRequest *other, ESB::Allocator &alloc
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpRequest::parsePeerAddress(unsigned char *hostname, int size, ESB::UInt16 *port, bool *isSecure) const {
+ESB::Error HttpRequest::parsePeerAddress(char *hostname, int size, ESB::UInt16 *port, bool *isSecure) const {
   if (!hostname || !port || !isSecure) {
     return ESB_NULL_POINTER;
   }

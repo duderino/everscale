@@ -25,39 +25,40 @@
 #include <ESBBuffer.h>
 #endif
 
+#define ESB_SOCK_FLAG_NEW (1 << 0)
+#define ESB_SOCK_FLAG_CONNECTING (1 << 1)
+#define ESB_SOCK_FLAG_CONNECTED (1 << 2)
+#define ESB_SOCK_FLAG_MAX ESB_SOCK_FLAG_CONNECTED
+#define ESB_SOCK_FLAG_ALL (ESB_SOCK_FLAG_NEW | ESB_SOCK_FLAG_CONNECTING | ESB_SOCK_FLAG_CONNECTED)
+
 namespace ESB {
 
 class ListeningSocket;
 
-/** ConnectedSockets are used to connect to other TCP endpoints and
- *  send and receive data across the resulting channel.
+/** ConnectedSocket is an abstract base class for plain and encrypted connected sockets.
  *
  *  @ingroup network
  */
 class ConnectedSocket : public Socket {
  public:
-  /** Construct a new server ConnectedSocket.  This instance's
-   *  peer will be left uninitialized by this call.
+  /** Construct a new server ConnectedSocket.
    *
-   *  @param isBlocking whether or not this socket is blocking.
+   * @param acceptState init parameters created by the ListeningSocket
+   * @param namePrefix A name prefix to be incorporated into log messages
    */
-  ConnectedSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking = false);
+  ConnectedSocket(const Socket::State &acceptState, const char *namePrefix);
 
-  /** Construct a new client ConnectedSocket.  This instance will
-   *  connect (attempt to connect) to the peer identified by the
-   *  SocketAddress instance.
+  /** Construct a new client ConnectedSocket.
    *
-   *  @param peer The peer that this socket will attempt to connect to.
-   *  @param isBlocking whether or not this socket is blocking.
+   * @param namePrefix A name prefix to be incorporated into log messages
+   * @param isBlocking whether or not this socket is blocking.
    */
-  ConnectedSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer, bool isBlocking = false);
+  ConnectedSocket(const char *namePrefix, bool isBlocking = false);
 
   /** Destroy the connected socket.  Will close the socket if it has not
    *  already been closed.
    */
   virtual ~ConnectedSocket();
-
-  virtual const void *key() const;
 
   /* Get the socket peer's ipaddr+port in human-friendly presentation format.
    *
@@ -65,20 +66,11 @@ class ConnectedSocket : public Socket {
    */
   virtual const char *name() const;
 
-  /** Reset a tcp socket.  If the socket is currently open, this will close
-   *  it as a side-effect.
-   *
-   * @param acceptData An object created popupated by ListeningTCPSockets
-   *  when accepting a new connection.
-   * @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  virtual Error reset(const State &acceptData);
-
   /** Get the address of the peer.
    *
    *  @return address The address of the peer.
    */
-  const SocketAddress &peerAddress() const;
+  virtual const SocketAddress &peerAddress() const = 0;
 
   /** Get the address of the listening socket that created this connected
    *  socket.
@@ -107,7 +99,7 @@ class ConnectedSocket : public Socket {
    *
    * @return true if the socket uses encryption
    */
-  virtual bool secure();
+  virtual bool secure() const = 0;
 
   /** Determine whether there is a communications channel currently open
    *  between this socket and the peer.  This is useful for knowing when a
@@ -170,12 +162,26 @@ class ConnectedSocket : public Socket {
    */
   SSize send(Buffer *buffer);
 
+  /**
+   * Determine whether the socket impl needs to receive more data to make progress (e.g., to complete a TLS handshake)
+   *
+   * @return true if the socket impl needs to receive more data to make progress
+   */
+  virtual bool wantRead();
+
+  /**
+   * Determine whether the socket impl needs to send more data to make progress (e.g,. to complete a TLS handshake)
+   *
+   * @return true if the socket impl needs to send more data to make progress
+   */
+  virtual bool wantWrite();
+
   /** Get the number of bytes of data that could be read from this socket.
    *
    *  @return The number of bytes that could be read or SOCKET_ERROR if
    *      an error occurred.
    */
-  virtual int bytesReadable();
+  int bytesReadable();
 
   /** Get the number of bytes of data that could be read from a socket
    *  descriptor.
@@ -203,13 +209,8 @@ class ConnectedSocket : public Socket {
   inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
  protected:
-#define ESB_SOCK_INITIALIZED (0)
-#define ESB_SOCK_CONNECTING (1 << 0)
-#define ESB_SOCK_CONNECTED (1 << 1)
 
   int _flags;
-  SocketAddress _localAddress;
-  SocketAddress _peerAddress;
 
  private:
   // Disabled
@@ -217,9 +218,10 @@ class ConnectedSocket : public Socket {
   ConnectedSocket &operator=(const ConnectedSocket &);
 
   void formatPrefix(const char *namePrefix, const char *nameSuffix);
-  void updateName();
+  void updateName(const SocketAddress &peerAddress);
   ESB::Error updateLocalAddress();
 
+  SocketAddress _localAddress;
   // <prefix>:<ip addr>:<port>-<ip addr>:<port>,<port>
   mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 +
                            ESB_MAX_UINT32_STRING_LENGTH];

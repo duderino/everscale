@@ -48,8 +48,8 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
   virtual void SetUp() { HttpLoadgenContext::Reset(); }
 };
 
-// use clear or not
-INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
+// use secure if true
+INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false)));
 
 class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
  public:
@@ -57,10 +57,10 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
   virtual void SetUp() { HttpLoadgenContext::Reset(); }
 };
 
-// body-size variations X use content-length header or not X use clear or not
+// body-size variations X use content-length header if true X use secure if
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
                          ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
-                                            ::testing::Values(false, true), ::testing::Values(false, true)));
+                                            ::testing::Values(false, true), ::testing::Values(false)));
 
 TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;

@@ -25,7 +25,7 @@ target_compile_options(origin PUBLIC ${CPP_FLAGS})
 
 add_executable(http-origin source/ESHttpOrigin.cpp)
 target_compile_options(http-origin PUBLIC ${CPP_FLAGS})
-target_link_libraries(http-origin -pthread unit-tf origin multiplexers http1 http-common http-test-common base)
+target_link_libraries(http-origin -pthread unit-tf origin multiplexers http1 http-common http-test-common base bssl_ssl bssl_crypto)
 target_include_directories(http-origin PRIVATE
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../../base/include"

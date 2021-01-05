@@ -1,67 +1,14 @@
+#ifndef ESB_SOCKET_TEST_H
+#include "ESBSocketTest.h"
+#endif
+
 #ifndef ESB_CONNECTION_POOL_H
 #include <ESBConnectionPool.h>
 #endif
 
-#ifndef ESB_LISTENING_SOCKET_H
-#include <ESBListeningSocket.h>
-#endif
-
-#ifndef ESB_LOGGER_H
-#include <ESBLogger.h>
-#endif
-
-#include <gtest/gtest.h>
-
 using namespace ESB;
 
-class ConnectionPoolTest : public ::testing::Test {
- public:
-  ConnectionPoolTest()
-      : _clearPeerAddress("127.0.0.1", 0, SocketAddress::TCP),
-        _securePeerAddress("127.0.0.1", 0, SocketAddress::TLS),
-        _clearListener("clear", _clearPeerAddress, 42),
-        _secureListener("secure", _securePeerAddress, 42) {}
-
-  virtual void SetUp() {
-    Error error = _clearListener.bind();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", _clearListener.name());
-      assert(!"Cannot bind to ephemeral port");
-      return;
-    }
-
-    error = _secureListener.bind();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", _secureListener.name());
-      assert(!"Cannot bind to ephemeral port");
-      return;
-    }
-
-    error = _clearListener.listen();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port", _clearListener.name());
-      assert(!"Cannot listen on ephemeral port");
-      return;
-    }
-
-    error = _secureListener.listen();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port", _secureListener.name());
-      assert(!"Cannot listen on ephemeral port");
-      return;
-    }
-
-    _clearPeerAddress.setPort(_clearListener.listeningAddress().port());
-    _securePeerAddress.setPort(_secureListener.listeningAddress().port());
-  }
-
- protected:
-  SocketAddress _clearPeerAddress;
-  SocketAddress _securePeerAddress;
-
- private:
-  ListeningSocket _clearListener;
-  ListeningSocket _secureListener;
+class ConnectionPoolTest : public SocketTest {
 };
 
 static void DestroyConnection(ConnectedSocket *connection) {
@@ -70,11 +17,11 @@ static void DestroyConnection(ConnectedSocket *connection) {
 }
 
 TEST_F(ConnectionPoolTest, AcquireRelease) {
-  ConnectionPool pool("Testy", "McTest", 42, 0);
+  ConnectionPool pool("Test", 41, 0);
   ConnectedSocket *connection = NULL;
   bool reused = false;
 
-  Error error = pool.acquire(_clearPeerAddress, &connection, &reused);
+  Error error = pool.acquireClearSocket(_clearListenerAddress, &connection, &reused);
 
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, pool.hits());
@@ -87,7 +34,7 @@ TEST_F(ConnectionPoolTest, AcquireRelease) {
     pool.release(connection);
     EXPECT_EQ(1, pool.size());
 
-    error = pool.acquire(_clearPeerAddress, &connection, &reused);
+    error = pool.acquireClearSocket(_clearListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(i + 1, pool.hits());
@@ -101,11 +48,11 @@ TEST_F(ConnectionPoolTest, AcquireRelease) {
 }
 
 TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
-  ConnectionPool pool("Testy", "McTest", 42, 0);
+  ConnectionPool pool("Test", 41, 0);
   ConnectedSocket *connection = NULL;
   bool reused = true;
 
-  Error error = pool.acquire(_clearPeerAddress, &connection, &reused);
+  Error error = pool.acquireClearSocket(_clearListenerAddress, &connection, &reused);
 
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, pool.hits());
@@ -119,7 +66,7 @@ TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
     pool.release(connection);
     EXPECT_EQ(0, pool.size());
 
-    error = pool.acquire(_clearPeerAddress, &connection, &reused);
+    error = pool.acquireClearSocket(_clearListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(0, pool.hits());
@@ -133,14 +80,15 @@ TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
 }
 
 TEST_F(ConnectionPoolTest, DistinctTransport) {
-  ConnectionPool pool("Testy", "McTest", 42, 0);
+  ConnectionPool pool("Test", 41, 0);
   ConnectedSocket *connection = NULL;
   bool reused = false;
   EmbeddedList connections;
+  HostAddress secureListenerAddress("server.everscale.com", _secureListenerAddress);
 
   for (int i = 0; i < 42; ++i) {
-    Error error = i % 2 ? pool.acquire(_clearPeerAddress, &connection, &reused)
-                        : pool.acquire(_securePeerAddress, &connection, &reused);
+    Error error = i % 2 ? pool.acquireClearSocket(_clearListenerAddress, &connection, &reused)
+                        : pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(0, pool.hits());
@@ -164,7 +112,7 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
   }
 
   for (int i = 0; i < 42 / 2; ++i) {
-    Error error = pool.acquire(_securePeerAddress, &connection, &reused);
+    Error error = pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(SocketAddress::TLS, connection->peerAddress().type());
@@ -179,7 +127,7 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
   }
 
   {
-    Error error = pool.acquire(_securePeerAddress, &connection, &reused);
+    Error error = pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(SocketAddress::TLS, connection->peerAddress().type());
     EXPECT_EQ(21, pool.hits());
@@ -193,7 +141,7 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
   }
 
   for (int i = 0; i < 42 / 2; ++i) {
-    Error error = pool.acquire(_clearPeerAddress, &connection, &reused);
+    Error error = pool.acquireClearSocket(_clearListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(SocketAddress::TCP, connection->peerAddress().type());
@@ -209,14 +157,15 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
 }
 
 TEST_F(ConnectionPoolTest, CleanupLiveConnections) {
-  ConnectionPool pool("Testy", "McTest", 42, 0);
+  ConnectionPool pool("Test", 41, 0);
   ConnectedSocket *connection = NULL;
   bool reused = false;
   EmbeddedList connections;
+  HostAddress secureListenerAddress("server.everscale.com", _secureListenerAddress);
 
   for (int i = 0; i < 42; ++i) {
-    Error error = i % 2 ? pool.acquire(_clearPeerAddress, &connection, &reused)
-                        : pool.acquire(_securePeerAddress, &connection, &reused);
+    Error error = i % 2 ? pool.acquireClearSocket(_clearListenerAddress, &connection, &reused)
+                        : pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_TRUE(connection->connected());
@@ -240,14 +189,15 @@ TEST_F(ConnectionPoolTest, CleanupLiveConnections) {
 }
 
 TEST_F(ConnectionPoolTest, CleanupDeadConnections) {
-  ConnectionPool pool("Testy", "McTest", 42, 0);
+  ConnectionPool pool("Test", 41, 0);
   ConnectedSocket *connection = NULL;
   bool reused = false;
   EmbeddedList connections;
+  HostAddress secureListenerAddress("server.everscale.com", _secureListenerAddress);
 
   for (int i = 0; i < 42; ++i) {
-    Error error = i % 2 ? pool.acquire(_clearPeerAddress, &connection, &reused)
-                        : pool.acquire(_securePeerAddress, &connection, &reused);
+    Error error = i % 2 ? pool.acquireClearSocket(_clearListenerAddress, &connection, &reused)
+                        : pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_TRUE(connection->connected());

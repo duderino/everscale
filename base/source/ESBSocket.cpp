@@ -53,20 +53,11 @@ Socket::State &Socket::State::operator=(const Socket::State &state) {
   return *this;
 }
 
-Socket::Socket() : _isBlocking(false), _sockFd(INVALID_SOCKET) {}
-
 Socket::Socket(bool isBlocking) : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
-Socket::Socket(const State &state) : _isBlocking(state.isBlocking()), _sockFd(state.socketDescriptor()) {}
+Socket::Socket(const State &acceptState) : _isBlocking(acceptState.isBlocking()), _sockFd(acceptState.socketDescriptor()) {}
 
 Socket::~Socket() { close(); }
-
-Error Socket::reset(const State &state) {
-  close();
-  _isBlocking = state.isBlocking();
-  _sockFd = state.socketDescriptor();
-  return ESB_SUCCESS;
-}
 
 void Socket::close() {
   Close(_sockFd);

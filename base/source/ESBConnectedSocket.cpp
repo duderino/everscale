@@ -32,40 +32,20 @@
 
 namespace ESB {
 
-ConnectedSocket::ConnectedSocket(const char *namePrefix, const char *nameSuffix, bool isBlocking)
-    : Socket(isBlocking), _flags(ESB_SOCK_INITIALIZED), _localAddress(), _peerAddress() {
-  formatPrefix(namePrefix, nameSuffix);
+ConnectedSocket::ConnectedSocket(const Socket::State &acceptState, const char *namePrefix)
+: Socket(acceptState), _flags(ESB_SOCK_FLAG_CONNECTED), _localAddress(acceptState.localAddress()) {
+  formatPrefix(namePrefix, "server");
+  updateName(acceptState.peerAddress());
 }
 
-ConnectedSocket::ConnectedSocket(const char *namePrefix, const char *nameSuffix, const SocketAddress &peer,
-                                 bool isBlocking)
-    : Socket(isBlocking), _flags(ESB_SOCK_INITIALIZED), _localAddress(), _peerAddress(peer) {
-  formatPrefix(namePrefix, nameSuffix);
+ConnectedSocket::ConnectedSocket(const char *namePrefix, bool isBlocking)
+    : Socket(isBlocking), _flags(ESB_SOCK_FLAG_NEW), _localAddress() {
+  formatPrefix(namePrefix, "client");
 }
 
 ConnectedSocket::~ConnectedSocket() {}
 
 const char *ConnectedSocket::name() const { return _logAddress; }
-
-Error ConnectedSocket::reset(const State &acceptData) {
-  Error error = Socket::reset(acceptData);
-
-  if (ESB_SUCCESS != error) {
-    return error;
-  }
-
-  _flags = ESB_SOCK_CONNECTED;
-
-  _peerAddress = acceptData.peerAddress();
-  error = updateLocalAddress();
-  if (ESB_SUCCESS != error) {
-    close();
-    return error;
-  }
-  updateName();
-
-  return ESB_SUCCESS;
-}
 
 ESB::Error ConnectedSocket::updateLocalAddress() {
   SocketAddress::Address address;
@@ -85,7 +65,7 @@ ESB::Error ConnectedSocket::updateLocalAddress() {
   return ESB_SUCCESS;
 }
 
-void ConnectedSocket::updateName() {
+void ConnectedSocket::updateName(const SocketAddress &peerAddress) {
   char *p = _logAddress;
   for (; *p && *p != ':'; ++p) {
   }
@@ -97,17 +77,15 @@ void ConnectedSocket::updateName() {
   ++p;  // skip ':'
   p += _localAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), INVALID_SOCKET);
   *p++ = '>';
-  _peerAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), _sockFd);
+  peerAddress.logAddress(p, sizeof(_logAddress) - (p - _logAddress), _sockFd);
 }
-
-const SocketAddress &ConnectedSocket::peerAddress() const { return _peerAddress; }
 
 const SocketAddress &ConnectedSocket::localAddress() const { return _localAddress; }
 
 Error ConnectedSocket::connect() {
   Error error = ESB_SUCCESS;
 
-  if (INVALID_SOCKET != _sockFd) {
+  if (INVALID_SOCKET != _sockFd || !(_flags & ESB_SOCK_FLAG_NEW)) {
     return ESB_INVALID_STATE;
   }
 
@@ -130,7 +108,7 @@ Error ConnectedSocket::connect() {
 
 #if defined HAVE_CONNECT && defined HAVE_STRUCT_SOCKADDR
 
-  if (SOCKET_ERROR == ::connect(_sockFd, (sockaddr *)_peerAddress.primitiveAddress(), sizeof(SocketAddress::Address))) {
+  if (SOCKET_ERROR == ::connect(_sockFd, (sockaddr *)peerAddress().primitiveAddress(), sizeof(SocketAddress::Address))) {
     error = LastError();
 
     if (!_isBlocking) {
@@ -141,8 +119,9 @@ Error ConnectedSocket::connect() {
           close();
           return error;
         }
-        updateName();
-        _flags = ESB_SOCK_CONNECTING;
+        updateName(peerAddress());
+        _flags &= ~ESB_SOCK_FLAG_ALL;
+        _flags |= ESB_SOCK_FLAG_CONNECTING;
         return ESB_SUCCESS;
       }
 #elif defined WIN32_NONBLOCKING_CONNECT_ERROR
@@ -172,16 +151,18 @@ Error ConnectedSocket::connect() {
     close();
     return error;
   }
-  updateName();
+  updateName(peerAddress());
 
-  _flags = ESB_SOCK_CONNECTED;
+  _flags &= ~ESB_SOCK_FLAG_ALL;
+  _flags |= ESB_SOCK_FLAG_CONNECTED;
 
   return ESB_SUCCESS;
 }  // namespace ESB
 
 void ConnectedSocket::close() {
   Socket::close();
-  _flags = ESB_SOCK_INITIALIZED;
+  _flags &= ~ESB_SOCK_FLAG_ALL;
+  _flags |= ESB_SOCK_FLAG_NEW;
 }
 
 bool ConnectedSocket::connected() {
@@ -189,7 +170,7 @@ bool ConnectedSocket::connected() {
     return false;
   }
 
-  if (_flags & ESB_SOCK_CONNECTED) {
+  if (ESB_SOCK_FLAG_CONNECTED & _flags) {
     return true;
   }
 
@@ -202,14 +183,16 @@ bool ConnectedSocket::connected() {
 #endif
 
 #if defined HAVE_GETPEERNAME
-  if (SOCKET_ERROR != getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
-    _flags |= ESB_SOCK_CONNECTED;
+  if (SOCKET_ERROR !=
+      getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
+    _flags &= ~ESB_SOCK_FLAG_ALL;
+    _flags |= ESB_SOCK_FLAG_CONNECTED;
   }
 #else
 #error "getpeername or equivalent is required"
 #endif
 
-  return _flags & ESB_SOCK_CONNECTED;
+  return ESB_SOCK_FLAG_CONNECTED & _flags;
 }
 
 SSize ConnectedSocket::receive(char *buffer, Size bufferSize) {
@@ -285,8 +268,8 @@ void ConnectedSocket::formatPrefix(const char *namePrefix, const char *nameSuffi
   _logAddress[MIN(ESB_NAME_PREFIX_SIZE - 1, desired)] = 0;
 }
 
-bool ConnectedSocket::secure() { return false; }
+bool ConnectedSocket::wantRead() { return false; }
 
-const void *ConnectedSocket::key() const { return &_peerAddress; }
+bool ConnectedSocket::wantWrite() { return false; }
 
 }  // namespace ESB

@@ -25,7 +25,7 @@
 
 namespace ESB {
 
-SimpleFileLogger::SimpleFileLogger(FILE *file) : _severity(None), _file(file) {}
+SimpleFileLogger::SimpleFileLogger(FILE *file, Severity severity) : _severity(severity), _file(file) {}
 
 SimpleFileLogger::~SimpleFileLogger() {}
 

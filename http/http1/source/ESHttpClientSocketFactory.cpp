@@ -18,7 +18,7 @@ HttpClientSocketFactory::HttpClientSocketFactory(HttpMultiplexerExtended &multip
       _handler(handler),
       _counters(counters),
       _allocator(allocator),
-      _connectionPool(multiplexer.multiplexer().name(), "client", HttpConfig::Instance().connectionPoolBuckets(), 0),
+      _connectionPool(multiplexer.multiplexer().name(), HttpConfig::Instance().connectionPoolBuckets(), 0),
       _deconstructedHttpSockets(),
       _cleanupHandler(*this) {}
 
@@ -36,9 +36,31 @@ HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transac
     return NULL;
   }
 
+  char hostname[ESB_MAX_HOSTNAME + 1];
+  ESB::UInt16 port = 0U;
+  bool secure = false;
+
+  ESB::Error error = transaction->request().parsePeerAddress(hostname, sizeof(hostname) - 1, &port, &secure);
+  if (ESB_SUCCESS != error) {
+    if (ESB_DEBUG_LOGGABLE) {
+      char presentationAddress[ESB_IPV6_PRESENTATION_SIZE];
+      transaction->peerAddress().presentationAddress(presentationAddress, sizeof(presentationAddress));
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot connect to [%s:%u]", name(), presentationAddress,
+                          transaction->peerAddress().port());
+    }
+    return NULL;
+  }
+
   ESB::ConnectedSocket *connection = NULL;
   bool reused = false;
-  ESB::Error error = _connectionPool.acquire(transaction->peerAddress(), &connection, &reused);
+
+  if (secure) {
+    // TODO reduce the number of hostname copies (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress -> ClientTLSConnection)
+    ESB::HostAddress hostAddress(hostname, transaction->peerAddress());
+    error = _connectionPool.acquireTLSSocket(hostAddress, &connection, &reused);
+  } else {
+    error = _connectionPool.acquireClearSocket(transaction->peerAddress(), &connection, &reused);
+  }
 
   if (ESB_SUCCESS != error) {
     if (ESB_DEBUG_LOGGABLE) {

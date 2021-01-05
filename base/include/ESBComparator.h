@@ -56,7 +56,7 @@ class HashComparator : public Comparator {
 
   /** Generate a hash code from a key.
    *
-   *  @param key The first location to compare.
+   *  @param key The first location to compare
    *  @return the hash code
    */
   virtual UInt32 hash(const void *key) const = 0;
