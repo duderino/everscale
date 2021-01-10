@@ -17,10 +17,6 @@
 #include <ESHttpProxy.h>
 #endif
 
-#ifndef ESB_SIMPLE_FILE_LOGGER_H
-#include <ESBSimpleFileLogger.h>
-#endif
-
 #ifndef ES_HTTP_SERVER_HANDLER_H
 #include <ESHttpServerHandler.h>
 #endif
@@ -59,7 +55,6 @@ class HttpIntegrationTest {
   HttpClientHandler &_clientHandler;
   HttpProxyHandler &_proxyHandler;
   HttpServerHandler &_originHandler;
-  ESB::SimpleFileLogger _logger;
   HttpClient _client;
   HttpProxy _proxy;
   HttpServer _origin;

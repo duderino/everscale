@@ -97,9 +97,9 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Not implemented",
                                           "Do not call again",
                                           "Unsupported transport",
-                                          "Recoverable TLS session error",
-                                          "Fatal TLS session error",
-                                          "General TLS error"};
+                                          "TLS handshake failed",
+                                          "TLS session error",
+                                          "TLS general error"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

@@ -8,8 +8,7 @@
 
 using namespace ESB;
 
-class ConnectionPoolTest : public SocketTest {
-};
+class ConnectionPoolTest : public SocketTest {};
 
 static void DestroyConnection(ConnectedSocket *connection) {
   connection->~ConnectedSocket();

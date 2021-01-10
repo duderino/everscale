@@ -239,6 +239,10 @@ bool HttpClientSocket::wantRead() {
     return true;
   }
 
+  if (_socket->wantWrite()) {
+    return false;
+  }
+
   if (_state & (RECV_PAUSED | ABORTED | INACTIVE)) {
     return false;
   }
@@ -249,6 +253,10 @@ bool HttpClientSocket::wantRead() {
 bool HttpClientSocket::wantWrite() {
   if (_socket->wantWrite()) {
     return true;
+  }
+
+  if (_socket->wantRead()) {
+    return false;
   }
 
   if (_state & (SEND_PAUSED | ABORTED | INACTIVE)) {

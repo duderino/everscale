@@ -36,11 +36,10 @@
 
 namespace ESB {
 
-HostAddress::HostAddress() : SocketAddress() {
-  _host[0] = 0;
-}
+HostAddress::HostAddress() : SocketAddress() { _host[0] = 0; }
 
-HostAddress::HostAddress(const char *host, const char *presentation, UInt16 port, TransportType transport) : SocketAddress(presentation, port, transport) {
+HostAddress::HostAddress(const char *host, const char *presentation, UInt16 port, TransportType transport)
+    : SocketAddress(presentation, port, transport) {
   setHost(host);
 }
 

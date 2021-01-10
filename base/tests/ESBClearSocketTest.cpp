@@ -8,8 +8,7 @@
 
 using namespace ESB;
 
-class ClearSocketTest : public SocketTest {
-};
+class ClearSocketTest : public SocketTest {};
 
 TEST_F(ClearSocketTest, EchoMessage) {
   ClearSocket client(_clearListenerAddress, "Test", true);
@@ -44,4 +43,3 @@ TEST_F(ClearSocketTest, EchoMessage) {
   EXPECT_EQ(result, sizeof(buffer));
   EXPECT_TRUE(0 == strcmp(_message, buffer));
 }
-

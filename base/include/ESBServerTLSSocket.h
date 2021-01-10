@@ -16,6 +16,8 @@ class ServerTLSSocket : public TLSSocket {
  public:
   static Error Initialize(const char *privateKeyPath, const char *certificatePath);
 
+  static void Destroy();
+
   /** Construct a new server socket.
    *
    * @param acceptState init parameters created by the ListeningSocket
@@ -48,7 +50,6 @@ class ServerTLSSocket : public TLSSocket {
   inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
  protected:
-
   virtual Error startHandshake();
 
  private:

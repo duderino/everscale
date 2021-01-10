@@ -243,17 +243,17 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_UNSUPPORTED_TRANSPORT (-31)
 
-/** A recoverable TLS error has occurred
+/** The TLS handshake did not complete successfully (invalid certs, etc)
  *
  *  @ingroup error
  */
-#define ESB_RECOVERABLE_TLS_SESSION_ERROR (-32)
+#define ESB_TLS_HANDSHAKE_ERROR (-32)
 
-/** A non-recoverable TLS error has occurred
+/** A non-recoverable error occurred during the post-handshake TLS session
  *
  *  @ingroup error
  */
-#define ESB_NON_RECOVERABLE_TLS_SESION_ERROR (-33)
+#define ESB_TLS_SESSION_ERROR (-33)
 
 /** A general TLS error not tied to a specific session has occurred
  *

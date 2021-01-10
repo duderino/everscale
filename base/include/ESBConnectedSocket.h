@@ -209,7 +209,6 @@ class ConnectedSocket : public Socket {
   inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
  protected:
-
   int _flags;
 
  private:

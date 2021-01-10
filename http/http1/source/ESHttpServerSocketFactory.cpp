@@ -6,6 +6,10 @@
 #include <ESBServerTLSSocket.h>
 #endif
 
+#ifndef ESB_CLEAR_SOCKET_H
+#include <ESBClearSocket.h>
+#endif
+
 #ifndef ESB_SYSTEM_CONFIG_H
 #include <ESBSystemConfig.h>
 #endif
@@ -49,22 +53,16 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
   switch (state.peerAddress().type()) {
     case ESB::SocketAddress::TLS: {
       ESB::EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
-      socket =
-          memory ? new (memory)
-                       ESB::ServerTLSSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false)
-                 : new (_allocator)
-                       ESB::ServerTLSSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false);
+      socket = memory ? new (memory) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name())
+                      : new (_allocator) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name());
       if (!socket) {
         error = ESB_OUT_OF_MEMORY;
       }
     } break;
     case ESB::SocketAddress::TCP: {
       ESB::EmbeddedListElement *memory = _deconstructedClearSockets.removeLast();
-      socket = memory
-                   ? new (memory)
-                         ESB::ConnectedSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false)
-                   : new (_allocator)
-                         ESB::ConnectedSocket(_multiplexer.multiplexer().name(), "server", state.peerAddress(), false);
+      socket = memory ? new (memory) ESB::ClearSocket(state, _multiplexer.multiplexer().name())
+                      : new (_allocator) ESB::ClearSocket(state, _multiplexer.multiplexer().name());
       if (!socket) {
         error = ESB_OUT_OF_MEMORY;
       }
@@ -99,8 +97,6 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
     return NULL;
   }
 
-  serverSocket->reset(state);
-
   return serverSocket;
 }
 
@@ -119,9 +115,10 @@ void HttpServerSocketFactory::releaseSocket(ESB::ConnectedSocket *socket) {
     return;
   }
 
+  ESB::SocketAddress::TransportType type = socket->peerAddress().type();
   socket->~ConnectedSocket();
 
-  switch (socket->peerAddress().type()) {
+  switch (type) {
     case ESB::SocketAddress::TLS:
       _deconstructedTLSSockets.addLast(socket);
       break;

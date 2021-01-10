@@ -138,7 +138,6 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
   }
 
   newTransaction->setPeerAddress(stream.peerAddress());
-
   context->setBytesSent(0U);
   context->setBytesRecieved(0U);
   newTransaction->setContext(context);

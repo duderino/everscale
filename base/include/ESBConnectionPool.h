@@ -32,7 +32,8 @@ class ConnectionPool {
    * @param numLocks more locks, less contention, more memory.  if 0, no
    * internal locking will be performed
    */
-  ConnectionPool(const char *namePrefix, UInt32 numBuckets, UInt32 numLocks, Allocator &allocator = SystemAllocator::Instance());
+  ConnectionPool(const char *namePrefix, UInt32 numBuckets, UInt32 numLocks,
+                 Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.  No cleanup handlers are called
    */
@@ -45,19 +46,21 @@ class ConnectionPool {
   /** Remove a clear text connection to a peer from the connection pool, or create a new one if none can be found.
    *
    *  @param peerAddress The peer address
-   *  @param connection On success, will be set to a established (if found) or establishing (if new) connection the peer address.
+   *  @param connection On success, will be set to a established (if found) or establishing (if new) connection the peer
+   * address.
    *  @param reused Set to true if the connection was taken from the pool or false if a new connection was created.
    *  @return ESB_SUCCESS if successful, another error code otherwise.
    */
   Error acquireClearSocket(const SocketAddress &peerAddress, ConnectedSocket **connection, bool *reused);
 
   /** Remove a TLS encrypted connection to a peer from the connection pool, or create a new one if none can be found.
- *
- *  @param peerAddress The peer address
- *  @param connection On success, will be set to a established (if found) or establishing (if new) connection the peer address.
- *  @param reused Set to true if the connection was taken from the pool or false if a new connection was created.
- *  @return ESB_SUCCESS if successful, another error code otherwise.
- */
+   *
+   *  @param peerAddress The peer address
+   *  @param connection On success, will be set to a established (if found) or establishing (if new) connection the peer
+   * address.
+   *  @param reused Set to true if the connection was taken from the pool or false if a new connection was created.
+   *  @return ESB_SUCCESS if successful, another error code otherwise.
+   */
   Error acquireTLSSocket(const HostAddress &peerAddress, ConnectedSocket **connection, bool *reused);
 
   /** Return a connection to the connection pool

@@ -35,6 +35,14 @@ ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
     transaction->setContext(context);
     transaction->setPeerAddress(_destination);
 
+    if (_params.secure()) {
+      assert(ESB::SocketAddress::TLS == transaction->peerAddress().type());
+      transaction->request().requestUri().setType(HttpRequestUri::ES_URI_HTTPS);
+    } else {
+      assert(ESB::SocketAddress::TCP == transaction->peerAddress().type());
+      transaction->request().requestUri().setType(HttpRequestUri::ES_URI_HTTP);
+    }
+
     error = multiplexer.executeClientTransaction(transaction);
     assert(ESB_SUCCESS == error);
   }

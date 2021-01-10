@@ -213,18 +213,6 @@ HttpServerSocket::~HttpServerSocket() {
   }
 }
 
-ESB::Error HttpServerSocket::reset(ESB::Socket::State &state) {
-  assert(!_recvBuffer);
-  assert(!_sendBuffer);
-  assert(!_transaction);
-
-  _state = SERVER_TRANSACTION_BEGIN;
-  _bodyBytesWritten = 0;
-  _socket->reset(state);
-
-  return ESB_SUCCESS;
-}
-
 bool HttpServerSocket::wantAccept() { return false; }
 
 bool HttpServerSocket::wantConnect() { return false; }
@@ -232,6 +220,10 @@ bool HttpServerSocket::wantConnect() { return false; }
 bool HttpServerSocket::wantRead() {
   if (_socket->wantRead()) {
     return true;
+  }
+
+  if (_socket->wantWrite()) {
+    return false;
   }
 
   if (_state & (SERVER_RECV_PAUSED | SERVER_ABORTED | SERVER_INACTIVE)) {
@@ -244,6 +236,10 @@ bool HttpServerSocket::wantRead() {
 bool HttpServerSocket::wantWrite() {
   if (_socket->wantWrite()) {
     return true;
+  }
+
+  if (_socket->wantRead()) {
+    return false;
   }
 
   if (_state & (SERVER_SEND_PAUSED | SERVER_ABORTED | SERVER_INACTIVE)) {

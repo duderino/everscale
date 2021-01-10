@@ -51,11 +51,15 @@ HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transac
     return NULL;
   }
 
+  // prefer the socket transport over the http request
+  secure = transaction->peerAddress().type() == ESB::SocketAddress::TLS ? true : false;
+
   ESB::ConnectedSocket *connection = NULL;
   bool reused = false;
 
   if (secure) {
-    // TODO reduce the number of hostname copies (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress -> ClientTLSConnection)
+    // TODO reduce the number of hostname copies (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress ->
+    // ClientTLSConnection)
     ESB::HostAddress hostAddress(hostname, transaction->peerAddress());
     error = _connectionPool.acquireTLSSocket(hostAddress, &connection, &reused);
   } else {

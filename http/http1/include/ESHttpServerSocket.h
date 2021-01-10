@@ -48,14 +48,6 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
 
   virtual const void *key() const;
 
-  /** Reset the server socket
-   *
-   * @param state An object created populated by ESB::ListeningTCPSockets
-   *  when accepting a new connection.
-   * @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  ESB::Error reset(ESB::Socket::State &state);
-
   inline ESB::ConnectedSocket *socket() { return _socket; }
 
   /** Placement new.

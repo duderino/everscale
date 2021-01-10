@@ -38,29 +38,79 @@
 #include <ESHttpConfig.h>
 #endif
 
+#ifndef ESB_CLIENT_TLS_SOCKET_H
+#include <ESBClientTLSSocket.h>
+#endif
+
+#ifndef ESB_SERVER_TLS_SOCKET_H
+#include <ESBServerTLSSocket.h>
+#endif
+
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
+#endif
+
 #include <gtest/gtest.h>
+
+#define BASE_TEST_DIR "../../../base/tests/"
+#define CA_PATH BASE_TEST_DIR "ca.crt"
+#define CERT_PATH BASE_TEST_DIR "server.crt"
+#define KEY_PATH BASE_TEST_DIR "server.key"
 
 using namespace ES;
 
+static void LogCurrentWorkingDirectory(ESB::Logger::Severity severity) {
+  char cwd[ESB_MAX_PATH];
+  if (!getcwd(cwd, sizeof(cwd))) {
+    ESB_LOG_WARNING_ERRNO(ESB::LastError(), "Cannot determine current working directory");
+  } else {
+    ESB_LOG(ESB::Logger::Instance(), severity, "Current working dir: %s", cwd);
+  }
+}
+
 class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
  public:
-  // Sets up the test fixture.
+  // Run before each HttpProxyTest test case
   virtual void SetUp() { HttpLoadgenContext::Reset(); }
+
+  // Run after each HttpProxyTest test case
+  virtual void TearDown() {}
+
+  // Run before all HttpProxyTest test cases
+  static void SetUpTestSuite() {
+    ESB::Logger::SetInstance(&_Logger);
+
+    const int maxVerifyDepth = 42;
+    ESB::Error error = ESB::ClientTLSSocket::Initialize(CA_PATH, maxVerifyDepth);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
+      LogCurrentWorkingDirectory(ESB::Logger::Err);
+      exit(error);
+    }
+
+    error = ESB::ServerTLSSocket::Initialize(KEY_PATH, CERT_PATH);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
+      LogCurrentWorkingDirectory(ESB::Logger::Err);
+      exit(error);
+    }
+  }
+
+  // Run after all HttpProxyTest test cases
+  static void TearDownTestSuite() {
+    ESB::ClientTLSSocket::Destroy();
+    ESB::ServerTLSSocket::Destroy();
+    ESB::Logger::SetInstance(NULL);
+  }
+
+ private:
+  static ESB::SimpleFileLogger _Logger;
 };
+
+ESB::SimpleFileLogger HttpProxyTest::_Logger(stdout, ESB::Logger::Warning);
 
 // use secure if true
-INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false)));
-
-class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
- public:
-  // Sets up the test fixture.
-  virtual void SetUp() { HttpLoadgenContext::Reset(); }
-};
-
-// body-size variations X use content-length header if true X use secure if
-INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
-                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
-                                            ::testing::Values(false, true), ::testing::Values(false)));
+INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
 
 TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
@@ -71,9 +121,11 @@ TEST_P(HttpProxyTest, ClientToServer) {
       .originThreads(2)
       .requestSize(1024)
       .responseSize(1024)
+      .hostHeader("test.server.everscale.com")
+      .secure(std::get<0>(GetParam()))
       .logLevel(ESB::Logger::Warning);
 
-  EphemeralListener originListener("origin-listener", std::get<0>(GetParam()));
+  EphemeralListener originListener("origin-listener", params.secure());
   HttpLoadgenHandler loadgenHandler(params);
   HttpOriginHandler originHandler(params);
   HttpIntegrationTest test(params, originListener, loadgenHandler, originHandler);
@@ -92,10 +144,12 @@ TEST_P(HttpProxyTest, ClientToProxyToServer) {
       .originThreads(2)
       .requestSize(1024)
       .responseSize(1024)
+      .hostHeader("test.server.everscale.com")
+      .secure(std::get<0>(GetParam()))
       .logLevel(ESB::Logger::Warning);
 
-  EphemeralListener originListener("origin-listener", std::get<0>(GetParam()));
-  EphemeralListener proxyListener("proxy-listener", std::get<0>(GetParam()));
+  EphemeralListener originListener("origin-listener", params.secure());
+  EphemeralListener proxyListener("proxy-listener", params.secure());
   HttpFixedRouter router(originListener.localDestination());
   HttpLoadgenHandler loadgenHandler(params);
   HttpRoutingProxyHandler proxyHandler(router);
@@ -172,11 +226,13 @@ TEST_P(HttpProxyTest, SmallChunks) {
       .originThreads(2)
       .requestSize(1024)
       .responseSize(1024)
+      .hostHeader("test.server.everscale.com")
+      .secure(std::get<0>(GetParam()))
       .logLevel(ESB::Logger::Warning);
   const ESB::UInt32 maxChunkSize = 42;
 
-  EphemeralListener originListener("origin-listener", std::get<0>(GetParam()));
-  EphemeralListener proxyListener("proxy-listener", std::get<0>(GetParam()));
+  EphemeralListener originListener("origin-listener", params.secure());
+  EphemeralListener proxyListener("proxy-listener", params.secure());
   HttpFixedRouter router(originListener.localDestination());
   HttpSmallChunkLoadgenHandler loadgenHandler(params, maxChunkSize);
   HttpRoutingProxyHandler proxyHandler(router);
@@ -188,6 +244,52 @@ TEST_P(HttpProxyTest, SmallChunks) {
   EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
 }
 
+class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
+ public:
+  // Run before each HttpProxyTestMessageBody test case
+  virtual void SetUp() { HttpLoadgenContext::Reset(); }
+
+  // Run after each HttpProxyTestMessageBody test case
+  virtual void TearDown() {}
+
+  // Run before all HttpProxyTestMessageBody test cases
+  static void SetUpTestSuite() {
+    ESB::Logger::SetInstance(&_Logger);
+
+    const int maxVerifyDepth = 42;
+    ESB::Error error = ESB::ClientTLSSocket::Initialize(CA_PATH, maxVerifyDepth);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
+      LogCurrentWorkingDirectory(ESB::Logger::Err);
+      exit(error);
+    }
+
+    error = ESB::ServerTLSSocket::Initialize(KEY_PATH, CERT_PATH);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
+      LogCurrentWorkingDirectory(ESB::Logger::Err);
+      exit(error);
+    }
+  }
+
+  // Run after all HttpProxyTestMessageBody test cases
+  static void TearDownTestSuite() {
+    ESB::ClientTLSSocket::Destroy();
+    ESB::ServerTLSSocket::Destroy();
+    ESB::Logger::SetInstance(NULL);
+  }
+
+ private:
+  static ESB::SimpleFileLogger _Logger;
+};
+
+ESB::SimpleFileLogger HttpProxyTestMessageBody::_Logger(stdout, ESB::Logger::Warning);
+
+// body-size variations X use content-length header if true X use secure if
+INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
+                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
+                                            ::testing::Values(false, true), ::testing::Values(false, true)));
+
 TEST_P(HttpProxyTestMessageBody, BodySizes) {
   HttpTestParams params;
   params.connections(50)
@@ -198,10 +300,12 @@ TEST_P(HttpProxyTestMessageBody, BodySizes) {
       .requestSize(std::get<0>(GetParam()))
       .responseSize(std::get<0>(GetParam()))
       .useContentLengthHeader(std::get<1>(GetParam()))
+      .hostHeader("test.server.everscale.com")
+      .secure(std::get<2>(GetParam()))
       .logLevel(ESB::Logger::Warning);
 
-  EphemeralListener originListener("origin-listener", std::get<2>(GetParam()));
-  EphemeralListener proxyListener("proxy-listener", std::get<2>(GetParam()));
+  EphemeralListener originListener("origin-listener", params.secure());
+  EphemeralListener proxyListener("proxy-listener", params.secure());
   HttpFixedRouter router(originListener.localDestination());
   HttpLoadgenHandler loadgenHandler(params);
   HttpRoutingProxyHandler proxyHandler(router);

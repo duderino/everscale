@@ -23,6 +23,7 @@ HttpTestParams::HttpTestParams()
       _responseSize(0),
       _useContentLengthHeader(false),
       _reuseConnections(true),
+      _secure(false),
       _logLevel(ESB::Logger::Notice),
       _destinationAddress("127.0.0.1"),
       _hostHeader("localhost.localdomain"),

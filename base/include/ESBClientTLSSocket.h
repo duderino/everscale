@@ -23,13 +23,14 @@ class ClientTLSSocket : public TLSSocket {
  public:
   static Error Initialize(const char *caCertificatePath, int maxVerifyDepth);
 
+  static void Destroy();
+
   /** Construct a new client TLS Connection
    *
    *  @param peerAddress The socket will try to connect to this TLS peer
    *  @param isBlocking whether or not this socket is blocking.
    */
-  ClientTLSSocket(const HostAddress &peerAddress, const char *namePrefix,
-                  bool isBlocking = false);
+  ClientTLSSocket(const HostAddress &peerAddress, const char *namePrefix, bool isBlocking = false);
 
   /** Destroy the connected socket.  Will close the socket if it has not
    *  already been closed.
@@ -56,7 +57,6 @@ class ClientTLSSocket : public TLSSocket {
   inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
  protected:
-
   virtual Error startHandshake();
 
  private:

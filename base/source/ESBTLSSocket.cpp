@@ -47,7 +47,7 @@ void TLSSocket::close() {
         ESB_LOG_TLS_INFO("[%s] cannot shutdown TLS session", name());
       }
     }
-    SSL_free(_ssl); // also frees _bio
+    SSL_free(_ssl);  // also frees _bio
     _ssl = NULL;
     _bio = NULL;
   } else if (_bio) {
@@ -91,12 +91,11 @@ SSize TLSSocket::receive(char *buffer, Size bufferSize) {
       return -1;
     case SSL_ERROR_SYSCALL:
     case SSL_ERROR_SSL:
+    default:
       _flags &= ~ESB_TLS_FLAG_ALL;
       _flags |= ESB_TLS_FLAG_DEAD;
-      // fall through
-    default:
-      ESB_LOG_TLS_INFO("[%s] cannot read TLS bytes", name());
-      errno = ESB_NON_RECOVERABLE_TLS_SESION_ERROR;
+      ESB_LOG_TLS_INFO("[%s] cannot read TLS bytes (%d)", name(), ret);
+      errno = ESB_TLS_SESSION_ERROR;
       return -1;
   }
 }
@@ -133,12 +132,11 @@ SSize TLSSocket::send(const char *buffer, Size bufferSize) {
       return -1;
     case SSL_ERROR_SYSCALL:
     case SSL_ERROR_SSL:
+    default:
       _flags &= ~ESB_TLS_FLAG_ALL;
       _flags |= ESB_TLS_FLAG_DEAD;
-      // fall through
-    default:
-      ESB_LOG_TLS_INFO("[%s] cannot write TLS bytes", name());
-      errno = ESB_NON_RECOVERABLE_TLS_SESION_ERROR;
+      ESB_LOG_TLS_INFO("[%s] cannot write TLS bytes (%d)", name(), ret);
+      errno = ESB_TLS_SESSION_ERROR;
       return -1;
   }
 }

@@ -124,7 +124,6 @@ HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::
       _clientHandler(clientHandler),
       _proxyHandler(proxyHandler),
       _originHandler(serverHandler),
-      _logger(stdout),
       _client("load", _params.clientThreads(), _clientHandler),
       _proxy("prox", _params.proxyThreads(), _proxyHandler),
       _origin("orig", _params.originThreads(), _originHandler) {
@@ -234,10 +233,12 @@ ESB::Error HttpIntegrationTest::run() {
 
   // add load generators to running client
 
-  ESB::SocketAddress originAddress(_params.destinationAddress(), _originListener.listeningAddress().port(),
-                                   ESB::SocketAddress::TransportType::TCP);
-  ESB::SocketAddress proxyAddress(_params.destinationAddress(), _proxyListener.listeningAddress().port(),
-                                  ESB::SocketAddress::TransportType::TCP);
+  ESB::SocketAddress originAddress(
+      _params.destinationAddress(), _originListener.listeningAddress().port(),
+      _params.secure() ? ESB::SocketAddress::TransportType::TLS : ESB::SocketAddress::TransportType::TCP);
+  ESB::SocketAddress proxyAddress(
+      _params.destinationAddress(), _proxyListener.listeningAddress().port(),
+      _params.secure() ? ESB::SocketAddress::TransportType::TLS : ESB::SocketAddress::TransportType::TCP);
   ESB::SocketAddress &clientDestination = 0 < _params.proxyThreads() ? proxyAddress : originAddress;
 
   for (int i = 0; i < _client.threads(); ++i) {

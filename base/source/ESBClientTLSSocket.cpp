@@ -49,15 +49,21 @@ Error ClientTLSSocket::Initialize(const char *caCertificatePath, int maxVerifyDe
   return ESB_SUCCESS;
 }
 
-ClientTLSSocket::ClientTLSSocket(const HostAddress &peerAddress, const char *namePrefix, bool isBlocking)
-    : TLSSocket(namePrefix, isBlocking), _peerAddress(peerAddress) {
+void ClientTLSSocket::Destroy() {
+  if (!_Context) {
+    return;
+  }
+
+  SSL_CTX_free(_Context);
+  _Context = NULL;
 }
+
+ClientTLSSocket::ClientTLSSocket(const HostAddress &peerAddress, const char *namePrefix, bool isBlocking)
+    : TLSSocket(namePrefix, isBlocking), _peerAddress(peerAddress) {}
 
 ClientTLSSocket::~ClientTLSSocket() {}
 
-const SocketAddress &ClientTLSSocket::peerAddress() const {
-  return _peerAddress;
-}
+const SocketAddress &ClientTLSSocket::peerAddress() const { return _peerAddress; }
 
 const void *ClientTLSSocket::key() const { return &_peerAddress; }
 
@@ -111,11 +117,9 @@ Error ClientTLSSocket::startHandshake() {
       case SSL_ERROR_ZERO_RETURN:
       case SSL_ERROR_SYSCALL:
       case SSL_ERROR_SSL:
-        ESB_LOG_TLS_INFO("[%s] cannot complete client TLS handshake", name());
-        return ESB_NON_RECOVERABLE_TLS_SESION_ERROR;
       default:
-        ESB_LOG_TLS_ERROR("[%s] cannot complete client TLS handshake", name());
-        return ESB_NON_RECOVERABLE_TLS_SESION_ERROR;
+        ESB_LOG_TLS_INFO("[%s] cannot complete client TLS handshake (%d)", name(), ret);
+        return ESB_TLS_HANDSHAKE_ERROR;
     }
   }
 

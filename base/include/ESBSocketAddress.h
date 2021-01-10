@@ -89,7 +89,8 @@ class SocketAddress {
    * Compare two socket addresses.
    *
    * @param address the other address to compare this to
-   * @return 0 if equal, less than zero if this address is less than the other address, greater than zero if this address is greater than the other address.
+   * @return 0 if equal, less than zero if this address is less than the other address, greater than zero if this
+   * address is greater than the other address.
    */
   inline int compare(const SocketAddress &address) const {
     if (_transport != address._transport) {

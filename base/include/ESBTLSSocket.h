@@ -17,7 +17,8 @@
 #define ESB_TLS_FLAG_DEAD (ESB_SOCK_FLAG_MAX << 2)
 #define ESB_TLS_FLAG_WANT_READ (ESB_SOCK_FLAG_MAX << 3)
 #define ESB_TLS_FLAG_WANT_WRITE (ESB_SOCK_FLAG_MAX << 4)
-#define ESB_TLS_FLAG_ALL (ESB_TLS_FLAG_ESTABLISHED | ESB_TLS_FLAG_DEAD | ESB_TLS_FLAG_WANT_READ | ESB_TLS_FLAG_WANT_WRITE)
+#define ESB_TLS_FLAG_ALL \
+  (ESB_TLS_FLAG_ESTABLISHED | ESB_TLS_FLAG_DEAD | ESB_TLS_FLAG_WANT_READ | ESB_TLS_FLAG_WANT_WRITE)
 
 namespace ESB {
 
@@ -70,48 +71,48 @@ class TLSSocket : public ConnectedSocket {
 
 void DescribeTLSError(char *buffer, int size);
 
-#define ESB_LOG_TLS_ERROR(FORMAT, ...)                                                                        \
-  do {                                                                                                              \
-    if (ESB_ERROR_LOGGABLE) {                                                                                     \
-        char _tls_buffer_[256];                                                                                \
-        DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_)); \
-        ESB::Logger::Instance().log(ESB::Logger::Err, ESB_ERROR_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,            \
-                                    ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__,  \
-                                    _tls_buffer_);                                                                   \
-    }                                                                                                               \
+#define ESB_LOG_TLS_ERROR(FORMAT, ...)                                                                           \
+  do {                                                                                                           \
+    if (ESB_ERROR_LOGGABLE) {                                                                                    \
+      char _tls_buffer_[256];                                                                                    \
+      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_));                                                      \
+      ESB::Logger::Instance().log(ESB::Logger::Err, ESB_ERROR_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,           \
+                                  ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__, \
+                                  _tls_buffer_);                                                                 \
+    }                                                                                                            \
   } while (0)
 
-#define ESB_LOG_TLS_WARNING(FORMAT, ...)                                                                      \
-  do {                                                                                                              \
-    if (ESB_WARNING_LOGGABLE) {                                                                                     \
-        char _tls_buffer_[256];                                                                                \
-      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_)); \
-        ESB::Logger::Instance().log(ESB::Logger::Warning, ESB_WARNING_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,      \
-                                    ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__,  \
-                                    _tls_buffer_);                                                                   \
-    }                                                                                                               \
+#define ESB_LOG_TLS_WARNING(FORMAT, ...)                                                                         \
+  do {                                                                                                           \
+    if (ESB_WARNING_LOGGABLE) {                                                                                  \
+      char _tls_buffer_[256];                                                                                    \
+      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_));                                                      \
+      ESB::Logger::Instance().log(ESB::Logger::Warning, ESB_WARNING_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,     \
+                                  ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__, \
+                                  _tls_buffer_);                                                                 \
+    }                                                                                                            \
   } while (0)
 
-#define ESB_LOG_TLS_INFO(FORMAT, ...)                                                                         \
-  do {                                                                                                              \
-    if (ESB_INFO_LOGGABLE) {                                                                                        \
-        char _tls_buffer_[256];                                                                                \
-      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_)); \
-        ESB::Logger::Instance().log(ESB::Logger::Info, ESB_INFO_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,            \
-                                    ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__,  \
-                                    _tls_buffer_);                                                                   \
-    }                                                                                                               \
+#define ESB_LOG_TLS_INFO(FORMAT, ...)                                                                            \
+  do {                                                                                                           \
+    if (ESB_INFO_LOGGABLE) {                                                                                     \
+      char _tls_buffer_[256];                                                                                    \
+      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_));                                                      \
+      ESB::Logger::Instance().log(ESB::Logger::Info, ESB_INFO_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,           \
+                                  ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__, \
+                                  _tls_buffer_);                                                                 \
+    }                                                                                                            \
   } while (0)
 
-#define ESB_LOG_TLS_DEBUG(FORMAT, ...)                                                                        \
-  do {                                                                                                              \
-    if (ESB_DEBUG_LOGGABLE) {                                                                                       \
-        char _tls_buffer_[256];                                                                                \
-      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_)); \
-        ESB::Logger::Instance().log(ESB::Logger::Debug, ESB_DEBUG_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,          \
-                                    ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__,  \
-                                    _tls_buffer_);                                                                   \
-    }                                                                                                               \
+#define ESB_LOG_TLS_DEBUG(FORMAT, ...)                                                                           \
+  do {                                                                                                           \
+    if (ESB_DEBUG_LOGGABLE) {                                                                                    \
+      char _tls_buffer_[256];                                                                                    \
+      DescribeTLSError(_tls_buffer_, sizeof(_tls_buffer_));                                                      \
+      ESB::Logger::Instance().log(ESB::Logger::Debug, ESB_DEBUG_LOG_PREFIX FORMAT ": %s" ESB_LOG_SUFFIX,         \
+                                  ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__, \
+                                  _tls_buffer_);                                                                 \
+    }                                                                                                            \
   } while (0)
 
 }  // namespace ESB

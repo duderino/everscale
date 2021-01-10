@@ -20,12 +20,13 @@ using namespace ESB;
 
 class TLSEchoServer : public Thread {
  public:
-  TLSEchoServer(UInt32 messageSize, ListeningSocket &listeningSocket) : _messageSize(messageSize), _listeningSocket(listeningSocket) {}
-  virtual ~TLSEchoServer() {};
+  TLSEchoServer(UInt32 messageSize, ListeningSocket &listeningSocket)
+      : _messageSize(messageSize), _listeningSocket(listeningSocket) {}
+  virtual ~TLSEchoServer(){};
 
  protected:
   virtual void run() {
-    char *message = (char *) malloc(_messageSize);
+    char *message = (char *)malloc(_messageSize);
     assert(message);
     _listeningSocket.setBlocking(true);
 
@@ -80,21 +81,20 @@ class TLSEchoServer : public Thread {
 class TLSSocketTest : public SocketTest {
  public:
   TLSSocketTest() : _serverThread(sizeof(_message), _secureListener) {}
-  virtual ~TLSSocketTest() {};
+  virtual ~TLSSocketTest(){};
 
   static void SetUpTestSuite() {
     SocketTest::SetUpTestSuite();
 
-    int maxVerifyDepth = 42;
-    const char *caPath = "tests/ca.crt";
-    const char *certPath = "tests/server.crt";
-    const char *keyPath = "tests/server.key";
+    const int maxVerifyDepth = 42;
+    const char *caPath = "ca.crt";
+    const char *certPath = "server.crt";
+    const char *keyPath = "server.key";
 
     {
       char cwd[ESB_MAX_PATH];
       if (!getcwd(cwd, sizeof(cwd))) {
-        ESB_LOG_WARNING_ERRNO(LastError(),
-                              "Cannot determine current working directory");
+        ESB_LOG_WARNING_ERRNO(LastError(), "Cannot determine current working directory");
       } else {
         ESB_LOG_DEBUG("Current working dir: %s", cwd);
       }
@@ -114,6 +114,8 @@ class TLSSocketTest : public SocketTest {
   }
 
   static void TearDownTestSuite() {
+    ESB::ClientTLSSocket::Destroy();
+    ESB::ServerTLSSocket::Destroy();
     SocketTest::TearDownTestSuite();
   }
 
@@ -140,8 +142,6 @@ class TLSSocketTest : public SocketTest {
   TLSEchoServer _serverThread;
 };
 
-
-
 TEST_F(TLSSocketTest, EchoMessage) {
   HostAddress serverAddress("test.server.everscale.com", _secureListenerAddress);
   ClientTLSSocket client(serverAddress, "test", true);
@@ -160,6 +160,40 @@ TEST_F(TLSSocketTest, EchoMessage) {
   EXPECT_EQ(result, sizeof(buffer));
 
   EXPECT_TRUE(0 == strcmp(_message, buffer));
+
+  client.close();
+}
+
+TEST_F(TLSSocketTest, HostnameMismatch) {
+  HostAddress serverAddress("mismatch.everscale.com", _secureListenerAddress);
+  ClientTLSSocket client(serverAddress, "test", true);
+
+  Error error = client.connect();
+  EXPECT_EQ(ESB_SUCCESS, error);
+  EXPECT_TRUE(client.connected());
+  EXPECT_TRUE(client.secure());
+  EXPECT_TRUE(client.isBlocking());
+
+  SSize result = client.send(_message, sizeof(_message));
+  EXPECT_GE(result, -1);
+  EXPECT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
+
+  client.close();
+}
+
+TEST_F(TLSSocketTest, CNnotSANmatch) {
+  HostAddress serverAddress("server.everscale.com", _secureListenerAddress);
+  ClientTLSSocket client(serverAddress, "test", true);
+
+  Error error = client.connect();
+  EXPECT_EQ(ESB_SUCCESS, error);
+  EXPECT_TRUE(client.connected());
+  EXPECT_TRUE(client.secure());
+  EXPECT_TRUE(client.isBlocking());
+
+  SSize result = client.send(_message, sizeof(_message));
+  EXPECT_GE(result, -1);
+  EXPECT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
 
   client.close();
 }

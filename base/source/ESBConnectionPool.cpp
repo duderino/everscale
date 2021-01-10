@@ -39,9 +39,7 @@ void ConnectionPool::clear() {
   _misses.set(0);
 }
 
-Error ConnectionPool::acquireClearSocket(const SocketAddress &peerAddress,
-                                         ConnectedSocket **connection,
-                                         bool *reused) {
+Error ConnectionPool::acquireClearSocket(const SocketAddress &peerAddress, ConnectedSocket **connection, bool *reused) {
   if (!connection || !reused) {
     return ESB_NULL_POINTER;
   }
@@ -107,13 +105,13 @@ Error ConnectionPool::acquireTLSSocket(const HostAddress &peerAddress, Connected
 
   ClientTLSSocket *socket = (ClientTLSSocket *)_activeSockets.remove(&peerAddress);
 
-    if (socket) {
-      assert(0 == socket->peerAddress().compare(peerAddress));
-      _hits.inc();
-      *reused = true;
-      *connection = socket;
-      return ESB_SUCCESS;
-    }
+  if (socket) {
+    assert(0 == socket->peerAddress().compare(peerAddress));
+    _hits.inc();
+    *reused = true;
+    *connection = socket;
+    return ESB_SUCCESS;
+  }
 
   _misses.inc();
 
@@ -182,7 +180,7 @@ void ConnectionPool::release(ConnectedSocket *connection) {
 ConnectionPool::SocketAddressCallbacks::SocketAddressCallbacks(ESB::Allocator &allocator) : _allocator(allocator) {}
 
 int ConnectionPool::SocketAddressCallbacks::compare(const void *f, const void *s) const {
-  return ((ESB::SocketAddress *)f)->compare(*((ESB::SocketAddress *) s));
+  return ((ESB::SocketAddress *)f)->compare(*((ESB::SocketAddress *)s));
 }
 
 ESB::UInt32 ConnectionPool::SocketAddressCallbacks::hash(const void *key) const {

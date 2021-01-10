@@ -33,7 +33,7 @@
 namespace ESB {
 
 ConnectedSocket::ConnectedSocket(const Socket::State &acceptState, const char *namePrefix)
-: Socket(acceptState), _flags(ESB_SOCK_FLAG_CONNECTED), _localAddress(acceptState.localAddress()) {
+    : Socket(acceptState), _flags(ESB_SOCK_FLAG_CONNECTED), _localAddress(acceptState.localAddress()) {
   formatPrefix(namePrefix, "server");
   updateName(acceptState.peerAddress());
 }
@@ -108,7 +108,8 @@ Error ConnectedSocket::connect() {
 
 #if defined HAVE_CONNECT && defined HAVE_STRUCT_SOCKADDR
 
-  if (SOCKET_ERROR == ::connect(_sockFd, (sockaddr *)peerAddress().primitiveAddress(), sizeof(SocketAddress::Address))) {
+  if (SOCKET_ERROR ==
+      ::connect(_sockFd, (sockaddr *)peerAddress().primitiveAddress(), sizeof(SocketAddress::Address))) {
     error = LastError();
 
     if (!_isBlocking) {
@@ -183,8 +184,7 @@ bool ConnectedSocket::connected() {
 #endif
 
 #if defined HAVE_GETPEERNAME
-  if (SOCKET_ERROR !=
-      getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
+  if (SOCKET_ERROR != getpeername(_sockFd, (sockaddr *)&address, &addressSize)) {
     _flags &= ~ESB_SOCK_FLAG_ALL;
     _flags |= ESB_SOCK_FLAG_CONNECTED;
   }
@@ -224,7 +224,7 @@ SSize ConnectedSocket::send(const char *buffer, Size bufferSize) {
 }
 
 SSize ConnectedSocket::send(Buffer *buffer) {
-  Size size = send((char *)buffer->buffer() + buffer->readPosition(), buffer->readable());
+  SSize size = send((char *)buffer->buffer() + buffer->readPosition(), buffer->readable());
 
   if (0 >= size) {
     return size;

@@ -55,7 +55,8 @@ Socket::State &Socket::State::operator=(const Socket::State &state) {
 
 Socket::Socket(bool isBlocking) : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
-Socket::Socket(const State &acceptState) : _isBlocking(acceptState.isBlocking()), _sockFd(acceptState.socketDescriptor()) {}
+Socket::Socket(const State &acceptState)
+    : _isBlocking(acceptState.isBlocking()), _sockFd(acceptState.socketDescriptor()) {}
 
 Socket::~Socket() { close(); }
 

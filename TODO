@@ -85,6 +85,7 @@ connection pool rework:
  - create option of global or per-silo connection pool and set default to per-silo.
  - create a counter for hit rate (averaging counter, add 1 for hit, 0 for miss)
  - enforce max connections per destination address (ip + port + transport + encrypted tuple)
+ - evict old connections
 
 code health:
  - Share more code between HttpClientSocket and HttpServerSocket

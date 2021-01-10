@@ -35,43 +35,35 @@ class SocketTest : public ::testing::Test {
     _message[sizeof(_message) - 1] = 0;
   }
 
-  static void SetUpTestSuite() {
-    Logger::SetInstance(&_Logger);
-  }
+  static void SetUpTestSuite() { Logger::SetInstance(&_Logger); }
 
-  static void TearDownTestSuite() {
-    Logger::SetInstance(NULL);
-  }
+  static void TearDownTestSuite() { Logger::SetInstance(NULL); }
 
   virtual void SetUp() {
     Error error = _clearListener.bind();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port",
-                          _clearListener.name());
+      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", _clearListener.name());
       assert(!"Cannot bind to ephemeral port");
       return;
     }
 
     error = _secureListener.bind();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port",
-                          _secureListener.name());
+      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", _secureListener.name());
       assert(!"Cannot bind to ephemeral port");
       return;
     }
 
     error = _clearListener.listen();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port",
-                          _clearListener.name());
+      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port", _clearListener.name());
       assert(!"Cannot listen on ephemeral port");
       return;
     }
 
     error = _secureListener.listen();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port",
-                          _secureListener.name());
+      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port", _secureListener.name());
       assert(!"Cannot listen on ephemeral port");
       return;
     }
@@ -93,6 +85,6 @@ class SocketTest : public ::testing::Test {
 
 SimpleFileLogger SocketTest::_Logger(stdout, Logger::Debug);
 
-}
+}  // namespace ESB
 
 #endif

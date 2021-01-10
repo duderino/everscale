@@ -246,7 +246,8 @@ Error ListeningSocket::accept(State *data) {
 
 #if defined HAVE_GETSOCKNAME
   addressSize = sizeof(SocketAddress::Address);
-  if (SOCKET_ERROR == ::getsockname(data->socketDescriptor(), (sockaddr *) peerAddress.primitiveAddress(), &addressSize)) {
+  if (SOCKET_ERROR ==
+      ::getsockname(data->socketDescriptor(), (sockaddr *)peerAddress.primitiveAddress(), &addressSize)) {
     Socket::Close(data->socketDescriptor());
     return LastError();
   }

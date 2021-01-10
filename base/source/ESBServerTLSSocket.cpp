@@ -40,7 +40,7 @@ Error ServerTLSSocket::Initialize(const char *privateKeyPath, const char *certif
 
   ERR_clear_error();
   if (!SSL_CTX_use_certificate_file(_Context, certificatePath, SSL_FILETYPE_PEM)) {
-    //ERR_print_errors_fp(stdout);
+    // ERR_print_errors_fp(stdout);
     ESB_LOG_TLS_ERROR("Cannot load certificate into server context");
     return ESB_GENERAL_TLS_ERROR;
   }
@@ -50,14 +50,21 @@ Error ServerTLSSocket::Initialize(const char *privateKeyPath, const char *certif
   return ESB_SUCCESS;
 }
 
+void ServerTLSSocket::Destroy() {
+  if (!_Context) {
+    return;
+  }
+
+  SSL_CTX_free(_Context);
+  _Context = NULL;
+}
+
 ServerTLSSocket::ServerTLSSocket(const Socket::State &acceptState, const char *namePrefix)
     : TLSSocket(acceptState, namePrefix), _peerAddress(acceptState.peerAddress()) {}
 
 ServerTLSSocket::~ServerTLSSocket() {}
 
-const SocketAddress &ServerTLSSocket::peerAddress() const {
-  return _peerAddress;
-}
+const SocketAddress &ServerTLSSocket::peerAddress() const { return _peerAddress; }
 const void *ServerTLSSocket::key() const { return &_peerAddress; }
 
 Error ServerTLSSocket::startHandshake() {
@@ -68,8 +75,7 @@ Error ServerTLSSocket::startHandshake() {
   if (!_ssl) {
     _ssl = SSL_new(_Context);
     if (!_ssl) {
-      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot create SSL context",
-                          name());
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot create SSL context", name());
       return ESB_OUT_OF_MEMORY;
     }
 
@@ -77,8 +83,7 @@ Error ServerTLSSocket::startHandshake() {
     if (!_bio) {
       SSL_free(_ssl);
       _ssl = NULL;
-      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot create SSL BIO",
-                          name());
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot create SSL BIO", name());
       return ESB_OUT_OF_MEMORY;
     }
     SSL_set_bio(_ssl, _bio, _bio);
@@ -101,11 +106,9 @@ Error ServerTLSSocket::startHandshake() {
       case SSL_ERROR_ZERO_RETURN:
       case SSL_ERROR_SYSCALL:
       case SSL_ERROR_SSL:
-        ESB_LOG_TLS_INFO("[%s] cannot complete server TLS handshake", name());
-        return ESB_NON_RECOVERABLE_TLS_SESION_ERROR;
       default:
-        ESB_LOG_TLS_ERROR("[%s] cannot complete server TLS handshake", name());
-        return ESB_NON_RECOVERABLE_TLS_SESION_ERROR;
+        ESB_LOG_TLS_INFO("[%s] cannot complete server TLS handshake (%d)", name(), ret);
+        return ESB_TLS_HANDSHAKE_ERROR;
     }
   }
 
