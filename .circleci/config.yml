@@ -9,7 +9,6 @@ jobs:
           name: "debug build"
           command: |
               set +e
-              export GOROOT=/root/project/bssl
               export GOPATH=/root/project/bssl
               export GO_TOP=/root/project/bssl
               export CC=clang
@@ -22,7 +21,6 @@ jobs:
           name: "tsan build"
           command: |
               set +e
-              export GOROOT=/root/project/bssl
               export GOPATH=/root/project/bssl
               export GO_TOP=/root/project/bssl
               export CC=clang
@@ -35,7 +33,6 @@ jobs:
           name: "asan build"
           command: |
               set +e
-              export GOROOT=/root/project/bssl
               export GOPATH=/root/project/bssl
               export GO_TOP=/root/project/bssl
               export CC=clang
@@ -48,7 +45,6 @@ jobs:
           name: "release build"
           command: |
               set +e
-              export GOROOT=/root/project/bssl
               export GOPATH=/root/project/bssl
               export GO_TOP=/root/project/bssl
               export CC=clang
@@ -61,7 +57,6 @@ jobs:
           name: "nopool build"
           command: |
               set +e
-              export GOROOT=/root/project/bssl
               export GOPATH=/root/project/bssl
               export GO_TOP=/root/project/bssl
               export CC=clang
