@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
       .requestSize(1024)
       .responseSize(1024)
       .reuseConnections(true)
-      .secure(true)
+      .secure(false)
       .logLevel(ESB::Logger::Notice);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
