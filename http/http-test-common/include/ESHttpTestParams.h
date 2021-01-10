@@ -49,8 +49,8 @@ class HttpTestParams {
     return *this;
   }
 
-  inline HttpTestParams &iterations(ESB::UInt32 iterations) {
-    _iterations = iterations;
+  inline HttpTestParams &requestsPerConnection(ESB::UInt32 requestsPerConnection) {
+    _requestsPerConnection = requestsPerConnection;
     return *this;
   }
 
@@ -104,6 +104,32 @@ class HttpTestParams {
     return *this;
   }
 
+  inline HttpTestParams &caPath(const char *caPath) {
+    assert(caPath);
+    strncpy(_caPath, caPath, sizeof(_caPath));
+    _caPath[sizeof(_caPath) - 1] = 0;
+    return *this;
+  }
+
+  inline HttpTestParams &serverKeyPath(const char *serverKeyPath) {
+    assert(serverKeyPath);
+    strncpy(_serverKeyPath, serverKeyPath, sizeof(_serverKeyPath));
+    _serverKeyPath[sizeof(_serverKeyPath) - 1] = 0;
+    return *this;
+  }
+
+  inline HttpTestParams &serverCertPath(const char *serverCertPath) {
+    assert(serverCertPath);
+    strncpy(_serverCertPath, serverCertPath, sizeof(_serverCertPath));
+    _serverCertPath[sizeof(_serverCertPath) - 1] = 0;
+    return *this;
+  }
+
+  inline HttpTestParams &maxVerifyDepth(ESB::UInt32 maxVerifyDepth) {
+    _maxVerifyDepth = maxVerifyDepth;
+    return *this;
+  }
+
   inline ESB::UInt16 port() const { return _port; }
 
   inline ESB::UInt32 clientThreads() const { return _clientThreads; }
@@ -114,7 +140,7 @@ class HttpTestParams {
 
   inline ESB::UInt32 connections() const { return _connections; }
 
-  inline ESB::UInt32 iterations() const { return _iterations; }
+  inline ESB::UInt32 requestsPerConnection() const { return _requestsPerConnection; }
 
   inline ESB::UInt32 requestSize() const { return _requestSize; }
 
@@ -142,6 +168,14 @@ class HttpTestParams {
 
   inline const unsigned char *responseBody() const { return _responseBody; }
 
+  inline const char *caPath() const { return _caPath; }
+
+  inline const char *serverKeyPath() const { return _serverKeyPath; }
+
+  inline const char *serverCertPath() const { return _serverCertPath; }
+
+  inline int maxVerifyDepth() const { return _maxVerifyDepth; }
+
  private:
   // Disabled
   HttpTestParams(const HttpTestParams &);
@@ -152,7 +186,7 @@ class HttpTestParams {
   ESB::UInt32 _originThreads;
   ESB::UInt32 _proxyThreads;
   ESB::UInt32 _connections;
-  ESB::UInt32 _iterations;  // requests per connection
+  ESB::UInt32 _requestsPerConnection;
   ESB::UInt32 _requestSize;
   ESB::UInt32 _responseSize;
   bool _useContentLengthHeader;  // if true use content-length header, else use chunked transfer encoding
@@ -166,6 +200,10 @@ class HttpTestParams {
   const char *_absPath;
   unsigned char *_requestBody;
   unsigned char *_responseBody;
+  char _caPath[ESB_MAX_PATH + 1];
+  char _serverKeyPath[ESB_MAX_PATH + 1];
+  char _serverCertPath[ESB_MAX_PATH + 1];
+  ESB::UInt32 _maxVerifyDepth;
 };
 
 }  // namespace ES

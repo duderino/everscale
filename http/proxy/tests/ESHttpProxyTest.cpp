@@ -52,11 +52,6 @@
 
 #include <gtest/gtest.h>
 
-#define BASE_TEST_DIR "../../../base/tests/"
-#define CA_PATH BASE_TEST_DIR "ca.crt"
-#define CERT_PATH BASE_TEST_DIR "server.crt"
-#define KEY_PATH BASE_TEST_DIR "server.key"
-
 using namespace ES;
 
 static void LogCurrentWorkingDirectory(ESB::Logger::Severity severity) {
@@ -79,16 +74,16 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
   // Run before all HttpProxyTest test cases
   static void SetUpTestSuite() {
     ESB::Logger::SetInstance(&_Logger);
+    HttpTestParams params;
 
-    const int maxVerifyDepth = 42;
-    ESB::Error error = ESB::ClientTLSSocket::Initialize(CA_PATH, maxVerifyDepth);
+    ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
       LogCurrentWorkingDirectory(ESB::Logger::Err);
       exit(error);
     }
 
-    error = ESB::ServerTLSSocket::Initialize(KEY_PATH, CERT_PATH);
+    error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
       LogCurrentWorkingDirectory(ESB::Logger::Err);
@@ -115,7 +110,7 @@ INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::
 TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
   params.connections(50)
-      .iterations(50)
+      .requestsPerConnection(50)
       .clientThreads(2)
       .proxyThreads(0)
       .originThreads(2)
@@ -131,14 +126,14 @@ TEST_P(HttpProxyTest, ClientToServer) {
   HttpIntegrationTest test(params, originListener, loadgenHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
   EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
 }
 
 TEST_P(HttpProxyTest, ClientToProxyToServer) {
   HttpTestParams params;
   params.connections(50)
-      .iterations(50)
+      .requestsPerConnection(50)
       .clientThreads(2)
       .proxyThreads(2)
       .originThreads(2)
@@ -157,7 +152,7 @@ TEST_P(HttpProxyTest, ClientToProxyToServer) {
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
   EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
 }
 
@@ -220,7 +215,7 @@ class HttpSmallChunkLoadgenHandler : public HttpLoadgenHandler {
 TEST_P(HttpProxyTest, SmallChunks) {
   HttpTestParams params;
   params.connections(50)
-      .iterations(50)
+      .requestsPerConnection(50)
       .clientThreads(2)
       .proxyThreads(2)
       .originThreads(2)
@@ -240,7 +235,7 @@ TEST_P(HttpProxyTest, SmallChunks) {
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
   EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
 }
 
@@ -255,16 +250,16 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
   // Run before all HttpProxyTestMessageBody test cases
   static void SetUpTestSuite() {
     ESB::Logger::SetInstance(&_Logger);
+    HttpTestParams params;
 
-    const int maxVerifyDepth = 42;
-    ESB::Error error = ESB::ClientTLSSocket::Initialize(CA_PATH, maxVerifyDepth);
+    ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
       LogCurrentWorkingDirectory(ESB::Logger::Err);
       exit(error);
     }
 
-    error = ESB::ServerTLSSocket::Initialize(KEY_PATH, CERT_PATH);
+    error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
       LogCurrentWorkingDirectory(ESB::Logger::Err);
@@ -293,7 +288,7 @@ INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
 TEST_P(HttpProxyTestMessageBody, BodySizes) {
   HttpTestParams params;
   params.connections(50)
-      .iterations(50)
+      .requestsPerConnection(50)
       .clientThreads(2)
       .proxyThreads(2)
       .originThreads(2)
@@ -313,6 +308,6 @@ TEST_P(HttpProxyTestMessageBody, BodySizes) {
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
   EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.iterations(), test.clientCounters().getSuccesses()->queries());
+  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
   EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
 }

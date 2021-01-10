@@ -49,13 +49,13 @@ using namespace ES;
 
 int main(int argc, char **argv) {
   HttpTestParams params;
-  params.connections(1).iterations(3).clientThreads(3).logLevel(ESB::Logger::Notice);
+  params.connections(1).requestsPerConnection(3).clientThreads(3).logLevel(ESB::Logger::Notice);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  HttpLoadgenContext::SetTotalIterations(params.connections() * params.iterations());
+  HttpLoadgenContext::SetTotalIterations(params.connections() * params.requestsPerConnection());
 
   ESB::Time::Instance().start();
   ESB::SimpleFileLogger logger(stdout);

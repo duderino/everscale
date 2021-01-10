@@ -113,6 +113,10 @@ check_include_file("netdb.h" HAVE_NETDB_H)
 check_struct_has_member("struct hostent" h_name "netdb.h" HAVE_HOSTENT_T)
 check_symbol_exists(gethostbyname_r "netdb.h" HAVE_GETHOSTBYNAME_R_LINUX) # TODO write a test program to detect the Linux variant of gethostbyname_r
 
+check_include_file("getopt.h" HAVE_GETOPT_H)
+check_symbol_exists(getopt "getopt.h" HAVE_GETOPT)
+check_symbol_exists(getopt_long "getopt.h" HAVE_GETOPT_LONG)
+
 check_include_file("arpa/inet.h" HAVE_ARPA_INET_H)
 check_symbol_exists(inet_pton "arpa/inet.h" HAVE_INET_PTON)
 check_symbol_exists(inet_ntop "arpa/inet.h" HAVE_INET_NTOP)

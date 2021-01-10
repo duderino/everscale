@@ -145,7 +145,7 @@ HttpIntegrationTest::~HttpIntegrationTest() {
 }
 
 ESB::Error HttpIntegrationTest::run() {
-  const ESB::UInt32 totalTransactions = _params.connections() * _params.iterations();
+  const ESB::UInt32 totalTransactions = _params.connections() * _params.requestsPerConnection();
   HttpLoadgenContext::SetTotalIterations(totalTransactions);
 
   ESB::Time::Instance().start();

@@ -26,6 +26,14 @@
 #include "ESHttpFixedRouter.h"
 #endif
 
+#ifndef ESB_CLIENT_TLS_SOCKET_H
+#include <ESBClientTLSSocket.h>
+#endif
+
+#ifndef ESB_SERVER_TLS_SOCKET_H
+#include <ESBServerTLSSocket.h>
+#endif
+
 using namespace ES;
 
 /**
@@ -53,14 +61,15 @@ using namespace ES;
 int main(int argc, char **argv) {
   HttpTestParams params;
   params.connections(500)
-      .iterations(500)
+      .requestsPerConnection(500)
       .clientThreads(3)
       .proxyThreads(3)
       .originThreads(3)
       .requestSize(1024)
       .responseSize(1024)
       .reuseConnections(true)
-      .secure(false)
+      .hostHeader("test.server.everscale.com")
+      .secure(true)
       .logLevel(ESB::Logger::Notice);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
@@ -74,6 +83,18 @@ int main(int argc, char **argv) {
   HttpRoutingProxyHandler proxyHandler(router);
   HttpOriginHandler originHandler(params);
 
+  error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
+    exit(error);
+  }
+
+  error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
+    exit(error);
+  }
+
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
   error = test.run();
   if (ESB_SUCCESS != error) {
@@ -86,7 +107,7 @@ int main(int argc, char **argv) {
 
   const ESB::UInt32 totalSuccesses = test.clientCounters().getSuccesses()->queries();
   const ESB::UInt32 totalFailures = test.clientCounters().getFailures()->queries();
-  const ESB::UInt32 totalTransactions = params.connections() * params.iterations();
+  const ESB::UInt32 totalTransactions = params.connections() * params.requestsPerConnection();
 
   if (totalSuccesses != totalTransactions || 0 < totalFailures) {
     ESB_LOG_CRITICAL("TEST FAILURE: expected %u successes but got %u successes and %u failures", totalTransactions,
