@@ -34,6 +34,10 @@ class TLSEchoServer : public Thread {
       Socket::State state;
       ESB::Error error = _listeningSocket.accept(&state);
       assert(ESB_SUCCESS == error);
+      if (ESB_SUCCESS != error) {
+        ESB_LOG_ERROR_ERRNO(error, "[%s] cannot accept socket", _listeningSocket.name());
+        return;
+      }
 
       ServerTLSSocket server(state, "test");
       assert(server.connected());
