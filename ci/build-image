@@ -1,31 +1,43 @@
 FROM ubuntu:18.04
 
+ENV CMAKE_VERSION=3.17.1
+ENV GO_VERSION=1.15.6
+ENV CLANG_VERSION=9
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     sudo \
     wget \
     git \
     libssl-dev \
-    software-properties-common \
-    golang
+    software-properties-common 
+
+RUN cd /usr/lib \ 
+    && wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+    && tar xvf go${GO_VERSION}.linux-amd64.tar.gz \
+    && ln -s /usr/lib/go/bin/go /usr/bin/go \
+    && rm go${GO_VERSION}.linux-amd64.tar.gz \
+    && go version
 
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
-    && add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main" \
+    && add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${CLANG_VERSION} main" \
     && apt-get -qq update \
     && apt-get -qq install \
-        clang-8 \
+        clang-${CLANG_VERSION} \
         libc++-dev \
         libc++abi-dev \
-    && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 100 \
-    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100
+    && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${CLANG_VERSION} 100 \
+    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_VERSION} 100 \
+    && clang++ --version
 
 RUN cd /usr/local/src \ 
-    && wget https://github.com/Kitware/CMake/releases/download/v3.17.1/cmake-3.17.1.tar.gz \
-    && tar xvf cmake-3.17.1.tar.gz \ 
-    && cd cmake-3.17.1 \
+    && wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
+    && tar xvf cmake-${CMAKE_VERSION}.tar.gz \ 
+    && cd cmake-${CMAKE_VERSION} \
     && ./bootstrap \
     && make \
     && make install \
     && cd .. \
-    && rm -rf cmake*
+    && rm -rf cmake* \
+    && cmake --version
 
