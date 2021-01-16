@@ -218,15 +218,15 @@ bool HttpServerSocket::wantAccept() { return false; }
 bool HttpServerSocket::wantConnect() { return false; }
 
 bool HttpServerSocket::wantRead() {
+  if (_state & (SERVER_RECV_PAUSED | SERVER_ABORTED | SERVER_INACTIVE)) {
+    return false;
+  }
+
   if (_socket->wantRead()) {
     return true;
   }
 
   if (_socket->wantWrite()) {
-    return false;
-  }
-
-  if (_state & (SERVER_RECV_PAUSED | SERVER_ABORTED | SERVER_INACTIVE)) {
     return false;
   }
 
@@ -234,15 +234,15 @@ bool HttpServerSocket::wantRead() {
 }
 
 bool HttpServerSocket::wantWrite() {
+  if (_state & (SERVER_SEND_PAUSED | SERVER_ABORTED | SERVER_INACTIVE)) {
+    return false;
+  }
+
   if (_socket->wantWrite()) {
     return true;
   }
 
   if (_socket->wantRead()) {
-    return false;
-  }
-
-  if (_state & (SERVER_SEND_PAUSED | SERVER_ABORTED | SERVER_INACTIVE)) {
     return false;
   }
 

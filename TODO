@@ -4,6 +4,7 @@ stat:
  - Create generic socket test base class, use for ClearSocket, ClientTLSSocket, and ServerTLSSocket
 
 tls:
+ - revisit HttpClientSocket and HttpServerSocket wantRead and wantWrite:  allow the statemachine to finish the TLS handshake even when the stream is paused.
  - relay current profile (optimization, symbols, asan/tsan) to boringssl cmake build
  - add secure/insecure bit to connected socket log address
  - Integration tests generate root CA, intermediate CAs, trust stores, private keys, and test certs locally if not already there
