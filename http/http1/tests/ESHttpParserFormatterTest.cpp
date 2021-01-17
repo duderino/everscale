@@ -39,7 +39,7 @@ class ParserFormatterTest : public ::testing::Test {
         _outputBuffer(_outputBufferStorage, sizeof(_outputBufferStorage)),
         _requestParserBuffer(_requestBufferStorage, sizeof(_requestBufferStorage)),
         _responseParserBuffer(_responseBufferStorage, sizeof(_responseBufferStorage)),
-        _allocator(4096, sizeof(ESB::UWord), 1, ESB::SystemAllocator::Instance()),
+        _allocator(4096, sizeof(ESB::UWord), 1, ESB::SystemAllocator::Instance(), true),
         _requestParser(&_requestParserBuffer, _allocator),
         _responseParser(&_responseParserBuffer, _allocator),
         _requestFormatter(),

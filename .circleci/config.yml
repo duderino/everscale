@@ -6,7 +6,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "debug build"
+          name: "debug"
           command: |
               set +e
               export CC=clang
@@ -16,7 +16,7 @@ jobs:
               export VERBOSE=1
               BUILD_TYPE=DEBUG cmake . && make && make test
       - run:
-          name: "tsan build"
+          name: "tsan"
           command: |
               set +e
               export CC=clang
@@ -26,7 +26,7 @@ jobs:
               export VERBOSE=1
               BUILD_TYPE=TSAN cmake . && make && make test
       - run:
-          name: "asan build"
+          name: "asan"
           command: |
               set +e
               export CC=clang
@@ -36,7 +36,7 @@ jobs:
               export VERBOSE=1
               BUILD_TYPE=ASAN cmake . && make && make test
       - run:
-          name: "release build"
+          name: "release"
           command: |
               set +e
               export CC=clang
@@ -46,7 +46,7 @@ jobs:
               export VERBOSE=1
               BUILD_TYPE=RELEASE cmake . && make && make test
       - run:
-          name: "nopool build"
+          name: "allocators disabled"
           command: |
               set +e
               export CC=clang
