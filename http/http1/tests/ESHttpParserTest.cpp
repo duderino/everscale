@@ -22,16 +22,18 @@
 #include <ESBRand.h>
 #endif
 
+#ifndef ESB_SIMPLE_FILE_LOGGER_H
+#include <ESBSimpleFileLogger.h>
+#endif
+
 #include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 namespace ES {
 
-static const int Debug = 9;
+static ESB::SimpleFileLogger Logger(stdout, ESB::Logger::Warning);
 static ESB::Rand Random(42);
 static unsigned char InputBufferStorage[4096];
 static unsigned char OutputBufferStorage[4096];
@@ -49,11 +51,45 @@ static bool ParseResponse(const char *file);
 static bool CompareFiles(int fd1, int fd2);
 static bool DumpFile(int fd, const char *filename);
 
+static ESB::SSize FullyRead(int fd, unsigned char *buffer, ESB::UInt32 bytesToRead) {
+  ESB::UInt32 bytesRead = 0U;
+
+  while (bytesRead < bytesToRead) {
+    ESB::SSize result = read(fd, buffer + bytesRead, bytesToRead - bytesRead);
+    if (0 > result) {
+      return result;
+    }
+    if (0 == result) {
+      break;
+    }
+    bytesRead += result;
+  }
+
+  return bytesRead;
+}
+
+static ESB::SSize FullyWrite(int fd, const unsigned char *buffer, ESB::UInt32 bytesToWrite) {
+  ESB::UInt32 bytesWritten = 0U;
+
+  while (bytesWritten < bytesToWrite) {
+    ESB::SSize result = write(fd, buffer + bytesWritten, bytesToWrite - bytesWritten);
+    if (0 > result) {
+      return result;
+    }
+    if (0 == result) {
+      break;
+    }
+    bytesWritten += result;
+  }
+
+  return bytesWritten;
+}
+
 bool ParseRequest(const char *inputFileName) {
   int inputFd = open(inputFileName, O_RDONLY);
 
   if (0 > inputFd) {
-    fprintf(stderr, "cannot open %s: %s\n", inputFileName, strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot open %s", inputFileName);
     return false;
   }
 
@@ -65,7 +101,7 @@ bool ParseRequest(const char *inputFileName) {
   int outputFd = open(outputFileName, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
 
   if (0 > outputFd) {
-    fprintf(stderr, "cannot open %s: %s\n", outputFileName, strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot open %s", inputFileName);
     return false;
   }
 
@@ -77,12 +113,11 @@ bool ParseRequest(const char *inputFileName) {
   int validationFd = open(validationFileName, O_RDONLY);
 
   if (0 > validationFd) {
-    fprintf(stderr, "cannot open %s: %s\n", validationFileName, strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot open %s", inputFileName);
     return false;
   }
 
   ssize_t result;
-  ESB::UInt32 bytesToRead;
   ESB::Error error;
   HttpRequest request;
   HttpHeader *header = 0;
@@ -95,85 +130,83 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestParser.parseHeaders(&InputBuffer, request);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
-
-      bytesToRead = Random.generate(1, InputBuffer.writable());
+      ESB_LOG_DEBUG("need more data from file %s", inputFileName);
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        ESB_LOG_DEBUG("compacting input buffer for %s", inputFileName);
 
         if (false == InputBuffer.compact()) {
-          fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
+          ESB_LOG_ERROR("cannot parse %s: parser jammed\n", inputFileName);
           return false;
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
+      result = FullyRead(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
+                         Random.generate(1, InputBuffer.writable()));
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error reading %s", inputFileName);
         return false;
       }
 
       if (0 == result) {
-        fprintf(stderr, "premature EOF! %s\n", inputFileName);
+        ESB_LOG_ERROR("premature EOF! %s", inputFileName);
         return false;
       }
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
+      ESB_LOG_DEBUG("read %ld bytes from file %s", (long int)result, inputFileName);
 
       continue;
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error parsing %s", inputFileName);
       return false;
     }
 
-    if (Debug) {
-      fprintf(stderr, "headers parsed for file %s\n", inputFileName);
+    if (ESB_DEBUG_LOGGABLE) {
+      ESB_LOG_DEBUG("headers parsed for file %s", inputFileName);
 
-      fprintf(stderr, "Method: %s\n", request.method());
-      fprintf(stderr, "RequestUri\n");
+      ESB_LOG_DEBUG("Method: %s", request.method());
+      ESB_LOG_DEBUG("RequestUri");
 
       switch (request.requestUri().type()) {
         case HttpRequestUri::ES_URI_ASTERISK:
 
-          fprintf(stderr, "  Asterisk\n");
+          ESB_LOG_DEBUG("  Asterisk");
           break;
 
         case HttpRequestUri::ES_URI_HTTP:
         case HttpRequestUri::ES_URI_HTTPS:
 
-          fprintf(stderr, "  Scheme: %s\n",
-                  HttpRequestUri::ES_URI_HTTP == request.requestUri().type() ? "http" : "https");
-          fprintf(stderr, "  Host: %s\n",
-                  0 == request.requestUri().host() ? "none" : (const char *)request.requestUri().host());
-          fprintf(stderr, "  Port: %d\n", request.requestUri().port());
-          fprintf(stderr, "  AbsPath: %s\n", request.requestUri().absPath());
-          fprintf(stderr, "  Query: %s\n",
-                  0 == request.requestUri().query() ? "none" : (const char *)request.requestUri().query());
-          fprintf(stderr, "  Fragment: %s\n",
-                  0 == request.requestUri().fragment() ? "none" : (const char *)request.requestUri().fragment());
+          ESB_LOG_DEBUG("  Scheme: %s", HttpRequestUri::ES_URI_HTTP == request.requestUri().type() ? "http" : "https");
+          ESB_LOG_DEBUG("  Host: %s",
+                        0 == request.requestUri().host() ? "none" : (const char *)request.requestUri().host());
+          ESB_LOG_DEBUG("  Port: %d", request.requestUri().port());
+          ESB_LOG_DEBUG("  AbsPath: %s", request.requestUri().absPath());
+          ESB_LOG_DEBUG("  Query: %s",
+                        0 == request.requestUri().query() ? "none" : (const char *)request.requestUri().query());
+          ESB_LOG_DEBUG("  Fragment: %s",
+                        0 == request.requestUri().fragment() ? "none" : (const char *)request.requestUri().fragment());
 
           break;
 
         case HttpRequestUri::ES_URI_OTHER:
 
-          fprintf(stderr, "  Other: %s\n", request.requestUri().other());
+          ESB_LOG_DEBUG("  Other: %s", request.requestUri().other());
 
           break;
       }
 
-      fprintf(stderr, "Version: HTTP/%d.%d\n", request.httpVersion() / 100, request.httpVersion() % 100 / 10);
+      ESB_LOG_DEBUG("Version: HTTP/%d.%d", request.httpVersion() / 100, request.httpVersion() % 100 / 10);
 
-      fprintf(stderr, "Headers\n");
+      ESB_LOG_DEBUG("Headers");
 
       for (header = (HttpHeader *)request.headers().first(); header; header = (HttpHeader *)header->next()) {
-        fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
-                0 == header->fieldValue() ? "null" : (const char *)header->fieldValue());
+        ESB_LOG_DEBUG("   %s: %s\n", (const char *)header->fieldName(),
+                      0 == header->fieldValue() ? "null" : (const char *)header->fieldValue());
       }
     }
 
@@ -188,18 +221,18 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestFormatter.formatHeaders(&OutputBuffer, request);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
-        fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+        ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
         return false;
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+          ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
           return false;
         }
 
@@ -211,7 +244,7 @@ bool ParseRequest(const char *inputFileName) {
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
       return false;
     }
 
@@ -220,13 +253,13 @@ bool ParseRequest(const char *inputFileName) {
 
   // flush any header data left in the output buffer
 
-  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  ESB_LOG_DEBUG("final flushing output buffer for %s", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+    result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
       return false;
     }
 
@@ -247,57 +280,55 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestParser.parseBody(&InputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
-
-      bytesToRead = Random.generate(1, InputBuffer.writable());
+      ESB_LOG_DEBUG("need more data from file %s", inputFileName);
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        ESB_LOG_DEBUG("compacting input buffer for %s", inputFileName);
 
         if (false == InputBuffer.compact()) {
-          fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
+          ESB_LOG_ERROR("cannot parse %s: parser jammed", inputFileName);
           return false;
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
+      result = FullyRead(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
+                         Random.generate(1, InputBuffer.writable()));
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error reading %s", inputFileName);
         return false;
       }
 
       if (0 == result) {
-        fprintf(stderr, "EOF reading body from: %s\n", inputFileName);
+        ESB_LOG_DEBUG(" EOF reading body from: %s", inputFileName);
         break;
       }
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
+      ESB_LOG_DEBUG("read %ld bytes from file %s", (long int)result, inputFileName);
 
       continue;
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error parsing %s", inputFileName);
       return false;
     }
 
     if (0 == chunkSize) {
-      if (Debug) fprintf(stderr, "\nfinished reading body %s\n", inputFileName);
-
+      ESB_LOG_DEBUG("\nfinished reading body %s\n", inputFileName);
       break;
     }
 
-    if (Debug) {
+    if (ESB_DEBUG_LOGGABLE) {
       char buffer[sizeof(InputBufferStorage) + 1];
 
       memcpy(buffer, InputBuffer.buffer() + bufferOffset, chunkSize);
       buffer[chunkSize] = 0;
 
-      if (3 < Debug) fprintf(stderr, "read chunk:\n");
-      if (Debug) fprintf(stderr, "%s\n", buffer);
+      ESB_LOG_DEBUG("read chunk:");
+      ESB_LOG_DEBUG("%s", buffer);
     }
 
     bytesWritten = 0;
@@ -306,18 +337,18 @@ bool ParseRequest(const char *inputFileName) {
       error = RequestFormatter.beginBlock(&OutputBuffer, chunkSize - bytesWritten, &availableSize);
 
       if (ESB_AGAIN == error) {
-        if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+        ESB_LOG_DEBUG("flushing output buffer for %s\n", outputFileName);
 
         if (false == OutputBuffer.isReadable()) {
-          fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+          ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
           return false;
         }
 
         while (OutputBuffer.isReadable()) {
-          result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+          result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
           if (0 > result) {
-            fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+            ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
             return false;
           }
 
@@ -329,7 +360,7 @@ bool ParseRequest(const char *inputFileName) {
       }
 
       if (ESB_SUCCESS != error) {
-        fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+        ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
         return false;
       }
 
@@ -344,18 +375,18 @@ bool ParseRequest(const char *inputFileName) {
         error = RequestFormatter.endBlock(&OutputBuffer);
 
         if (ESB_AGAIN == error) {
-          if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+          ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
           if (false == OutputBuffer.isReadable()) {
-            fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+            ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
             return false;
           }
 
           while (OutputBuffer.isReadable()) {
-            result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+            result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
             if (0 > result) {
-              fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+              ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
               return false;
             }
 
@@ -367,7 +398,7 @@ bool ParseRequest(const char *inputFileName) {
         }
 
         if (ESB_SUCCESS != error) {
-          fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+          ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
           return false;
         }
 
@@ -384,18 +415,18 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestFormatter.endBody(&OutputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
-        fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+        ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
         return false;
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+          ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
           return false;
         }
 
@@ -407,7 +438,7 @@ bool ParseRequest(const char *inputFileName) {
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
       return false;
     }
 
@@ -416,13 +447,13 @@ bool ParseRequest(const char *inputFileName) {
 
   // flush anything left in the output buffer
 
-  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  ESB_LOG_DEBUG("final flushing output buffer for %s", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+    result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
       return false;
     }
 
@@ -437,52 +468,48 @@ bool ParseRequest(const char *inputFileName) {
     error = RequestParser.skipTrailer(&InputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
-
-      bytesToRead = Random.generate(1, InputBuffer.writable());
+      ESB_LOG_DEBUG("need more data from file %s", inputFileName);
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        ESB_LOG_DEBUG("compacting input buffer for %s", inputFileName);
 
         if (false == InputBuffer.compact()) {
-          fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
+          ESB_LOG_ERROR("cannot parse %s: parser jammed\n", inputFileName);
           return false;
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
+      result = FullyRead(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
+                         Random.generate(1, InputBuffer.writable()));
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error reading %s", inputFileName);
         return false;
       }
 
       if (0 == result) {
-        fprintf(stderr, "premature EOF! %s\n", inputFileName);
+        ESB_LOG_ERROR("premature EOF! %s", inputFileName);
         return false;
       }
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
+      ESB_LOG_DEBUG("read %ld bytes from file %s", (long int)result, inputFileName);
 
       continue;
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error parsing %s", inputFileName);
       return false;
     }
 
-    if (Debug) {
-      fprintf(stderr, "trailer skipped for file %s\n", inputFileName);
-    }
-
+    ESB_LOG_DEBUG("trailer skipped for file %s", inputFileName);
     break;
   }
 
   if (!CompareFiles(outputFd, validationFd)) {
-    fprintf(stderr, "%s does not match %s\n", outputFileName, validationFileName);
+    ESB_LOG_ERROR("%s does not match %s", outputFileName, validationFileName);
     DumpFile(validationFd, validationFileName);
     DumpFile(outputFd, outputFileName);
     return false;
@@ -495,7 +522,7 @@ bool ParseResponse(const char *inputFileName) {
   int inputFd = open(inputFileName, O_RDONLY);
 
   if (0 > inputFd) {
-    fprintf(stderr, "cannot open %s: %s\n", inputFileName, strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot open %s", inputFileName);
     return false;
   }
 
@@ -507,7 +534,7 @@ bool ParseResponse(const char *inputFileName) {
   int outputFd = open(outputFileName, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
 
   if (0 > outputFd) {
-    fprintf(stderr, "cannot open %s: %s\n", outputFileName, strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot open %s", outputFileName);
     return false;
   }
 
@@ -519,12 +546,11 @@ bool ParseResponse(const char *inputFileName) {
   int validationFd = open(validationFileName, O_RDONLY);
 
   if (0 > validationFd) {
-    fprintf(stderr, "cannot open %s: %s\n", validationFileName, strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot open %s", validationFileName);
     return false;
   }
 
   ssize_t result;
-  ESB::UInt32 bytesToRead;
   ESB::Error error;
   HttpResponse response;
   HttpHeader *header = 0;
@@ -537,55 +563,53 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseParser.parseHeaders(&InputBuffer, response);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
-
-      bytesToRead = Random.generate(1, InputBuffer.writable());
+      ESB_LOG_DEBUG("need more data from file %s", inputFileName);
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        ESB_LOG_DEBUG("compacting input buffer for %s", inputFileName);
 
         if (false == InputBuffer.compact()) {
-          fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
+          ESB_LOG_ERROR("cannot parse %s: parser jammed", inputFileName);
           return false;
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
+      result = FullyRead(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
+                         Random.generate(1, InputBuffer.writable()));
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error reading %s", inputFileName);
         return false;
       }
 
       if (0 == result) {
-        fprintf(stderr, "premature EOF! %s\n", inputFileName);
+        ESB_LOG_ERROR("premature EOF! %s", inputFileName);
         return false;
       }
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
-
+      ESB_LOG_DEBUG("read %ld bytes from file %s", (long int)result, inputFileName);
       continue;
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error parsing %s", inputFileName);
       return false;
     }
 
-    if (Debug) {
-      fprintf(stderr, "headers parsed for file %s\n", inputFileName);
+    if (ESB_DEBUG_LOGGABLE) {
+      ESB_LOG_DEBUG("headers parsed for file %s", inputFileName);
 
-      fprintf(stderr, "StatusCode: %d\n", response.statusCode());
-      fprintf(stderr, "ReasonPhrase: %s\n", response.reasonPhrase());
-      fprintf(stderr, "Version: HTTP/%d.%d\n", response.httpVersion() / 100, response.httpVersion() % 100 / 10);
+      ESB_LOG_DEBUG("StatusCode: %d", response.statusCode());
+      ESB_LOG_DEBUG("ReasonPhrase: %s", response.reasonPhrase());
+      ESB_LOG_DEBUG("Version: HTTP/%d.%d", response.httpVersion() / 100, response.httpVersion() % 100 / 10);
 
-      fprintf(stderr, "Headers\n");
+      ESB_LOG_DEBUG("Headers");
 
       for (header = (HttpHeader *)response.headers().first(); header; header = (HttpHeader *)header->next()) {
-        fprintf(stderr, "   %s: %s\n", (const char *)header->fieldName(),
-                0 == header->fieldValue() ? "null" : (const char *)header->fieldValue());
+        ESB_LOG_DEBUG("   %s: %s", (const char *)header->fieldName(),
+                      0 == header->fieldValue() ? "null" : (const char *)header->fieldValue());
       }
     }
 
@@ -600,18 +624,18 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseFormatter.formatHeaders(&OutputBuffer, response);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
-        fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+        ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
         return false;
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+          ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
           return false;
         }
 
@@ -623,7 +647,7 @@ bool ParseResponse(const char *inputFileName) {
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
       return false;
     }
 
@@ -632,13 +656,13 @@ bool ParseResponse(const char *inputFileName) {
 
   // flush any header data left in the output buffer
 
-  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  ESB_LOG_DEBUG("final flushing output buffer for %s", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+    result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
       return false;
     }
 
@@ -659,55 +683,54 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseParser.parseBody(&InputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
-
-      bytesToRead = Random.generate(1, InputBuffer.writable());
+      ESB_LOG_DEBUG("need more data from file %s", inputFileName);
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        ESB_LOG_DEBUG("compacting input buffer for %s", inputFileName);
 
         if (false == InputBuffer.compact()) {
-          fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
+          ESB_LOG_ERROR("cannot parse %s: parser jammed", inputFileName);
           return false;
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
+      result = FullyRead(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
+                         Random.generate(1, InputBuffer.writable()));
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error reading %s", inputFileName);
         return false;
       }
 
       if (0 == result) {
-        fprintf(stderr, "EOF reading %s\n", inputFileName);
+        ESB_LOG_DEBUG("EOF reading %s", inputFileName);
         break;
       }
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
+      ESB_LOG_DEBUG("read %ld bytes from file %s", (long int)result, inputFileName);
       continue;
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error parsing %s", inputFileName);
       return false;
     }
 
     if (0 == chunkSize) {
-      if (Debug) fprintf(stderr, "\nfinished reading body %s\n", inputFileName);
+      ESB_LOG_DEBUG("finished reading body %s", inputFileName);
       break;
     }
 
-    if (Debug) {
+    if (ESB_DEBUG_LOGGABLE) {
       char buffer[sizeof(InputBufferStorage) + 1];
 
       memcpy(buffer, InputBuffer.buffer() + bufferOffset, chunkSize);
       buffer[chunkSize] = 0;
 
-      if (3 < Debug) fprintf(stderr, "read chunk:\n");
-      if (Debug) fprintf(stderr, "%s\n", buffer);
+      ESB_LOG_DEBUG("read chunk:");
+      ESB_LOG_DEBUG("%s", buffer);
     }
 
     bytesWritten = 0;
@@ -716,18 +739,18 @@ bool ParseResponse(const char *inputFileName) {
       error = ResponseFormatter.beginBlock(&OutputBuffer, chunkSize - bytesWritten, &availableSize);
 
       if (ESB_AGAIN == error) {
-        if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+        ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
         if (false == OutputBuffer.isReadable()) {
-          fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+          ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
           return false;
         }
 
         while (OutputBuffer.isReadable()) {
-          result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+          result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
           if (0 > result) {
-            fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+            ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
             return false;
           }
 
@@ -739,33 +762,31 @@ bool ParseResponse(const char *inputFileName) {
       }
 
       if (ESB_SUCCESS != error) {
-        fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+        ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
         return false;
       }
 
       memcpy(OutputBuffer.buffer() + OutputBuffer.writePosition(), InputBuffer.buffer() + bufferOffset + bytesWritten,
              availableSize);
-
       OutputBuffer.setWritePosition(OutputBuffer.writePosition() + availableSize);
-
       bytesWritten += availableSize;
 
       while (true) {
         error = ResponseFormatter.endBlock(&OutputBuffer);
 
         if (ESB_AGAIN == error) {
-          if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+          ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
           if (false == OutputBuffer.isReadable()) {
-            fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+            ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
             return false;
           }
 
           while (OutputBuffer.isReadable()) {
-            result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+            result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
             if (0 > result) {
-              fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+              ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
               return false;
             }
 
@@ -777,7 +798,7 @@ bool ParseResponse(const char *inputFileName) {
         }
 
         if (ESB_SUCCESS != error) {
-          fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+          ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
           return false;
         }
 
@@ -794,18 +815,18 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseFormatter.endBody(&OutputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "flushing output buffer for %s\n", outputFileName);
+      ESB_LOG_DEBUG("flushing output buffer for %s", outputFileName);
 
       if (false == OutputBuffer.isReadable()) {
-        fprintf(stderr, "cannot format %s: formatter jammed\n", outputFileName);
+        ESB_LOG_ERROR("cannot format %s: formatter jammed", outputFileName);
         return false;
       }
 
       while (OutputBuffer.isReadable()) {
-        result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+        result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
         if (0 > result) {
-          fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+          ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
           return false;
         }
 
@@ -817,7 +838,7 @@ bool ParseResponse(const char *inputFileName) {
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error formatting %s: %d\n", outputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error formatting %s", outputFileName);
       return false;
     }
 
@@ -826,13 +847,13 @@ bool ParseResponse(const char *inputFileName) {
 
   // flush anything left in the output buffer
 
-  if (1 < Debug) fprintf(stderr, "final flushing output buffer for %s\n", outputFileName);
+  ESB_LOG_DEBUG("final flushing output buffer for %s", outputFileName);
 
   while (OutputBuffer.isReadable()) {
-    result = write(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
+    result = FullyWrite(outputFd, OutputBuffer.buffer(), OutputBuffer.readable());
 
     if (0 > result) {
-      fprintf(stderr, "error writing %s: %s\n", outputFileName, strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error writing %s", outputFileName);
       return false;
     }
 
@@ -847,78 +868,74 @@ bool ParseResponse(const char *inputFileName) {
     error = ResponseParser.skipTrailer(&InputBuffer);
 
     if (ESB_AGAIN == error) {
-      if (1 < Debug) fprintf(stderr, "need more data from file %s\n", inputFileName);
-
-      bytesToRead = Random.generate(1, InputBuffer.writable());
+      ESB_LOG_DEBUG("need more data from file %s", inputFileName);
 
       if (false == InputBuffer.isWritable()) {
-        if (1 < Debug) fprintf(stderr, "compacting input buffer for %s\n", inputFileName);
+        ESB_LOG_DEBUG("compacting input buffer for %s", inputFileName);
 
         if (false == InputBuffer.compact()) {
-          fprintf(stderr, "cannot parse %s: parser jammed\n", inputFileName);
+          ESB_LOG_ERROR("cannot parse %s: parser jammed\n", inputFileName);
           return false;
         }
       }
 
-      result = read(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(), bytesToRead);
+      result = FullyRead(inputFd, InputBuffer.buffer() + InputBuffer.writePosition(),
+                         Random.generate(1, InputBuffer.writable()));
 
       if (0 > result) {
-        fprintf(stderr, "error reading %s: %s\n", inputFileName, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "error reading %s", inputFileName);
         return false;
       }
 
       if (0 == result) {
-        fprintf(stderr, "premature EOF! %s\n", inputFileName);
+        ESB_LOG_ERROR("premature EOF! %s", inputFileName);
         return false;
       }
 
       InputBuffer.setWritePosition(InputBuffer.writePosition() + result);
 
-      if (1 < Debug) fprintf(stderr, "read %ld bytes from file %s\n", (long int)result, inputFileName);
+      ESB_LOG_DEBUG("read %ld bytes from file %s", (long int)result, inputFileName);
 
       continue;
     }
 
     if (ESB_SUCCESS != error) {
-      fprintf(stderr, "error parsing %s: %d\n", inputFileName, error);
+      ESB_LOG_ERROR_ERRNO(error, "error parsing %s", inputFileName);
       return false;
     }
 
-    if (Debug) {
-      fprintf(stderr, "trailer skipped for file %s\n", inputFileName);
-    }
-
+    ESB_LOG_DEBUG("trailer skipped for file %s", inputFileName);
     break;
   }
 
   if (!CompareFiles(outputFd, validationFd)) {
-    fprintf(stderr, "%s does not match %s\n", outputFileName, validationFileName);
+    ESB_LOG_ERROR("%s does not match %s", outputFileName, validationFileName);
     DumpFile(validationFd, validationFileName);
     DumpFile(outputFd, outputFileName);
     return false;
   }
 
-  fprintf(stderr, "Success!\n");
+  ESB_LOG_DEBUG("Success!");
 
   return true;
 }
 
 bool DumpFile(int fd, const char *filename) {
-  fprintf(stderr, "\nFILE %s\n\n", filename);
+  ESB_LOG_DEBUG("FILE %s", filename);
 
   if (0 > lseek(fd, 0, SEEK_SET)) {
-    fprintf(stderr, "cannot seek 1: %s\n", strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot seek on %s", filename);
     return false;
   }
 
-  char buffer[4096];
+  unsigned char buffer[4096];
   ssize_t result;
 
   while (true) {
-    result = read(fd, buffer, sizeof(buffer));
+    result = FullyRead(fd, buffer, sizeof(buffer));
 
     if (0 > result) {
-      fprintf(stderr, "cannot read from %s: %s\n", filename, strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot read from %s", filename);
       return false;
     }
 
@@ -930,9 +947,9 @@ bool DumpFile(int fd, const char *filename) {
     int bytesWritten = 0;
 
     while (bytesWritten < result) {
-      result2 = write(2, buffer + bytesWritten, result - bytesWritten);
+      result2 = FullyWrite(2, buffer + bytesWritten, result - bytesWritten);
       if (0 >= result2) {
-        fprintf(stderr, "cannot dump to %s: %s\n", filename, strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot dump to %s", filename);
         return false;
       }
       bytesWritten += result2;
@@ -944,25 +961,25 @@ bool DumpFile(int fd, const char *filename) {
 
 bool CompareFiles(int fd1, int fd2) {
   if (0 > lseek(fd1, 0, SEEK_SET)) {
-    fprintf(stderr, "cannot seek 1: %s\n", strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot seek");
     return false;
   }
 
   if (0 > lseek(fd2, 0, SEEK_SET)) {
-    fprintf(stderr, "cannot seek 2: %s\n", strerror(errno));
+    ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot seek");
     return false;
   }
 
-  char buffer1[4096];
-  char buffer2[4096];
+  unsigned char buffer1[4096];
+  unsigned char buffer2[4096];
   ssize_t result1;
   ssize_t result2;
 
   while (true) {
-    result1 = read(fd1, buffer1, sizeof(buffer1));
+    result1 = FullyRead(fd1, buffer1, sizeof(buffer1));
 
     if (0 > result1) {
-      fprintf(stderr, "cannot read 1: %s\n", strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot read");
       return false;
     }
 
@@ -970,17 +987,17 @@ bool CompareFiles(int fd1, int fd2) {
       result1 = read(fd2, buffer2, sizeof(buffer2));
 
       if (0 > result1) {
-        fprintf(stderr, "cannot read 2: %s\n", strerror(errno));
+        ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot read");
         return false;
       }
 
       return 0 == result1;
     }
 
-    result2 = read(fd2, buffer2, result1);
+    result2 = FullyRead(fd2, buffer2, result1);
 
     if (0 > result2) {
-      fprintf(stderr, "cannot read 2: %s\n", strerror(errno));
+      ESB_LOG_ERROR_ERRNO(ESB::LastError(), "cannot read");
       return false;
     }
 
@@ -1003,6 +1020,8 @@ bool CompareFiles(int fd1, int fd2) {
 }  // namespace ES
 
 int main(int argc, char **argv) {
+  ESB::Logger::SetInstance(&ES::Logger);
+
   char currentWorkingDirectory[NAME_MAX + 1];
 
   if (0 == getcwd(currentWorkingDirectory, sizeof(currentWorkingDirectory))) {

@@ -254,7 +254,7 @@ bool HttpClientSocket::wantWrite() {
   if (_state & (SEND_PAUSED | ABORTED | INACTIVE)) {
     return false;
   }
-  
+
   if (_socket->wantWrite()) {
     return true;
   }

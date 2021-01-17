@@ -21,7 +21,7 @@ HttpClient::HttpClient(const char *namePrefix, ESB::UInt32 threads, HttpClientHa
       _multiplexers(),
       _threadPool(namePrefix, _threads),
       _rand(),
-      _clientCounters(5*60, 1, _allocator) {
+      _clientCounters(5 * 60, 1, _allocator) {
   strncpy(_name, namePrefix, sizeof(_name));
   _name[sizeof(_name) - 1] = 0;
 }
