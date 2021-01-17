@@ -46,6 +46,7 @@ stat:
  - modify produceRequestBody and produceResponseBody to return bytes actually produced, and incorporate into client and server sockets.
 
 proxy:
+ - add a test for origin that sends a connection:close without a content-length and without a transfer-encoding.  Proxy should treat the rest of the stream as the body.
  - for proxy initiated connections, do not blindly relay connection close headers and content-length/transfer encoding headers from the client and server.
  - relay error codes to handler.endTransaction().  Instead of returning true|false in handleRead(), etc, return ESB::Error to the multiplexer and pass these back to the handlers.
  - implement idle check - and make it work with paused sockets? (or not - the other socket in the inbound/outbound pair should timeout and propagate the timeout by calling abort)
@@ -154,6 +155,7 @@ tcp proxy stuff:
  - turn into a unit test over loopback/same proc
 
 http stuff
+ - functions to hex encode/decode header fields
  - merge duplicate headers
  - add user agent/server agent headers
  - remove sensitive headers while proxying

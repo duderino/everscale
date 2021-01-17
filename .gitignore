@@ -9,7 +9,7 @@ CMakeFiles
 Makefile
 Testing
 cmake_install.cmake
-http/http1/tests/output*
+http/http1/tests/Test*.out
 base/include/ESBConfig.h
 unit-tf/include/ESTFConfig.h
 .idea
@@ -22,3 +22,7 @@ _deps
 http-loadgen
 http-origin
 http-proxy-test-main
+base/tests/*.srl
+base/tests/*.key
+base/tests/*.crt
+bssl
