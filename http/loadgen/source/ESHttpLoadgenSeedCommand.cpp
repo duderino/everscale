@@ -26,12 +26,19 @@ ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
     // Create the request context
     HttpLoadgenContext *context =
         new (ESB::SystemAllocator::Instance()) HttpLoadgenContext(ESB::SystemAllocator::Instance().cleanupHandler());
-    assert(context);
+    if (!context) {
+      ESB_LOG_ERROR_ERRNO(ESB_OUT_OF_MEMORY, "Cannot create loadgen context");
+      return ESB_OUT_OF_MEMORY;
+    }
 
     // Build the request
 
     ESB::Error error = buildRequest(transaction);
-    assert(ESB_SUCCESS == error);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot build initial request");
+      return error;
+    }
+
     transaction->setContext(context);
     transaction->setPeerAddress(_destination);
 
@@ -44,7 +51,10 @@ ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
     }
 
     error = multiplexer.executeClientTransaction(transaction);
-    assert(ESB_SUCCESS == error);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot execute client transaction");
+      return error;
+    }
   }
 
   return ESB_SUCCESS;
