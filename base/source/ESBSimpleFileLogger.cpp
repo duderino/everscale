@@ -1,6 +1,7 @@
 #ifndef ESB_SIMPLE_FILE_LOGGER_H
 #include <ESBSimpleFileLogger.h>
 #endif
+
 #ifndef ESB_THREAD_H
 #include <ESBThread.h>
 #endif
@@ -25,7 +26,8 @@
 
 namespace ESB {
 
-SimpleFileLogger::SimpleFileLogger(FILE *file, Severity severity) : _severity(severity), _file(file) {}
+SimpleFileLogger::SimpleFileLogger(FILE *file, Severity severity, bool flushable)
+    : _flushable(flushable), _severity(severity), _file(file) {}
 
 SimpleFileLogger::~SimpleFileLogger() {}
 
@@ -52,6 +54,16 @@ Error SimpleFileLogger::log(Severity severity, const char *format, ...) {
 #endif
 
   return ESB_SUCCESS;
+}
+
+void SimpleFileLogger::flush() {
+  if (_flushable) {
+#ifdef HAVE_FFLUSH
+    fflush(_file);
+#else
+#error "fflush or equivalent is required"
+#endif
+  }
 }
 
 }  // namespace ESB

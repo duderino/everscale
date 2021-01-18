@@ -54,6 +54,8 @@ class TestLogger : public Logger {
     return ESB_SUCCESS;
   }
 
+  virtual void flush() {}
+
   inline Severity getLastSeverity() { return _lastSeverity; }
 
   inline const char *getLastFormat() { return _lastFormat; }

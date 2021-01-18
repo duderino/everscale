@@ -21,6 +21,8 @@
 
 namespace ESB {
 
+static SimpleFileLogger TestLogger(stdout, Logger::Warning);
+
 class SocketTest : public ::testing::Test {
  public:
   SocketTest()
@@ -35,7 +37,7 @@ class SocketTest : public ::testing::Test {
     _message[sizeof(_message) - 1] = 0;
   }
 
-  static void SetUpTestSuite() { Logger::SetInstance(&_Logger); }
+  static void SetUpTestSuite() { Logger::SetInstance(&TestLogger); }
 
   static void TearDownTestSuite() { Logger::SetInstance(NULL); }
 
@@ -78,12 +80,7 @@ class SocketTest : public ::testing::Test {
   ListeningSocket _clearListener;
   ListeningSocket _secureListener;
   char _message[42];
-
- private:
-  static SimpleFileLogger _Logger;
 };
-
-SimpleFileLogger SocketTest::_Logger(stdout, Logger::Debug);
 
 }  // namespace ESB
 

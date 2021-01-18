@@ -85,7 +85,30 @@ check_struct_has_member("struct sigaction" sa_handler "signal.h" HAVE_STRUCT_SIG
 check_include_file("stdio.h" HAVE_STDIO_H)
 check_symbol_exists(vfprintf "stdio.h" HAVE_VFPRINTF)
 check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
+check_symbol_exists(fflush "stdio.h" HAVE_FFLUSH)
 set(HAVE_FILE_T 1) # TODO detect with a test program
+
+check_include_file("execinfo.h" HAVE_EXECINFO_H)
+check_symbol_exists(backtrace "execinfo.h" HAVE_BACKTRACE)
+check_symbol_exists(backtrace_symbols "execinfo.h" HAVE_BACKTRACE_SYMBOLS)
+
+set(OLD_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+set(CMAKE_REQUIRED_LIBRARIES -ldl)
+check_cxx_source_compiles("
+#include <cxxabi.h>
+#include <dlfcn.h>
+int main () {
+        void **buffer;
+        Dl_info info;
+        dladdr(buffer[0], &info);
+        int status;
+        abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+}" HAVE_DLADDR_AND_CXA_DEMANGLE)
+set(CMAKE_REQUIRED_LIBRARIES ${OLD_CMAKE_REQUIRED_LIBRARIES})
+set(HAVE_DLFCN_H ${HAVE_DLADDR_AND_CXA_DEMANGLE})
+set(HAVE_DLADDR ${HAVE_DLADDR_AND_CXA_DEMANGLE})
+set(HAVE_CXXABI_H ${HAVE_DLADDR_AND_CXA_DEMANGLE})
+set(HAVE_ABI_CXA_DEMANGLE ${HAVE_DLADDR_AND_CXA_DEMANGLE})
 
 check_include_file("stdarg.h" HAVE_STDARG_H)
 check_symbol_exists(va_start "stdarg.h" HAVE_VA_START)

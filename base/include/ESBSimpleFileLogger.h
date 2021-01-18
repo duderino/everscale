@@ -33,7 +33,7 @@ class SimpleFileLogger : public Logger {
    *
    * @param file All log messages will be written to this file handle.
    */
-  SimpleFileLogger(FILE *file = stdout, Severity severity = Logger::Warning);
+  SimpleFileLogger(FILE *file = stdout, Severity severity = Logger::Warning, bool flushable = true);
 
   /** Destructor
    */
@@ -63,6 +63,8 @@ class SimpleFileLogger : public Logger {
    */
   virtual Error log(Severity severity, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
+  virtual void flush();
+
   /** Placement new.
    *
    *  @param size The size of the object.
@@ -76,6 +78,7 @@ class SimpleFileLogger : public Logger {
   SimpleFileLogger(const SimpleFileLogger &);
   SimpleFileLogger &operator=(const SimpleFileLogger &);
 
+  bool _flushable;
   Severity _severity;
 #ifdef HAVE_FILE_T
   FILE *_file;

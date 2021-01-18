@@ -19,18 +19,22 @@ endif()
 
 set(CMAKE_C_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer" CACHE STRING "default C flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti" CACHE STRING "default C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_DEFAULT "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS_DEFAULT CMAKE_C_FLAGS_DEFAULT CMAKE_EXE_LINKER_FLAGS_DEFAULT CMAKE_SHARED_LINKER_FLAGS_DEFAULT)
 
 set(CMAKE_C_FLAGS_ASAN "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak" CACHE STRING "asan C flags" FORCE)
 set(CMAKE_CXX_FLAGS_ASAN "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=address -fsanitize=leak" CACHE STRING "asan C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_ASAN "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS_ASAN CMAKE_C_FLAGS_ASAN CMAKE_EXE_LINKER_FLAGS_ASAN CMAKE_SHARED_LINKER_FLAGS_ASAN)
 
 set(CMAKE_C_FLAGS_TSAN "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fsanitize=thread" CACHE STRING "tsan C flags" FORCE)
 set(CMAKE_CXX_FLAGS_TSAN "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=thread" CACHE STRING "tsan C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_TSAN "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS_TSAN CMAKE_C_FLAGS_TSAN CMAKE_EXE_LINKER_FLAGS_TSAN CMAKE_SHARED_LINKER_FLAGS_TSAN)
 
 set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fsanitize=leak" CACHE STRING "debug C flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=leak" CACHE STRING "debug C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Werror -D_REENTRANT -DNDEBUG" CACHE STRING "release C flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "release C++ flags" FORCE)
@@ -44,7 +48,8 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exc
 # This build disables all memory allocators and instead uses malloc/free for every allocation.  This can catch memory leaks obscured by the use of memory allocators.
 set(CMAKE_C_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fsanitize=leak" CACHE STRING "debug no pool C flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=leak" CACHE STRING "debug no pool C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_DEBUGNOPOOL "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG" CACHE STRING "release no pool C flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "release no pool C++ flags" FORCE)
-
+set(CMAKE_EXE_LINKER_FLAGS_RELEASENOPOOL "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)

@@ -100,6 +100,8 @@ class Logger {
    */
   virtual Error log(Severity severity, const char *format, ...) __attribute__((format(printf, 3, 4))) = 0;
 
+  virtual void flush() = 0;
+
   static void SetInstance(Logger *logger);
 
   static inline Logger &Instance() { return *_Instance; };

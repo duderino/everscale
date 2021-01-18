@@ -45,6 +45,8 @@ class NullLogger : public Logger {
    */
   virtual Error log(Severity severity, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
+  virtual void flush();
+
  private:
   // Disabled
   NullLogger(const NullLogger &);

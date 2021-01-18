@@ -1,4 +1,5 @@
 stat:
+ - ensure bssl is built in release mode when parent project is built in release mode
  - TCP_NODELAY on all connected sockets by default
  - Reduce the number of hostname copies in HttpClientSocketFactory (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress -> ClientTLSConnection)
  - Create generic socket test base class, use for ClearSocket, ClientTLSSocket, and ServerTLSSocket
