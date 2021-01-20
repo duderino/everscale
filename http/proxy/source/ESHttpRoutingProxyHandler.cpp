@@ -6,10 +6,6 @@
 #include <ESHttpRoutingProxyContext.h>
 #endif
 
-#ifndef ESB_ASSERT_H
-#include <ESBAssert.h>
-#endif
-
 namespace ES {
 
 HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router) : _router(router) {}
@@ -198,7 +194,7 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiple
     ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] consumed inbound request body before outbound response received",
                           serverStream.logAddress());
     assert(context);
-    ESB_ASSERT(context->clientStream());
+    assert(context->clientStream());
     return ESB_INVALID_STATE;
   }
 

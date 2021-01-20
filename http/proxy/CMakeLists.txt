@@ -43,6 +43,7 @@ set(TEST_INCS
 #        -ltcmalloc
 set(TEST_LIBS
         -pthread
+		-ldl
         unit-tf
         proxy
         loadgen

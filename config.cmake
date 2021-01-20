@@ -78,9 +78,21 @@ check_symbol_exists("pthread_self" "pthread.h" HAVE_PTHREAD_SELF)
 check_include_file("sched.h" HAVE_SCHED_H)
 check_symbol_exists("sched_yield" "sched.h" HAVE_SCHED_YIELD)
 
+check_include_file("ucontext.h" HAVE_UCONTEXT_H)
+check_cxx_source_compiles("
+#include <ucontext.h>
+int main () {
+        ucontext_t *uc;
+}" HAVE_UCONTEXT_T)
+
 check_include_file("signal.h" HAVE_SIGNAL_H)
 check_symbol_exists(sigaction "signal.h" HAVE_SIGACTION)
 check_struct_has_member("struct sigaction" sa_handler "signal.h" HAVE_STRUCT_SIGACTION)
+check_cxx_source_compiles("
+#include <signal.h>
+int main () {
+        sigignore(SIGTERM);
+}" HAVE_SIGIGNORE)
 
 check_include_file("stdio.h" HAVE_STDIO_H)
 check_symbol_exists(vfprintf "stdio.h" HAVE_VFPRINTF)

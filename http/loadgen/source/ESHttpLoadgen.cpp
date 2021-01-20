@@ -38,14 +38,13 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
+#ifndef ESB_SIGNAL_HANDLER_H
+#include <ESBSignalHandler.h>
 #endif
 
-static volatile ESB::Word IsRunning = 1;
-static void SignalHandler(int signal) { IsRunning = 0; }
-
 using namespace ES;
+
+static ESB::SimpleFileLogger SimpleLogger(stdout, ESB::Logger::Warning);
 
 int main(int argc, char **argv) {
   HttpTestParams params;
@@ -55,22 +54,22 @@ int main(int argc, char **argv) {
     return error;
   }
 
+  SimpleLogger.setSeverity(params.logLevel());
+  ESB::Logger::SetInstance(&SimpleLogger);
+
+  error = ESB::SignalHandler::Instance().initialize();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "cannot install signal handlers");
+    return error;
+  }
+
+  error = ESB::Time::Instance().start();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "cannot start time thread");
+    return error;
+  }
+
   HttpLoadgenContext::SetTotalIterations(params.connections() * params.requestsPerConnection());
-
-  ESB::Time::Instance().start();
-  ESB::SimpleFileLogger logger(stdout);
-  logger.setSeverity(params.logLevel());
-  ESB::Logger::SetInstance(&logger);
-
-  //
-  // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
-  //
-
-  signal(SIGHUP, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, SignalHandler);
-  signal(SIGQUIT, SignalHandler);
-  signal(SIGTERM, SignalHandler);
 
   //
   // Max out open files
@@ -111,7 +110,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  while (IsRunning && !HttpLoadgenContext::IsFinished()) {
+  while (ESB::SignalHandler::Instance().running() && !HttpLoadgenContext::IsFinished()) {
     sleep(1);
   }
 

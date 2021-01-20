@@ -18,8 +18,8 @@
 #include <ESHttpLoadgenSeedCommand.h>
 #endif
 
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
+#ifndef ESB_SIGNAL_HANDLER_H
+#include <ESBSignalHandler.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -27,9 +27,6 @@
 #endif
 
 namespace ES {
-
-static volatile ESB::Word IsRunning = 1;
-static void SignalHandler(int signal) { IsRunning = 0; }
 
 class HttpNullProxyHandler : public HttpProxyHandler {
  public:
@@ -148,23 +145,23 @@ ESB::Error HttpIntegrationTest::run() {
   const ESB::UInt32 totalTransactions = _params.connections() * _params.requestsPerConnection();
   HttpLoadgenContext::SetTotalIterations(totalTransactions);
 
-  ESB::Time::Instance().start();
+  ESB::Error error = ESB::SignalHandler::Instance().initialize();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "cannot install signal handlers");
+    return error;
+  }
 
-  //
-  // Install signal handlers: Ctrl-C and kill will start clean shutdown sequence
-  //
-
-  signal(SIGHUP, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, SignalHandler);
-  signal(SIGQUIT, SignalHandler);
-  signal(SIGTERM, SignalHandler);
+  error = ESB::Time::Instance().start();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "cannot start time thread");
+    return error;
+  }
 
   //
   // Max out open files
   //
 
-  ESB::Error error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
+  error = ESB::SystemConfig::Instance().setSocketSoftMax(ESB::SystemConfig::Instance().socketHardMax());
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "cannot raise max fd limit");
     return error;
@@ -255,7 +252,7 @@ ESB::Error HttpIntegrationTest::run() {
   // Wait for all requests to finish
   //
 
-  while (IsRunning && !HttpLoadgenContext::IsFinished()) {
+  while (ESB::SignalHandler::Instance().running() && !HttpLoadgenContext::IsFinished()) {
     sleep(1);
   }
 

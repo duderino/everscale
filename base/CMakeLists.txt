@@ -42,6 +42,7 @@ set(SOURCE_FILES
         source/ESBSharedInt.cpp
         source/ESBSharedEmbeddedQueue.cpp
         source/ESBSharedQueue.cpp
+        source/ESBSignalHandler.cpp
         source/ESBSmartPointer.cpp
         source/ESBSmartPointerDebugger.cpp
         source/ESBSocketMultiplexer.cpp
@@ -88,7 +89,7 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../unit-tf/include"
         )
 
-set(TEST_LIBS -pthread unit-tf base bssl_ssl bssl_crypto)
+set(TEST_LIBS -pthread -ldl unit-tf base bssl_ssl bssl_crypto)
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
@@ -115,7 +116,7 @@ add_gtest(socket-address-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DI
 add_gtest(connection-pool-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBConnectionPoolTest.cpp)
 add_gtest(clear-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBClearSocketTest.cpp)
 add_gtest(tls-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBTLSSocketTest.cpp)
-add_gtest(assert-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBAssertTest.cpp)
+add_gtest(signal-handler-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESBSignalHandlerTest.cpp)
 
 # Generate certs and private keys
 
