@@ -41,23 +41,91 @@
 namespace ESB {
 
 static volatile Word Running = 1;
-SignalHandler SignalHandler::_Instance;
-static void BacktraceHandler(int signo, siginfo_t *siginfo, void *context);
-static void StopHandler(int signo, siginfo_t *siginfo, void *context);
-static const char *DescribeSignal(int signo);
-
 static const UInt32 BacktraceSignals[] = {SIGILL, SIGFPE, SIGABRT, SIGSEGV, SIGBUS, SIGSYS};
 static const UInt32 StopSignals[] = {SIGINT, SIGTERM, SIGQUIT};
 static const UInt32 IgnoreSignals[] = {SIGHUP,  SIGPIPE, SIGURG,    SIGTTIN, SIGTTOU, SIGPOLL,
                                        SIGXCPU, SIGXFSZ, SIGVTALRM, SIGUSR1, SIGUSR2, SIGWINCH};
 
-SignalHandler::SignalHandler() {}
+static const char *DescribeSignal(int signo) {
+  if (SIGILL > signo || _NSIG <= signo) {
+    return "Unknown Signal";
+  }
 
-SignalHandler::~SignalHandler() {}
+  return sys_siglist[signo];
+}
 
-bool SignalHandler::running() { return Running; }
+void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) __attribute__((no_sanitize("thread"))) {
+  //
+  // TSAN is disabled because this function makes hearty use of code that is not async-signal-safe.  While normally
+  // that'd be a very bad thing, this handler is only called when the process is about to exit.  Normally it will log
+  // extra info that makes it much easier to debug a crash.  Occasionally it may crash a progress that was just about to
+  // exit/crash anyways.
+  //
 
-void SignalHandler::stop() { Running = 0; }
+  if (!ESB_CRITICAL_LOGGABLE) {
+    exit(0 == signo ? -1 : signo);
+  }
+
+  const char *description = DescribeSignal(signo);
+
+#if defined HAVE_BACKTRACE && defined HAVE_BACKTRACE_SYMBOLS && defined HAVE_ABI_CXA_DEMANGLE && defined HAVE_DLADDR
+  //
+  // From "Stack Backtracing Inside Your Program" by Gianluca Insolvibile on August 11, 2003, Linux Journal.  Retrieved
+  // on Jan 18th 2021 from https://www.linuxjournal.com/article/6391.
+  //
+  void *frames[ESB_MAX_BACKTRACE_FRAMES];
+  int numFrames = backtrace(frames, ESB_MAX_BACKTRACE_FRAMES);
+
+#ifdef ESB_RESTORE_FIRST_BACKTRACE_FRAME
+  const int startFrame = 1;
+#ifdef HAVE_UCONTEXT_T
+  {
+    ucontext_t *uc = (ucontext_t *)context;
+#ifdef ESB_64BIT
+    frames[1] = (void *)uc->uc_mcontext.gregs[REG_RIP];
+#else
+    frames[1] = (void *)uc->uc_mcontext.gregs[REG_EIP];
+#endif
+  }
+#else
+#error "ucontext_t or equivalent is required"
+#endif
+#else
+  const int startFrame = 2;
+#endif
+
+  char **symbols = backtrace_symbols(frames, numFrames);
+
+  for (int i = startFrame; i < numFrames; ++i) {
+    const char *mangledFrame = symbols[i] ? symbols[i] : "(null)";
+    Dl_info info;
+    memset(&info, 0, sizeof(info));
+    if (dladdr(frames[i], &info)) {
+      int status = 0;
+      mangledFrame = info.dli_sname ? info.dli_sname : mangledFrame;
+      char *demangledFrame = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+      ESB_LOG_BACKTRACE("[%s:%2d/%d]: %s", description, i - startFrame + 1, numFrames - startFrame,
+                        0 == status ? (demangledFrame ? demangledFrame : mangledFrame) : mangledFrame);
+      if (demangledFrame) {
+        free(demangledFrame);
+      }
+    } else {
+      ESB_LOG_BACKTRACE("[%s:%2d/%d]: %s", description, i - startFrame + 1, numFrames - startFrame, mangledFrame);
+    }
+  }
+
+  if (symbols) {
+    free(symbols);
+  }
+#else
+#error "backtrace, backtrace_symbols, abi::__cxa_demangle, and dladdr or equivalent is required"
+#endif
+
+  ESB::Logger::Instance().flush();
+  exit(0 == signo ? -1 : signo);
+}
+
+static void StopHandler(int signo, siginfo_t *siginfo, void *context) { Running = 0; }
 
 Error SignalHandler::initialize() {
   for (UInt32 i = 0; i < sizeof(BacktraceSignals) / sizeof(UInt32); ++i) {
@@ -111,75 +179,14 @@ Error SignalHandler::initialize() {
   return ESB_SUCCESS;
 }
 
-void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) {
-  if (!ESB_CRITICAL_LOGGABLE) {
-    exit(0 == signo ? 1 : signo);
-  }
+SignalHandler SignalHandler::_Instance;
 
-  const char *description = DescribeSignal(signo);
+SignalHandler::SignalHandler() {}
 
-#if defined HAVE_BACKTRACE && defined HAVE_BACKTRACE_SYMBOLS && defined HAVE_ABI_CXA_DEMANGLE && defined HAVE_DLADDR
-  //
-  // From "Stack Backtracing Inside Your Program" by Gianluca Insolvibile on August 11, 2003, Linux Journal.  Retrieved
-  // on Jan 18th 2021 from https://www.linuxjournal.com/article/6391.
-  //
-  void *frames[ESB_MAX_BACKTRACE_FRAMES];
-  int numFrames = backtrace(frames, ESB_MAX_BACKTRACE_FRAMES);
+SignalHandler::~SignalHandler() {}
 
-#ifdef HAVE_UCONTEXT_T
-  {
-    // TODO not sure if this trick from the linux journal article is still useful.  Perhaps start the log dump from i =
-    // 2 (third frame) instead?
-    ucontext_t *uc = (ucontext_t *)context;
-#ifdef ESB_64BIT
-    frames[1] = (void *)uc->uc_mcontext.gregs[REG_RIP];
-#else
-    frames[1] = (void *)uc->uc_mcontext.gregs[REG_EIP];
-#endif
-  }
-#else
-#error "ucontext_t or equivalent is required"
-#endif
+bool SignalHandler::running() { return Running; }
 
-  char **symbols = backtrace_symbols(frames, numFrames);
-
-  for (int i = 1; i < numFrames; ++i) {
-    const char *mangledFrame = symbols[i] ? symbols[i] : "(null)";
-    Dl_info info;
-    memset(&info, 0, sizeof(info));
-    if (dladdr(frames[i], &info)) {
-      int status = 0;
-      mangledFrame = info.dli_sname ? info.dli_sname : mangledFrame;
-      char *demangledFrame = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-      ESB_LOG_CRITICAL("(%d:%s:%d): %s", signo, description, i,
-                       0 == status ? (demangledFrame ? demangledFrame : mangledFrame) : mangledFrame);
-      if (demangledFrame) {
-        free(demangledFrame);
-      }
-    } else {
-      ESB_LOG_CRITICAL("(%d:%s:%d): %s", signo, description, i, mangledFrame);
-    }
-  }
-
-  if (symbols) {
-    free(symbols);
-  }
-#else
-#error "backtrace, backtrace_symbols, abi::__cxa_demangle, and dladdr or equivalent is required"
-#endif
-
-  ESB::Logger::Instance().flush();
-  exit(0 == signo ? 1 : signo);
-}
-
-void StopHandler(int signo, siginfo_t *siginfo, void *context) { Running = 0; }
-
-const char *DescribeSignal(int signo) {
-  if (SIGILL > signo || _NSIG <= signo) {
-    return "Unknown Signal";
-  }
-
-  return sys_siglist[signo];
-}
+void SignalHandler::stop() { Running = 0; }
 
 }  // namespace ESB

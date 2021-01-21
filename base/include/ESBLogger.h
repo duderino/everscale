@@ -297,4 +297,12 @@ class Logger {
     }                                                                                                            \
   } while (0)
 
+#define ESB_LOG_BACKTRACE(FORMAT, ...)                                                                            \
+  do {                                                                                                            \
+    if (ESB_CRITICAL_LOGGABLE) {                                                                                  \
+      ESB::Logger::Instance().log(ESB::Logger::Critical, ESB_CRITICAL_LOG_PREFIX FORMAT "\n",                     \
+                                  ESB::Time::Instance().nowSec(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__); \
+    }                                                                                                             \
+  } while (0)
+
 #endif

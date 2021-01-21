@@ -43,6 +43,8 @@ TEST_F(SignalHandlerTest, DereferenceNullPointer) {
 #endif
 }
 
+TEST_F(SignalHandlerTest, Assert) { ASSERT_EXIT(assert(false), ::testing::ExitedWithCode(SIGABRT), ".*"); }
+
 TEST_F(SignalHandlerTest, CatchSigTerm) {
   EXPECT_EQ(true, SignalHandler::Instance().running());
   kill(getpid(), SIGTERM);
