@@ -38,9 +38,11 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-Wl,-export-dynamic" CACHE STRING "default lin
 
 set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Werror -D_REENTRANT -DNDEBUG" CACHE STRING "release C flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "release C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb -Wall -Werror -D_REENTRANT -DNDEBUG -fno-omit-frame-pointer" CACHE STRING "release w symbols C flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -ggdb -Wall -Werror -D_REENTRANT -DNDEBUG -fno-omit-frame-pointer -fno-exceptions -fno-rtti" CACHE STRING "release w symbols C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG" CACHE STRING "minrelease C flags" FORCE)
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "minrelease C++ flags" FORCE)

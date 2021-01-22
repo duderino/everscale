@@ -75,6 +75,18 @@ check_symbol_exists("pthread_create" "pthread.h" HAVE_PTHREAD_CREATE)
 check_symbol_exists("pthread_join" "pthread.h" HAVE_PTHREAD_JOIN)
 check_symbol_exists("pthread_self" "pthread.h" HAVE_PTHREAD_SELF)
 
+check_include_file("semaphore.h" HAVE_SEMAPHORE_H)
+check_cxx_source_compiles("
+#include <semaphore.h>
+int main () {
+        sem_t sem;
+}" HAVE_SEM_T)
+check_symbol_exists("sem_init" "semaphore.h" HAVE_SEM_INIT)
+check_symbol_exists("sem_wait" "semaphore.h" HAVE_SEM_WAIT)
+check_symbol_exists("sem_trywait" "semaphore.h" HAVE_SEM_TRYWAIT)
+check_symbol_exists("sem_post" "semaphore.h" HAVE_SEM_POST)
+check_symbol_exists("sem_destroy" "semaphore.h" HAVE_SEM_DESTROY)
+
 check_include_file("sched.h" HAVE_SCHED_H)
 check_symbol_exists("sched_yield" "sched.h" HAVE_SCHED_YIELD)
 

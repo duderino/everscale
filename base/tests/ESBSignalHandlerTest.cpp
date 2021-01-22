@@ -30,23 +30,27 @@ class SignalHandlerTest : public ::testing::Test {
 TEST_F(SignalHandlerTest, DivideByZero) {
   volatile int denominator = 0;  // volatile - prevent optimizer from optimizing statement away
   int result = 0;
-  EXPECT_EXIT(result = 42 / denominator, ::testing::ExitedWithCode(SIGFPE), ".*");
+  EXPECT_EXIT(result = 42 / denominator, ::testing::KilledBySignal(SIGFPE), ".*");
   printf("%d\n", result);  // prevent optimizer from optimizing statement away
 }
 
 TEST_F(SignalHandlerTest, DereferenceNullPointer) {
   char *pointer = NULL;
 #ifdef NDEBUG
-  ASSERT_EXIT(*pointer = 'a', ::testing::ExitedWithCode(SIGILL), ".*");
+  ASSERT_EXIT(*pointer = 'a', ::testing::KilledBySignal(SIGILL), ".*");
 #else
-  ASSERT_EXIT(*pointer = 'a', ::testing::ExitedWithCode(SIGSEGV), ".*");
+  ASSERT_EXIT(*pointer = 'a', ::testing::KilledBySignal(SIGSEGV), ".*");
 #endif
 }
 
-TEST_F(SignalHandlerTest, Assert) { ASSERT_EXIT(assert(false), ::testing::ExitedWithCode(SIGABRT), ".*"); }
+TEST_F(SignalHandlerTest, Assert) {
+#ifndef NDEBUG
+  ASSERT_EXIT(assert(false), ::testing::KilledBySignal(SIGABRT), ".*");
+#endif
+}
 
 TEST_F(SignalHandlerTest, CatchSigTerm) {
   EXPECT_EQ(true, SignalHandler::Instance().running());
-  kill(getpid(), SIGTERM);
+  raise(SIGTERM);
   EXPECT_EQ(false, SignalHandler::Instance().running());
 }

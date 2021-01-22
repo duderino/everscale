@@ -54,7 +54,7 @@ static const char *DescribeSignal(int signo) {
   return sys_siglist[signo];
 }
 
-void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) __attribute__((no_sanitize("thread"))) {
+void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) {
   //
   // TSAN is disabled because this function makes hearty use of code that is not async-signal-safe.  While normally
   // that'd be a very bad thing, this handler is only called when the process is about to exit.  Normally it will log
@@ -63,8 +63,11 @@ void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) __attribute_
   //
 
   if (!ESB_CRITICAL_LOGGABLE) {
-    exit(0 == signo ? -1 : signo);
+    signal(signo, SIG_DFL);
+    raise(signo);
   }
+
+#if defined(__has_feature) && !__has_feature(thread_sanitizer)
 
   const char *description = DescribeSignal(signo);
 
@@ -122,7 +125,11 @@ void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) __attribute_
 #endif
 
   ESB::Logger::Instance().flush();
-  exit(0 == signo ? -1 : signo);
+
+#endif  // !__has_feature(thread_sanitizer)
+
+  signal(signo, SIG_DFL);
+  raise(signo);
 }
 
 static void StopHandler(int signo, siginfo_t *siginfo, void *context) { Running = 0; }

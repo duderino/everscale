@@ -5,7 +5,7 @@
 namespace ESB {
 
 CountingSemaphore::CountingSemaphore() : _magic(0) {
-#if defined HAVE_SEM_INIT && 2147483647 == SEM_VALUE_MAX
+#ifdef HAVE_SEM_INIT
 
   if (0 == sem_init(&_semaphore, 0, 0)) {
     _magic = ESB_MAGIC;
@@ -44,7 +44,7 @@ CountingSemaphore::~CountingSemaphore() {
     return;
   }
 
-#if defined HAVE_SEM_DESTROY && 2147483647 == SEM_VALUE_MAX
+#ifdef HAVE_SEM_DESTROY
 
   sem_destroy(&_semaphore);
 
@@ -67,7 +67,7 @@ Error CountingSemaphore::writeAcquire() {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_SEM_WAIT && 2147483647 == SEM_VALUE_MAX
+#ifdef HAVE_SEM_WAIT
 
   Error error;
 
@@ -84,8 +84,6 @@ Error CountingSemaphore::writeAcquire() {
 
     return error;
   }
-
-  return ESB_SUCCESS;
 
 #elif defined HAVE_PTHREAD_MUTEX_LOCK && defined HAVE_PTHREAD_COND_WAIT && defined HAVE_PTHREAD_MUTEX_UNLOCK
 
@@ -134,7 +132,7 @@ Error CountingSemaphore::writeAttempt() {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_SEM_TRYWAIT && 2147483647 == SEM_VALUE_MAX
+#ifdef HAVE_SEM_TRYWAIT
 
   if (0 == sem_trywait(&_semaphore)) {
     return ESB_SUCCESS;
@@ -188,7 +186,7 @@ Error CountingSemaphore::writeRelease() {
     return ESB_NOT_INITIALIZED;
   }
 
-#if defined HAVE_SEM_POST && 2147483647 == SEM_VALUE_MAX
+#ifdef HAVE_SEM_POST
 
   if (0 == sem_post(&_semaphore)) {
     return ESB_SUCCESS;
