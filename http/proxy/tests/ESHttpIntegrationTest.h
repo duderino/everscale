@@ -55,7 +55,7 @@ class HttpIntegrationTest {
   HttpProxy _proxy;
   HttpServer _origin;
 
-  ESB_DISABLE_COPY(HttpIntegrationTest);
+  ESB_DISABLE_AUTO_COPY(HttpIntegrationTest);
 };
 
 }  // namespace ES

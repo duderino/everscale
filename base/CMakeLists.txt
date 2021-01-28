@@ -19,7 +19,7 @@ set(SOURCE_FILES
         source/ESBConnectionPool.cpp
         source/ESBCountingSemaphore.cpp
         source/ESBDate.cpp
-        source/ESBDelayedCommand.cpp
+        source/ESBTimer.cpp
         source/ESBDiscardAllocator.cpp
         source/ESBDnsClient.cpp
         source/ESBEmbeddedList.cpp

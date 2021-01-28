@@ -2,47 +2,47 @@
 #include <ESBFlatTimingWheel.h>
 #endif
 
-#ifndef ESB_TIME_H
-#include <ESBTime.h>
-#endif
-
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
+#endif
+
+#ifndef ESB_TIME_H
+#include <ESBTime.h>
 #endif
 
 namespace ESB {
 
 FlatTimingWheel::FlatTimingWheel(UInt32 ticks, UInt32 tickMilliSeconds, Allocator &allocator)
-    : _tickMilliSeconds(tickMilliSeconds),
-      _ticks(ticks),
+    : _start(Time::Instance().now()),
+      _tickMilliSeconds(tickMilliSeconds),
+      _maxTicks(ticks),
       _currentTick(0U),
-      _allocator(allocator),
-      _currentTickTime(Time::Instance().now()) {
-  _commands = (EmbeddedList *)_allocator.allocate(_ticks * sizeof(EmbeddedList));
-  if (!_commands) {
+      _allocator(allocator) {
+  _timers = (EmbeddedList *)_allocator.allocate(_maxTicks * sizeof(EmbeddedList));
+  if (!_timers) {
     return;
   }
 
-  for (UInt32 i = 0; i < _ticks; ++i) {
-    new (&_commands[i]) EmbeddedList();
+  for (UInt32 i = 0; i < _maxTicks; ++i) {
+    new (&_timers[i]) EmbeddedList();
   }
 }
 
 FlatTimingWheel::~FlatTimingWheel() {
   clear();
 
-  if (_commands) {
-    for (UInt32 i = 0; i < _ticks; ++i) {
-      _commands[i].~EmbeddedList();
+  if (_timers) {
+    for (UInt32 i = 0; i < _maxTicks; ++i) {
+      _timers[i].~EmbeddedList();
     }
-    _allocator.deallocate(_commands);
+    _allocator.deallocate(_timers);
   }
 }
 
 void FlatTimingWheel::clear() {
-  for (UInt32 i = 0; i < _ticks; ++i) {
+  for (UInt32 i = 0; i < _maxTicks; ++i) {
     while (true) {
-      EmbeddedListElement *element = _commands[i].removeFirst();
+      EmbeddedListElement *element = _timers[i].removeFirst();
       if (!element) {
         break;
       }
@@ -54,53 +54,54 @@ void FlatTimingWheel::clear() {
   }
 }
 
-Error FlatTimingWheel::insert(DelayedCommand *command, UInt32 delayMilliSeconds, bool maskErrors) {
-  UInt32 elapsedTicks = ticks(Time::Instance().now() - _currentTickTime);
+Error FlatTimingWheel::insert(Timer *timer, UInt32 delayMilliSeconds) {
+  if (!timer) {
+    return ESB_NULL_POINTER;
+  }
+
+  UInt32 nowTick = ticks(Time::Instance().now() - _start);
   UInt32 delayTicks = delayMilliSeconds / _tickMilliSeconds;
 
-  if (elapsedTicks + delayTicks >= _currentTick + _ticks) {
-    if (!maskErrors) {
-      ESB_LOG_WARNING("%u ticks since last exec + %u requested delay ticks exceeds %u max timing wheel ticks",
-                      elapsedTicks, delayTicks, _ticks);
-      return ESB_INVALID_ARGUMENT;
-    }
-    command->setTick(_currentTick + _ticks - 1);
-  } else {
-    command->setTick(_currentTick + elapsedTicks + delayTicks);
+  if (nowTick + delayTicks <= _currentTick) {
+    return ESB_UNDERFLOW;
   }
 
-  _commands[idx(command->tick())].addLast(command);
+  if (nowTick + delayTicks >= _currentTick + _maxTicks) {
+    return ESB_OVERFLOW;
+  }
+
+  timer->setTick(nowTick + delayTicks);
+  _timers[idx(timer->tick())].addLast(timer);
   return ESB_SUCCESS;
 }
 
-Error FlatTimingWheel::remove(DelayedCommand *command) {
-  _commands[idx(command->tick())].remove(command);
-  return 0;
+Error FlatTimingWheel::remove(Timer *timer) {
+  if (!timer) {
+    return ESB_NULL_POINTER;
+  }
+  _timers[idx(timer->tick())].remove(timer);
+  return ESB_SUCCESS;
 }
 
-Error FlatTimingWheel::run(SharedInt *isRunning) {
-  UInt32 elapsedTicks = ticks(Time::Instance().now() - _currentTickTime);
+Timer *FlatTimingWheel::nextExpired() {
+  UInt32 nowTick = ticks(Time::Instance().now() - _start);
+  if (nowTick == _currentTick) {
+    return NULL;
+  }
 
-  for (UInt32 maxTick = _currentTick + _ticks - 1; _currentTick <= maxTick; _currentTick++) {
-    if (0 == elapsedTicks--) {
-      break;
-    }
-
-    while (true) {
-      Command *command = (Command *)_commands[idx(_currentTick)].removeFirst();
-      if (!command) {
-        break;
+  for (UInt32 tick = _currentTick; tick <= nowTick; ++tick) {
+    UInt32 tickIndex = idx(tick);
+    Timer *timer = (Timer *)_timers[tickIndex].removeFirst();
+    if (timer) {
+      if (_timers[tickIndex].isEmpty()) {
+        _currentTick = tick;
       }
-      if (command->run(isRunning)) {
-        assert(command->cleanupHandler());
-        command->cleanupHandler()->destroy(command);
-      }
+      return timer;
     }
   }
 
-  _currentTickTime = Time::Instance().now();
-
-  return ESB_SUCCESS;
+  _currentTick = nowTick;
+  return NULL;
 }
 
 }  // namespace ESB

@@ -84,7 +84,7 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Resources in use",
                                           "Cannot find item",
                                           "Invalid iterator",
-                                          "Hard limit reached",
+                                          "Overflow",
                                           "Cannot convert",
                                           "Illegal Encoding",
                                           "Unsupported Charset",
@@ -99,7 +99,8 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "Unsupported transport",
                                           "TLS handshake failed",
                                           "TLS session error",
-                                          "TLS general error"};
+                                          "TLS general error",
+                                          "Underflow"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

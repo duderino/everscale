@@ -172,9 +172,9 @@ typedef SSIZE_T SSize;
 #define ESB_MAX_PATH 4096
 #define ESB_MAX_FILENAME 255
 
-#define ESB_DISABLE_COPY(CLASS) \
- private:                       \
-  CLASS(const CLASS &);         \
+#define ESB_DISABLE_AUTO_COPY(CLASS) \
+ private:                            \
+  CLASS(const CLASS &);              \
   void operator=(const CLASS &);
 
 }  // namespace ESB

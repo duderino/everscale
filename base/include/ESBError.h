@@ -261,6 +261,12 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_GENERAL_TLS_ERROR (-34)
 
+/** Operation cannot be completed without falling below a valid threshold.
+ *
+ *  @ingroup error
+ */
+#define ESB_UNDERFLOW (-35)
+
 }  // namespace ESB
 
 #endif

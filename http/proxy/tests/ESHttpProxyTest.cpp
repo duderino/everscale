@@ -108,7 +108,7 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
     ESB::Logger::SetInstance(NULL);
   }
 
-  ESB_DISABLE_COPY(HttpProxyTest);
+  ESB_DISABLE_AUTO_COPY(HttpProxyTest);
 };
 
 // use secure if true
@@ -285,7 +285,7 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
     ESB::Logger::SetInstance(NULL);
   }
 
-  ESB_DISABLE_COPY(HttpProxyTestMessageBody);
+  ESB_DISABLE_AUTO_COPY(HttpProxyTestMessageBody);
 };
 
 // body-size variations X use content-length header if true X use secure if

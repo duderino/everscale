@@ -24,43 +24,30 @@ class TestCleanupHandler : public CleanupHandler {
   virtual void destroy(Object *object) { ++_calls; }
 
  private:
-  // Disabled
-  TestCleanupHandler(const TestCleanupHandler &);
-  TestCleanupHandler &operator=(const TestCleanupHandler &);
-
   UInt32 _calls;
+
+  ESB_DISABLE_AUTO_COPY(TestCleanupHandler);
 };
 
-class TestDelayedCommand : public DelayedCommand {
+class TestTimer : public Timer {
  public:
-  TestDelayedCommand(TestCleanupHandler *cleanupHandler = NULL) : _calls(0U), _cleanupHandler(cleanupHandler) {}
-  virtual ~TestDelayedCommand() {}
-
-  inline UInt32 calls() const { return _calls; }
-
-  virtual const char *name() const { return "TestDelayedCommand"; }
-
-  virtual bool run(SharedInt *isRunning) {
-    ++_calls;
-    return _cleanupHandler ? true : false;
-  }
+  TestTimer(TestCleanupHandler *cleanupHandler = NULL) : _cleanupHandler(cleanupHandler) {}
+  virtual ~TestTimer() {}
 
   virtual CleanupHandler *cleanupHandler() { return _cleanupHandler; }
 
   void setCleanupHandler(CleanupHandler *handler) { _cleanupHandler = handler; }
 
  private:
-  // Disabled
-  TestDelayedCommand(const TestDelayedCommand &);
-  TestDelayedCommand &operator=(const TestDelayedCommand &);
-
-  UInt32 _calls;
   CleanupHandler *_cleanupHandler;
+
+  ESB_DISABLE_AUTO_COPY(TestTimer);
 };
 
 class TimingWheelTest : public ::testing::Test {
  public:
-  TimingWheelTest() : _timeSource(SystemTimeSource::Instance().now()) {}
+  // starting microseconds at 0 keeps the test deterministic
+  TimingWheelTest() : _timeSource(Date(SystemTimeSource::Instance().now().seconds(), 0)) {}
 
   virtual void SetUp() { Time::Instance().setTimeSource(_timeSource); }
 
@@ -75,172 +62,335 @@ class TimingWheelTest : public ::testing::Test {
   TimingWheelTest &operator=(const TimingWheelTest &);
 };
 
-static SharedInt IsRunning(true);
-
-static UInt32 totalCalls(TestDelayedCommand *commands, int size) {
-  UInt32 totalCalls = 0U;
-  for (int i = 0; i < size; ++i) {
-    totalCalls += commands[i].calls();
-  }
-  return totalCalls;
-}
-
-TEST_F(TimingWheelTest, TimelyExecution) {
-  TestDelayedCommand commands[5];
-  UInt32 numCommands = sizeof(commands) / sizeof(TestDelayedCommand);
+TEST_F(TimingWheelTest, Underflow) {
+  TestTimer timer;
   UInt32 ticks = 10;
   UInt32 tickMilliSeconds = 1;
   FlatTimingWheel timingWheel(ticks, tickMilliSeconds);
 
-  // Schedule
-
-  for (UInt32 i = 0; i < numCommands; ++i) {
-    Error error = timingWheel.insert(&commands[i], i);
-    EXPECT_EQ(ESB_SUCCESS, error);
-  }
-
-  // Exec
-
-  for (UInt32 i = 0; i <= numCommands; ++i) {
-    Error error = timingWheel.run(&IsRunning);
-    EXPECT_EQ(ESB_SUCCESS, error);
-    EXPECT_EQ(i, totalCalls(commands, numCommands));
-    _timeSource.addMilliSeconds(1);
-  }
-}
-
-TEST_F(TimingWheelTest, CatchupExecution) {
-  TestDelayedCommand commands[5];
-  UInt32 numCommands = sizeof(commands) / sizeof(TestDelayedCommand);
-  UInt32 ticks = 10;
-  UInt32 tickMilliSeconds = 1;
-  FlatTimingWheel timingWheel(ticks, tickMilliSeconds);
-
-  // Schedule
-
-  for (UInt32 i = 0; i < numCommands; ++i) {
-    Error error = timingWheel.insert(&commands[i], i);
-    EXPECT_EQ(ESB_SUCCESS, error);
-  }
-
-  // Exec
-
-  Error error = timingWheel.run(&IsRunning);
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(0, totalCalls(commands, numCommands));
-
-  _timeSource.addMilliSeconds(2);
-  error = timingWheel.run(&IsRunning);
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(2, totalCalls(commands, numCommands));
-
-  _timeSource.addMilliSeconds(6);
-  error = timingWheel.run(&IsRunning);
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(numCommands, totalCalls(commands, numCommands));
+  // Cannot schedule in the current tick
+  Error error = timingWheel.insert(&timer, 0);
+  EXPECT_EQ(ESB_UNDERFLOW, error);
 }
 
 TEST_F(TimingWheelTest, Overflow) {
-  TestDelayedCommand commands[5];
-  UInt32 numCommands = sizeof(commands) / sizeof(TestDelayedCommand);
-  UInt32 ticks = 3;
+  TestTimer timer;
+  UInt32 ticks = 10;
   UInt32 tickMilliSeconds = 1;
   FlatTimingWheel timingWheel(ticks, tickMilliSeconds);
 
-  // Schedule
-
-  for (UInt32 i = 0; i < ticks; ++i) {
-    Error error = timingWheel.insert(&commands[i], i);
-    EXPECT_EQ(ESB_SUCCESS, error);
-  }
-
-  for (UInt32 i = ticks; i < numCommands; ++i) {
-    Error error = timingWheel.insert(&commands[i], i);
-    EXPECT_EQ(ESB_INVALID_ARGUMENT, error);
-  }
+  // Cannot schedule past the timing wheel range
+  Error error = timingWheel.insert(&timer, ticks * tickMilliSeconds);
+  EXPECT_EQ(ESB_OVERFLOW, error);
 }
 
-TEST_F(TimingWheelTest, OverflowAndCap) {
-  TestDelayedCommand commands[5];
-  UInt32 numCommands = sizeof(commands) / sizeof(TestDelayedCommand);
-  UInt32 ticks = 3;
-  UInt32 tickMilliSeconds = 1;
-  FlatTimingWheel timingWheel(ticks, tickMilliSeconds);
+TEST_F(TimingWheelTest, OnePerTick) {
+  const UInt32 ticks = 5;
+  TestTimer timers[ticks];
+  const UInt32 tickMilliSeconds = 1;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
 
   // Schedule
 
-  for (UInt32 i = 0; i < numCommands; ++i) {
-    Error error = timingWheel.insert(&commands[i], i, true);
+  for (UInt32 i = 0; i < ticks; ++i) {
+    UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    Error error = timingWheel.insert(&timers[i], expirationMilliSeconds);
     EXPECT_EQ(ESB_SUCCESS, error);
   }
 
-  // Exec
+  // Initially nothing expires
+  Timer *timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  // Then exactly one timer should expire every tick/millisecond
 
   for (UInt32 i = 0; i < ticks; ++i) {
-    Error error = timingWheel.run(&IsRunning);
-    EXPECT_EQ(ESB_SUCCESS, error);
-    EXPECT_EQ(i, totalCalls(commands, numCommands));
-    _timeSource.addMilliSeconds(1);
+    _timeSource.addMilliSeconds(tickMilliSeconds);
+    timer = timingWheel.nextExpired();
+    EXPECT_TRUE(timer);
+    timer = timingWheel.nextExpired();
+    EXPECT_EQ(NULL, timer);
   }
 
-  // All overflows should exec on the last tick
+  // Then nothing
 
-  _timeSource.addMilliSeconds(1);
-  Error error = timingWheel.run(&IsRunning);
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(numCommands, totalCalls(commands, numCommands));
+  _timeSource.addMilliSeconds(tickMilliSeconds);
+  timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+}
+
+TEST_F(TimingWheelTest, ManyPerTick) {
+  const UInt32 ticks = 5;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 1;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
+
+  // Schedule
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+      EXPECT_EQ(ESB_SUCCESS, error);
+    }
+  }
+
+  // Initially nothing expires
+  Timer *timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  // Then exactly 3 timers should expire every tick/millisecond
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    _timeSource.addMilliSeconds(tickMilliSeconds);
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      timer = timingWheel.nextExpired();
+      EXPECT_TRUE(timer);
+    }
+    timer = timingWheel.nextExpired();
+    EXPECT_EQ(NULL, timer);
+  }
+
+  // Then nothing
+
+  _timeSource.addMilliSeconds(tickMilliSeconds);
+  timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+}
+
+TEST_F(TimingWheelTest, CompleteTick) {
+  const UInt32 ticks = 5;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 3;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
+
+  // Schedule
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+      EXPECT_EQ(ESB_SUCCESS, error);
+    }
+  }
+
+  // Initially nothing expires
+  Timer *timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  // Then exactly 3 timers should expire every tick
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    // Nothing should expire before we have a complete tick
+    for (UInt32 j = 0U; j < tickMilliSeconds - 1; ++j) {
+      _timeSource.addMilliSeconds(1);
+      timer = timingWheel.nextExpired();
+      EXPECT_EQ(NULL, timer);
+    }
+
+    // Now all three expire since we have a complete tick
+    _timeSource.addMilliSeconds(1);
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      timer = timingWheel.nextExpired();
+      EXPECT_TRUE(timer);
+    }
+
+    timer = timingWheel.nextExpired();
+    EXPECT_EQ(NULL, timer);
+  }
+
+  // Then nothing
+
+  _timeSource.addMilliSeconds(tickMilliSeconds);
+  timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+}
+
+TEST_F(TimingWheelTest, CatchupAfterNeglect) {
+  const UInt32 ticks = 6;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 3;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
+
+  // Schedule
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+      EXPECT_EQ(ESB_SUCCESS, error);
+    }
+  }
+
+  // Initially nothing expires
+  Timer *timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  // Wait half the ticks, half the timers should expire
+  _timeSource.addMilliSeconds(tickMilliSeconds * ticks / 2);
+
+  for (UInt32 i = 0U; i < ticks * timersPerTick / 2; ++i) {
+    timer = timingWheel.nextExpired();
+    EXPECT_TRUE(timer);
+  }
+
+  timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  // Wait a ton of time
+  _timeSource.addMilliSeconds(tickMilliSeconds * 100);
+
+  {
+    // Timing wheel window is full until we drain the expired timers
+    TestTimer testTimer;
+    Error error = timingWheel.insert(&testTimer, tickMilliSeconds);
+    EXPECT_EQ(ESB_OVERFLOW, error);
+  }
+
+  // The rest of the timers expired long ago
+
+  for (UInt32 i = 0U; i < ticks * timersPerTick / 2; ++i) {
+    timer = timingWheel.nextExpired();
+    EXPECT_TRUE(timer);
+  }
+
+  timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  {
+    // Now that we've drained the expired timers, we can insert new ones even though fake time has not advanced.
+    TestTimer testTimer;
+    Error error = timingWheel.insert(&testTimer, tickMilliSeconds);
+    EXPECT_EQ(ESB_SUCCESS, error);
+  }
 }
 
 TEST_F(TimingWheelTest, Cancellation) {
-  TestDelayedCommand commands[5];
-  UInt32 numCommands = sizeof(commands) / sizeof(TestDelayedCommand);
-  UInt32 ticks = 10;
-  UInt32 tickMilliSeconds = 1;
-  FlatTimingWheel timingWheel(ticks, tickMilliSeconds);
+  const UInt32 ticks = 5;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 1;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
 
   // Schedule
 
-  for (UInt32 i = 0; i < numCommands; ++i) {
-    Error error = timingWheel.insert(&commands[i], i);
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+      EXPECT_EQ(ESB_SUCCESS, error);
+    }
+  }
+
+  // Initially nothing expires
+  Timer *timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
+
+  // Cancel 1 timer per tick
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    Error error = timingWheel.remove(&timers[i][1]);
     EXPECT_EQ(ESB_SUCCESS, error);
   }
 
-  // Cancel
+  // Then exactly 2 timers should expire every tick/millisecond
 
-  timingWheel.remove(&commands[1]);
-  timingWheel.remove(&commands[3]);
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    _timeSource.addMilliSeconds(tickMilliSeconds);
+    for (UInt32 j = 0U; j < timersPerTick - 1; ++j) {
+      timer = timingWheel.nextExpired();
+      EXPECT_TRUE(timer);
+    }
+    timer = timingWheel.nextExpired();
+    EXPECT_EQ(NULL, timer);
+  }
 
-  // Exec
+  // Then nothing
 
-  _timeSource.addMilliSeconds(numCommands);
-  Error error = timingWheel.run(&IsRunning);
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(numCommands - 2, totalCalls(commands, numCommands));
+  _timeSource.addMilliSeconds(tickMilliSeconds);
+  timer = timingWheel.nextExpired();
+  EXPECT_EQ(NULL, timer);
 }
 
-TEST_F(TimingWheelTest, CleanupHandler) {
-  TestCleanupHandler cleanupHandler;
-  TestDelayedCommand commands[5];
-  UInt32 numCommands = sizeof(commands) / sizeof(TestDelayedCommand);
-  UInt32 ticks = 10;
-  UInt32 tickMilliSeconds = 1;
-  FlatTimingWheel timingWheel(ticks, tickMilliSeconds);
+TEST_F(TimingWheelTest, Clear) {
+  const UInt32 ticks = 5;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 1;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
 
   // Schedule
 
-  for (UInt32 i = 0; i < numCommands; ++i) {
-    commands[i].setCleanupHandler(&cleanupHandler);
-    Error error = timingWheel.insert(&commands[i], i);
-    EXPECT_EQ(ESB_SUCCESS, error);
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+      EXPECT_EQ(ESB_SUCCESS, error);
+    }
   }
 
-  // Exec
+  timingWheel.clear();
 
-  for (UInt32 i = 0; i <= numCommands; ++i) {
-    Error error = timingWheel.run(&IsRunning);
-    EXPECT_EQ(ESB_SUCCESS, error);
-    EXPECT_EQ(i, totalCalls(commands, numCommands));
-    EXPECT_EQ(i, cleanupHandler.calls());
-    _timeSource.addMilliSeconds(1);
+  // Then nothing should expire every tick/millisecond
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    _timeSource.addMilliSeconds(tickMilliSeconds);
+    Timer *timer = timingWheel.nextExpired();
+    EXPECT_EQ(NULL, timer);
   }
+}
+
+TEST_F(TimingWheelTest, CleanupHandlerClear) {
+  TestCleanupHandler cleanupHandler;
+  const UInt32 ticks = 5;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 1;
+  FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
+
+  // Schedule w. cleanup handlers
+
+  for (UInt32 i = 0U; i < ticks; ++i) {
+    const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+    for (UInt32 j = 0U; j < timersPerTick; ++j) {
+      timers[i][j].setCleanupHandler(&cleanupHandler);
+      Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+      EXPECT_EQ(ESB_SUCCESS, error);
+    }
+  }
+
+  // clear with timers, should call cleanup handler
+  timingWheel.clear();
+
+  // cleanup handler should have been called 15 times
+  EXPECT_EQ(ticks * timersPerTick, cleanupHandler.calls());
+}
+
+TEST_F(TimingWheelTest, CleanupHandlerDestructor) {
+  TestCleanupHandler cleanupHandler;
+  const UInt32 ticks = 5;
+  const UInt32 timersPerTick = 3;
+  TestTimer timers[ticks][timersPerTick];
+  const UInt32 tickMilliSeconds = 1;
+
+  {
+    FlatTimingWheel timingWheel(ticks + 1, tickMilliSeconds);
+
+    // Schedule w. cleanup handlers
+
+    for (UInt32 i = 0U; i < ticks; ++i) {
+      const UInt32 expirationMilliSeconds = (i + 1) * tickMilliSeconds;
+      for (UInt32 j = 0U; j < timersPerTick; ++j) {
+        timers[i][j].setCleanupHandler(&cleanupHandler);
+        Error error = timingWheel.insert(&timers[i][j], expirationMilliSeconds);
+        EXPECT_EQ(ESB_SUCCESS, error);
+      }
+    }
+  }
+
+  // cleanup handler should have been called 15 times
+  EXPECT_EQ(ticks * timersPerTick, cleanupHandler.calls());
 }

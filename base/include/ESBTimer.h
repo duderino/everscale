@@ -1,32 +1,34 @@
-#ifndef ESB_DELAYED_COMMAND_H
-#define ESB_DELAYED_COMMAND_H
+#ifndef ESB_TIMER_H
+#define ESB_TIMER_H
 
-#ifndef ESB_COMMAND_H
-#include <ESBCommand.h>
-#endif
-
-#ifndef ESB_DATE_H
-#include <ESBDate.h>
+#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
+#include <ESBEmbeddedListElement.h>
 #endif
 
 namespace ESB {
 
-/** The interface for commands that can be executed after a relative millisecond delay
+/** The interface for objects that timeout/activate after a delay
  */
-class DelayedCommand : public Command {
+class Timer : public EmbeddedListElement {
  public:
   /** Constructor
    *
    */
-  DelayedCommand();
+  Timer();
+
+  Timer(void *context);
 
   /** Destructor.
    */
-  virtual ~DelayedCommand();
+  virtual ~Timer();
 
   inline UInt32 tick() const { return _tick; }
 
   inline void setTick(UInt32 tick) { _tick = tick; }
+
+  inline void *context() const { return _context; }
+
+  inline void setContext(void *context) { _context = context; }
 
   /** Placement new.
    *
@@ -37,11 +39,10 @@ class DelayedCommand : public Command {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-  // Disabled
-  DelayedCommand(const DelayedCommand &);
-  DelayedCommand &operator=(const DelayedCommand &);
-
   UInt32 _tick;
+  void *_context;
+
+  ESB_DISABLE_AUTO_COPY(Timer);
 };
 
 }  // namespace ESB

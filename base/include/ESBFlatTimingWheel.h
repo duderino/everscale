@@ -5,8 +5,8 @@
 #include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ESB_DELAYED_COMMAND_H
-#include <ESBDelayedCommand.h>
+#ifndef ESB_TIMER_H
+#include <ESBTimer.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -37,37 +37,37 @@ class FlatTimingWheel {
 
   /** Insert/schedule a delayed command.  O(1).
    *
-   *  @param command The command to execute after a delay.
-   *  @param delayMilliSeconds the milliseconds to wait before executing the command
-   *  @param maskErrors if true, delays that exceed the timing wheel's window will be reduced to the window max
-   *  @return ESB_SUCCESS if successful, ESB_INVALID_ARGUMENT if delay is outside of the timing wheel's range.  If
-   * maskErrors is true, ESB_SUCCESS will always be returned.
-   */
-  Error insert(DelayedCommand *command, UInt32 delayMilliSeconds, bool maskErrors = false);
-
-  /**
-   * Remove/cancel a delayed command.  O(1) assuming every command has a unique tick, O(n) for all commands that share
-   * the same tick.  Here a 'tick' is a time unit expressed in milliseconds passed to the constructor.
+   *  NB: both underflows and overflows can unexpectedly occur if remove() is not called frequently enough.  Only
+   * remove() advances the timing wheel's view of the current time.
    *
-   * @param command to remove.
-   * @return
+   *  @param timer The timer to activate after a delay.
+   *  @param delayMilliSeconds the milliseconds to wait before executing the command
+   *  @return ESB_SUCCESS if successful, ESB_OVERFLOW if delay too far into the future, ESB_UNDERFLOW if delay has
+   * already expired.
    */
-  Error remove(DelayedCommand *command);
+  Error insert(Timer *timer, UInt32 delayMilliSeconds);
 
   /**
-   * Remove all commands from the timing wheel, calling their cleanup handlers in the process.
+   * Remove/cancel a timer.  O(1) but corruption may occur if the timer is not in the timing wheel.
+   *
+   * @param timer The timer to remove/cancel.
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  Error remove(Timer *timer);
+
+  /**
+   * Remove an expired timer from the timing wheel.  Caller should keep calling this until it returns null.
+   *
+   * @return A timer which has expired, or NULL if there are no more expired timers.
+   */
+  Timer *nextExpired();
+
+  /**
+   * Remove all timers from the timing wheel, calling their cleanup handlers in the process.
    */
   void clear();
 
-  /** Excecute all commands that have reached or exceeded their requested delay
-   *
-   * @param isRunning This object will return true as long as the controlling thread isRunning, false when the
-   * controlling thread wants to shutdown.
-   *  @return ESB_SUCCESS if successful, another error error code otherwise.
-   */
-  Error run(SharedInt *isRunning);
-
-  inline UInt32 maxDelayMilliSeconds() { return _tickMilliSeconds * _ticks; }
+  inline UInt32 maxDelayMilliSeconds() { return _tickMilliSeconds * _maxTicks; }
 
   /** Placement new.
    *
@@ -82,20 +82,20 @@ class FlatTimingWheel {
   FlatTimingWheel(const FlatTimingWheel &);
   FlatTimingWheel &operator=(const FlatTimingWheel &);
 
-  inline UInt32 idx(Int32 value) { return (value % _ticks + _ticks) % _ticks; }
+  inline UInt32 idx(Int32 value) { return (value % _maxTicks + _maxTicks) % _maxTicks; }
 
-  inline UInt32 ticks(Date date) {
-    UInt32 ticks = date.seconds() * 1000 / _tickMilliSeconds;
+  inline UInt32 ticks(Date date) const {
+    UInt32 ticks = date.seconds() / _tickMilliSeconds * 1000;
     ticks += date.microSeconds() / 1000 / _tickMilliSeconds;
     return ticks;
   }
 
+  const Date _start;
   const UInt32 _tickMilliSeconds;
-  const UInt32 _ticks;  // 1 bucket per tick
-  UInt32 _currentTick;
-  EmbeddedList *_commands;
+  const UInt32 _maxTicks;  // 1 bucket per tick
+  UInt32 _currentTick;     // relative to _start, and in ticks
+  EmbeddedList *_timers;
   Allocator &_allocator;
-  Date _currentTickTime;
 };
 
 }  // namespace ESB
