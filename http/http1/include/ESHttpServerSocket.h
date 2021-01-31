@@ -70,6 +70,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   // ESB::MultiplexedSocket
   //
 
+  virtual bool permanent();
+
   virtual bool wantAccept();
 
   virtual bool wantConnect();
@@ -77,8 +79,6 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   virtual bool wantRead();
 
   virtual bool wantWrite();
-
-  virtual bool isIdle();
 
   virtual ESB::Error handleAccept();
 

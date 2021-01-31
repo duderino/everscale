@@ -249,11 +249,6 @@ bool HttpServerSocket::wantWrite() {
   return _state & SERVER_SEND_STATE_MASK;
 }
 
-bool HttpServerSocket::isIdle() {
-  // TODO - implement idle timeout.  Return true if bytes transferred over time interval is too low
-  return false;
-}
-
 ESB::Error HttpServerSocket::handleAccept() {
   assert(!(SERVER_INACTIVE & _state));
   ESB_LOG_ERROR("[%d] Cannot handle accept events", _socket->socketDescriptor());
@@ -374,7 +369,7 @@ void HttpServerSocket::handleRemoteClose() {
 
 void HttpServerSocket::handleIdle() {
   assert(!(SERVER_INACTIVE & _state));
-  ESB_LOG_INFO("[%s] client is idle", _socket->name());
+  ESB_LOG_INFO("[%s] idle", _socket->name());
 }
 
 bool HttpServerSocket::handleRemove() {
@@ -1315,5 +1310,7 @@ ESB::Error HttpServerSocket::updateInterestList(bool updateMultiplexer) {
 const void *HttpServerSocket::key() const { return _socket->key(); }
 
 bool HttpServerSocket::secure() const { return _socket->secure(); }
+
+bool HttpServerSocket::permanent() { return false; }
 
 }  // namespace ES

@@ -37,8 +37,6 @@ bool HttpListeningSocket::wantRead() { return false; }
 
 bool HttpListeningSocket::wantWrite() { return false; }
 
-bool HttpListeningSocket::isIdle() { return false; }
-
 ESB::Error HttpListeningSocket::handleAccept() {
   assert(!_socket.isBlocking());
 
@@ -116,5 +114,7 @@ ESB::CleanupHandler *HttpListeningSocket::cleanupHandler() { return &_cleanupHan
 const char *HttpListeningSocket::name() const { return _socket.name(); }
 
 const void *HttpListeningSocket::key() const { return _socket.key(); }
+
+bool HttpListeningSocket::permanent() { return true; }
 
 }  // namespace ES

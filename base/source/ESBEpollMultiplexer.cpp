@@ -34,6 +34,14 @@
 #include <ESBConnectedSocket.h>
 #endif
 
+#ifndef ESB_MULTIPLEXED_SOCKET_H
+#include <ESBMultiplexedSocket.h>
+#endif
+
+#ifndef ESB_TYPES_H
+#include <ESBTypes.h>
+#endif
+
 #ifndef HAVE_EPOLL_CREATE
 #error "epoll_create is required"
 #endif
@@ -58,27 +66,25 @@
 #error "time() or equilvalent is required"
 #endif
 
-#ifndef ESB_MULTIPLEXED_SOCKET_H
-#include <ESBMultiplexedSocket.h>
-#endif
-
 namespace ESB {
 
+#ifndef EPOLL_TIMEOUT_MILLIS
 #define EPOLL_TIMEOUT_MILLIS 1000
-#define MIN_MAX_SOCKETS 1
-#define IDLE_CHECK_SEC 30
+#endif
 
-EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 maxSockets, Allocator &allocator, Lockable &lock)
+EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleSeconds, UInt32 maxSockets, Allocator &allocator,
+                                   Lockable &lock)
     : SocketMultiplexer(),
       _epollDescriptor(INVALID_SOCKET),
-      _maxSockets(maxSockets < MIN_MAX_SOCKETS ? MIN_MAX_SOCKETS : maxSockets),
-      _lastIdleCheckSec(0),
+      _idleSeconds(MAX(idleSeconds, 1)),
+      _maxSockets(MAX(maxSockets, 1)),
       _events(NULL),
       _eventCache(NULL),
       _allocator(allocator),
       _lock(lock),
       _currentSocketCount(),
-      _currentSocketList() {
+      _currentSocketList(),
+      _timingWheel(60 + idleSeconds, 1000, Time::Instance().now(), _allocator) {
   strncpy(_namePrefix, namePrefix, sizeof(_namePrefix));
   _namePrefix[sizeof(_namePrefix) - 1] = 0;
 
@@ -172,20 +178,35 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
     return ESB_OVERFLOW;
   }
 
-  _lock.writeAcquire();
-  _currentSocketList.addLast(socket);
-  assert(_currentSocketList.validate());
-  _lock.writeRelease();
+  {
+    WriteScopeLock lock(_lock);
+    if (!socket->permanent()) {
+      Error error = _timingWheel.insert(&socket->timer(), _idleSeconds * 1000, Time::Instance().now());
+      if (ESB_SUCCESS != error) {
+        ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add socket to timing wheel", socket->name());
+        _currentSocketCount.dec();
+        return error;
+      }
+      assert(socket->timer().inTimingWheel());
+    } else {
+      assert(!socket->timer().inTimingWheel());
+    }
+
+    _currentSocketList.addLast(socket);
+    assert(_currentSocketList.validate());
+  }
 
   event.data.ptr = socket;
 
   if (0 != epoll_ctl(_epollDescriptor, EPOLL_CTL_ADD, fd, &event)) {
     Error error = LastError();
     ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add socket", socket->name());
-    _lock.writeAcquire();
+    WriteScopeLock lock(_lock);
     _currentSocketList.remove(socket);
     assert(_currentSocketList.validate());
-    _lock.writeRelease();
+    if (socket->timer().inTimingWheel()) {
+      _timingWheel.remove(&socket->timer());
+    }
     _currentSocketCount.dec();
     return error;
   }
@@ -275,6 +296,10 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket, bool 
     _lock.writeAcquire();
     _currentSocketList.remove(socket);
     assert(_currentSocketList.validate());
+    if (socket->timer().inTimingWheel()) {
+      _timingWheel.remove(&socket->timer());
+      assert(!socket->timer().inTimingWheel());
+    }
     _lock.writeRelease();
 
     currentSocketCount = _currentSocketCount.dec();
@@ -298,21 +323,22 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket, bool 
 
 void EpollMultiplexer::destroy() {
   ESB_LOG_DEBUG("[%s] destroying", name());
+  _timingWheel.clear();
 
   MultiplexedSocket *head = 0;
 
   while (true) {
-    _lock.writeAcquire();
-    head = (MultiplexedSocket *)_currentSocketList.removeFirst();
-    assert(_currentSocketList.validate());
-    _lock.writeRelease();
+    {
+      WriteScopeLock lock(_lock);
+      head = (MultiplexedSocket *)_currentSocketList.removeFirst();
+      assert(_currentSocketList.validate());
+    }
 
     if (!head) {
       break;
     }
 
     _currentSocketCount.dec();
-
     removeMultiplexedSocket(head, false);
   }
 
@@ -360,7 +386,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
   _isRunning = isRunning;
 
   while (_isRunning->get()) {
-    checkIdleSockets(isRunning);
+    checkIdleSockets();
     numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets, EPOLL_TIMEOUT_MILLIS);
 
     if (0 == numEvents) {
@@ -425,6 +451,8 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         }
       }
     }
+
+    Date now = Time::Instance().now();
 
     // Now take action
 
@@ -566,10 +594,28 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         }
       }
 
-      if (likely(keepInMultiplexer)) {
-        updateMultiplexedSocket(socket);
-      } else {
+      if (!keepInMultiplexer) {
         removeMultiplexedSocket(socket);
+        continue;
+      }
+
+      if (socket->permanent()) {
+        updateMultiplexedSocket(socket);
+        continue;
+      }
+
+      ESB::Error error = _timingWheel.update(&socket->timer(), _idleSeconds * 1000, now);
+      switch (error) {
+        case ESB_SUCCESS:
+          updateMultiplexedSocket(socket);
+          break;
+        case ESB_UNDERFLOW:
+          socket->handleIdle();
+          removeMultiplexedSocket(socket);
+          break;
+        default:
+          ESB_LOG_ERROR_ERRNO(error, "[%s] cannot update timing wheel", socket->name());
+          removeMultiplexedSocket(socket);
       }
     }
   }
@@ -585,34 +631,23 @@ int EpollMultiplexer::maximumSockets() const { return _maxSockets; }
 
 bool EpollMultiplexer::isRunning() const { return _isRunning && _isRunning->get(); }
 
-Error EpollMultiplexer::checkIdleSockets(SharedInt *isRunning) {
-  if (_lastIdleCheckSec + IDLE_CHECK_SEC < time(0)) {
-    return ESB_SUCCESS;
-  }
+void EpollMultiplexer::checkIdleSockets() {
+  Date now = Time::Instance().now();
+  WriteScopeLock lock(_lock);
 
-  ESB_LOG_DEBUG("[%s] starting idle socket check", name());
-
-  WriteScopeLock scopeLock(_lock);
-
-  MultiplexedSocket *current = (MultiplexedSocket *)_currentSocketList.first();
-  MultiplexedSocket *next = 0;
-
-  while (current && isRunning->get()) {
-    next = (MultiplexedSocket *)current->next();
-
-    if (current->isIdle()) {
-      ESB_LOG_DEBUG("[%s] socket is idle", current->name());
-      removeMultiplexedSocket(current, false);
-      _currentSocketList.remove(current);
-      assert(_currentSocketList.validate());
-      _currentSocketCount.dec();
+  for (Timer *timer = _timingWheel.nextExpired(now); timer; timer = _timingWheel.nextExpired(now)) {
+    MultiplexedSocket *socket = (MultiplexedSocket *)timer->context();
+    assert(socket);
+    if (!socket) {
+      continue;
     }
-
-    current = next;
+    assert(!socket->timer().inTimingWheel());
+    socket->handleIdle();
+    removeMultiplexedSocket(socket, false);
+    _currentSocketList.remove(socket);
+    assert(_currentSocketList.validate());
+    _currentSocketCount.dec();
   }
-
-  ESB_LOG_DEBUG("[%s] finished idle socket check", name());
-  return ESB_SUCCESS;
 }
 
 const char *EpollMultiplexer::name() const { return _namePrefix; }

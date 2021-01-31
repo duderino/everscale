@@ -41,6 +41,8 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   // ESB::MultiplexedSocket
   //
 
+  virtual bool permanent();
+
   virtual bool wantAccept();
 
   virtual bool wantConnect();
@@ -48,8 +50,6 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   virtual bool wantRead();
 
   virtual bool wantWrite();
-
-  virtual bool isIdle();
 
   virtual ESB::Error handleAccept();
 

@@ -22,13 +22,19 @@ class Timer : public EmbeddedListElement {
    */
   virtual ~Timer();
 
-  inline UInt32 tick() const { return _tick; }
+  inline bool inTimingWheel() const { return 0 <= _tick; }
 
-  inline void setTick(UInt32 tick) { _tick = tick; }
+  inline void remove() { _tick = -1; }
+
+  inline Int32 tick() const { return _tick; }
+
+  inline void setTick(Int32 tick) { _tick = tick; }
 
   inline void *context() const { return _context; }
 
   inline void setContext(void *context) { _context = context; }
+
+  virtual CleanupHandler *cleanupHandler() { return NULL; }
 
   /** Placement new.
    *
@@ -39,7 +45,7 @@ class Timer : public EmbeddedListElement {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-  UInt32 _tick;
+  Int32 _tick;
   void *_context;
 
   ESB_DISABLE_AUTO_COPY(Timer);

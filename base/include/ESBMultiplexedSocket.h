@@ -17,6 +17,10 @@
 #include <ESBSocketMultiplexer.h>
 #endif
 
+#ifndef ESB_TIMER_H
+#include <ESBTimer.h>
+#endif
+
 namespace ESB {
 
 /** A socket that can register for and receive events from a socket multiplexer
@@ -32,6 +36,15 @@ class MultiplexedSocket : public EmbeddedMapElement {
   /** Destructor.
    */
   virtual ~MultiplexedSocket();
+
+  inline Timer &timer() { return _timer; }
+
+  /**
+   * Should the socket be kept open indefinitely or should it be closed when inactive/idle?
+   *
+   * @return true if the socket should never be closed due to inactivity
+   */
+  virtual bool permanent() = 0;
 
   /** Does this socket want to accept a new connection?  Implies the
    * implementation is a listening socket.
@@ -61,12 +74,6 @@ class MultiplexedSocket : public EmbeddedMapElement {
    * @return true if this socket wants to write data, false otherwise.
    */
   virtual bool wantWrite() = 0;
-
-  /** Is this socket idle?
-   *
-   * @return true if the socket has been idle for too long, false otherwise.
-   */
-  virtual bool isIdle() = 0;
 
   /** Listening socket may be ready to accept a new connection.  If multiple
    * threads are waiting on the same non-blocking listening socket, one or more
@@ -163,9 +170,9 @@ class MultiplexedSocket : public EmbeddedMapElement {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-  // Disabled
-  MultiplexedSocket(const MultiplexedSocket &);
-  MultiplexedSocket &operator=(const MultiplexedSocket &);
+  Timer _timer;
+
+  ESB_DISABLE_AUTO_COPY(MultiplexedSocket);
 };
 
 }  // namespace ESB

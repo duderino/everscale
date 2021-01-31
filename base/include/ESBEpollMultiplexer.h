@@ -21,8 +21,8 @@
 #include <ESBNullLock.h>
 #endif
 
-#ifdef HAVE_TIME_H
-#include <time.h>
+#ifndef ESB_FLAT_TIMING_WHEEL_H
+#include <ESBFlatTimingWheel.h>
 #endif
 
 #ifdef HAVE_SYS_EPOLL_H
@@ -45,8 +45,8 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  EpollMultiplexer(const char *namePrefix, UInt32 maxSockets, Allocator &allocator = SystemAllocator::Instance(),
-                   Lockable &lock = NullLock::Instance());
+  EpollMultiplexer(const char *namePrefix, UInt32 idleSeconds, UInt32 maxSockets,
+                   Allocator &allocator = SystemAllocator::Instance(), Lockable &lock = NullLock::Instance());
 
   /** Destructor.
    */
@@ -121,33 +121,22 @@ class EpollMultiplexer : public SocketMultiplexer {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-  //  Disabled
-  EpollMultiplexer(const EpollMultiplexer &);
-  EpollMultiplexer &operator=(const EpollMultiplexer &);
-
   /** Destroy the multiplexer
    *
    */
   void destroy();
 
-  /** Periodically check for any idle sockets and delete them.
-   *
-   * @param isRunning This object will return true as long as the controlling
-   * thread isRunning, false when the controlling thread wants to shutdown.
+  /** Periodically check for any idle sockets and close them
    */
-  Error checkIdleSockets(SharedInt *isRunning);
+  void checkIdleSockets();
 
   struct DescriptorState {
     int _interests;
   };
 
   int _epollDescriptor;
-  UInt32 _maxSockets;
-#ifdef HAVE_TIME_T
-  time_t _lastIdleCheckSec;
-#else
-#error "time_t or equilvalent is required"
-#endif
+  const UInt32 _idleSeconds;
+  const UInt32 _maxSockets;
 #ifdef HAVE_STRUCT_EPOLL_EVENT
   struct epoll_event *_events;
 #else
@@ -159,7 +148,10 @@ class EpollMultiplexer : public SocketMultiplexer {
   ESB::Lockable &_lock;
   SharedInt _currentSocketCount;
   EmbeddedList _currentSocketList;
+  FlatTimingWheel _timingWheel;
   char _namePrefix[ESB_NAME_PREFIX_SIZE];
+
+  ESB_DISABLE_AUTO_COPY(EpollMultiplexer);
 };
 
 }  // namespace ESB

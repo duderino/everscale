@@ -27,8 +27,6 @@ bool HttpCommandSocket::wantRead() { return true; }
 
 bool HttpCommandSocket::wantWrite() { return false; }
 
-bool HttpCommandSocket::isIdle() { return false; }
-
 ESB::Error HttpCommandSocket::handleAccept() {
   ESB_LOG_ERROR("[%s] command sockets cannot handle accept", _name);
   return ESB_INVALID_STATE;  // remove from multiplexer
@@ -135,5 +133,7 @@ ESB::CleanupHandler *HttpCommandSocket::cleanupHandler() { return NULL; }
 const char *HttpCommandSocket::name() const { return _name; }
 
 const void *HttpCommandSocket::key() const { return _name; }
+
+bool HttpCommandSocket::permanent() { return true; }
 
 }  // namespace ES

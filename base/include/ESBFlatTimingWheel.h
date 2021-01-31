@@ -29,38 +29,51 @@ class FlatTimingWheel {
  public:
   /** Constructor.
    */
-  FlatTimingWheel(UInt32 ticks, UInt32 tickMilliSeconds, Allocator &allocator = SystemAllocator::Instance());
+  FlatTimingWheel(UInt32 ticks, UInt32 tickMilliSeconds, const Date &now,
+                  Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
   virtual ~FlatTimingWheel();
 
-  /** Insert/schedule a delayed command.  O(1).
+  /** Insert/schedule a timer.  O(1).
    *
    *  NB: both underflows and overflows can unexpectedly occur if remove() is not called frequently enough.  Only
    * remove() advances the timing wheel's view of the current time.
    *
    *  @param timer The timer to activate after a delay.
    *  @param delayMilliSeconds the milliseconds to wait before executing the command
+   *  @param now The current time
    *  @return ESB_SUCCESS if successful, ESB_OVERFLOW if delay too far into the future, ESB_UNDERFLOW if delay has
-   * already expired.
+   * already expired - caller should act like the timer just expired.
    */
-  Error insert(Timer *timer, UInt32 delayMilliSeconds);
+  Error insert(Timer *timer, UInt32 delayMilliSeconds, const Date &now);
+
+  /** Update a scheduled timer.  O(1) but corruption will occur if the timer is not in the timing wheel.
+   *
+   *  @param timer The timer to activate after a delay.
+   *  @param delayMilliSeconds the milliseconds to wait before executing the command
+   *  @param now The current time
+   *  @return ESB_SUCCESS if successful, ESB_OVERFLOW if delay too far into the future, ESB_UNDERFLOW if delay has
+   * already past - caller should act like the timer just expired and the timer will be removed as a side effect.
+   */
+  Error update(Timer *timer, UInt32 delayMilliSeconds, const Date &now);
 
   /**
-   * Remove/cancel a timer.  O(1) but corruption may occur if the timer is not in the timing wheel.
+   * Remove/cancel a timer.  O(1) but corruption will occur if the timer is not in the timing wheel.
    *
    * @param timer The timer to remove/cancel.
-   * @return ESB_SUCCESS if successful, another error code otherwise.
+   * @return ESB_SUCCESS if successful, another error code otherwise.  Always succeeds unless timer is NULL.
    */
   Error remove(Timer *timer);
 
   /**
    * Remove an expired timer from the timing wheel.  Caller should keep calling this until it returns null.
    *
+   * @param now The current time
    * @return A timer which has expired, or NULL if there are no more expired timers.
    */
-  Timer *nextExpired();
+  Timer *nextExpired(const Date &now);
 
   /**
    * Remove all timers from the timing wheel, calling their cleanup handlers in the process.

@@ -3,6 +3,6 @@
 #endif
 
 namespace ESB {
-MultiplexedSocket::MultiplexedSocket() {}
+MultiplexedSocket::MultiplexedSocket() : _timer(this) {}
 MultiplexedSocket::~MultiplexedSocket() {}
 }  // namespace ESB

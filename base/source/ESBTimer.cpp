@@ -4,9 +4,9 @@
 
 namespace ESB {
 
-Timer::Timer() : _tick(0U), _context(NULL) {}
+Timer::Timer() : _tick(-1), _context(NULL) {}
 
-Timer::Timer(void *context) : _tick(0U), _context(context) {}
+Timer::Timer(void *context) : _tick(-1), _context(context) {}
 
 Timer::~Timer() {}
 

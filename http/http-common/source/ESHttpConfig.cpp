@@ -20,7 +20,7 @@ namespace ES {
 
 HttpConfig HttpConfig::_Instance;
 
-HttpConfig::HttpConfig() : _connectionPoolBuckets(7919U) {
+HttpConfig::HttpConfig() : _connectionPoolBuckets(7919U), _idleTimeoutSeconds(5) {
   const ESB::UInt32 bufsz = ESB_PAGE_SIZE * 8U;
   const ESB::UInt32 bufs = 1000U;
   const ESB::UInt32 chunksz = ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE);
