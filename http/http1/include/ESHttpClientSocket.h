@@ -166,10 +166,6 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   virtual const void *key() const { return &_socket->peerAddress(); }
 
  private:
-  // Disabled
-  HttpClientSocket(const HttpClientSocket &);
-  HttpClientSocket &operator=(const HttpClientSocket &);
-
   // State machine argument flags
 
 #define INITIAL_FILL_RECV_BUFFER (1 << 0)
@@ -206,6 +202,10 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 #define FLAG_MASK (~STATE_MASK)
 #define RECV_STATE_MASK (PARSING_BODY | PARSING_HEADERS)
 #define SEND_STATE_MASK (FORMATTING_HEADERS | FORMATTING_BODY | FLUSHING_BODY)
+
+  const char *describeState() const;
+
+  const char *describeFlags() const;
 
   /**
    * Advance the socket's state machine until it finishes, needs more data (ESB_AGAIN), or becomes application limited
@@ -256,6 +256,8 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   ESB::Buffer *_sendBuffer;
   ESB::ConnectedSocket *_socket;
   static bool _ReuseConnections;
+
+  ESB_DISABLE_AUTO_COPY(HttpClientSocket);
 };
 
 }  // namespace ES

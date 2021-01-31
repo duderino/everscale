@@ -399,7 +399,12 @@ void HttpClientSocket::handleRemoteClose() {
 
 void HttpClientSocket::handleIdle() {
   assert(!(INACTIVE & _state));
-  ESB_LOG_INFO("[%s] idle", _socket->name());
+#ifdef NDEBUG
+  ESB_LOG_INFO("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
+#else
+  // make it easier to troubleshoot protocol deadlocks in CI debug builds
+  ESB_LOG_WARNING("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
+#endif
 }
 
 bool HttpClientSocket::handleRemove() {
@@ -1194,5 +1199,42 @@ void HttpClientSocket::stateTransition(int state) {
 bool HttpClientSocket::secure() const { return _socket->secure(); }
 
 bool HttpClientSocket::permanent() { return false; }
+
+const char *HttpClientSocket::describeState() const {
+  switch (_state & STATE_MASK) {
+    case INACTIVE:
+      return "inactive";
+    case CONNECTING:
+      return "connecting";
+    case TRANSACTION_BEGIN:
+      return "begun";
+    case FORMATTING_HEADERS:
+      return "send-headers";
+    case FORMATTING_BODY:
+      return "send-body";
+    case FLUSHING_BODY:
+      return "flush-body";
+    case PARSING_HEADERS:
+      return "recv-headers";
+    case PARSING_BODY:
+      return "recv-body";
+    case TRANSACTION_END:
+      return "end";
+    default:
+      return "unknown";
+  }
+}
+
+const char *HttpClientSocket::describeFlags() const {
+  if (_state & RECV_PAUSED) {
+    return (_state & SEND_PAUSED) ? "send-recv-paused" : "recv-paused";
+  }
+
+  if (_state & SEND_PAUSED) {
+    return "send-paused";
+  }
+
+  return _state & ABORTED ? "aborted" : "active";
+}
 
 }  // namespace ES

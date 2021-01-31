@@ -146,10 +146,6 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead);
 
  private:
-  // Disabled
-  HttpServerSocket(const HttpServerSocket &);
-  HttpServerSocket &operator=(const HttpServerSocket &);
-
   // State machine argument flags
 
 #define SERVER_INITIAL_FILL_RECV_BUFFER (1 << 0)
@@ -187,6 +183,10 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
 #define SERVER_FLAG_MASK (~SERVER_STATE_MASK)
 #define SERVER_RECV_STATE_MASK (SERVER_PARSING_BODY | SERVER_PARSING_HEADERS | SERVER_SKIPPING_TRAILER)
 #define SERVER_SEND_STATE_MASK (SERVER_FORMATTING_HEADERS | SERVER_FORMATTING_BODY | SERVER_FLUSHING_BODY)
+
+  const char *describeState() const;
+
+  const char *describeFlags() const;
 
   /**
    * Advance the socket's state machine until it finishes, needs more data (ESB_AGAIN), or becomes application limited
@@ -255,6 +255,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;
   ESB::ConnectedSocket *_socket;
+
+  ESB_DISABLE_AUTO_COPY(HttpServerSocket);
 };
 
 }  // namespace ES
