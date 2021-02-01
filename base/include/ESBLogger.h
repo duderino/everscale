@@ -310,7 +310,7 @@ class Logger {
 #define ESB_LOG_BACKTRACE(FORMAT, ...)                                                                           \
   do {                                                                                                           \
     if (ESB_CRITICAL_LOGGABLE) {                                                                                 \
-      ESB::Logger::Instance().log(ESB::Logger::Debug, ESB_DEBUG_LOG_PREFIX FORMAT ESB_LOG_SUFFIX,                \
+      ESB::Logger::Instance().log(ESB::Logger::Critical, ESB_CRITICAL_LOG_PREFIX FORMAT "\n",                    \
                                   ESB::Logger::Instance().now(), ESB::Thread::CurrentThreadId(), ##__VA_ARGS__); \
     }                                                                                                            \
   } while (0)

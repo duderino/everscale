@@ -17,6 +17,16 @@ ESB::Error HttpOriginHandler::acceptConnection(HttpMultiplexer &stack, ESB::Sock
 }
 
 ESB::Error HttpOriginHandler::beginTransaction(HttpMultiplexer &stack, HttpServerStream &stream) {
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_SERVER_RECV_HEADERS:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_SERVER_RECV_HEADERS:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      break;
+  }
+
   ESB::Allocator &allocator = stream.allocator();
   HttpOriginContext *context = new (allocator) HttpOriginContext();
 
@@ -37,6 +47,16 @@ ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack, Http
 ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
                                                  const unsigned char *chunk, ESB::UInt32 chunkSize,
                                                  ESB::UInt32 *bytesConsumed) {
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_SERVER_RECV_BODY:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_SERVER_RECV_BODY:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      break;
+  }
+
   assert(chunk);
   assert(bytesConsumed);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
@@ -69,6 +89,16 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   }
   assert(context->bytesReceived() == _params.requestSize());
 
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_SERVER_SEND_HEADERS:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_SERVER_SEND_HEADERS:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      break;
+  }
+
   response.setStatusCode(200);
   response.setReasonPhrase("OK");
 
@@ -96,6 +126,16 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
 
 ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
                                                 ESB::UInt32 *bytesAvailable) {
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_SERVER_SEND_BODY:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_SERVER_SEND_BODY:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      break;
+  }
+
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   *bytesAvailable = _params.responseSize() - context->bytesSent();

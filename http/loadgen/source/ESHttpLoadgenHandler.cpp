@@ -13,11 +13,29 @@ HttpLoadgenHandler::HttpLoadgenHandler(const HttpTestParams &params) : _params(p
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
 ESB::Error HttpLoadgenHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
-  return ESB_SUCCESS;
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_CLIENT_SEND_HEADERS:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_CLIENT_SEND_HEADERS:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      return ESB_SUCCESS;
+  }
 }
 
 ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                                 ESB::UInt32 *maxChunkSize) {
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_CLIENT_SEND_BODY:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_CLIENT_SEND_BODY:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      break;
+  }
+
   assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
@@ -46,12 +64,30 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, 
 }
 
 ESB::Error HttpLoadgenHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
-  return ESB_SUCCESS;
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_CLIENT_RECV_HEADERS:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_CLIENT_RECV_HEADERS:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      return ESB_SUCCESS;
+  }
 }
 
 ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
                                                    const unsigned char *chunk, ESB::UInt32 chunkSize,
                                                    ESB::UInt32 *bytesConsumed) {
+  switch (_params.disruptTransaction()) {
+    case HttpTestParams::STALL_CLIENT_RECV_BODY:
+      return ESB_PAUSE;
+    case HttpTestParams::CLOSE_CLIENT_RECV_BODY:
+      return ESB_CLOSED;
+    case HttpTestParams::HAPPY_PATH:
+    default:
+      break;
+  }
+
   assert(chunk);
   assert(bytesConsumed);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();

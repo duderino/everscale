@@ -98,7 +98,7 @@ class FlatTimingWheel {
   inline UInt32 idx(Int32 value) { return (value % _maxTicks + _maxTicks) % _maxTicks; }
 
   inline UInt32 ticks(Date date) const {
-    UInt32 ticks = date.seconds() / _tickMilliSeconds * 1000;
+    UInt32 ticks = date.seconds() * 1000 / _tickMilliSeconds;
     ticks += date.microSeconds() / 1000 / _tickMilliSeconds;
     return ticks;
   }

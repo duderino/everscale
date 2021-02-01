@@ -176,6 +176,33 @@ class HttpTestParams {
 
   inline int maxVerifyDepth() const { return _maxVerifyDepth; }
 
+  enum DisruptTransaction {
+    HAPPY_PATH = 0,
+    STALL_SERVER_RECV_HEADERS = 1,
+    STALL_SERVER_RECV_BODY = 2,
+    STALL_SERVER_SEND_HEADERS = 3,
+    STALL_SERVER_SEND_BODY = 4,
+    CLOSE_SERVER_RECV_HEADERS = 5,
+    CLOSE_SERVER_RECV_BODY = 6,
+    CLOSE_SERVER_SEND_HEADERS = 7,
+    CLOSE_SERVER_SEND_BODY = 8,
+    STALL_CLIENT_RECV_HEADERS = 9,
+    STALL_CLIENT_RECV_BODY = 10,
+    STALL_CLIENT_SEND_HEADERS = 11,
+    STALL_CLIENT_SEND_BODY = 12,
+    CLOSE_CLIENT_RECV_HEADERS = 13,
+    CLOSE_CLIENT_RECV_BODY = 14,
+    CLOSE_CLIENT_SEND_HEADERS = 15,
+    CLOSE_CLIENT_SEND_BODY = 16,
+  };
+
+  inline DisruptTransaction disruptTransaction() const { return _disruptTransaction; }
+
+  inline HttpTestParams &disruptTransaction(DisruptTransaction distruptTransaction) {
+    _disruptTransaction = distruptTransaction;
+    return *this;
+  }
+
  private:
   // Disabled
   HttpTestParams(const HttpTestParams &);
@@ -204,6 +231,7 @@ class HttpTestParams {
   char _serverKeyPath[ESB_MAX_PATH + 1];
   char _serverCertPath[ESB_MAX_PATH + 1];
   ESB::UInt32 _maxVerifyDepth;
+  DisruptTransaction _disruptTransaction;
 };
 
 }  // namespace ES

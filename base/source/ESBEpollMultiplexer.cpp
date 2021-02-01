@@ -643,9 +643,9 @@ void EpollMultiplexer::checkIdleSockets() {
     }
     assert(!socket->timer().inTimingWheel());
     socket->handleIdle();
-    removeMultiplexedSocket(socket, false);
     _currentSocketList.remove(socket);
     assert(_currentSocketList.validate());
+    removeMultiplexedSocket(socket, false);
     _currentSocketCount.dec();
   }
 }

@@ -574,8 +574,8 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
       case TRANSACTION_END:
         return ESB_SUCCESS;
       default:
-        assert(!"invalid state");
         ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] invalid transition to state %d", _socket->name(), state);
+        assert(!"invalid state");
         abort(updateMultiplexer);
         return ESB_INVALID_STATE;
     }
@@ -1039,7 +1039,7 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
 }
 
 ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
-  assert(!(INACTIVE & _state));
+  // assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
   if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;

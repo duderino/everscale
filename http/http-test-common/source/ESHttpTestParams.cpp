@@ -41,7 +41,8 @@ HttpTestParams::HttpTestParams()
       _absPath("/"),
       _requestBody(NULL),
       _responseBody(NULL),
-      _maxVerifyDepth(3) {
+      _maxVerifyDepth(3),
+      _disruptTransaction(HAPPY_PATH) {
   caPath(CA_PATH);
   serverKeyPath(KEY_PATH);
   serverCertPath(CERT_PATH);

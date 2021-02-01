@@ -58,15 +58,6 @@
 
 using namespace ES;
 
-static void LogCurrentWorkingDirectory(ESB::Logger::Severity severity) {
-  char cwd[ESB_MAX_PATH];
-  if (!getcwd(cwd, sizeof(cwd))) {
-    ESB_LOG_WARNING_ERRNO(ESB::LastError(), "Cannot determine current working directory");
-  } else {
-    ESB_LOG(ESB::Logger::Instance(), severity, "Current working dir: %s", cwd);
-  }
-}
-
 static ESB::SimpleFileLogger TestLogger(stdout, ESB::Logger::Warning);
 
 class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {

@@ -28,6 +28,15 @@
 
 namespace ES {
 
+void LogCurrentWorkingDirectory(ESB::Logger::Severity severity) {
+  char cwd[ESB_MAX_PATH];
+  if (!getcwd(cwd, sizeof(cwd))) {
+    ESB_LOG_WARNING_ERRNO(ESB::LastError(), "Cannot determine current working directory");
+  } else {
+    ESB_LOG(ESB::Logger::Instance(), severity, "Current working dir: %s", cwd);
+  }
+}
+
 class HttpNullProxyHandler : public HttpProxyHandler {
  public:
   virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {

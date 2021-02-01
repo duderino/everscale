@@ -58,6 +58,8 @@ class HttpIntegrationTest {
   ESB_DISABLE_AUTO_COPY(HttpIntegrationTest);
 };
 
+extern void LogCurrentWorkingDirectory(ESB::Logger::Severity severity);
+
 }  // namespace ES
 
 #endif

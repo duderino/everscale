@@ -466,7 +466,7 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
   }
 
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
-  if (context) {
+  if (context) {  // TODO THIS IS NOT RIGHT!
     // The server transaction has already received the endTransaction() and cleaned up
     return;
   }
@@ -517,7 +517,7 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
   }
 
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
-  if (context) {
+  if (context) {  // TODO THIS IS NOT RIGHT!
     // The client transaction has already received the endTransaction() and cleaned up
     return;
   }
