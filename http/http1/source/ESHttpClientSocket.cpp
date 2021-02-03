@@ -1039,7 +1039,7 @@ ESB::Error HttpClientSocket::pauseSend(bool updateMultiplexer) {
 }
 
 ESB::Error HttpClientSocket::resumeSend(bool updateMultiplexer) {
-  // assert(!(INACTIVE & _state));
+  assert(!(INACTIVE & _state));
   assert(!(ABORTED & _state));
   if (_state & (INACTIVE | ABORTED)) {
     return ESB_INVALID_STATE;

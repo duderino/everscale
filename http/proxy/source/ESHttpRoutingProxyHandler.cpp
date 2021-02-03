@@ -466,28 +466,18 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
   }
 
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
-  if (context) {  // TODO THIS IS NOT RIGHT!
-    // The server transaction has already received the endTransaction() and cleaned up
+  if (!context) {
     return;
   }
+  context->setClientStream(NULL);
   clientStream.setContext(NULL);
 
-  // The client transaction is the first to receive endTransaction(), so abort the server transaction
+  // destroy the context if the server stream no longer references it.
 
   HttpServerStream *serverStream = context->serverStream();
-  assert(serverStream);
-  if (!serverStream) {
-    return;
-  }
-  serverStream->setContext(NULL);
-
-  context->~HttpRoutingProxyContext();
-  serverStream->allocator().deallocate(context);
-
-  ESB::Error error = serverStream->abort(true);
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] client transaction cannot abort associated server transaction [%s]",
-                        clientStream.logAddress(), serverStream->logAddress());
+  if (!serverStream || !serverStream->context()) {
+    context->~HttpRoutingProxyContext();
+    clientStream.allocator().deallocate(context);
   }
 }
 
@@ -517,28 +507,18 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
   }
 
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)serverStream.context();
-  if (context) {  // TODO THIS IS NOT RIGHT!
-    // The client transaction has already received the endTransaction() and cleaned up
+  if (!context) {
     return;
   }
+  context->setServerStream(NULL);
   serverStream.setContext(NULL);
 
-  // The server transaction is the first to receive endTransaction(), so abort the client transaction
+  // destroy the context if the client stream no longer references it.
 
   HttpClientStream *clientStream = context->clientStream();
-  assert(clientStream);
-  if (!clientStream) {
-    return;
-  }
-  clientStream->setContext(NULL);
-
-  context->~HttpRoutingProxyContext();
-  serverStream.allocator().deallocate(context);
-
-  ESB::Error error = clientStream->abort(true);
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] server transaction cannot abort associated client transaction [%s]",
-                        serverStream.logAddress(), clientStream->logAddress());
+  if (!clientStream || !clientStream->context()) {
+    context->~HttpRoutingProxyContext();
+    serverStream.allocator().deallocate(context);
   }
 }
 

@@ -118,11 +118,11 @@ INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyNegativeTest,
 
 TEST_P(HttpProxyNegativeTest, IdleTimeout) {
   HttpTestParams params;
-  params.connections(1)
-      .requestsPerConnection(1)
-      .clientThreads(1)
-      .proxyThreads(1)
-      .originThreads(1)
+  params.connections(10)
+      .requestsPerConnection(10)
+      .clientThreads(2)
+      .proxyThreads(2)
+      .originThreads(2)
       .requestSize(std::get<0>(GetParam()))
       .responseSize(std::get<0>(GetParam()))
       .useContentLengthHeader(std::get<1>(GetParam()))

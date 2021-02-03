@@ -1,5 +1,14 @@
 stat:
- - Fix abort logic.
+ - expose idle timeout all the way up to client/proxy/server stacks.
+ - Run idle timeout only for proxy multiplexer, not for client and origin... or set their timeouts to a later value
+ - Vice versa - run idle timeout only for client and origin - to ensure that proxy handles the FIN/close appropriately
+ - Fix abort logic. - server socket can abort client socket when synchronously called by client and vice versa
+   - if in proactive mode - do not abort other stream, just abort self and return error.  put at the top of the proactive entry point.
+   - if in reactive mode - abort self and other stream.  put at the top of the reactive entry point
+   - event loop do not call socket that has been aborted.
+   - enqueue aborted sockets somewhere so the event loop can clean them up at the end.  ensure they are also removed from events so next epoll won't activate them.
+   - entry points can check if inactive or aborted
+ - onClientSend blocked stacktrace - only happens for bodies that exceed buffers
 
 145/165 Test #145: Variants/HttpProxyNegativeTest.IdleTimeout/(1373526,false,false,1) ....Child aborted***Exception:   0.14 sec
 pure virtual method called
