@@ -65,13 +65,21 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
 
   virtual void handleIdle();
 
-  virtual bool handleRemove();
+  virtual void handleRemove();
 
   virtual SOCKET socketDescriptor() const;
 
   virtual ESB::CleanupHandler *cleanupHandler();
 
   virtual const char *name() const;
+
+  virtual void markDead();
+
+  virtual bool dead() const;
+
+  //
+  // Local
+  //
 
   ESB::Error initialize(ESB::ListeningSocket &socket);
 
@@ -92,6 +100,7 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   ESB::CleanupHandler &_cleanupHandler;
+  bool _dead;
 };
 
 }  // namespace ES

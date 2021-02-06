@@ -20,7 +20,11 @@ namespace ES {
 
 HttpListeningSocket::HttpListeningSocket(HttpMultiplexerExtended &stack, HttpServerHandler &handler,
                                          ESB::CleanupHandler &cleanupHandler)
-    : _socket(stack.multiplexer().name()), _multiplexer(stack), _handler(handler), _cleanupHandler(cleanupHandler) {}
+    : _socket(stack.multiplexer().name()),
+      _multiplexer(stack),
+      _handler(handler),
+      _cleanupHandler(cleanupHandler),
+      _dead(false) {}
 
 HttpListeningSocket::~HttpListeningSocket() {}
 
@@ -102,10 +106,7 @@ void HttpListeningSocket::handleRemoteClose() { ESB_LOG_ERROR("[%s] Cannot handl
 
 void HttpListeningSocket::handleIdle() { ESB_LOG_ERROR("[%s] Cannot handle idle events", _socket.name()); }
 
-bool HttpListeningSocket::handleRemove() {
-  ESB_LOG_INFO("[%s] Removed from multiplexer", _socket.name());
-  return true;  // call cleanup handler on us after this returns
-}
+void HttpListeningSocket::handleRemove() { ESB_LOG_INFO("[%s] Removed from multiplexer", _socket.name()); }
 
 SOCKET HttpListeningSocket::socketDescriptor() const { return _socket.socketDescriptor(); }
 
@@ -116,5 +117,9 @@ const char *HttpListeningSocket::name() const { return _socket.name(); }
 const void *HttpListeningSocket::key() const { return _socket.key(); }
 
 bool HttpListeningSocket::permanent() { return true; }
+
+void HttpListeningSocket::markDead() { _dead = true; }
+
+bool HttpListeningSocket::dead() const { return _dead; }
 
 }  // namespace ES

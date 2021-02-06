@@ -39,9 +39,7 @@ class HttpStream {
   virtual bool secure() const = 0;
 
   /**
-   * Abort a stream in any state.  Note: your handler implementation must be
-   * reentrant if you call this function because calling this function may in
-   * turn call other handle* functions including handleRemove.
+   * Abort a stream in any state.
    *
    * @param updateMultiplexer Immediately update registration in the multiplexer
    * @return ESB_SUCCESS if successful, another error code otherwise.   */
@@ -156,10 +154,7 @@ class HttpStream {
    */
   virtual const char *logAddress() const = 0;
 
- private:
-  // Disabled
-  HttpStream(const HttpStream &);
-  void operator=(const HttpStream &);
+  ESB_DISABLE_AUTO_COPY(HttpStream);
 };
 
 }  // namespace ES

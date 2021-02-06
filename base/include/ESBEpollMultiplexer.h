@@ -46,7 +46,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    * @param allocator Internal storage will be allocated using this allocator.
    */
   EpollMultiplexer(const char *namePrefix, UInt32 idleSeconds, UInt32 maxSockets,
-                   Allocator &allocator = SystemAllocator::Instance(), Lockable &lock = NullLock::Instance());
+                   Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
@@ -75,17 +75,17 @@ class EpollMultiplexer : public SocketMultiplexer {
   virtual Error addMultiplexedSocket(MultiplexedSocket *socket);
 
   /** Keep socket in epoll and socket list, but possibly change the readiness
-   *  events of interest.  This does not modify the _currentSocketCount.
+   *  events of interest.  This does not modify the _activeSocketCount.
    *
    * @param socket The multiplexedSocket
    */
   virtual Error updateMultiplexedSocket(MultiplexedSocket *socket);
 
-  /** Remove a multiplexed socket form the socket multiplexer
+  /** Remove a multiplexed socket from the socket multiplexer
    *
    * @param socket The multiplexed socket to remove
    */
-  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket, bool removeFromList = true);
+  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket);
 
   /** Run the multiplexer's event loop until shutdown.
    *
@@ -126,6 +126,12 @@ class EpollMultiplexer : public SocketMultiplexer {
    */
   void destroy();
 
+  /** Remove a multiplexed socket form the socket multiplexer
+   *
+   * @param socket The multiplexed socket to remove
+   */
+  Error removeMultiplexedSocketNoLock(MultiplexedSocket *socket);
+
   /** Periodically check for any idle sockets and close them
    */
   void checkIdleSockets();
@@ -145,9 +151,9 @@ class EpollMultiplexer : public SocketMultiplexer {
   struct DescriptorState *_eventCache;
   ESB::SharedInt *_isRunning;
   Allocator &_allocator;
-  ESB::Lockable &_lock;
-  SharedInt _currentSocketCount;
-  EmbeddedList _currentSocketList;
+  SharedInt _activeSocketCount;
+  EmbeddedList _activeSockets;
+  EmbeddedList _deadSockets;
   FlatTimingWheel _timingWheel;
   char _namePrefix[ESB_NAME_PREFIX_SIZE];
 

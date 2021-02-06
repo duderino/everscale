@@ -319,8 +319,8 @@ ESB::Error HttpProxyMultiplexer::updateMultiplexedSocket(ESB::MultiplexedSocket 
   return _multiplexer.updateMultiplexedSocket(socket);
 }
 
-ESB::Error HttpProxyMultiplexer::removeMultiplexedSocket(ESB::MultiplexedSocket *socket, bool removeFromList) {
-  return _multiplexer.removeMultiplexedSocket(socket, removeFromList);
+ESB::Error HttpProxyMultiplexer::removeMultiplexedSocket(ESB::MultiplexedSocket *socket) {
+  return _multiplexer.removeMultiplexedSocket(socket);
 }
 
 int HttpProxyMultiplexer::currentSockets() const { return _multiplexer.currentSockets(); }

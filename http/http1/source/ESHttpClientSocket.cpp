@@ -407,7 +407,7 @@ void HttpClientSocket::handleIdle() {
 #endif
 }
 
-bool HttpClientSocket::handleRemove() {
+void HttpClientSocket::handleRemove() {
   assert(!(INACTIVE & _state));
   ESB_LOG_INFO("[%s] client socket has been removed", _socket->name());
 
@@ -432,7 +432,7 @@ bool HttpClientSocket::handleRemove() {
     }
     _transaction = NULL;
     stateTransition(INACTIVE);
-    return true;  // call cleanup handler on us after this returns
+    return;
   }
 
   bool reuseConnection = false;
@@ -499,7 +499,6 @@ bool HttpClientSocket::handleRemove() {
   }
 
   stateTransition(INACTIVE);
-  return true;  // call cleanup handler on us after this returns
 }
 
 SOCKET HttpClientSocket::socketDescriptor() const { return _socket->socketDescriptor(); }
@@ -509,7 +508,6 @@ ESB::CleanupHandler *HttpClientSocket::cleanupHandler() { return &_cleanupHandle
 ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int flags) {
   bool fillRecvBuffer = flags & INITIAL_FILL_RECV_BUFFER;
   bool drainSendBuffer = flags & INITIAL_DRAIN_SEND_BUFFER;
-  bool updateMultiplexer = flags & UPDATE_MULTIPLEXER;
 
   while (!_multiplexer.shutdown()) {
     bool inRecvState = _state & RECV_STATE_MASK;
@@ -532,11 +530,9 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
           return ESB_AGAIN;
         case ESB_CLOSED:
           handleRemoteClose();
-          abort(updateMultiplexer);
           return ESB_CLOSED;
         default:
           handleError(error);
-          abort(updateMultiplexer);
           return error;
       }
     }
@@ -576,7 +572,6 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
       default:
         ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] invalid transition to state %d", _socket->name(), state);
         assert(!"invalid state");
-        abort(updateMultiplexer);
         return ESB_INVALID_STATE;
     }
 
@@ -594,7 +589,6 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
         // The handler cannot make progress
         return ESB_PAUSE;
       default:
-        abort(updateMultiplexer);
         return error;
     }
 
@@ -606,14 +600,12 @@ ESB::Error HttpClientSocket::advanceStateMachine(HttpClientHandler &handler, int
         case ESB_AGAIN:
           return ESB_AGAIN;
         default:
-          abort(updateMultiplexer);
           return error;
       }
     }
   }
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown", _socket->name());
-  abort(updateMultiplexer);
   return ESB_SHUTDOWN;
 }
 
@@ -1236,5 +1228,9 @@ const char *HttpClientSocket::describeFlags() const {
 
   return _state & ABORTED ? "aborted" : "active";
 }
+
+void HttpClientSocket::markDead() { _state |= DEAD; }
+
+bool HttpClientSocket::dead() const { return _state & DEAD; }
 
 }  // namespace ES

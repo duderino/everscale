@@ -12,7 +12,7 @@
 
 namespace ES {
 
-HttpCommandSocket::HttpCommandSocket(const char *prefix) : _eventSocket(), _lock(), _queue(), _removed(false) {
+HttpCommandSocket::HttpCommandSocket(const char *prefix) : _eventSocket(), _lock(), _queue(), _dead(false) {
   snprintf(_name, sizeof(_name), "%s%s", prefix, ESB_COMMAND_SUFFIX);
   _name[sizeof(_name) - 1] = 0;
 }
@@ -45,7 +45,7 @@ ESB::Error HttpCommandSocket::pushInternal(ESB::EmbeddedListElement *command) {
 
   {
     ESB::WriteScopeLock lock(_lock);
-    if (_removed) {
+    if (_dead) {
       return ESB_SHUTDOWN;
     }
     _queue.addLast(command);
@@ -107,11 +107,10 @@ void HttpCommandSocket::handleRemoteClose() { ESB_LOG_ERROR("[%s] command socket
 
 void HttpCommandSocket::handleIdle() { ESB_LOG_ERROR("[%s] command sockets cannot handle idle event", _name); }
 
-bool HttpCommandSocket::handleRemove() {
+void HttpCommandSocket::handleRemove() {
   ESB_LOG_NOTICE("[%s] command socket removed from multiplexer", _name);
 
   ESB::WriteScopeLock lock(_lock);
-  _removed = true;
 
   while (true) {
     ESB::EmbeddedListElement *command = _queue.removeFirst();
@@ -122,8 +121,6 @@ bool HttpCommandSocket::handleRemove() {
       command->cleanupHandler()->destroy(command);
     }
   }
-
-  return false;  // do not call cleanup handler
 }
 
 SOCKET HttpCommandSocket::socketDescriptor() const { return _eventSocket.socketDescriptor(); }
@@ -135,5 +132,9 @@ const char *HttpCommandSocket::name() const { return _name; }
 const void *HttpCommandSocket::key() const { return _name; }
 
 bool HttpCommandSocket::permanent() { return true; }
+
+void HttpCommandSocket::markDead() { _dead = true; }
+
+bool HttpCommandSocket::dead() const { return _dead; }
 
 }  // namespace ES

@@ -3,7 +3,7 @@
 set -e
 
 export KEYSIZE=4096
-export EXPIRY=1 # in days
+export EXPIRY=15330 # in days
 
 # Private Keys
 

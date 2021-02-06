@@ -64,13 +64,17 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
 
   virtual void handleIdle();
 
-  virtual bool handleRemove();
+  virtual void handleRemove();
 
   virtual SOCKET socketDescriptor() const;
 
   virtual ESB::CleanupHandler *cleanupHandler();
 
   virtual const char *name() const;
+
+  virtual void markDead();
+
+  virtual bool dead() const;
 
  protected:
   /**
@@ -95,7 +99,7 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
   ESB::EventSocket _eventSocket;
   ESB::Mutex _lock;
   ESB::EmbeddedList _queue;
-  bool _removed;
+  bool _dead;
   char _name[ESB_NAME_PREFIX_SIZE + ESB_COMMAND_SUFFIX_SIZE];
 };
 

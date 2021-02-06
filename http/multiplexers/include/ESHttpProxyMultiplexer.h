@@ -134,7 +134,7 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
 
   virtual ESB::Error addMultiplexedSocket(ESB::MultiplexedSocket *multiplexedSocket);
   virtual ESB::Error updateMultiplexedSocket(ESB::MultiplexedSocket *socket);
-  virtual ESB::Error removeMultiplexedSocket(ESB::MultiplexedSocket *socket, bool removeFromList);
+  virtual ESB::Error removeMultiplexedSocket(ESB::MultiplexedSocket *socket);
   virtual int currentSockets() const;
   virtual int maximumSockets() const;
   virtual bool isRunning() const;

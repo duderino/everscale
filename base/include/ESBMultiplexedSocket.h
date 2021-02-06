@@ -144,9 +144,8 @@ class MultiplexedSocket : public EmbeddedMapElement {
   /** The socket has been removed from the multiplexer
    *
    * @param multiplexer The multiplexer managing this socket.
-   * @return If true, caller should destroy the command with the CleanupHandler.
    */
-  virtual bool handleRemove() = 0;
+  virtual void handleRemove() = 0;
 
   /** Get the socket's socket descriptor.
    *
@@ -160,6 +159,24 @@ class MultiplexedSocket : public EmbeddedMapElement {
    * @return The socket's name
    */
   virtual const char *name() const = 0;
+
+  /**
+   * Mark the socket as dead, after handleRemove() has been called.
+   *
+   * Dead sockets let the multiplexer handle states where the socket's resources should be reclaimed, but can't be
+   * immediately reclaimed because other pending I/O events may still need to interact with it.
+   */
+  virtual void markDead() = 0;
+
+  /**
+   * Determine whether the socket is dead?  Which means: did the multiplexer previously call markDead() on it?
+   *
+   * Dead sockets let the multiplexer handle states where the socket's resources should be reclaimed, but can't be
+   * immediately reclaimed because other pending I/O events may still need to interact with it.
+   *
+   * @return true if the socket is dead, false otherwise.
+   */
+  virtual bool dead() const = 0;
 
   /** Placement new.
    *

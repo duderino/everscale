@@ -135,7 +135,6 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
   ESB::Error error = serverStream.resumeRecv(true);
   if (ESB_SUCCESS != error) {
     ESB_LOG_WARNING_ERRNO(error, "[%s] cannot resume server stream", serverStream.logAddress());
-    serverStream.abort(true);
     return error;
   }
 
@@ -167,7 +166,6 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
       return ESB_AGAIN;
     default:
       ESB_LOG_WARNING_ERRNO(error, "[%s] cannot send server response", serverStream.logAddress());
-      serverStream.abort(true);
       return error;
   }
 
@@ -175,7 +173,6 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
 
   if (300 <= clientResponse.statusCode()) {
     ESB_LOG_DEBUG("[%s] aborting server transaction due to error response", serverStream.logAddress());
-    serverStream.abort(true);
     return ESB_CLOSED;
   }
 
@@ -532,14 +529,10 @@ ESB::Error HttpRoutingProxyHandler::onClientRecvBlocked(HttpServerStream &server
   ESB::Error error;
   if (ESB_SUCCESS != (error = clientStream.resumeRecv(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client stream receive", clientStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   if (ESB_SUCCESS != (error = serverStream.pauseSend(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause server stream send", serverStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   ESB_LOG_DEBUG("[%s] resumed client stream receive", clientStream.logAddress());
@@ -553,14 +546,10 @@ ESB::Error HttpRoutingProxyHandler::onServerRecvBlocked(HttpServerStream &server
   ESB::Error error;
   if (ESB_SUCCESS != (error = serverStream.resumeRecv(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume server stream receive", serverStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   if (ESB_SUCCESS != (error = clientStream.pauseSend(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client stream send", clientStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   ESB_LOG_DEBUG("[%s] resumed server stream receive", serverStream.logAddress());
@@ -574,14 +563,10 @@ ESB::Error HttpRoutingProxyHandler::onClientSendBlocked(HttpServerStream &server
   ESB::Error error;
   if (ESB_SUCCESS != (error = clientStream.resumeSend(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume client stream send", clientStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   if (ESB_SUCCESS != (error = serverStream.pauseRecv(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause server stream receive", serverStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   ESB_LOG_DEBUG("[%s] resumed client stream send", clientStream.logAddress());
@@ -595,14 +580,10 @@ ESB::Error HttpRoutingProxyHandler::onServerSendBlocked(HttpServerStream &server
   ESB::Error error;
   if (ESB_SUCCESS != (error = serverStream.resumeSend(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot resume server stream send", serverStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   if (ESB_SUCCESS != (error = clientStream.pauseRecv(true))) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot pause client stream receive", clientStream.logAddress());
-    clientStream.abort(true);
-    serverStream.abort(true);
     return error;
   }
   ESB_LOG_DEBUG("[%s] resumed server stream send", serverStream.logAddress());

@@ -111,7 +111,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 
   virtual void handleIdle();
 
-  virtual bool handleRemove();
+  virtual void handleRemove();
 
   virtual SOCKET socketDescriptor() const;
 
@@ -119,14 +119,22 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 
   virtual const char *name() const;
 
+  virtual void markDead();
+
+  virtual bool dead() const;
+
   //
   // ES::HttpStream
   //
 
   virtual ESB::Error abort(bool updateMultiplexer = true);
+
   virtual ESB::Error pauseRecv(bool updateMultiplexer = true);
+
   virtual ESB::Error resumeRecv(bool updateMultiplexer = true);
+
   virtual ESB::Error pauseSend(bool updateMultiplexer = true);
+
   virtual ESB::Error resumeSend(bool updateMultiplexer = true);
 
   virtual ESB::Allocator &allocator();
@@ -193,6 +201,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 #define SEND_PAUSED (1 << 11)
 #define ABORTED (1 << 12)
 #define LAST_CHUNK_RECEIVED (1 << 13)
+#define DEAD (1 << 14)
 
   // Useful socket flag masks
 

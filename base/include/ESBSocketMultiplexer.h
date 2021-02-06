@@ -46,17 +46,17 @@ class SocketMultiplexer : public Command {
   virtual Error addMultiplexedSocket(MultiplexedSocket *multiplexedSocket) = 0;
 
   /** Keep socket in epoll and socket list, but possibly change the readiness
-   *  events of interest.  This does not modify the _currentSocketCount.
+   *  events of interest.  This does not modify the _activeSocketCount.
    *
    * @param socket The multiplexedSocket
    */
   virtual Error updateMultiplexedSocket(MultiplexedSocket *socket) = 0;
 
-  /** Remove a multiplexed socket form the socket multiplexer
+  /** Remove a multiplexed socket from the socket multiplexer
    *
    * @param socket The multiplexed socket to remove
    */
-  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket, bool removeFromList = true) = 0;
+  virtual Error removeMultiplexedSocket(MultiplexedSocket *socket) = 0;
 
   /** Get the number of sockets this multiplexer is currently handling.
    *

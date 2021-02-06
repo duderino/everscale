@@ -302,7 +302,6 @@ ESB::Error HttpServerSocket::sendEmptyResponse(int statusCode, const char *reaso
 
   ESB::Error error = setResponse(statusCode, reasonPhrase);
   if (ESB_SUCCESS != error) {
-    abort(true);
     return error;
   }
 
@@ -314,7 +313,6 @@ ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
 
   ESB::Error error = _transaction->response().copy(&response, _transaction->allocator());
   if (ESB_SUCCESS != error) {
-    abort(true);
     return error;
   }
 
@@ -325,13 +323,11 @@ ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
 ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
                                               ESB::UInt32 *bytesConsumed) {
   if (!chunk || !bytesConsumed) {
-    abort(true);
     return ESB_NULL_POINTER;
   }
 
   int state = _state & SERVER_STATE_MASK;
   if (state != SERVER_FORMATTING_BODY) {
-    abort(true);
     return ESB_INVALID_STATE;
   }
 
@@ -377,7 +373,7 @@ void HttpServerSocket::handleIdle() {
 #endif
 }
 
-bool HttpServerSocket::handleRemove() {
+void HttpServerSocket::handleRemove() {
   assert(!(SERVER_INACTIVE & _state));
   ESB_LOG_INFO("[%s] closing server socket", _socket->name());
   _socket->close();
@@ -413,8 +409,6 @@ bool HttpServerSocket::handleRemove() {
   stateTransition(SERVER_INACTIVE);
   _counters.getAverageTransactionsPerConnection()->add(_requestsPerConnection);
   _requestsPerConnection = 0;
-
-  return true;  // call cleanup handler on us after this returns
 }
 
 SOCKET HttpServerSocket::socketDescriptor() const { return _socket->socketDescriptor(); }
@@ -424,7 +418,6 @@ ESB::CleanupHandler *HttpServerSocket::cleanupHandler() { return &_cleanupHandle
 ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int flags) {
   bool fillRecvBuffer = flags & SERVER_INITIAL_FILL_RECV_BUFFER;
   bool drainSendBuffer = flags & SERVER_INITIAL_DRAIN_SEND_BUFFER;
-  bool updateMultiplexer = flags & SERVER_UPDATE_MULTIPLEXER;
 
   while (!_multiplexer.shutdown()) {
     bool inRecvState = _state & SERVER_RECV_STATE_MASK;
@@ -447,11 +440,9 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
           return ESB_AGAIN;
         case ESB_CLOSED:
           handleRemoteClose();
-          abort(updateMultiplexer);
           return ESB_CLOSED;
         default:
           handleError(error);
-          abort(updateMultiplexer);
           return error;
       }
     }
@@ -489,7 +480,6 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
       default:
         assert(!"invalid state");
         ESB_LOG_WARNING_ERRNO(ESB_INVALID_STATE, "[%s] invalid transition to state %d", _socket->name(), state);
-        abort(updateMultiplexer);
         return ESB_INVALID_STATE;
     }
 
@@ -510,7 +500,6 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
         // The handler cannot make progress
         return ESB_PAUSE;
       default:
-        abort(updateMultiplexer);
         return error;
     }
 
@@ -522,14 +511,12 @@ ESB::Error HttpServerSocket::advanceStateMachine(HttpServerHandler &handler, int
         case ESB_AGAIN:
           return ESB_AGAIN;
         default:
-          abort(updateMultiplexer);
           return error;
       }
     }
   }
 
   ESB_LOG_DEBUG("[%s] multiplexer shutdown", _socket->name());
-  abort(updateMultiplexer);
   return ESB_SHUTDOWN;
 }
 
@@ -1354,5 +1341,9 @@ const char *HttpServerSocket::describeFlags() const {
 
   return _state & SERVER_ABORTED ? "aborted" : "active";
 }
+
+void HttpServerSocket::markDead() { _state |= SERVER_DEAD; }
+
+bool HttpServerSocket::dead() const { return _state & SERVER_DEAD; }
 
 }  // namespace ES
