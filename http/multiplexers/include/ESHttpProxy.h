@@ -24,7 +24,7 @@ class HttpProxy : public HttpServer {
   /**
    * Create a proxy stack.
    */
-  HttpProxy(const char *namePrefix, ESB::UInt32 threads, HttpProxyHandler &proxyHandler,
+  HttpProxy(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec, HttpProxyHandler &proxyHandler,
             ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpProxy();
@@ -47,12 +47,10 @@ class HttpProxy : public HttpServer {
   virtual ESB::SocketMultiplexer *createMultiplexer();
 
  private:
-  // disabled
-  HttpProxy(const HttpProxy &);
-  void operator=(const HttpProxy &);
-
   HttpProxyHandler &_proxyHandler;
   HttpClientHistoricalCounters _clientCounters;
+
+  ESB_DISABLE_AUTO_COPY(HttpProxy);
 };
 
 }  // namespace ES

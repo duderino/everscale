@@ -248,7 +248,7 @@ static HttpNullServerHandler HttpNullServerHandler;
 static HttpNullClientCounters HttpNullClientCounters;
 static HttpNullServerCounters HttpNullServerCounters;
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets,
+HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                                            HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
                                            HttpClientCounters &clientCounters, HttpServerCounters &serverCounters)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
@@ -256,8 +256,7 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _multiplexer(namePrefix, HttpConfig::Instance().idleTimeoutSeconds(), maxSockets,
-                   ESB::SystemAllocator::Instance()),
+      _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
       _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
@@ -269,15 +268,14 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _clientCounters(clientCounters),
       _serverCounters(serverCounters) {}
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets,
+HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                                            HttpClientHandler &clientHandler, HttpClientCounters &clientCounters)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _multiplexer(namePrefix, HttpConfig::Instance().idleTimeoutSeconds(), maxSockets,
-                   ESB::SystemAllocator::Instance()),
+      _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
       _serverSocketFactory(*this, HttpNullServerHandler, HttpNullServerCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
@@ -289,15 +287,14 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _clientCounters(clientCounters),
       _serverCounters(HttpNullServerCounters) {}
 
-HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets,
+HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                                            HttpServerHandler &serverHandler, HttpServerCounters &serverCounters)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
-      _multiplexer(namePrefix, HttpConfig::Instance().idleTimeoutSeconds(), maxSockets,
-                   ESB::SystemAllocator::Instance()),
+      _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
       _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),

@@ -12,9 +12,11 @@ HttpLoadgenHandler::HttpLoadgenHandler(const HttpTestParams &params) : _params(p
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
-ESB::Error HttpLoadgenHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
+ESB::Error HttpLoadgenHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_CLIENT_SEND_HEADERS:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_CLIENT_SEND_HEADERS:
       return ESB_CLOSED;
@@ -28,6 +30,8 @@ ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, Ht
                                                 ESB::UInt32 *maxChunkSize) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_CLIENT_SEND_BODY:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_CLIENT_SEND_BODY:
       return ESB_CLOSED;
@@ -66,6 +70,8 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, 
 ESB::Error HttpLoadgenHandler::receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &stream) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_CLIENT_RECV_HEADERS:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_CLIENT_RECV_HEADERS:
       return ESB_CLOSED;
@@ -80,6 +86,8 @@ ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
                                                    ESB::UInt32 *bytesConsumed) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_CLIENT_RECV_BODY:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_CLIENT_RECV_BODY:
       return ESB_CLOSED;

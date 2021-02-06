@@ -113,13 +113,12 @@ INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyNegativeTest,
                                                               HttpTestParams::STALL_SERVER_SEND_BODY,
                                                               /*HttpTestParams::STALL_CLIENT_RECV_HEADERS,*/
                                                               /*HttpTestParams::STALL_CLIENT_RECV_BODY,*/
-                                                              /*HttpTestParams::STALL_CLIENT_SEND_HEADERS,*/
                                                               HttpTestParams::STALL_CLIENT_SEND_BODY)));
 
 TEST_P(HttpProxyNegativeTest, IdleTimeout) {
   HttpTestParams params;
-  params.connections(10)
-      .requestsPerConnection(10)
+  params.connections(50)
+      .requestsPerConnection(50)
       .clientThreads(2)
       .proxyThreads(2)
       .originThreads(2)
@@ -129,8 +128,10 @@ TEST_P(HttpProxyNegativeTest, IdleTimeout) {
       .hostHeader("test.server.everscale.com")
       .secure(std::get<2>(GetParam()))
       .logLevel(ESB::Logger::Warning)
-      .disruptTransaction(std::get<3>(GetParam()));
-  HttpConfig::Instance().setIdleTimeoutSeconds(1);
+      .disruptTransaction(std::get<3>(GetParam()))
+      .proxyTimeoutMsec(100)
+      .originTimeoutMsec(1000)
+      .clientTimeoutMsec(1000);
 
   EphemeralListener originListener("origin-listener", params.secure());
   EphemeralListener proxyListener("proxy-listener", params.secure());

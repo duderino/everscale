@@ -36,7 +36,7 @@ class HttpServer {
   /**
    * Constructor
    */
-  HttpServer(const char *namePrefix, ESB::UInt32 threads, HttpServerHandler &serverHandler,
+  HttpServer(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec, HttpServerHandler &serverHandler,
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpServer();
@@ -118,6 +118,7 @@ class HttpServer {
   } HttpServerState;
 
   ESB::UInt32 _threads;
+  ESB::UInt32 _idleTimeoutMsec;
   ESB::SharedInt _state;
   ESB::Allocator &_allocator;
   HttpServerHandler &_serverHandler;
@@ -127,10 +128,7 @@ class HttpServer {
   HttpServerSimpleCounters _serverCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
 
- private:
-  // disabled
-  HttpServer(const HttpServer &);
-  void operator=(const HttpServer &);
+  ESB_DISABLE_AUTO_COPY(HttpServer);
 };
 
 }  // namespace ES

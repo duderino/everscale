@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   // Init
 
   HttpOriginHandler handler(params);
-  HttpServer server("origin", params.originThreads(), handler);
+  HttpServer server("origin", params.originThreads(), params.originTimeoutMsec(), handler);
 
   error = server.initialize();
   if (ESB_SUCCESS != error) {

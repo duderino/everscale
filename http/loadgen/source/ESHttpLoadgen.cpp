@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 
   HttpLoadgenHandler clientHandler(params);
   HttpClientSocket::SetReuseConnections(params.reuseConnections());
-  HttpClient client("loadgen", params.clientThreads(), clientHandler);
+  HttpClient client("loadgen", params.clientThreads(), params.clientTimeoutMsec(), clientHandler);
   ESB::SocketAddress destination(params.destinationAddress(), params.port(), ESB::SocketAddress::TransportType::TCP);
 
   error = client.initialize();

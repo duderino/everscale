@@ -68,14 +68,11 @@
 
 namespace ESB {
 
-#ifndef EPOLL_TIMEOUT_MILLIS
-#define EPOLL_TIMEOUT_MILLIS 1000
-#endif
-
-EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleSeconds, UInt32 maxSockets, Allocator &allocator)
+EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleTimeoutMsec, UInt32 maxSockets,
+                                   Allocator &allocator)
     : SocketMultiplexer(),
       _epollDescriptor(INVALID_SOCKET),
-      _idleSeconds(MAX(idleSeconds, 1)),
+      _idleTimeoutMsec(MAX(idleTimeoutMsec, 10)),
       _maxSockets(MAX(maxSockets, 1)),
       _events(NULL),
       _eventCache(NULL),
@@ -83,7 +80,7 @@ EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleSeconds, U
       _activeSocketCount(),
       _activeSockets(),
       _deadSockets(),
-      _timingWheel(60 + idleSeconds, 1000, Time::Instance().now(), _allocator) {
+      _timingWheel(5 * 60 * 1000 / _idleTimeoutMsec * 10, _idleTimeoutMsec / 10, Time::Instance().now(), _allocator) {
   strncpy(_namePrefix, namePrefix, sizeof(_namePrefix));
   _namePrefix[sizeof(_namePrefix) - 1] = 0;
 
@@ -178,7 +175,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
   }
 
   if (!socket->permanent()) {
-    Error error = _timingWheel.insert(&socket->timer(), _idleSeconds * 1000, Time::Instance().now());
+    Error error = _timingWheel.insert(&socket->timer(), _idleTimeoutMsec, Time::Instance().now());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add socket to timing wheel", socket->name());
       _activeSocketCount.dec();
@@ -355,7 +352,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
   while (_isRunning->get()) {
     checkIdleSockets();
-    numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets, EPOLL_TIMEOUT_MILLIS);
+    numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets, MIN(_idleTimeoutMsec, 1000));
 
     if (0 == numEvents) {
       // Timeout
@@ -576,7 +573,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         continue;
       }
 
-      ESB::Error error = _timingWheel.update(&socket->timer(), _idleSeconds * 1000, now);
+      ESB::Error error = _timingWheel.update(&socket->timer(), _idleTimeoutMsec, now);
       switch (error) {
         case ESB_SUCCESS:
           updateMultiplexedSocket(socket);

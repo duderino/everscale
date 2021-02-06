@@ -36,7 +36,7 @@ class HttpClient {
   /**
    * Create a client stack.
    */
-  HttpClient(const char *namePrefix, ESB::UInt32 threads, HttpClientHandler &clientHandler,
+  HttpClient(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec, HttpClientHandler &clientHandler,
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpClient();
@@ -81,6 +81,7 @@ class HttpClient {
   } HttpClientState;
 
   ESB::UInt32 _threads;
+  ESB::UInt32 _idleTimeoutMsec;
   ESB::SharedInt _state;
   ESB::Allocator &_allocator;
   HttpClientHandler &_clientHandler;

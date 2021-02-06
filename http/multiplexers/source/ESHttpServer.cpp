@@ -12,9 +12,10 @@
 
 namespace ES {
 
-HttpServer::HttpServer(const char *namePrefix, ESB::UInt32 threads, HttpServerHandler &serverHandler,
-                       ESB::Allocator &allocator)
+HttpServer::HttpServer(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec,
+                       HttpServerHandler &serverHandler, ESB::Allocator &allocator)
     : _threads(0 >= threads ? 1 : threads),
+      _idleTimeoutMsec(idleTimeoutMsec),
       _state(ES_HTTP_SERVER_IS_DESTROYED),
       _allocator(allocator),
       _serverHandler(serverHandler),
@@ -159,8 +160,8 @@ void HttpServer::destroy() {
 }
 
 ESB::SocketMultiplexer *HttpServer::createMultiplexer() {
-  return new (_allocator)
-      HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _serverHandler, _serverCounters);
+  return new (_allocator) HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec,
+                                               _serverHandler, _serverCounters);
 }
 
 void HttpServer::destroyMultiplexer(ESB::SocketMultiplexer *multiplexer) {

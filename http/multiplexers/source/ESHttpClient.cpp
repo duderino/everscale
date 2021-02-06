@@ -12,9 +12,10 @@
 
 namespace ES {
 
-HttpClient::HttpClient(const char *namePrefix, ESB::UInt32 threads, HttpClientHandler &clientHandler,
-                       ESB::Allocator &allocator)
-    : _threads(0 >= threads ? 1 : threads),
+HttpClient::HttpClient(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec,
+                       HttpClientHandler &clientHandler, ESB::Allocator &allocator)
+    : _threads(MAX(threads, 1)),
+      _idleTimeoutMsec(MAX(10, idleTimeoutMsec)),
       _state(ES_HTTP_CLIENT_IS_DESTROYED),
       _allocator(allocator),
       _clientHandler(clientHandler),
@@ -75,7 +76,7 @@ ESB::Error HttpClient::start() {
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
     ESB::SocketMultiplexer *multiplexer =
-        new (_allocator) HttpProxyMultiplexer(_name, maxSockets, _clientHandler, _clientCounters);
+        new (_allocator) HttpProxyMultiplexer(_name, maxSockets, _idleTimeoutMsec, _clientHandler, _clientCounters);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot initialize multiplexer");

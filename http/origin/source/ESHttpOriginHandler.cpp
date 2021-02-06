@@ -19,6 +19,8 @@ ESB::Error HttpOriginHandler::acceptConnection(HttpMultiplexer &stack, ESB::Sock
 ESB::Error HttpOriginHandler::beginTransaction(HttpMultiplexer &stack, HttpServerStream &stream) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_SERVER_RECV_HEADERS:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_SERVER_RECV_HEADERS:
       return ESB_CLOSED;
@@ -49,6 +51,8 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
                                                  ESB::UInt32 *bytesConsumed) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_SERVER_RECV_BODY:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_SERVER_RECV_BODY:
       return ESB_CLOSED;
@@ -91,6 +95,8 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
 
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_SERVER_SEND_HEADERS:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_SERVER_SEND_HEADERS:
       return ESB_CLOSED;
@@ -128,6 +134,8 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, Ht
                                                 ESB::UInt32 *bytesAvailable) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_SERVER_SEND_BODY:
+      stream.pauseSend(false);
+      stream.pauseRecv(false);
       return ESB_PAUSE;
     case HttpTestParams::CLOSE_SERVER_SEND_BODY:
       return ESB_CLOSED;

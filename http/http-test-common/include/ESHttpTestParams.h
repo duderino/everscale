@@ -203,11 +203,28 @@ class HttpTestParams {
     return *this;
   }
 
- private:
-  // Disabled
-  HttpTestParams(const HttpTestParams &);
-  void operator=(const HttpTestParams &);
+  ESB::UInt32 clientTimeoutMsec() const { return _clientTimeoutMsec; }
 
+  HttpTestParams &clientTimeoutMsec(ESB::UInt32 clientTimeoutMsec) {
+    _clientTimeoutMsec = clientTimeoutMsec;
+    return *this;
+  }
+
+  ESB::UInt32 proxyTimeoutMsec() const { return _proxyTimeoutMsec; }
+
+  HttpTestParams &proxyTimeoutMsec(ESB::UInt32 proxyTimeoutMsec) {
+    _proxyTimeoutMsec = proxyTimeoutMsec;
+    return *this;
+  }
+
+  ESB::UInt32 originTimeoutMsec() const { return _originTimeoutMsec; }
+
+  HttpTestParams &originTimeoutMsec(ESB::UInt32 originTimeoutMsec) {
+    _originTimeoutMsec = originTimeoutMsec;
+    return *this;
+  }
+
+ private:
   ESB::UInt16 _port;
   ESB::UInt32 _clientThreads;
   ESB::UInt32 _originThreads;
@@ -216,6 +233,9 @@ class HttpTestParams {
   ESB::UInt32 _requestsPerConnection;
   ESB::UInt32 _requestSize;
   ESB::UInt32 _responseSize;
+  ESB::UInt32 _clientTimeoutMsec;
+  ESB::UInt32 _proxyTimeoutMsec;
+  ESB::UInt32 _originTimeoutMsec;
   bool _useContentLengthHeader;  // if true use content-length header, else use chunked transfer encoding
   bool _reuseConnections;
   bool _secure;
@@ -232,6 +252,8 @@ class HttpTestParams {
   char _serverCertPath[ESB_MAX_PATH + 1];
   ESB::UInt32 _maxVerifyDepth;
   DisruptTransaction _disruptTransaction;
+
+  ESB_DISABLE_AUTO_COPY(HttpTestParams);
 };
 
 }  // namespace ES

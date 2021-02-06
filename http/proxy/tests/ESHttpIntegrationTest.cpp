@@ -130,9 +130,9 @@ HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::
       _clientHandler(clientHandler),
       _proxyHandler(proxyHandler),
       _originHandler(serverHandler),
-      _client("load", _params.clientThreads(), _clientHandler),
-      _proxy("prox", _params.proxyThreads(), _proxyHandler),
-      _origin("orig", _params.originThreads(), _originHandler) {
+      _client("load", _params.clientThreads(), _params.clientTimeoutMsec(), _clientHandler),
+      _proxy("prox", _params.proxyThreads(), _params.proxyTimeoutMsec(), _proxyHandler),
+      _origin("orig", _params.originThreads(), _params.originTimeoutMsec(), _originHandler) {
   HttpClientSocket::SetReuseConnections(_params.reuseConnections());
 }
 

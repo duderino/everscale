@@ -296,6 +296,9 @@ TEST_P(HttpProxyTestMessageBody, BodySizes) {
       .useContentLengthHeader(std::get<1>(GetParam()))
       .hostHeader("test.server.everscale.com")
       .secure(std::get<2>(GetParam()))
+      .originTimeoutMsec(10 * 1000)
+      .proxyTimeoutMsec(10 * 1000)
+      .clientTimeoutMsec(10 * 1000)
       .logLevel(ESB::Logger::Warning);
 
   EphemeralListener originListener("origin-listener", params.secure());

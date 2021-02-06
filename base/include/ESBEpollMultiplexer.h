@@ -45,7 +45,7 @@ class EpollMultiplexer : public SocketMultiplexer {
    *  requests to add new sockets.
    * @param allocator Internal storage will be allocated using this allocator.
    */
-  EpollMultiplexer(const char *namePrefix, UInt32 idleSeconds, UInt32 maxSockets,
+  EpollMultiplexer(const char *namePrefix, UInt32 idleTimeoutMsec, UInt32 maxSockets,
                    Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
@@ -141,7 +141,7 @@ class EpollMultiplexer : public SocketMultiplexer {
   };
 
   int _epollDescriptor;
-  const UInt32 _idleSeconds;
+  const UInt32 _idleTimeoutMsec;
   const UInt32 _maxSockets;
 #ifdef HAVE_STRUCT_EPOLL_EVENT
   struct epoll_event *_events;
