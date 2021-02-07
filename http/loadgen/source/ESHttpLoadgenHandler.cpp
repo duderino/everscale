@@ -125,24 +125,24 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
-      ESB_LOG_ERROR("[%s] transaction failed at begin state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RESOLVE:
-      ESB_LOG_ERROR("[%s] transaction failed at resolve state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at resolve state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
-      ESB_LOG_ERROR("[%s] transaction failed at connect state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at connect state", stream.logAddress());
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
-      ESB_LOG_ERROR("[%s] transaction failed at send request headers state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at send request headers state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
-      ESB_LOG_ERROR("[%s] transaction failed at send request body state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at send request body state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
-      ESB_LOG_ERROR("[%s] transaction failed at receive response headers state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at receive response headers state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
-      ESB_LOG_ERROR("[%s] transaction failed at receive response body state", stream.logAddress());
+      ESB_LOG_INFO("[%s] transaction failed at receive response body state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
       if (0 <= _params.responseSize() && _params.responseSize() != context->bytesReceived()) {

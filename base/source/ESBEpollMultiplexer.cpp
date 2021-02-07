@@ -428,7 +428,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
       MultiplexedSocket *socket = (MultiplexedSocket *)_events[i].data.ptr;
       fd = socket->socketDescriptor();
 
-      if (socket->dead()) {
+      if (socket->dead() || INVALID_SOCKET == fd) {
         continue;
       }
 
@@ -567,6 +567,8 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         removeMultiplexedSocket(socket);
         continue;
       }
+
+      assert(INVALID_SOCKET != socket->socketDescriptor());
 
       if (socket->permanent()) {
         updateMultiplexedSocket(socket);

@@ -173,21 +173,21 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
 void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
-      ESB_LOG_ERROR("[%s] Transaction failed at begin state", stream.logAddress());
+      ESB_LOG_INFO("[%s] Transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
       // Can fail here when the server connection is waiting for the next request
       // assert(!"Transaction failed at request header parse state");
-      // ESB_LOG_ERROR("[%s] Transaction failed at request header parse state", stream.logAddress());
+      ESB_LOG_DEBUG("[%s] Transaction failed at request header parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
-      ESB_LOG_ERROR("[%s] Transaction failed at request body parse state", stream.logAddress());
+      ESB_LOG_INFO("[%s] Transaction failed at request body parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
-      ESB_LOG_ERROR("[%s] Transaction failed at response header send state", stream.logAddress());
+      ESB_LOG_INFO("[%s] Transaction failed at response header send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
-      ESB_LOG_ERROR("[%s] Transaction failed at response body send state", stream.logAddress());
+      ESB_LOG_INFO("[%s] Transaction failed at response body send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
       break;

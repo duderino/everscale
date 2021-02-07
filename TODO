@@ -1,13 +1,16 @@
 stat:
+ - EpollMultiplexer - disable check for INVALID_SOCKET after epoll call.  See if there's a race condition on server shutdown - does a delay after test completion and shutdown make the problem go away?
+ - Change nopool build profile to use ASAN
  - EpollMultiplexer dtor calls cleanup handlers on all active connections.  This returns them to the client/server socket factories instead of destroying them.
  - add counters to detect runaway epoll events
- - run idle timeout only for client and origin - to ensure that proxy handles the FIN/close appropriately
+ - run idle timeout only for client and origin - to ensure that proxy handles the FIN/close appropriately - always register for close/error events?
  - ensure bssl is built in release mode when parent project is built in release mode
  - TCP_NODELAY on all connected sockets by default
  - Reduce the number of hostname copies in HttpClientSocketFactory (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress -> ClientTLSConnection)
  - create WAN test
       tc qdisc add dev lo root netem delay 100ms 20ms distribution normal
       tc qdisc del dev lo root
+ - HttpProxyNegativeTests show that the loadclient considers the request a success once it receives a 200 class response headers, and doesn't wait for the entire body before incrementing the success counters.   Fix, then merge BadClient2 and IdleClient2 into BadClient and IdleClient parameterized tests, respsectively.
 
 tls:
  - revisit HttpClientSocket and HttpServerSocket wantRead and wantWrite:  allow the statemachine to finish the TLS handshake even when the stream is paused.
