@@ -242,12 +242,12 @@ Error ListeningSocket::accept(State *data) {
     }
   }
 
-  SocketAddress peerAddress;
+  SocketAddress localAddress;
 
 #if defined HAVE_GETSOCKNAME
   addressSize = sizeof(SocketAddress::Address);
   if (SOCKET_ERROR ==
-      ::getsockname(data->socketDescriptor(), (sockaddr *)peerAddress.primitiveAddress(), &addressSize)) {
+      ::getsockname(data->socketDescriptor(), (sockaddr *)localAddress.primitiveAddress(), &addressSize)) {
     Socket::Close(data->socketDescriptor());
     return LastError();
   }
@@ -255,10 +255,10 @@ Error ListeningSocket::accept(State *data) {
 #error "getsockname or equivalent is required"
 #endif
 
-  peerAddress.setType(_listeningAddress.type());
+  localAddress.setType(_listeningAddress.type());
+  data->peerAddress().setType(_listeningAddress.type());
 
-  data->setPeerAddress(peerAddress);
-  data->setListeningAddress(_listeningAddress);
+  data->setListeningAddress(localAddress);
   data->setIsBlocking(_isBlocking);
 
   return ESB_SUCCESS;
