@@ -116,7 +116,7 @@ TEST_P(HttpProxyNegativeTest, FailCleanly) {
       .useContentLengthHeader(std::get<1>(GetParam()))
       .hostHeader("test.server.everscale.com")
       .secure(std::get<2>(GetParam()))
-      .logLevel(ESB::Logger::Debug)
+      .logLevel(ESB::Logger::Notice)
       .disruptTransaction(std::get<3>(GetParam()))
       .proxyTimeoutMsec(std::get<5>(GetParam()))
       .originTimeoutMsec(1000)

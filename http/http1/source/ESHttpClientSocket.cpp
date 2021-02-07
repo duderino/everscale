@@ -1103,65 +1103,58 @@ const char *HttpClientSocket::name() const { return _socket->name(); }
 
 void HttpClientSocket::stateTransition(int state) {
   assert(state & STATE_MASK);
-  assert(!(state & FLAG_MASK));
 #ifndef NDEBUG
   int currentState = _state & STATE_MASK;
 #endif
+  _state &= ~STATE_MASK;
 
-  switch (state) {
+  switch (state & STATE_MASK) {
     case INACTIVE:
       assert(!(currentState & INACTIVE));
-      _state = INACTIVE;
+      _state |= INACTIVE;
       ESB_LOG_DEBUG("[%s] connection removed", _socket->name());
       break;
     case CONNECTING:
-      assert(0 == "Cannot transition into state CONNECTING");
+      assert(!"Cannot transition into state CONNECTING");
       break;
     case TRANSACTION_BEGIN:
       assert(currentState & (CONNECTING | INACTIVE));
-      _state &= ~(CONNECTING | INACTIVE);
       _state |= TRANSACTION_BEGIN;
       ESB_LOG_DEBUG("[%s] transaction begun", _socket->name());
       break;
     case FORMATTING_HEADERS:
       assert(currentState & TRANSACTION_BEGIN);
-      _state &= ~TRANSACTION_BEGIN;
       _state |= FORMATTING_HEADERS;
       ESB_LOG_DEBUG("[%s] formatting headers", _socket->name());
       break;
     case FORMATTING_BODY:
       assert(currentState & FORMATTING_HEADERS);
-      _state &= ~FORMATTING_HEADERS;
       _state |= FORMATTING_BODY;
       ESB_LOG_DEBUG("[%s] formatting body", _socket->name());
       break;
     case FLUSHING_BODY:
       assert(currentState & FORMATTING_BODY);
-      _state &= ~FORMATTING_BODY;
       _state |= FLUSHING_BODY;
       ESB_LOG_DEBUG("[%s] flushing body", _socket->name());
       break;
     case PARSING_HEADERS:
       assert(currentState & FLUSHING_BODY);
-      _state &= ~FLUSHING_BODY;
       _state |= PARSING_HEADERS;
       ESB_LOG_DEBUG("[%s] parsing headers", _socket->name());
       break;
     case PARSING_BODY:
       assert(currentState & PARSING_HEADERS);
-      _state &= ~PARSING_HEADERS;
       _state |= PARSING_BODY;
       ESB_LOG_DEBUG("[%s] parsing body", _socket->name());
       break;
     case TRANSACTION_END:
       assert(currentState & (PARSING_HEADERS | PARSING_BODY));
-      _state &= ~(PARSING_HEADERS | PARSING_BODY);
       _state |= TRANSACTION_END;
       ESB_LOG_DEBUG("[%s] transaction complete", _socket->name());
       break;
     default:
-      assert(0 == "Cannot transition into unknown state");
-      ESB_LOG_ERROR("[%s] cannot transition to multiple states: %d", _socket->name(), state);
+      ESB_LOG_ERROR("[%s] cannot transition to unknown states: %d", _socket->name(), state & STATE_MASK);
+      assert(!"Cannot transition into unknown state");
   }
 }
 

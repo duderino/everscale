@@ -343,16 +343,12 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
   ESB_LOG_NOTICE("[%s] multiplexer thread started", name());
 
-  int numEvents = 0;
-  int i = 0;
   int errorCount = 0;
-  SOCKET fd = INVALID_SOCKET;
-  bool keepInMultiplexer = true;
   _isRunning = isRunning;
 
   while (_isRunning->get()) {
     checkIdleSockets();
-    numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets, MIN(_idleTimeoutMsec, 1000));
+    int numEvents = epoll_wait(_epollDescriptor, _events, _maxSockets, MIN(_idleTimeoutMsec, 1000));
 
     if (0 == numEvents) {
       // Timeout
@@ -385,9 +381,8 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
     if (ESB_DEBUG_LOGGABLE) {
       ESB_LOG_DEBUG("[%s] processing %d events", name(), numEvents);
 
-      for (i = 0; i < numEvents; ++i) {
+      for (int i = 0; i < numEvents; ++i) {
         MultiplexedSocket *socket = (MultiplexedSocket *)_events[i].data.ptr;
-        fd = socket->socketDescriptor();
 
         if (socket->wantAccept()) {
           if (_events[i].events & EPOLLERR) {
@@ -423,14 +418,20 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
     errorCount = 0;
 
-    for (i = 0; i < numEvents; ++i) {
-      keepInMultiplexer = true;
+    for (int i = 0; i < numEvents; ++i) {
+      bool keepInMultiplexer = true;
       MultiplexedSocket *socket = (MultiplexedSocket *)_events[i].data.ptr;
-      fd = socket->socketDescriptor();
 
-      if (socket->dead() || INVALID_SOCKET == fd) {
+      if (socket->dead()) {
         continue;
       }
+
+      SOCKET fd = socket->socketDescriptor();
+      if (INVALID_SOCKET == fd) {
+        ESB_LOG_CRITICAL_ERRNO(ESB_INVALID_STATE, "[%s] received epoll event after close", socket->name());
+        ESB::Logger::Instance().flush();
+      }
+      assert(INVALID_SOCKET != fd);
 
       //
       // Handle Listening Socket

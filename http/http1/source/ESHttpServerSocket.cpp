@@ -1223,51 +1223,45 @@ const char *HttpServerSocket::name() const { return _socket->name(); }
 
 void HttpServerSocket::stateTransition(int state) {
   assert(state & SERVER_STATE_MASK);
-  assert(!(state & SERVER_FLAG_MASK));
 #ifndef NDEBUG
   int currentState = _state & SERVER_STATE_MASK;
 #endif
+  _state &= ~SERVER_STATE_MASK;
 
   switch (state & SERVER_STATE_MASK) {
     case SERVER_INACTIVE:
       assert(!(currentState & SERVER_INACTIVE));
-      _state = SERVER_INACTIVE;
+      _state |= SERVER_INACTIVE;
       ESB_LOG_DEBUG("[%s] connection removed", _socket->name());
       break;
     case SERVER_PARSING_HEADERS:
       assert(currentState & SERVER_TRANSACTION_BEGIN);
-      _state &= ~SERVER_TRANSACTION_BEGIN;
       _state |= SERVER_PARSING_HEADERS;
       ESB_LOG_DEBUG("[%s] parsing headers", _socket->name());
       break;
     case SERVER_PARSING_BODY:
       assert(currentState & SERVER_PARSING_HEADERS);
-      _state &= ~SERVER_PARSING_HEADERS;
       _state |= SERVER_PARSING_BODY;
       ESB_LOG_DEBUG("[%s] parsing body", _socket->name());
       break;
     case SERVER_SKIPPING_TRAILER:
       assert(currentState & SERVER_PARSING_BODY);
-      _state &= ~SERVER_PARSING_BODY;
       _state |= SERVER_SKIPPING_TRAILER;
       ESB_LOG_DEBUG("[%s] skipping trailer", _socket->name());
       break;
     case SERVER_FORMATTING_HEADERS:
       assert(currentState &
              (SERVER_TRANSACTION_BEGIN | SERVER_PARSING_HEADERS | SERVER_PARSING_BODY | SERVER_SKIPPING_TRAILER));
-      _state &= ~(SERVER_TRANSACTION_BEGIN | SERVER_PARSING_HEADERS | SERVER_PARSING_BODY | SERVER_SKIPPING_TRAILER);
       _state |= SERVER_FORMATTING_HEADERS;
       ESB_LOG_DEBUG("[%s] formatting headers", _socket->name());
       break;
     case SERVER_FORMATTING_BODY:
       assert(currentState & SERVER_FORMATTING_HEADERS);
-      _state &= ~SERVER_FORMATTING_HEADERS;
       _state |= SERVER_FORMATTING_BODY;
       ESB_LOG_DEBUG("[%s] formatting body", _socket->name());
       break;
     case SERVER_FLUSHING_BODY:
       assert(currentState & SERVER_FORMATTING_BODY);
-      _state &= ~SERVER_FORMATTING_BODY;
       _state |= SERVER_FLUSHING_BODY;
       ESB_LOG_DEBUG("[%s] flushing body", _socket->name());
       break;
@@ -1278,13 +1272,12 @@ void HttpServerSocket::stateTransition(int state) {
       break;
     case SERVER_TRANSACTION_END:
       assert(currentState & SERVER_FLUSHING_BODY);
-      _state &= ~SERVER_FLUSHING_BODY;
       _state |= SERVER_TRANSACTION_END;
       ESB_LOG_DEBUG("[%s] transaction complete", _socket->name());
       break;
     default:
-      assert(0 == "Cannot transition into unknown state");
-      ESB_LOG_ERROR("[%s] cannot transition to multiple states: %d", _socket->name(), state);
+      assert(!"Cannot transition into unknown state");
+      ESB_LOG_ERROR("[%s] cannot transition to unknown state: %d", _socket->name(), state & SERVER_STATE_MASK);
   }
 }
 

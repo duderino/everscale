@@ -48,8 +48,8 @@ set(CMAKE_C_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG" CACHE STR
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti" CACHE STRING "minrelease C++ flags" FORCE)
 
 # This build disables all memory allocators and instead uses malloc/free for every allocation.  This can catch memory leaks obscured by the use of memory allocators.
-set(CMAKE_C_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fsanitize=leak" CACHE STRING "debug no pool C flags" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=leak" CACHE STRING "debug no pool C++ flags" FORCE)
+set(CMAKE_C_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak" CACHE STRING "debug no pool C flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=address -fsanitize=leak" CACHE STRING "debug no pool C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_DEBUGNOPOOL "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG" CACHE STRING "release no pool C flags" FORCE)
