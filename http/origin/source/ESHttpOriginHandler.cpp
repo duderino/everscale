@@ -171,14 +171,6 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
 }
 
 void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
-  HttpOriginContext *context = (HttpOriginContext *)stream.context();
-  assert(context);
-  ESB::Allocator &allocator = stream.allocator();
-
-  context->~HttpOriginContext();
-  allocator.deallocate(context);
-  stream.setContext(NULL);
-
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
       ESB_LOG_ERROR("[%s] Transaction failed at begin state", stream.logAddress());
@@ -202,6 +194,16 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
     default:
       ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
+
+  HttpOriginContext *context = (HttpOriginContext *)stream.context();
+  if (!context) {
+    return;
+  }
+  ESB::Allocator &allocator = stream.allocator();
+
+  context->~HttpOriginContext();
+  allocator.deallocate(context);
+  stream.setContext(NULL);
 }
 
 }  // namespace ES

@@ -393,7 +393,6 @@ ESB::Error HttpRoutingProxyHandler::produceRequestBody(HttpMultiplexer &multiple
   return error;
 }
 
-// TODO KEEF DO NOT CALL CONSUME REQUEST/RESPONSE BODY WITH 0 FOR CONTENT-LENGTH 0 responses.
 ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                                         const unsigned char *body, ESB::UInt32 bytesOffered,
                                                         ESB::UInt32 *bytesConsumed) {
@@ -469,6 +468,19 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
   context->setClientStream(NULL);
   clientStream.setContext(NULL);
 
+  if (ES_HTTP_CLIENT_HANDLER_END != state) {
+    HttpServerStream *serverStream = context->serverStream();
+    if (serverStream) {
+      ESB_LOG_DEBUG("[%s] aborting associated server stream [%s]", clientStream.logAddress(),
+                    serverStream->logAddress());
+      ESB::Error error = serverStream->abort();
+      if (ESB_SUCCESS != error) {
+        ESB_LOG_WARNING_ERRNO(error, "[%s] cannot abort associated server stream", clientStream.logAddress());
+      }
+      context->setServerStream(NULL);
+    }
+  }
+
   // destroy the context if the server stream no longer references it.
 
   HttpServerStream *serverStream = context->serverStream();
@@ -509,6 +521,19 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
   }
   context->setServerStream(NULL);
   serverStream.setContext(NULL);
+
+  if (ES_HTTP_SERVER_HANDLER_END != state) {
+    HttpClientStream *clientStream = context->clientStream();
+    if (clientStream) {
+      ESB_LOG_DEBUG("[%s] aborting associated client stream [%s]", serverStream.logAddress(),
+                    clientStream->logAddress());
+      ESB::Error error = clientStream->abort();
+      if (ESB_SUCCESS != error) {
+        ESB_LOG_WARNING_ERRNO(error, "[%s] cannot abort associated client stream", serverStream.logAddress());
+      }
+      context->setClientStream(NULL);
+    }
+  }
 
   // destroy the context if the client stream no longer references it.
 

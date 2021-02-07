@@ -78,7 +78,10 @@ int main(int argc, char **argv) {
       .reuseConnections(true)
       .hostHeader("test.server.everscale.com")
       .secure(true)
-      .logLevel(ESB::Logger::Notice);
+      .logLevel(ESB::Logger::Notice)
+      .proxyTimeoutMsec(60 * 1000)
+      .originTimeoutMsec(60 * 1000)
+      .clientTimeoutMsec(60 * 1000);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
     return error;

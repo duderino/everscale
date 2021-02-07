@@ -387,18 +387,28 @@ void HttpServerSocket::handleRemove() {
     _recvBuffer = NULL;
   }
 
-  if (_state & SERVER_PARSING_HEADERS) {
-    assert(_transaction);
-    _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS);
-  } else if (_state & SERVER_PARSING_BODY) {
-    assert(_transaction);
-    _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY);
-  } else if (_state & SERVER_FORMATTING_HEADERS) {
-    assert(_transaction);
-    _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS);
-  } else if (_state & (SERVER_FORMATTING_BODY | SERVER_FLUSHING_BODY)) {
-    assert(_transaction);
-    _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY);
+  switch (_state & SERVER_STATE_MASK) {
+    case SERVER_PARSING_HEADERS:
+      assert(_transaction);
+    case SERVER_TRANSACTION_BEGIN:
+      _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS);
+      break;
+    case SERVER_PARSING_BODY:
+    case SERVER_SKIPPING_TRAILER:
+      assert(_transaction);
+      _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY);
+      break;
+    case SERVER_FORMATTING_HEADERS:
+      assert(_transaction);
+      _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS);
+      break;
+    case SERVER_FORMATTING_BODY:
+    case SERVER_FLUSHING_BODY:
+      assert(_transaction);
+      _handler.endTransaction(_multiplexer, *this, HttpServerHandler::ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY);
+      break;
+    default:
+      break;
   }
 
   if (_transaction) {
@@ -1203,15 +1213,9 @@ void HttpServerSocket::setContext(void *context) {
   _transaction->setContext(context);
 }
 
-void *HttpServerSocket::context() {
-  assert(_transaction);
-  return _transaction->context();
-}
+void *HttpServerSocket::context() { return _transaction ? _transaction->context() : NULL; }
 
-const void *HttpServerSocket::context() const {
-  assert(_transaction);
-  return _transaction->context();
-}
+const void *HttpServerSocket::context() const { return _transaction ? _transaction->context() : NULL; }
 
 const ESB::SocketAddress &HttpServerSocket::peerAddress() const { return _socket->peerAddress(); }
 

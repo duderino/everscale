@@ -110,12 +110,9 @@ INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyNegativeTest,
                                             ::testing::Values(HttpTestParams::STALL_SERVER_RECV_HEADERS,
                                                               HttpTestParams::STALL_SERVER_RECV_BODY,
                                                               HttpTestParams::STALL_SERVER_SEND_HEADERS,
-                                                              HttpTestParams::STALL_SERVER_SEND_BODY,
-                                                              /*HttpTestParams::STALL_CLIENT_RECV_HEADERS,*/
-                                                              /*HttpTestParams::STALL_CLIENT_RECV_BODY,*/
-                                                              HttpTestParams::STALL_CLIENT_SEND_BODY)));
+                                                              HttpTestParams::STALL_SERVER_SEND_BODY)));
 
-TEST_P(HttpProxyNegativeTest, IdleTimeout) {
+TEST_P(HttpProxyNegativeTest, OriginIdleTimeout) {
   HttpTestParams params;
   params.connections(50)
       .requestsPerConnection(50)
@@ -129,7 +126,7 @@ TEST_P(HttpProxyNegativeTest, IdleTimeout) {
       .secure(std::get<2>(GetParam()))
       .logLevel(ESB::Logger::Warning)
       .disruptTransaction(std::get<3>(GetParam()))
-      .proxyTimeoutMsec(100)
+      .proxyTimeoutMsec(10)
       .originTimeoutMsec(1000)
       .clientTimeoutMsec(1000);
 

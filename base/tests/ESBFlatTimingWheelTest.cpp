@@ -266,13 +266,13 @@ TEST(TimingWheelTest, CatchupAfterNeglect) {
   timer = timingWheel.nextExpired(now);
   EXPECT_EQ(NULL, timer);
 
-  {
-    // Now that we've drained the expired timers, we can insert new ones even though fake time has not advanced.
-    CleanupTimer testTimer;
-    Error error = timingWheel.insert(&testTimer, tickMilliSeconds, now);
-    EXPECT_EQ(ESB_SUCCESS, error);
-    EXPECT_TRUE(testTimer.inTimingWheel());
-  }
+  // Now that we've drained the expired timers, we can insert new ones even though fake time has not advanced.
+  CleanupTimer testTimer;
+  Error error = timingWheel.insert(&testTimer, tickMilliSeconds, now);
+  EXPECT_EQ(ESB_SUCCESS, error);
+  EXPECT_TRUE(testTimer.inTimingWheel());
+
+  timingWheel.clear();
 }
 
 TEST(TimingWheelTest, Cancellation) {

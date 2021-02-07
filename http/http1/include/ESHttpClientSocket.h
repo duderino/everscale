@@ -39,21 +39,13 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
  public:
   /** Constructor
    */
-  HttpClientSocket(ESB::ConnectedSocket *socket, HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,
-                   HttpClientCounters &counters, ESB::CleanupHandler &cleanupHandler);
+  HttpClientSocket(bool reused, HttpClientTransaction *transaction, ESB::ConnectedSocket *socket,
+                   HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer, HttpClientCounters &counters,
+                   ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
   virtual ~HttpClientSocket();
-
-  /** Reset the client socket
-   *
-   * @param reused true if the socket is being reused for a new transaction
-   * @param transaction The client transaction object.  Many client transactions
-   *  can be carried across the same http client socket with connection reuse.
-   * @return ESB_SUCCESS if successful, another error code otherwise.
-   */
-  ESB::Error reset(bool reused, HttpClientTransaction *transaction);
 
   inline void close() { _socket->close(); }
 
@@ -62,6 +54,8 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   inline bool connected() { return _socket->connected(); }
 
   inline ESB::ConnectedSocket *socket() { return _socket; }
+
+  inline void clearTransaction() { _transaction = NULL; }
 
   /** Placement new.
    *

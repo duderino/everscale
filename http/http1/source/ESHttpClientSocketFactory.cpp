@@ -78,8 +78,11 @@ HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transac
 
   ESB::EmbeddedListElement *memory = _deconstructedHttpSockets.removeLast();
   HttpClientSocket *httpSocket =
-      memory ? new (memory) HttpClientSocket(connection, _handler, _multiplexer, _counters, _cleanupHandler)
-             : new (_allocator) HttpClientSocket(connection, _handler, _multiplexer, _counters, _cleanupHandler);
+      memory
+          ? new (memory)
+                HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler)
+          : new (_allocator)
+                HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler);
 
   if (!httpSocket) {
     if (ESB_ERROR_LOGGABLE) {
@@ -97,7 +100,6 @@ HttpClientSocket *HttpClientSocketFactory::create(HttpClientTransaction *transac
     ESB_LOG_DEBUG("[%s] connection created", httpSocket->logAddress());
   }
 
-  httpSocket->reset(reused, transaction);
   return httpSocket;
 }
 
@@ -110,6 +112,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *httpSocket) {
     ESB_LOG_DEBUG("[%s] returned connection to pool", httpSocket->logAddress());
   } else {
     ESB_LOG_DEBUG("[%s] did not return connection to pool", httpSocket->logAddress());
+    httpSocket->close();
   }
 
   _connectionPool.release(httpSocket->socket());
@@ -118,8 +121,7 @@ void HttpClientSocketFactory::release(HttpClientSocket *httpSocket) {
 }
 
 ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransaction *transaction) {
-  // don't uncomment the end handler callbacks until after the processing goes
-  // asynch
+  // don't uncomment the end handler callbacks until after the processing goes asynch
   assert(transaction);
   if (!transaction) {
     return ESB_NULL_POINTER;
@@ -128,30 +130,32 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
   transaction->setStartTime();
 
   HttpClientSocket *socket = create(transaction);
-
   if (!socket) {
     _counters.getFailures()->record(transaction->startTime(), ESB::Time::Instance().now());
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
-    ESB_LOG_CRITICAL("[%s] cannot allocate new client socket", name());
-    return 0;
+    ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot allocate new client socket", name());
+    return ESB_OUT_OF_MEMORY;
   }
 
   if (socket->connected()) {
     ESB::Error error = _handler.beginTransaction(_multiplexer, *socket);
     if (ESB_SUCCESS != error) {
       ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction immediately after connecting", socket->name());
+      socket->close();
+      socket->clearTransaction();
+      release(socket);
       return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
     }
   } else {
     ESB::Error error = socket->connect();
-
     if (ESB_SUCCESS != error) {
       _counters.getFailures()->record(transaction->startTime(), ESB::Time::Instance().now());
       ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot connect", socket->logAddress());
       // transaction->getHandler()->end(transaction,
       //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
       socket->close();
+      socket->clearTransaction();
       release(socket);
       return error;
     }
@@ -162,9 +166,10 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
   if (ESB_SUCCESS != error) {
     _counters.getFailures()->record(transaction->startTime(), ESB::Time::Instance().now());
     ESB_LOG_CRITICAL_ERRNO(error, "[%s] Cannot add client socket to multiplexer", socket->logAddress());
-    socket->close();
     // transaction->getHandler()->end(transaction,
     //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+    socket->close();
+    socket->clearTransaction();
     release(socket);
     return error;
   }

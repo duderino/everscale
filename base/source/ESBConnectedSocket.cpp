@@ -85,7 +85,12 @@ const SocketAddress &ConnectedSocket::localAddress() const { return _localAddres
 Error ConnectedSocket::connect() {
   Error error = ESB_SUCCESS;
 
-  if (INVALID_SOCKET != _sockFd || !(_flags & ESB_SOCK_FLAG_NEW)) {
+  if (_flags & (ESB_SOCK_FLAG_CONNECTING | ESB_SOCK_FLAG_CONNECTED)) {
+    assert(INVALID_SOCKET != _sockFd);
+    return ESB_SUCCESS;
+  }
+
+  if (!(_flags & ESB_SOCK_FLAG_NEW)) {
     return ESB_INVALID_STATE;
   }
 

@@ -187,11 +187,12 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
   newTransaction->setContext(context);
   stream.setContext(NULL);
 
+  // TODO executeClientTransaction is adding newTransaction to a list on failure
   error = multiplexer.executeClientTransaction(newTransaction);
 
   if (ESB_SUCCESS != error) {
-    multiplexer.destroyClientTransaction(newTransaction);
     ESB_LOG_WARNING_ERRNO(error, "Cannot execute transaction");
+    multiplexer.destroyClientTransaction(newTransaction);
     return;
   }
 

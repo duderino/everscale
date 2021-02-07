@@ -282,8 +282,6 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket) {
 
   memset(&_eventCache[fd], 0, sizeof(struct DescriptorState));
 
-  socket->handleRemove();
-
   _activeSockets.remove(socket);
   assert(_activeSockets.validate());
   if (socket->timer().inTimingWheel()) {
@@ -295,6 +293,8 @@ Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket) {
   socket->markDead();
 
   ESB_LOG_DEBUG("[%s] removed socket", socket->name());
+  socket->handleRemove();
+
   return ESB_SUCCESS;
 }
 

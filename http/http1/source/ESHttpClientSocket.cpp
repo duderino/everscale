@@ -177,20 +177,26 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
   ESB::UInt32 _bytesOffered;
 };
 
-HttpClientSocket::HttpClientSocket(ESB::ConnectedSocket *socket, HttpClientHandler &handler,
-                                   HttpMultiplexerExtended &multiplexer, HttpClientCounters &counters,
-                                   ESB::CleanupHandler &cleanupHandler)
+HttpClientSocket::HttpClientSocket(bool reused, HttpClientTransaction *transaction, ESB::ConnectedSocket *socket,
+                                   HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,
+                                   HttpClientCounters &counters, ESB::CleanupHandler &cleanupHandler)
     : _state(CONNECTING),
       _bodyBytesWritten(0),
       _bytesAvailable(0),
       _multiplexer(multiplexer),
       _handler(handler),
-      _transaction(NULL),
+      _transaction(transaction),
       _counters(counters),
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
-      _socket(socket) {}
+      _socket(socket) {
+  if (reused) {
+    assert(connected());
+    stateTransition(TRANSACTION_BEGIN);
+    addFlag(FIRST_USE_AFTER_REUSE);
+  }
+}
 
 HttpClientSocket::~HttpClientSocket() {
   if (_recvBuffer) {
@@ -205,29 +211,6 @@ HttpClientSocket::~HttpClientSocket() {
     _multiplexer.destroyClientTransaction(_transaction);
     _transaction = NULL;
   }
-}
-
-ESB::Error HttpClientSocket::reset(bool reused, HttpClientTransaction *transaction) {
-  assert(!_recvBuffer);
-  assert(!_sendBuffer);
-  assert(!_transaction);
-
-  if (!transaction) {
-    return ESB_NULL_POINTER;
-  }
-
-  stateTransition(TRANSACTION_BEGIN);
-  _state = TRANSACTION_BEGIN;  // clear any other flags
-
-  if (reused) {
-    assert(connected());
-    addFlag(FIRST_USE_AFTER_REUSE);
-  }
-
-  _bodyBytesWritten = 0;
-  _transaction = transaction;
-
-  return ESB_SUCCESS;
 }
 
 bool HttpClientSocket::wantAccept() { return false; }
@@ -1085,15 +1068,9 @@ void HttpClientSocket::setContext(void *context) {
   _transaction->setContext(context);
 }
 
-void *HttpClientSocket::context() {
-  assert(_transaction);
-  return _transaction->context();
-}
+void *HttpClientSocket::context() { return _transaction ? _transaction->context() : NULL; }
 
-const void *HttpClientSocket::context() const {
-  assert(_transaction);
-  return _transaction->context();
-}
+const void *HttpClientSocket::context() const { return _transaction ? _transaction->context() : NULL; }
 
 const ESB::SocketAddress &HttpClientSocket::peerAddress() const { return _socket->peerAddress(); }
 
