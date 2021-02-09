@@ -509,7 +509,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           } else {
             ESB_LOG_INFO("[%s] socket connected", socket->name());
             ESB::Error error = socket->handleConnect();
-            keepInMultiplexer = ESB_AGAIN == error;
+            keepInMultiplexer = ESB_AGAIN == error || ESB_PAUSE == error;
           }
         } else if (_events[i].events & EPOLLOUT) {
           ESB_LOG_INFO("[%s] socket connected", socket->name());
