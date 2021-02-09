@@ -14,6 +14,8 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
+              export EXTRA_CFLAGS=-DESB_CI_BUILD
+              export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=DEBUG cmake . && make && make test
       - run:
           name: "tsan"
@@ -24,6 +26,8 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
+              export EXTRA_CFLAGS=-DESB_CI_BUILD
+              export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=TSAN cmake . && make && make test
       - run:
           name: "asan"
@@ -34,6 +38,8 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
+              export EXTRA_CFLAGS=-DESB_CI_BUILD
+              export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=ASAN cmake . && make && make test
       - run:
           name: "release"
@@ -44,6 +50,8 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
+              export EXTRA_CFLAGS=-DESB_CI_BUILD
+              export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=RELEASE cmake . && make && make test
       - run:
           name: "allocators disabled"
@@ -54,4 +62,6 @@ jobs:
               export CLANG_FORMAT=clang-format
               export CTEST_OUTPUT_ON_FAILURE=1
               export VERBOSE=1
+              export EXTRA_CFLAGS=-DESB_CI_BUILD
+              export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=DEBUGNOPOOL cmake . && make && make test

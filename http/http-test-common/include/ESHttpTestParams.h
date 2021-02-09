@@ -5,6 +5,12 @@
 #include <ESBLogger.h>
 #endif
 
+#ifdef ESB_CI_BUILD
+#define ESB_TIMEOUT_MULTIPLIER 5
+#else
+#define ESB_TIMEOUT_MULTIPLIER 1
+#endif
+
 namespace ES {
 
 class HttpTestParams {
@@ -203,21 +209,21 @@ class HttpTestParams {
     return *this;
   }
 
-  ESB::UInt32 clientTimeoutMsec() const { return _clientTimeoutMsec; }
+  ESB::UInt32 clientTimeoutMsec() const { return _clientTimeoutMsec * ESB_TIMEOUT_MULTIPLIER; }
 
   HttpTestParams &clientTimeoutMsec(ESB::UInt32 clientTimeoutMsec) {
     _clientTimeoutMsec = clientTimeoutMsec;
     return *this;
   }
 
-  ESB::UInt32 proxyTimeoutMsec() const { return _proxyTimeoutMsec; }
+  ESB::UInt32 proxyTimeoutMsec() const { return _proxyTimeoutMsec * ESB_TIMEOUT_MULTIPLIER; }
 
   HttpTestParams &proxyTimeoutMsec(ESB::UInt32 proxyTimeoutMsec) {
     _proxyTimeoutMsec = proxyTimeoutMsec;
     return *this;
   }
 
-  ESB::UInt32 originTimeoutMsec() const { return _originTimeoutMsec; }
+  ESB::UInt32 originTimeoutMsec() const { return _originTimeoutMsec * ESB_TIMEOUT_MULTIPLIER; }
 
   HttpTestParams &originTimeoutMsec(ESB::UInt32 originTimeoutMsec) {
     _originTimeoutMsec = originTimeoutMsec;
