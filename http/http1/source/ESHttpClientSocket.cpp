@@ -261,12 +261,6 @@ ESB::Error HttpClientSocket::handleConnect() {
 
   ESB_LOG_INFO("[%s] Connected to peer", _socket->name());
 
-  ESB::Error error = _handler.beginTransaction(_multiplexer, *this);
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborted transaction immediately after connecting", _socket->name());
-    return ESB_AGAIN == error ? ESB_OTHER_ERROR : error;
-  }
-
   stateTransition(TRANSACTION_BEGIN);
   return handleWritable();
 }

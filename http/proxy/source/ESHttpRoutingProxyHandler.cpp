@@ -107,9 +107,8 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
 
 ESB::Error HttpRoutingProxyHandler::beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream) {
   HttpRoutingProxyContext *context = (HttpRoutingProxyContext *)clientStream.context();
-  assert(context);
-  assert(context->serverStream());
   if (!context || !context->serverStream()) {
+    // May happen if the server stream is aborted while the client stream is trying to connect
     return ESB_INVALID_STATE;
   }
 
@@ -442,17 +441,20 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
       ESB_LOG_DEBUG("[%s] client transaction failed at begin state", clientStream.logAddress());
       break;
-    case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
-      ESB_LOG_DEBUG("[%s] client transaction failed at response header parse state", clientStream.logAddress());
-      break;
-    case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
-      ESB_LOG_DEBUG("[%s] client transaction failed at request body parse state", clientStream.logAddress());
+    case ES_HTTP_CLIENT_HANDLER_CONNECT:
+      ESB_LOG_DEBUG("[%s] client transaction failed at connect state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
       ESB_LOG_DEBUG("[%s] client transaction failed at response header send state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
       ESB_LOG_DEBUG("[%s] client transaction failed at response header send state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
+      ESB_LOG_DEBUG("[%s] client transaction failed at response header parse state", clientStream.logAddress());
+      break;
+    case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
+      ESB_LOG_DEBUG("[%s] client transaction failed at request body parse state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
       ESB_LOG_DEBUG("[%s] client transaction successfully completed", clientStream.logAddress());
