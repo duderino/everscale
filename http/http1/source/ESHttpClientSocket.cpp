@@ -376,11 +376,11 @@ void HttpClientSocket::handleRemoteClose() {
 
 void HttpClientSocket::handleIdle() {
   assert(!(INACTIVE & _state));
-#ifdef NDEBUG
-  ESB_LOG_INFO("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
-#else
-  // make it easier to troubleshoot protocol deadlocks in CI debug builds
+#ifdef ESB_CI_BUILD
+  // make it easier to debug CI build failures
   ESB_LOG_WARNING("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
+#else
+  ESB_LOG_INFO("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
 #endif
 }
 
