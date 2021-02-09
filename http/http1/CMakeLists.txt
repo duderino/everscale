@@ -71,6 +71,6 @@ SET(TEST_LIBS
         base
         )
 
-add_gtest(http1-parser-formatter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/ESHttpParserFormatterTest.cpp)
+add_gtest(http1-parser-formatter-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESHttpParserFormatterTest.cpp)
 
 

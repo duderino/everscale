@@ -4,12 +4,12 @@ cmake_minimum_required(VERSION 3.5)
 # googletest and unit-tf test macros
 #
 
-macro(add_gtest NAME INCS LIBS CWD)
+macro(add_gtest NAME INCS LIBS CWD TIMEOUT)
     add_executable(${NAME} ${ARGN})
     target_link_libraries(${NAME} gtest gmock gtest_main ${LIBS})
     gtest_discover_tests(${NAME}
             WORKING_DIRECTORY ${CWD}
-            PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CWD}"
+            PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CWD}" TIMEOUT ${TIMEOUT}
             )
     set_target_properties(${NAME} PROPERTIES FOLDER tests)
 endmacro()

@@ -40,5 +40,5 @@ set(TEST_INCS
 
 set(TEST_LIBS -pthread unit-tf base http-common)
 
-add_gtest(http-common-alignment-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests tests/AlignmentTest.cpp)
+add_gtest(http-common-alignment-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/AlignmentTest.cpp)
 
