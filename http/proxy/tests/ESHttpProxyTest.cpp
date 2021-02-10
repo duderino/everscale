@@ -289,7 +289,6 @@ TEST_P(HttpProxyTestMessageBody, BodySizes) {
   params.connections(50)
       .requestsPerConnection(50)
       .clientThreads(2)
-
       .proxyThreads(2)
       .originThreads(2)
       .requestSize(std::get<0>(GetParam()))

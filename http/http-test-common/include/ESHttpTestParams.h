@@ -6,7 +6,7 @@
 #endif
 
 #ifdef ESB_CI_BUILD
-#define ESB_TIMEOUT_MULTIPLIER 5
+#define ESB_TIMEOUT_MULTIPLIER 2
 #else
 #define ESB_TIMEOUT_MULTIPLIER 1
 #endif
