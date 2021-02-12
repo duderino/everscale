@@ -14,6 +14,10 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -110,6 +114,16 @@ Error ConnectedSocket::connect() {
     close();
     return error;
   }
+
+#ifdef HAVE_SETSOCKOPT
+  int value = 1;
+  if (0 != setsockopt(_sockFd, SOL_TCP, TCP_NODELAY, &value, sizeof(value))) {
+    close();
+    return LastError();
+  };
+#else
+#error "setsockopt or equivalent is required"
+#endif
 
 #if defined HAVE_CONNECT && defined HAVE_STRUCT_SOCKADDR
 

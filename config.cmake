@@ -156,6 +156,8 @@ check_symbol_exists(htons "netinet/in.h" HAVE_HTONS)
 check_symbol_exists(ntohl "netinet/in.h" HAVE_NTOHL)
 check_symbol_exists(ntohs "netinet/in.h" HAVE_NTOHS)
 
+check_include_file("netinet/tcp.h" HAVE_NETINET_TCP_H)
+
 check_include_file("netdb.h" HAVE_NETDB_H)
 check_struct_has_member("struct hostent" h_name "netdb.h" HAVE_HOSTENT_T)
 check_symbol_exists(gethostbyname_r "netdb.h" HAVE_GETHOSTBYNAME_R_LINUX) # TODO write a test program to detect the Linux variant of gethostbyname_r

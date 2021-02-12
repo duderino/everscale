@@ -51,7 +51,7 @@ ExternalProject_Add(bssl
         BUILD_IN_SOURCE 1
         GIT_REPOSITORY https://boringssl.googlesource.com/boringssl
         GIT_TAG fips-20190808
-        CMAKE_CACHE_ARGS -DFIPS:BOOL=1
+        CMAKE_ARGS -DFIPS:BOOL=1 -DCMAKE_BUILD_TYPE=Release
         INSTALL_COMMAND ""
         )
 
