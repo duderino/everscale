@@ -364,8 +364,13 @@ ESB::Error HttpClientSocket::handleWritable() {
 }
 
 void HttpClientSocket::handleError(ESB::Error error) {
+#ifdef ESB_CI_BUILD
+  // make it easier to debug CI build failures
+  ESB_LOG_WARNING_ERRNO(error, "[%s] socket error", _socket->name());
+#else
+  ESB_LOG_INFO_ERRNO(error, "[%s] socket error", _socket->name());
+#endif
   assert(!(INACTIVE & _state));
-  ESB_LOG_INFO("[%s] socket error", _socket->name());
 }
 
 void HttpClientSocket::handleRemoteClose() {
@@ -375,13 +380,13 @@ void HttpClientSocket::handleRemoteClose() {
 }
 
 void HttpClientSocket::handleIdle() {
-  assert(!(INACTIVE & _state));
 #ifdef ESB_CI_BUILD
   // make it easier to debug CI build failures
   ESB_LOG_WARNING("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
 #else
   ESB_LOG_INFO("[%s] idle (state=%s, flags=%s)", _socket->name(), describeState(), describeFlags());
 #endif
+  assert(!(INACTIVE & _state));
 }
 
 void HttpClientSocket::handleRemove() {
