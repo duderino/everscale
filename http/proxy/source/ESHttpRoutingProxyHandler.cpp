@@ -473,8 +473,13 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
   if (ES_HTTP_CLIENT_HANDLER_END != state) {
     HttpServerStream *serverStream = context->serverStream();
     if (serverStream) {
+#ifdef ESB_CI_BUILD
+      ESB_LOG_WARNING("[%s] aborting associated server stream [%s]", clientStream.logAddress(),
+                      serverStream->logAddress());
+#else
       ESB_LOG_DEBUG("[%s] aborting associated server stream [%s]", clientStream.logAddress(),
                     serverStream->logAddress());
+#endif
       ESB::Error error = serverStream->abort();
       if (ESB_SUCCESS != error) {
         ESB_LOG_WARNING_ERRNO(error, "[%s] cannot abort associated server stream", clientStream.logAddress());
@@ -527,8 +532,13 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpS
   if (ES_HTTP_SERVER_HANDLER_END != state) {
     HttpClientStream *clientStream = context->clientStream();
     if (clientStream) {
+#ifdef ESB_CI_BUILD
+      ESB_LOG_WARNING("[%s] aborting associated client stream [%s]", serverStream.logAddress(),
+                      clientStream->logAddress());
+#else
       ESB_LOG_DEBUG("[%s] aborting associated client stream [%s]", serverStream.logAddress(),
                     clientStream->logAddress());
+#endif
       ESB::Error error = clientStream->abort();
       if (ESB_SUCCESS != error) {
         ESB_LOG_WARNING_ERRNO(error, "[%s] cannot abort associated client stream", serverStream.logAddress());
