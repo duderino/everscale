@@ -3,6 +3,7 @@ jobs:
   build:
     docker:
       - image: jtblatt/everscale-build:01-10-21b
+    parallelism: 5
     steps:
       - checkout
       - run:
