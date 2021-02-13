@@ -364,8 +364,12 @@ void HttpServerSocket::handleError(ESB::Error error) {
 void HttpServerSocket::handleRemoteClose() {
   // TODO - this may just mean the client closed its half of the socket but is
   // still expecting a response.
-  assert(!(SERVER_INACTIVE & _state));
+#ifdef ESB_CI_BUILD
+  ESB_LOG_WARNING("[%s] remote client closed socket", _socket->name());
+#else
   ESB_LOG_INFO("[%s] remote client closed socket", _socket->name());
+#endif
+  assert(!(SERVER_INACTIVE & _state));
 }
 
 void HttpServerSocket::handleIdle() {
