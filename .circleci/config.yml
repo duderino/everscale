@@ -1,13 +1,11 @@
 version: 2.1
 jobs:
-  build:
+  debug:
     docker:
       - image: jtblatt/everscale-build:01-10-21b
-    parallelism: 5
     steps:
       - checkout
       - run:
-          name: "debug"
           command: |
               set +e
               export CC=clang
@@ -18,8 +16,12 @@ jobs:
               export EXTRA_CFLAGS=-DESB_CI_BUILD
               export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=DEBUG cmake . && make && make test
+  tsan:
+    docker:
+      - image: jtblatt/everscale-build:01-10-21b
+    steps:
+      - checkout
       - run:
-          name: "tsan"
           command: |
               set +e
               export CC=clang
@@ -30,8 +32,12 @@ jobs:
               export EXTRA_CFLAGS=-DESB_CI_BUILD
               export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=TSAN cmake . && make && make test
+  asan:
+    docker:
+      - image: jtblatt/everscale-build:01-10-21b
+    steps:
+      - checkout
       - run:
-          name: "asan"
           command: |
               set +e
               export CC=clang
@@ -42,8 +48,12 @@ jobs:
               export EXTRA_CFLAGS=-DESB_CI_BUILD
               export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=ASAN cmake . && make && make test
+  release:
+    docker:
+      - image: jtblatt/everscale-build:01-10-21b
+    steps:
+      - checkout
       - run:
-          name: "release"
           command: |
               set +e
               export CC=clang
@@ -54,8 +64,12 @@ jobs:
               export EXTRA_CFLAGS=-DESB_CI_BUILD
               export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=RELEASE cmake . && make && make test
+  "allocators disabled":
+    docker:
+      - image: jtblatt/everscale-build:01-10-21b
+    steps:
+      - checkout
       - run:
-          name: "allocators disabled"
           command: |
               set +e
               export CC=clang
@@ -66,3 +80,13 @@ jobs:
               export EXTRA_CFLAGS=-DESB_CI_BUILD
               export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=DEBUGNOPOOL cmake . && make && make test
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - debug
+      - tsan
+      - asan
+      - release
+      - "allocators disabled"
