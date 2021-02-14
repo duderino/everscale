@@ -1073,12 +1073,16 @@ ESB::Error HttpServerSocket::setResponse(int statusCode, const char *reasonPhras
 const char *HttpServerSocket::logAddress() const { return _socket->name(); }
 
 ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
+#ifdef ESB_CI_BUILD
+  ESB_LOG_WARNING("[%s] server connection aborted", _socket->name());
+#else
+  ESB_LOG_DEBUG("[%s] server connection aborted", _socket->name());
+#endif
+
   assert(!(SERVER_ABORTED & _state));
   if (_state & SERVER_ABORTED) {
     return ESB_INVALID_STATE;
   }
-
-  ESB_LOG_DEBUG("[%s] server connection aborted", _socket->name());
 
   addFlag(SERVER_ABORTED);
   if (updateMultiplexer) {

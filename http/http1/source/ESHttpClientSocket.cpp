@@ -922,12 +922,16 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
 const char *HttpClientSocket::logAddress() const { return _socket->name(); }
 
 ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
+#ifdef ESB_CI_BUILD
+  ESB_LOG_WARNING("[%s] client connection aborted", _socket->name());
+#else
+  ESB_LOG_DEBUG("[%s] client connection aborted", _socket->name());
+#endif
+
   assert(!(ABORTED & _state));
   if (_state & ABORTED) {
     return ESB_INVALID_STATE;
   }
-
-  ESB_LOG_DEBUG("[%s] client connection aborted", _socket->name());
 
   addFlag(ABORTED);
   if (updateMultiplexer) {
