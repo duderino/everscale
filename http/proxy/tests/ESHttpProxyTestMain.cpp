@@ -44,6 +44,8 @@
 
 using namespace ES;
 
+ESB::SimpleFileLogger DefaultLogger(stdout, ESB::Logger::Notice);
+
 /**
  * Test case suitable for command-line usage and lightweight load testing
  *
@@ -67,6 +69,7 @@ using namespace ES;
  * reuse connections in both client and proxy (-r 1)
  */
 int main(int argc, char **argv) {
+  ESB::Logger::SetInstance(&DefaultLogger);
   HttpTestParams params;
   params.connections(500)
       .requestsPerConnection(500)

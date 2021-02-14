@@ -235,11 +235,12 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
 
 void HttpTestParams::dump() {
   ESB_LOG_NOTICE(
-      "[params] clientThreads=%u, originThreads=%u, proxyThreads=%u, connections=%u, requestsPerConnection=%u, "
-      "requestSize=%u, "
-      "responseSize=%u, reuseConnections=%d, destination=%s, caPath=%s, serverKeyPath=%s, serverCertPath=%s",
-      _clientThreads, _originThreads, _proxyThreads, _connections, _requestsPerConnection, _requestSize, _responseSize,
-      _reuseConnections, _destinationAddress, _caPath, _serverKeyPath, _serverCertPath);
+      "[params] clientThreads=%u, proxyThreads=%u, originThreads=%u, connections=%u, requestsPerConnection=%u, "
+      "secure=%s, reuseConnection=%s, requestSize=%u, responseSize=%u, destination=%s, caPath=%s, serverKeyPath=%s, "
+      "serverCertPath=%s",
+      _clientThreads, _proxyThreads, _originThreads, _connections, _requestsPerConnection, _secure ? "true" : "false",
+      _reuseConnections ? "true" : "false", _requestSize, _responseSize, _destinationAddress, _caPath, _serverKeyPath,
+      _serverCertPath);
 }
 
 }  // namespace ES
