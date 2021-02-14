@@ -25,4 +25,4 @@ http-proxy-test-main
 base/tests/*.srl
 base/tests/*.key
 base/tests/*.crt
-bssl
+third_party
