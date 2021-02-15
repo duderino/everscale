@@ -3,7 +3,7 @@ project(proxy VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
         source/ESHttpRouter.cpp
-	source/ESSynchronousDnsHttpRouter.cpp
+        source/ESSynchronousDnsHttpRouter.cpp
         source/ESHttpRoutingProxyContext.cpp
         source/ESHttpRoutingProxyHandler.cpp
         )
@@ -43,7 +43,7 @@ set(TEST_INCS
 #        -ltcmalloc
 set(TEST_LIBS
         -pthread
-		-ldl
+        -ldl
         unit-tf
         proxy
         loadgen
@@ -53,14 +53,14 @@ set(TEST_LIBS
         http-common
         http-test-common
         base
-		bssl_ssl
-		bssl_crypto
+        bssl_ssl
+        bssl_crypto
         )
 
 set(TEST_FILES
-	tests/ESHttpIntegrationTest.cpp
-	tests/ESHttpFixedRouter.cpp
-	)
+        tests/ESHttpIntegrationTest.cpp
+        tests/ESHttpFixedRouter.cpp
+        )
 
 add_unit_test(http-proxy-test-main "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESHttpProxyTestMain.cpp ${TEST_FILES})
 add_gtest(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 550 tests/ESHttpProxyTest.cpp ${TEST_FILES})

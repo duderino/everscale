@@ -17,7 +17,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(unit-tf)
 add_subdirectory(base)
-#add_subdirectory(tcp)
 add_subdirectory(http)
 
 #

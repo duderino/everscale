@@ -29,8 +29,8 @@ else ()
     message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 endif ()
 
-set(CMAKE_C_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer ${EXTRA_CFLAGS}" CACHE STRING "default C flags" FORCE)
-set(CMAKE_CXX_FLAGS_DEFAULT "-O2 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "default C++ flags" FORCE)
+set(CMAKE_C_FLAGS_DEFAULT "-O3 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer ${EXTRA_CFLAGS}" CACHE STRING "default C flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEFAULT "-O3 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "default C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_DEFAULT "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS_DEFAULT CMAKE_C_FLAGS_DEFAULT CMAKE_EXE_LINKER_FLAGS_DEFAULT CMAKE_SHARED_LINKER_FLAGS_DEFAULT)
 
@@ -48,12 +48,12 @@ set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-po
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb -Wall -Werror -D_REENTRANT -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=leak ${EXTRA_CXXFLAGS}" CACHE STRING "debug C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
-set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Werror -D_REENTRANT -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "release C flags" FORCE)
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "release C++ flags" FORCE)
+set(CMAKE_C_FLAGS_RELEASE "-O3 -Wall -Werror -D_REENTRANT -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "release C flags" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -Werror -D_REENTRANT -DNDEBUG -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "release C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb -Wall -Werror -D_REENTRANT -DNDEBUG -fno-omit-frame-pointer ${EXTRA_CFLAGS}" CACHE STRING "release w symbols C flags" FORCE)
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -ggdb -Wall -Werror -D_REENTRANT -DNDEBUG -fno-omit-frame-pointer -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "release w symbols C++ flags" FORCE)
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -ggdb -Wall -Werror -D_REENTRANT -DNDEBUG -fno-omit-frame-pointer ${EXTRA_CFLAGS}" CACHE STRING "release w symbols C flags" FORCE)
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -ggdb -Wall -Werror -D_REENTRANT -DNDEBUG -fno-omit-frame-pointer -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "release w symbols C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -Wall -Werror -D_REENTRANT -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "minrelease C flags" FORCE)
@@ -64,6 +64,6 @@ set(CMAKE_C_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALL
 set(CMAKE_CXX_FLAGS_DEBUGNOPOOL "-O0 -ggdb -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -fno-omit-frame-pointer -fno-exceptions -fno-rtti -fsanitize=address -fsanitize=leak ${EXTRA_CXXFLAGS}" CACHE STRING "debug no pool C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_DEBUGNOPOOL "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
-set(CMAKE_C_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "release no pool C flags" FORCE)
-set(CMAKE_CXX_FLAGS_RELEASENOPOOL "-O2 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "release no pool C++ flags" FORCE)
+set(CMAKE_C_FLAGS_RELEASENOPOOL "-O3 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "release no pool C flags" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASENOPOOL "-O3 -Wall -Werror -D_REENTRANT -DESB_NO_ALLOC -DNDEBUG -fno-exceptions -fno-rtti ${EXTRA_CXXFLAGS}" CACHE STRING "release no pool C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELEASENOPOOL "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
