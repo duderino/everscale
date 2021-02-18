@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.11)
 set(VERSION 0.0.1)
 project(everscale VERSION ${VERSION} LANGUAGES CXX C)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 include(profiles.cmake) # To select profile: cmake -DCMAKE_BUILD_TYPE=DEBUG .
 include(config.cmake)
 include(dependencies.cmake)
 include(macros.cmake)
 enable_testing()
-
-# TODO scope 11 to deps
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 #
 # subdirs
@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_subdirectory(unit-tf)
 add_subdirectory(base)
 add_subdirectory(http)
+add_subdirectory(control)
 
 #
 # format

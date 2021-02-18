@@ -33,6 +33,7 @@ if (NOT googletest_POPULATED)
     include_directories(${gtest_SOURCE_DIR}/include)
 endif ()
 
+#set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 include(GoogleTest)
 
 mark_as_advanced(
