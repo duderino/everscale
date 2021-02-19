@@ -1,57 +1,36 @@
 cmake_minimum_required(VERSION 3.5)
 project(control VERSION ${VERSION} LANGUAGES CXX)
 
+file(GLOB_RECURSE LOCAL_SOURCES . *.cpp *.h)
+set(FORMAT_FILES ${FORMAT_FILES} ${LOCAL_SOURCES} PARENT_SCOPE)
+
 include(dependencies.cmake)
 
-SET(PROTOC_PATH ${PROJECT_SOURCE_DIR}/third_party/src/protobuf/cmake/protoc)
-SET(PROTOBUF_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/protobuf/cmake)
-SET(GRPC_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/grpc)
-SET(GRPC_CPP_PLUGIN_PATH ${PROJECT_SOURCE_DIR}/third_party/src/grpc/grpc_cpp_plugin)
-SET(ABSL_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/grpc/third_party/abseil-cpp/absl)
-SET(ZLIB_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/zlib)
-SET(RE2_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/grpc/third_party/re2)
-SET(CARES_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/grpc/third_party/cares/cares/lib)
+set(PROTOS_DIR ${PROJECT_SOURCE_DIR}/protos)
+set(PROTO_FILES
+        ${PROTOS_DIR}/helloworld.proto)
 
-FILE(GLOB_RECURSE LOCAL_SOURCES . *.cpp *.h)
-SET(FORMAT_FILES ${FORMAT_FILES} ${LOCAL_SOURCES} PARENT_SCOPE)
-
-# Proto file
-get_filename_component(hw_proto "protos/helloworld.proto" ABSOLUTE)
-get_filename_component(hw_proto_path "${hw_proto}" PATH)
-
-# Generated sources
-SET(hw_proto_srcs "${PROJECT_SOURCE_DIR}/generated/helloworld.pb.cc")
-SET(hw_proto_hdrs "${PROJECT_SOURCE_DIR}/generated/helloworld.pb.h")
-SET(hw_grpc_srcs "${PROJECT_SOURCE_DIR}/generated/helloworld.grpc.pb.cc")
-SET(hw_grpc_hdrs "${PROJECT_SOURCE_DIR}/generated/helloworld.grpc.pb.h")
-
+set(GENERATED_DIR ${PROJECT_SOURCE_DIR}/generated)
+set(GENERATED_FILES
+        ${GENERATED_DIR}/helloworld.pb.cc
+        ${GENERATED_DIR}/helloworld.grpc.pb.cc)
 
 add_custom_command(
-        OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
+        OUTPUT ${GENERATED_FILES}
         COMMAND ${PROTOC_PATH}
-        ARGS --grpc_out "${PROJECT_SOURCE_DIR}/generated"
-        --cpp_out "${PROJECT_SOURCE_DIR}/generated"
-        -I "${hw_proto_path}"
-        --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_PATH}"
-        "${hw_proto}"
-        DEPENDS "${hw_proto}")
-
-include_directories(
-        ${PROJECT_SOURCE_DIR}/generated
-        ${PROJECT_SOURCE_DIR}/third_party/src/grpc/include
-        ${PROJECT_SOURCE_DIR}/third_party/src/protobuf/src
+        ARGS
+        --grpc_out ${GENERATED_DIR}
+        --cpp_out ${GENERATED_DIR}
+        -I ${PROTOS_DIR}
+        --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_PATH}
+        ${PROTO_FILES}
+        DEPENDS ${PROTO_FILES} grpc
 )
 
+include_directories(${GENERATED_DIR} ${GRPC_INC_DIR} ${PROTOBUF_INC_DIR})
+
 # hw_grpc_proto
-add_library(hw_grpc_proto
-        ${hw_grpc_srcs}
-        ${hw_grpc_hdrs}
-        ${hw_proto_srcs}
-        ${hw_proto_hdrs})
-target_link_libraries(hw_grpc_proto
-        ${GRPC_LIB_DIR}/libgrpc++_reflection.a
-        ${GRPC_LIB_DIR}/libgrpc++.a
-        ${PROTOBUF_LIB_DIR}//libprotobuf.a)
+add_library(hw_grpc_proto ${GENERATED_FILES})
 
 add_executable(GreeterClient source/GreeterClient.cpp)
 target_link_libraries(GreeterClient
