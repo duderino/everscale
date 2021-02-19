@@ -60,6 +60,7 @@ set(PROTOBUF_DIR ${PROJECT_SOURCE_DIR}/third_party/src/protobuf)
 set(PROTOC_PATH ${PROTOBUF_DIR}/cmake/protoc)
 set(PROTOBUF_LIB_DIR ${PROTOBUF_DIR}/cmake)
 set(PROTOBUF_INC_DIR ${PROTOBUF_DIR}/src)
+set(PROTOBUF_CMAKE_DIR ${PROTOBUF_DIR}//cmake/lib/cmake/protobuf)
 
 if (EXISTS ${PROTOC_PATH})
     add_custom_target(protobuf
@@ -118,7 +119,7 @@ else()
             -DZLIB_ROOT:STRING=${ZLIB_DIR}
             -DgRPC_PROTOBUF_PROVIDER:STRING=package
             -DgRPC_PROTOBUF_PACKAGE_TYPE:STRING=CONFIG
-            -DProtobuf_DIR:PATH=${PROTOBUF_DIR}
+            -DProtobuf_DIR:PATH=${PROTOBUF_CMAKE_DIR}
             -DgRPC_SSL_PROVIDER=package
             -DOPENSSL_ROOT_DIR:PATH=${BSSL_DYNAMIC_ROOT_DIR}
             -DOPENSSL_INCLUDE_DIR:PATH=${BSSL_DYNAMIC_INCLUDE_DIR}
