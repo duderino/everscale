@@ -15,6 +15,7 @@ set(GENERATED_FILES
         ${GENERATED_DIR}/helloworld.pb.cc
         ${GENERATED_DIR}/helloworld.grpc.pb.cc)
 
+file(MAKE_DIRECTORY ${GENERATED_DIR})
 add_custom_command(
         OUTPUT ${GENERATED_FILES}
         COMMAND ${PROTOC_PATH}
