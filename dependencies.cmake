@@ -27,12 +27,12 @@ set(GTEST_DIR ${FETCHCONTENT_BASE_DIR}/googletest-src)
 if (EXISTS ${GTEST_DIR})
     message(STATUS "${GTEST_DIR} exists, skipping rebuild")
     set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${GTEST_DIR})
-else()
+else ()
     FetchContent_Declare(googletest
             GIT_REPOSITORY https://github.com/google/googletest.git
             GIT_TAG release-1.10.0
-    )
-endif()
+            )
+endif ()
 
 FetchContent_GetProperties(googletest)
 if (NOT googletest_POPULATED)
@@ -41,7 +41,6 @@ if (NOT googletest_POPULATED)
     include_directories(${gtest_SOURCE_DIR}/include)
 endif ()
 
-#set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 include(GoogleTest)
 
 mark_as_advanced(
@@ -65,7 +64,7 @@ set(BSSL_LIB_DIR ${BSSL_ROOT_DIR}/lib)
 if (EXISTS ${BSSL_LIB_DIR})
     add_custom_target(bssl
             COMMAND echo "${BSSL_LIB_DIR} exists, skipping rebuild")
-else()
+else ()
     ExternalProject_Add(bssl
             PREFIX third_party
             SOURCE_DIR ${bssl_SOURCE_DIR}
@@ -76,7 +75,7 @@ else()
             INSTALL_COMMAND mkdir -p lib && cp ssl/libssl.a lib && cp crypto/libcrypto.a lib
             UPDATE_COMMAND ""
             )
-endif()
+endif ()
 
 include_directories(${BSSL_INCLUDE_DIR})
 

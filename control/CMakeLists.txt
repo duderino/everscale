@@ -34,6 +34,7 @@ add_library(hw_grpc_proto ${GENERATED_FILES})
 
 add_executable(GreeterClient source/GreeterClient.cpp)
 target_link_libraries(GreeterClient
+        -pthread
         hw_grpc_proto
         ${GRPC_LIB_DIR}/libgrpc++_reflection.a
         ${GRPC_LIB_DIR}/libgrpc++.a
@@ -71,6 +72,7 @@ target_link_libraries(GreeterClient
 
 add_executable(GreeterServer source/GreeterServer.cpp)
 target_link_libraries(GreeterServer
+        -pthread
         hw_grpc_proto
         ${GRPC_LIB_DIR}/libgrpc++_reflection.a
         ${GRPC_LIB_DIR}/libgrpc++.a

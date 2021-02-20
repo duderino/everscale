@@ -10,9 +10,9 @@ include(ExternalProject)
 
 if (DEFINED BSSL_TAG)
     message(STATUS "BoringSSL Tag: ${BSSL_TAG}")
-else()
+else ()
     message(FATAL_ERROR "BSSL_TAG not defined")
-endif()
+endif ()
 
 set(BSSL_DYNAMIC_ROOT_DIR ${PROJECT_SOURCE_DIR}/third_party/src/bssl_dynamic)
 set(BSSL_DYNAMIC_INCLUDE_DIR ${BSSL_DYNAMIC_ROOT_DIR}/include)
@@ -24,7 +24,7 @@ set(BSSL_DYNAMIC_LIBRARIES ${BSSL_DYNAMIC_ROOT_DIR}/lib)
 if (EXISTS ${BSSL_DYNAMIC_ROOT_DIR})
     add_custom_target(bssl_dynamic
             COMMAND echo "${BSSL_DYNAMIC_ROOT_DIR} exists, skipping rebuild")
-else()
+else ()
     ExternalProject_Add(bssl_dynamic
             PREFIX third_party
             SOURCE_DIR ${bssl_dynamic_SOURCE_DIR}
@@ -35,7 +35,7 @@ else()
             INSTALL_COMMAND mkdir -p lib && cp ssl/libssl.so lib && cp crypto/libcrypto.so lib
             UPDATE_COMMAND ""
             )
-endif()
+endif ()
 
 set(ZLIB_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/zlib)
 set(ZLIB_INC_DIR ${PROJECT_SOURCE_DIR}/third_party/src/zlib)
@@ -43,7 +43,7 @@ set(ZLIB_INC_DIR ${PROJECT_SOURCE_DIR}/third_party/src/zlib)
 if (EXISTS ${ZLIB_LIB_DIR})
     add_custom_target(zlib
             COMMAND echo "${ZLIB_LIB_DIR} exists, skipping rebuild")
-else()
+else ()
     ExternalProject_Add(zlib
             PREFIX third_party
             SOURCE_DIR "${zlib_SOURCE_DIR}"
@@ -55,7 +55,7 @@ else()
             INSTALL_COMMAND ""
             UPDATE_COMMAND ""
             )
-endif()
+endif ()
 
 set(PROTOBUF_DIR ${PROJECT_SOURCE_DIR}/third_party/src/protobuf)
 set(PROTOC_PATH ${PROTOBUF_DIR}/cmake/protoc)
@@ -66,7 +66,7 @@ set(PROTOBUF_CMAKE_DIR ${PROTOBUF_DIR}//cmake/lib/cmake/protobuf)
 if (EXISTS ${PROTOC_PATH})
     add_custom_target(protobuf
             COMMAND echo "${PROTOC_PATH} exists, skipping protobuf rebuild")
-else()
+else ()
     ExternalProject_Add(protobuf
             PREFIX third_party
             SOURCE_DIR ${protobuf_SOURCE_DIR}
@@ -86,7 +86,7 @@ else()
             UPDATE_COMMAND ""
             DEPENDS zlib
             )
-endif()
+endif ()
 
 set(GRPC_DIR ${PROJECT_SOURCE_DIR}/third_party/src/grpc)
 set(GRPC_CPP_PLUGIN_PATH ${GRPC_DIR}/grpc_cpp_plugin)
@@ -99,7 +99,7 @@ set(CARES_LIB_DIR ${GRPC_DIR}/third_party/cares/cares/lib)
 if (EXISTS ${GRPC_CPP_PLUGIN_PATH})
     add_custom_target(grpc
             COMMAND echo "${GRPC_CPP_PLUGIN_PATH} exists, skipping rebuild")
-else()
+else ()
     ExternalProject_Add(grpc
             PREFIX third_party
             SOURCE_DIR "${grpc_SOURCE_DIR}"
@@ -129,7 +129,7 @@ else()
             UPDATE_COMMAND ""
             DEPENDS protobuf bssl_dynamic
             )
-endif()
+endif ()
 
 #
 # xDS API
