@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 
 include(FetchContent)
-include(ExternalProject)
 set(FETCHCONTENT_QUIET OFF)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/third_party/src/)
+
+include(ExternalProject)
 
 #
 # clang-format
@@ -20,12 +22,17 @@ endif ()
 # googletest
 #
 
-FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.10.x
-        UPDATE_COMMAND ""
-)
+set(GTEST_DIR ${FETCHCONTENT_BASE_DIR}/googletest-src)
+
+if (EXISTS ${GTEST_DIR})
+    message(STATUS "${GTEST_DIR} exists, skipping rebuild")
+    set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${GTEST_DIR})
+else()
+    FetchContent_Declare(googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG release-1.10.0
+    )
+endif()
 
 FetchContent_GetProperties(googletest)
 if (NOT googletest_POPULATED)
@@ -50,14 +57,14 @@ mark_as_advanced(
 set(BSSL_TAG fips-20190808)
 set(BSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/third_party/src/bssl)
 set(BSSL_INCLUDE_DIR ${BSSL_ROOT_DIR}/include)
-set(BSSL_LIBRARIES ${BSSL_ROOT_DIR}/lib)
+set(BSSL_LIB_DIR ${BSSL_ROOT_DIR}/lib)
 
 # This EXISTS checks with no-op custom target can be removed once
 # https://gitlab.kitware.com/cmake/cmake/-/issues/16419# is fixed.
 
-if (EXISTS ${BSSL_LIBRARIES})
+if (EXISTS ${BSSL_LIB_DIR})
     add_custom_target(bssl
-            COMMAND echo "${BSSL_LIBRARIES} exists, skipping rebuild")
+            COMMAND echo "${BSSL_LIB_DIR} exists, skipping rebuild")
 else()
     ExternalProject_Add(bssl
             PREFIX third_party
@@ -76,13 +83,13 @@ include_directories(${BSSL_INCLUDE_DIR})
 add_library(bssl_ssl STATIC IMPORTED GLOBAL)
 set_property(TARGET bssl_ssl
         PROPERTY IMPORTED_LOCATION
-        ${BSSL_LIBRARIES}/libssl.a
+        ${BSSL_LIB_DIR}/libssl.a
         )
 
 add_library(bssl_crypto STATIC IMPORTED GLOBAL)
 set_property(TARGET bssl_crypto
         PROPERTY IMPORTED_LOCATION
-        ${BSSL_LIBRARIES}/libcrypto.a
+        ${BSSL_LIB_DIR}/libcrypto.a
         )
 
 

@@ -42,8 +42,8 @@ target_link_libraries(GreeterClient
         ${GRPC_LIB_DIR}/libupb.a
         ${GRPC_LIB_DIR}/libaddress_sorting.a
         ${PROTOBUF_LIB_DIR}//libprotobuf.a
-        ${BSSL_LIBRARIES}/libssl.a
-        ${BSSL_LIBRARIES}/libcrypto.a
+        ${BSSL_LIB_DIR}/libssl.a
+        ${BSSL_LIB_DIR}/libcrypto.a
         ${ABSL_LIB_DIR}/status/libabsl_statusor.a
         ${ABSL_LIB_DIR}/synchronization/libabsl_synchronization.a
         ${ABSL_LIB_DIR}/time/libabsl_time.a
@@ -79,8 +79,8 @@ target_link_libraries(GreeterServer
         ${GRPC_LIB_DIR}/libupb.a
         ${GRPC_LIB_DIR}/libaddress_sorting.a
         ${PROTOBUF_LIB_DIR}//libprotobuf.a
-        ${BSSL_LIBRARIES}/libssl.a
-        ${BSSL_LIBRARIES}/libcrypto.a
+        ${BSSL_LIB_DIR}/libssl.a
+        ${BSSL_LIB_DIR}/libcrypto.a
         ${ABSL_LIB_DIR}/status/libabsl_statusor.a
         ${ABSL_LIB_DIR}/synchronization/libabsl_synchronization.a
         ${ABSL_LIB_DIR}/time/libabsl_time.a

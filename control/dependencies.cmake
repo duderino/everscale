@@ -38,6 +38,7 @@ else()
 endif()
 
 set(ZLIB_LIB_DIR ${PROJECT_SOURCE_DIR}/third_party/src/zlib)
+set(ZLIB_INC_DIR ${PROJECT_SOURCE_DIR}/third_party/src/zlib)
 
 if (EXISTS ${ZLIB_LIB_DIR})
     add_custom_target(zlib
@@ -76,8 +77,8 @@ else()
             CMAKE_ARGS
             -DCMAKE_BUILD_TYPE=Release
             -Dprotobuf_WITH_ZLIB:BOOL=ON
-            -DZLIB_INCLUDE_DIR=${ZLIB_DIR}
-            -DZLIB_LIBRARY=${ZLIB_DIR}//libz.a
+            -DZLIB_INCLUDE_DIR=${ZLIB_INC_DIR}
+            -DZLIB_LIBRARY=${ZLIB_LIB_DIR}/libz.a
             -Dprotobuf_BUILD_TESTS:BOOL=OFF
             -Dprotobuf_BUILD_EXAMPLES:BOOL=OFF
             -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
@@ -102,7 +103,7 @@ else()
     ExternalProject_Add(grpc
             PREFIX third_party
             SOURCE_DIR "${grpc_SOURCE_DIR}"
-            BUILD_IN_SOURCE 1
+            BUILD_IN_SOURCE 1t
             GIT_REPOSITORY https://github.com/grpc/grpc.git
             GIT_TAG v1.35.0
             CMAKE_ARGS
@@ -116,7 +117,7 @@ else()
             -DgRPC_INSTALL:BOOL=OFF
             -DgRPC_BUILD_TESTS:BOOL=OFF
             -DgRPC_ZLIB_PROVIDER:STRING=package
-            -DZLIB_ROOT:STRING=${ZLIB_DIR}
+            -DZLIB_ROOT:STRING=${ZLIB_LIB_DIR}
             -DgRPC_PROTOBUF_PROVIDER:STRING=package
             -DgRPC_PROTOBUF_PACKAGE_TYPE:STRING=CONFIG
             -DProtobuf_DIR:PATH=${PROTOBUF_CMAKE_DIR}
