@@ -61,6 +61,7 @@ set(PROTOBUF_DIR ${PROJECT_SOURCE_DIR}/third_party/src/protobuf)
 set(PROTOC_PATH ${PROTOBUF_DIR}/cmake/protoc)
 set(PROTOBUF_LIB_DIR ${PROTOBUF_DIR}/cmake)
 set(PROTOBUF_INC_DIR ${PROTOBUF_DIR}/src)
+set(PROTOBUF_PROTOS_DIR ${PROTOBUF_DIR}/src)
 set(PROTOBUF_CMAKE_DIR ${PROTOBUF_DIR}//cmake/lib/cmake/protobuf)
 
 if (EXISTS ${PROTOC_PATH})
@@ -92,9 +93,11 @@ set(GRPC_DIR ${PROJECT_SOURCE_DIR}/third_party/src/grpc)
 set(GRPC_CPP_PLUGIN_PATH ${GRPC_DIR}/grpc_cpp_plugin)
 set(GRPC_INC_DIR ${GRPC_DIR}/include)
 set(GRPC_LIB_DIR ${GRPC_DIR})
+set(GRPC_PROTOS_DIR ${GRPC_DIR}/src/proto)
 set(ABSL_LIB_DIR ${GRPC_DIR}/third_party/abseil-cpp/absl)
 set(RE2_LIB_DIR ${GRPC_DIR}/third_party/re2)
 set(CARES_LIB_DIR ${GRPC_DIR}/third_party/cares/cares/lib)
+
 
 if (EXISTS ${GRPC_CPP_PLUGIN_PATH})
     add_custom_target(grpc
@@ -135,14 +138,58 @@ endif ()
 # xDS API
 #
 
+ExternalProject_add(udpa
+        PREFIX third_party
+        SOURCE_DIR ${udpa_SOURCE_DIR}
+        GIT_REPOSITORY https://github.com/cncf/udpa.git
+        GIT_TAG bff43e8824d093cb64afdc901266cfab5a9777f0
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        UPDATE_COMMAND ""
+        )
+
+set(UDPA_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/udpa)
+
+ExternalProject_Add(protoc-gen-validate
+        PREFIX third_party
+        SOURCE_DIR ${protoc-gen-validate_SOURCE_DIR}
+        GIT_REPOSITORY https://github.com/envoyproxy/protoc-gen-validate.git
+        GIT_TAG v0.4.1
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        UPDATE_COMMAND ""
+        )
+
+set(PROTOC_GEN_VALIDATE_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/protoc-gen-validate)
+
+ExternalProject_Add(googleapis
+        PREFIX third_party
+        SOURCE_DIR ${googleapis_SOURCE_DIR}
+        GIT_REPOSITORY https://github.com/googleapis/googleapis.git
+        GIT_TAG af8f71dae961ee036a0ac52a1965270149a6b2c9
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        UPDATE_COMMAND ""
+)
+
+set(GOOGLE_APIS_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/googleapis)
+
 ExternalProject_Add(xds
         PREFIX third_party
-        SOURCE_DIR "${xds_SOURCE_DIR}"
+        SOURCE_DIR ${xds_SOURCE_DIR}
         GIT_REPOSITORY https://github.com/envoyproxy/data-plane-api.git
         GIT_TAG 3d7c538ed0c11dee176b23a93f1e4c08817ddf3c
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
         UPDATE_COMMAND ""
+        DEPENDS udpa protoc-gen-validate grpc googleapis
         )
+
+set(XDS_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/xds)
+
+
 
