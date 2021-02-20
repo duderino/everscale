@@ -26,3 +26,4 @@ base/tests/*.srl
 base/tests/*.key
 base/tests/*.crt
 third_party
+generated

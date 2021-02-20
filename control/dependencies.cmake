@@ -134,35 +134,44 @@ else ()
             )
 endif ()
 
-#
-# xDS API
-#
-
-ExternalProject_add(udpa
-        PREFIX third_party
-        SOURCE_DIR ${udpa_SOURCE_DIR}
-        GIT_REPOSITORY https://github.com/cncf/udpa.git
-        GIT_TAG bff43e8824d093cb64afdc901266cfab5a9777f0
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        UPDATE_COMMAND ""
+set(GRPC_STATIC_LIBS
+        ${GRPC_LIB_DIR}/libgrpc++_reflection.a
+        ${GRPC_LIB_DIR}/libgrpc++.a
+        ${GRPC_LIB_DIR}/libgrpc.a
+        ${GRPC_LIB_DIR}/libgpr.a
+        ${GRPC_LIB_DIR}/libupb.a
+        ${GRPC_LIB_DIR}/libaddress_sorting.a
+        ${PROTOBUF_LIB_DIR}//libprotobuf.a
+        ${BSSL_LIB_DIR}/libssl.a
+        ${BSSL_LIB_DIR}/libcrypto.a
+        ${ABSL_LIB_DIR}/status/libabsl_statusor.a
+        ${ABSL_LIB_DIR}/synchronization/libabsl_synchronization.a
+        ${ABSL_LIB_DIR}/time/libabsl_time.a
+        ${ABSL_LIB_DIR}/time/libabsl_time_zone.a
+        ${ABSL_LIB_DIR}/numeric/libabsl_int128.a
+        ${ABSL_LIB_DIR}/status/libabsl_status.a
+        ${ABSL_LIB_DIR}/debugging/libabsl_stacktrace.a
+        ${ABSL_LIB_DIR}/debugging/libabsl_symbolize.a
+        ${ABSL_LIB_DIR}/debugging/libabsl_demangle_internal.a
+        ${ABSL_LIB_DIR}/debugging/libabsl_debugging_internal.a
+        ${ABSL_LIB_DIR}/base/libabsl_raw_logging_internal.a
+        ${ABSL_LIB_DIR}/base/libabsl_malloc_internal.a
+        ${ABSL_LIB_DIR}/base/libabsl_spinlock_wait.a
+        ${ABSL_LIB_DIR}/strings/libabsl_strings.a
+        ${ABSL_LIB_DIR}/strings/libabsl_cord.a
+        ${ABSL_LIB_DIR}/strings/libabsl_strings_internal.a
+        ${ABSL_LIB_DIR}/strings/libabsl_str_format_internal.a
+        ${ABSL_LIB_DIR}/types/libabsl_bad_optional_access.a
+        ${ABSL_LIB_DIR}/base/libabsl_throw_delegate.a
+        ${ABSL_LIB_DIR}/base/libabsl_base.a
+        ${ZLIB_LIB_DIR}/libz.a
+        ${RE2_LIB_DIR}/libre2.a
+        ${CARES_LIB_DIR}/libcares.a
         )
 
-set(UDPA_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/udpa)
-
-ExternalProject_Add(protoc-gen-validate
-        PREFIX third_party
-        SOURCE_DIR ${protoc-gen-validate_SOURCE_DIR}
-        GIT_REPOSITORY https://github.com/envoyproxy/protoc-gen-validate.git
-        GIT_TAG v0.4.1
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        UPDATE_COMMAND ""
-        )
-
-set(PROTOC_GEN_VALIDATE_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/protoc-gen-validate)
+#
+# Istio API
+#
 
 ExternalProject_Add(googleapis
         PREFIX third_party
@@ -173,23 +182,33 @@ ExternalProject_Add(googleapis
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
         UPDATE_COMMAND ""
-)
+        )
 
 set(GOOGLE_APIS_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/googleapis)
 
-ExternalProject_Add(xds
+ExternalProject_Add(gogo-protobuf
         PREFIX third_party
-        SOURCE_DIR ${xds_SOURCE_DIR}
-        GIT_REPOSITORY https://github.com/envoyproxy/data-plane-api.git
-        GIT_TAG 3d7c538ed0c11dee176b23a93f1e4c08817ddf3c
+        SOURCE_DIR ${gogo-protobuf_SOURCE_DIR}
+        GIT_REPOSITORY https://github.com/gogo/protobuf.git
+        GIT_TAG v1.3.2
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
         UPDATE_COMMAND ""
-        DEPENDS udpa protoc-gen-validate grpc googleapis
         )
 
-set(XDS_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/xds)
+set(GOGO_PROTOBUF_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/gogo-protobuf)
 
+ExternalProject_Add(api
+        PREFIX third_party
+        SOURCE_DIR ${api_SOURCE_DIR}
+        GIT_REPOSITORY https://github.com/istio/api.git
+        GIT_TAG 1.9.0
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        UPDATE_COMMAND ""
+        DEPENDS grpc googleapis protobuf gogo-protobuf
+        )
 
-
+set(ISTIO_API_PROTOS_DIR ${PROJECT_SOURCE_DIR}/third_party/src/api)
