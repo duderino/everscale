@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(control VERSION ${VERSION} LANGUAGES CXX)
+project(control-plane VERSION ${VERSION} LANGUAGES CXX)
 
 file(GLOB_RECURSE LOCAL_SOURCES source/*.cpp include/*.h)
 set(FORMAT_FILES ${FORMAT_FILES} ${LOCAL_SOURCES} PARENT_SCOPE)

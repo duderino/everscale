@@ -17,8 +17,8 @@ enable_testing()
 
 add_subdirectory(unit-tf)
 add_subdirectory(base)
-add_subdirectory(http)
-add_subdirectory(control)
+add_subdirectory(data-plane)
+add_subdirectory(control-plane)
 
 #
 # format

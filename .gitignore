@@ -9,7 +9,7 @@ CMakeFiles
 Makefile
 Testing
 cmake_install.cmake
-http/http1/tests/Test*.out
+data-plane/http1/tests/Test*.out
 base/include/ESBConfig.h
 unit-tf/include/ESTFConfig.h
 .idea
