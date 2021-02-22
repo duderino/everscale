@@ -1,5 +1,5 @@
-#ifndef ES_CONFIG_H
-#define ES_CONFIG_H
+#ifndef ESB_CONFIG_H
+#define ESB_CONFIG_H
 
 #define ES_VERSION_STRING "@everscale_VERSION_MAJOR@.@everscale_VERSION_MINOR@.@everscale_VERSION_PATCH@"
 #define ES_VERSION_MINOR @everscale_VERSION_MINOR@

@@ -52,6 +52,7 @@ set(TEST_LIBS
         http1
         http-common
         http-test-common
+        config
         base
         bssl_ssl
         bssl_crypto

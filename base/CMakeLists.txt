@@ -14,6 +14,7 @@ set(SOURCE_FILES
         source/ESBClientTLSSocket.cpp
         source/ESBCommand.cpp
         source/ESBCommandThread.cpp
+	source/ESBCompactStringMap.cpp
         source/ESBComparator.cpp
         source/ESBConnectedSocket.cpp
         source/ESBConnectionPool.cpp
@@ -123,6 +124,8 @@ add_gtest(clear-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}
 add_gtest(tls-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSSocketTest.cpp)
 add_gtest(signal-handler-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSignalHandlerTest.cpp)
 add_gtest(flat-timing-wheel-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBFlatTimingWheelTest.cpp)
+add_gtest(compact-string-map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBCompactStringMapTest.cpp)
+add_gtest(string-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBStringTest.cpp)
 
 # Generate certs and private keys
 
