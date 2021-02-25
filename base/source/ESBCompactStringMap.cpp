@@ -66,7 +66,7 @@ CompactStringMap::~CompactStringMap() {
   }
 }
 
-Error CompactStringMap::insert(const char *key, int keySize, void *value, bool updateIfExists) {
+Error CompactStringMap::insert(const char *key, UInt32 keySize, void *value, bool updateIfExists) {
   if (!key) {
     return ESB_NULL_POINTER;
   }
@@ -141,7 +141,7 @@ Error CompactStringMap::insert(const char *key, int keySize, void *value, bool u
   return ESB_SUCCESS;
 }
 
-Error CompactStringMap::remove(const char *key, int keySize) {
+Error CompactStringMap::remove(const char *key, UInt32 keySize) {
   if (!key) {
     return ESB_NULL_POINTER;
   }
@@ -173,7 +173,7 @@ Error CompactStringMap::remove(const char *key, int keySize) {
   return ESB_SUCCESS;
 }
 
-void *CompactStringMap::find(const char *key, int keySize) const {
+void *CompactStringMap::find(const char *key, UInt32 keySize) const {
   if (!key || !_buffer) {
     return NULL;
   }
@@ -198,7 +198,7 @@ void *CompactStringMap::find(const char *key, int keySize) const {
   }
 }
 
-Error CompactStringMap::update(const char *key, int keySize, void *value, void **old) {
+Error CompactStringMap::update(const char *key, UInt32 keySize, void *value, void **old) {
   if (!key) {
     return ESB_NULL_POINTER;
   }
@@ -246,7 +246,7 @@ Error CompactStringMap::clear() {
   return ESB_SUCCESS;
 }
 
-Error CompactStringMap::next(const char **key, int *keySize, void **value, UInt32 *marker) const {
+Error CompactStringMap::next(const char **key, UInt32 *keySize, void **value, UInt32 *marker) const {
   if (!key || !keySize || !value || !marker) {
     return ESB_NULL_POINTER;
   }
@@ -255,7 +255,22 @@ Error CompactStringMap::next(const char **key, int *keySize, void **value, UInt3
     return ESB_CANNOT_FIND;
   }
 
-  return ESB_NOT_IMPLEMENTED;
+  const unsigned char *p = _buffer + *marker;
+  if (!*p) {
+    return ESB_CANNOT_FIND;
+  }
+
+  // Get length
+  ESB::UInt8 size = (ESB::UInt8)*p;
+  *keySize = size;
+
+  ++p;
+  *key = (const char *)p;
+  p += size;
+  *value = ReadPointer(p);
+  *marker = p + sizeof(void *) - _buffer;
+
+  return ESB_SUCCESS;
 }
 
 }  // namespace ESB

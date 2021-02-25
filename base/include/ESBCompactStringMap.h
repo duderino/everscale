@@ -48,7 +48,7 @@ class CompactStringMap {
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the key already exists and updateIfExists is false,
    * another error code otherwise.
    */
-  Error insert(const char *key, int keySize, void *value, bool updateIfExists = false);
+  Error insert(const char *key, UInt32 keySize, void *value, bool updateIfExists = false);
 
   /**
    * Remove a string key from the map.  O(n)
@@ -65,7 +65,7 @@ class CompactStringMap {
    * @param keySize The size (length) of the string key
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  Error remove(const char *key, int keySize);
+  Error remove(const char *key, UInt32 keySize);
 
   /**
    * Return the value associated with a string key, if it can be found.  O(n)
@@ -82,7 +82,7 @@ class CompactStringMap {
    * @param keySize The size (length) of the string key
    * @return The value associated with the key if found, NULL otherwise.
    */
-  void *find(const char *key, int keySize) const;
+  void *find(const char *key, UInt32 keySize) const;
 
   /**
    * Update a string key with a new pointer.  O(n)
@@ -106,7 +106,7 @@ class CompactStringMap {
    * @param old If not NULL, set to the key's associated value before the update.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key doesn't exist, another error code otherwise.
    */
-  Error update(const char *key, int keySize, void *value, void **old);
+  Error update(const char *key, UInt32 keySize, void *value, void **old);
 
   /** Remove all key/value pairs from the map.  O(1).
    *  <p>
@@ -117,12 +117,24 @@ class CompactStringMap {
    */
   Error clear();
 
+  /**
+   * Get a 'marker' that represents the first key in the map, and which can be used to iterate through the collection
+   * using hasNext() and next().
+   *
+   * @return the marker for the first key in the map.
+   */
   inline UInt32 firstMarker() const { return 0; }
 
+  /**
+   * Determine whether a key exists for the current marker.
+   *
+   * @param marker The marker / current position in the iteration.
+   * @return true if a key exists for the marker, false if the marker points to the end of the map.
+   */
   inline bool hasNext(UInt32 marker) const { return _buffer ? _buffer[marker] != 0 : false; }
 
   /**
-   * Iterate through all string key + value pairs in the map.  O(n).
+   * Iterate through all string key + value pairs in the map.  O(n).  The map must not be modified during the iteration.
    *
    * @param key Will point to the key which will not be NULL terminated
    * @param keySize The size of the key
@@ -130,7 +142,7 @@ class CompactStringMap {
    * @param marker The marker set by the prior call or firstMarker().
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
    */
-  Error next(const char **key, int *keySize, void **value, UInt32 *marker) const;
+  Error next(const char **key, UInt32 *keySize, void **value, UInt32 *marker) const;
 
   /** Placement new.
    *

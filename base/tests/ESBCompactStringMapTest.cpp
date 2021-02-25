@@ -6,7 +6,7 @@
 
 using namespace ESB;
 
-TEST(CompactStringMap, Find) {
+TEST(CompactStringMapTest, Find) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -26,7 +26,7 @@ TEST(CompactStringMap, Find) {
   EXPECT_EQ(&baz, value);
 }
 
-TEST(CompactStringMap, EnforceUnique) {
+TEST(CompactStringMapTest, EnforceUnique) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -41,7 +41,7 @@ TEST(CompactStringMap, EnforceUnique) {
   EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, map.insert("baz", &baz));
 }
 
-TEST(CompactStringMap, Create) {
+TEST(CompactStringMapTest, Create) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -65,7 +65,7 @@ TEST(CompactStringMap, Create) {
   EXPECT_EQ(&foo, value);
 }
 
-TEST(CompactStringMap, RemoveFirst) {
+TEST(CompactStringMapTest, RemoveFirst) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -87,7 +87,7 @@ TEST(CompactStringMap, RemoveFirst) {
   EXPECT_EQ(&baz, value);
 }
 
-TEST(CompactStringMap, RemoveMiddle) {
+TEST(CompactStringMapTest, RemoveMiddle) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -109,7 +109,7 @@ TEST(CompactStringMap, RemoveMiddle) {
   EXPECT_EQ(&baz, value);
 }
 
-TEST(CompactStringMap, RemoveLast) {
+TEST(CompactStringMapTest, RemoveLast) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -131,7 +131,7 @@ TEST(CompactStringMap, RemoveLast) {
   EXPECT_EQ(NULL, value);
 }
 
-TEST(CompactStringMap, Clear) {
+TEST(CompactStringMapTest, Clear) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -153,7 +153,7 @@ TEST(CompactStringMap, Clear) {
   EXPECT_EQ(NULL, value);
 }
 
-TEST(CompactStringMap, Realloc) {
+TEST(CompactStringMapTest, Realloc) {
   CompactStringMap map(64);
   int foo = 1;
   int bar = 2;
@@ -180,7 +180,7 @@ TEST(CompactStringMap, Realloc) {
   EXPECT_EQ(&baz, value);
 }
 
-TEST(CompactStringMap, RemoveLarge) {
+TEST(CompactStringMapTest, RemoveLarge) {
   CompactStringMap map(64);
   int foo = 1;
   int bar = 2;
@@ -209,19 +209,19 @@ TEST(CompactStringMap, RemoveLarge) {
   EXPECT_EQ(&baz, value);
 }
 
-TEST(CompactStringMap, InvalidKey) {
+TEST(CompactStringMapTest, InvalidKey) {
   CompactStringMap map;
   char buffer[ESB_UINT8_MAX + 1];
   memset(buffer, 'a', sizeof(buffer));
 
   EXPECT_EQ(ESB_OVERFLOW, map.insert(buffer, sizeof(buffer), NULL));
-  EXPECT_EQ(ESB_UNDERFLOW, map.insert(buffer, 0, NULL));
+  EXPECT_EQ(ESB_UNDERFLOW, map.insert(buffer, 0, NULL, false));
   EXPECT_EQ(ESB_UNDERFLOW, map.insert("", NULL));
-  EXPECT_EQ(ESB_NULL_POINTER, map.insert(NULL, 0, NULL));
+  EXPECT_EQ(ESB_NULL_POINTER, map.insert(NULL, 0, NULL, false));
   EXPECT_EQ(ESB_NULL_POINTER, map.insert(NULL, NULL));
 }
 
-TEST(CompactStringMap, RemoveMissingKey) {
+TEST(CompactStringMapTest, RemoveMissingKey) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -234,7 +234,7 @@ TEST(CompactStringMap, RemoveMissingKey) {
   EXPECT_EQ(ESB_CANNOT_FIND, map.remove("qux"));
 }
 
-TEST(CompactStringMap, Update) {
+TEST(CompactStringMapTest, Update) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -266,7 +266,7 @@ TEST(CompactStringMap, Update) {
   EXPECT_EQ(&foo, value);
 }
 
-TEST(CompactStringMap, UpdateMissingKey) {
+TEST(CompactStringMapTest, UpdateMissingKey) {
   CompactStringMap map;
   int foo = 1;
   int bar = 2;
@@ -283,4 +283,38 @@ TEST(CompactStringMap, UpdateMissingKey) {
   value = NULL;
   EXPECT_EQ(ESB_CANNOT_FIND, map.update("baz", &foo, (void **)&value));
   EXPECT_EQ(NULL, value);
+}
+
+TEST(CompactStringMapTest, Iterate) {
+  CompactStringMap map;
+  int foo = 1;
+  int bar = 2;
+  int baz = 3;
+
+  EXPECT_EQ(ESB_SUCCESS, map.insert("foo", &foo));
+  EXPECT_EQ(ESB_SUCCESS, map.insert("bar", &bar));
+  EXPECT_EQ(ESB_SUCCESS, map.insert("baz", &baz));
+
+  UInt32 marker = map.firstMarker();
+  const char *key = NULL;
+  UInt32 keySize;
+  void *value = NULL;
+
+  EXPECT_TRUE(map.hasNext(marker));
+  EXPECT_EQ(ESB_SUCCESS, map.next(&key, &keySize, &value, &marker));
+  EXPECT_EQ(3, keySize);
+  EXPECT_TRUE(0 == memcmp(key, "foo", 3));
+
+  EXPECT_TRUE(map.hasNext(marker));
+  EXPECT_EQ(ESB_SUCCESS, map.next(&key, &keySize, &value, &marker));
+  EXPECT_EQ(3, keySize);
+  EXPECT_TRUE(0 == memcmp(key, "bar", 3));
+
+  EXPECT_TRUE(map.hasNext(marker));
+  EXPECT_EQ(ESB_SUCCESS, map.next(&key, &keySize, &value, &marker));
+  EXPECT_EQ(3, keySize);
+  EXPECT_TRUE(0 == memcmp(key, "baz", 3));
+
+  EXPECT_FALSE(map.hasNext(marker));
+  EXPECT_EQ(ESB_CANNOT_FIND, map.next(&key, &keySize, &value, &marker));
 }
