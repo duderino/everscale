@@ -40,20 +40,11 @@ class ReferenceCount : public EmbeddedListElement {
 
   /** Increment the reference count.
    */
-  inline void inc() { _refCount.inc(); }
+  inline int inc() { return _refCount.inc(); }
 
   /** Decrement the reference count.
    */
-  inline void dec() { _refCount.dec(); }
-
-  /** Decrement the reference count and return true if new count is zero.
-   *
-   *    @return true if count is zero after the decrement.
-   */
-  inline bool decAndTest() {
-    bool result = _refCount.decAndTest();
-    return result;
-  }
+  inline int dec() { return _refCount.dec(); }
 
  private:
   SharedInt _refCount;

@@ -9,10 +9,12 @@
 #include <ESBAllocator.h>
 #endif
 
+#ifndef HAVE_X86_ASM
 #ifdef HAVE_ATOMIC_H
 #include <atomic>
-#elif !defined HAVE_X86_ASM
+#else
 #include <ESBMutex.h>
+#endif
 #endif
 
 namespace ESB {
@@ -39,10 +41,10 @@ class SharedInt {
   SharedInt &operator=(SharedInt &counter);
 
   inline void set(int value) {
-#ifdef HAVE_ATOMIC_T
-    _counter = value;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
     asm volatile("movl %1, %0" : "=r"(_counter) : "r"(value) : "memory");
+#elif defined HAVE_ATOMIC_T
+    _counter = value;
 #else
     _lock.writeAcquire();
     counter = _counter;
@@ -52,10 +54,10 @@ class SharedInt {
 
   inline int get() const {
     int counter = 0;
-#ifdef HAVE_ATOMIC_T
-    counter = _counter;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
     asm volatile("movl %1, %0" : "=r"(counter) : "r"(_counter) : "memory");
+#elif defined HAVE_ATOMIC_T
+    counter = _counter;
 #else
     _lock.readAcquire();
     _counter = counter;
@@ -65,16 +67,16 @@ class SharedInt {
   }
 
   /**
-   * Atomically increment the counter and return the value pre-increment.
+   * Atomically increment the counter and return the value post-increment.
    *
-   * @return the value before the increment.
+   * @return the value after the increment.
    */
   inline int inc() {
     int counter = 0;
-#ifdef HAVE_ATOMIC_T
-    counter = ++_counter;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
     asm volatile("lock; incl %0; movl %0, %1" : "=m"(_counter), "=r"(counter) : "m"(_counter) : "memory");
+#elif defined HAVE_ATOMIC_T
+    counter = ++_counter;
 #else
     _lock.writeAcquire();
     counter = ++_counter;
@@ -84,16 +86,16 @@ class SharedInt {
   }
 
   /**
-   * Atomically decrement the counter and return the value pre-decrement.
+   * Atomically decrement the counter and return the value post-decrement.
    *
-   * @return the value before the decrement.
+   * @return the value after the decrement.
    */
   inline int dec() {
     int counter = 0;
-#ifdef HAVE_ATOMIC_T
-    counter = --_counter;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
     asm volatile("lock; decl %0; movl %0, %1" : "=m"(_counter), "=r"(counter) : "m"(_counter) : "memory");
+#elif defined HAVE_ATOMIC_T
+    counter = --_counter;
 #else
     _lock.writeAcquire();
     counter = --_counter;
@@ -103,10 +105,10 @@ class SharedInt {
   }
 
   inline void add(int value) {
-#ifdef HAVE_ATOMIC_T
-    _counter += value;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
     asm volatile("lock; addl %1,%0" : "=m"(_counter) : "ir"(value), "m"(_counter));
+#elif defined HAVE_ATOMIC_T
+    _counter += value;
 #else
     _lock.writeAcquire();
     _counter += value;
@@ -115,29 +117,15 @@ class SharedInt {
   }
 
   inline void sub(int value) {
-#ifdef HAVE_ATOMIC_T
-    _counter -= value;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
     asm volatile("lock; subl %1,%0" : "=m"(_counter) : "ir"(value), "m"(_counter));
+#elif defined HAVE_ATOMIC_T
+    _counter -= value;
 #else
     _lock.writeAcquire();
     _counter -= value;
     _lock.writeRelease();
 #endif
-  }
-
-  inline bool decAndTest() {
-    unsigned char c;
-#ifdef HAVE_ATOMIC_T
-    c = _counter--;
-#elif defined HAVE_X86_ASM
-    asm volatile("lock; decl %0; sete %1" : "=m"(_counter), "=qm"(c) : "m"(_counter) : "memory");
-#else
-    _lock.writeAcquire();
-    c = _counter--;
-    _lock.writeRelease();
-#endif
-    return c != 0;
   }
 
   /** Placement new.
@@ -149,10 +137,10 @@ class SharedInt {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-#ifdef HAVE_ATOMIC_T
-  std::atomic<int> _counter;
-#elif defined HAVE_X86_ASM
+#if defined HAVE_X86_ASM
   volatile int _counter;
+#elif defined HAVE_ATOMIC_T
+  std::atomic<int> _counter;
 #else
   Mutex _lock;
   volatile int _counter;

@@ -22,7 +22,7 @@
   }
 
 #define PTR_DEC()                                   \
-  if (_ptr && _ptr->decAndTest()) {                 \
+  if (_ptr && 0 == _ptr->dec()) {                   \
     SmartPointerDebugger::Instance()->remove(_ptr); \
     destroy();                                      \
   }
@@ -33,7 +33,7 @@
   if (_ptr) _ptr->inc()
 
 #define PTR_DEC() \
-  if (_ptr && _ptr->decAndTest()) destroy()
+  if (_ptr && 0 == _ptr->dec()) destroy()
 
 #endif
 

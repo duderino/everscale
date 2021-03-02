@@ -17,6 +17,10 @@
 #include <ESBEmbeddedMapElement.h>
 #endif
 
+#ifndef ESB_SMART_POINTER_H
+#include <ESBSmartPointer.h>
+#endif
+
 namespace ES {
 
 /** A cache-line friendly uniquely associative array with string keys and void * values.  Note that this collection uses
