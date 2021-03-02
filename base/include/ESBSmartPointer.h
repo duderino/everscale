@@ -49,7 +49,7 @@ class SmartPointer {
  public:
   /** Default Constructor.
    */
-  inline SmartPointer() : _ptr(0) {}
+  inline SmartPointer() : _ptr(NULL) {}
 
   /** Conversion Constructor.
    *
@@ -135,14 +135,14 @@ class SmartPointer {
    *
    *    @return true if the wrapped object is not null, false otherwise.
    */
-  inline bool isNull() const { return 0 == _ptr; }
+  inline bool isNull() const { return !_ptr; }
 
   /** Set the wrapped object to null, deleting it if it this is the last
    *    reference.
    */
   inline void setNull() {
     PTR_DEC();
-    _ptr = 0;
+    _ptr = NULL;
   }
 
   /** Compare two smart pointers based on the address of their wrapped
@@ -156,13 +156,13 @@ class SmartPointer {
 
  protected:
   inline void destroy() {
-    /* Calling ReferenceCount::delete( void * ) is the equivalent of:
-     *  Allocator *allocator = _ptr->_allocator;
-     *  _ptr->~ReferenceCount();
-     *  allocator->deallocate( _ptr );
-     */
-    delete _ptr;
-    _ptr = 0;
+    if (_ptr) {
+      assert(_ptr->cleanupHandler());
+      if (_ptr->cleanupHandler()) {
+        _ptr->cleanupHandler()->destroy(_ptr);
+      }
+      _ptr = NULL;
+    }
   }
 
   ReferenceCount *_ptr;
@@ -233,7 +233,7 @@ class SmartPointer {
                                                              \
     inline void setNull() {                                  \
       PTR_DEC();                                             \
-      _ptr = 0;                                              \
+      _ptr = NULL;                                           \
     }                                                        \
   }
 }  // namespace ESB

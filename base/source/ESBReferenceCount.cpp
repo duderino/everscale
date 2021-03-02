@@ -4,12 +4,7 @@
 
 namespace ESB {
 
-ReferenceCount::ReferenceCount() : _refCount() {
-  //
-  // Important: we are purposely not initializing the _allocator attribute
-  // because that would overwrite the pointer assigned by operator new.
-  //
-}
+ReferenceCount::ReferenceCount() : _refCount(0) {}
 
 ReferenceCount::~ReferenceCount() { assert(0 == _refCount.get()); }
 

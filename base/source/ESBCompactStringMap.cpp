@@ -2,6 +2,10 @@
 #include <ESBCompactStringMap.h>
 #endif
 
+#ifndef ESB_STRING_H
+#include <ESBString.h>
+#endif
+
 #ifdef HAVE_STRING_H
 #include <string.h>
 #else
@@ -13,50 +17,6 @@
 #endif
 
 namespace ESB {
-
-#ifdef ESB_64BIT
-static inline void *ReadPointer(const unsigned char *buffer) {
-  UInt64 address = ((UInt64)*buffer++) << 56;
-  address |= ((UInt64)*buffer++) << 48;
-  address |= ((UInt64)*buffer++) << 40;
-  address |= ((UInt64)*buffer++) << 32;
-  address |= ((UInt64)*buffer++) << 24;
-  address |= ((UInt64)*buffer++) << 16;
-  address |= ((UInt64)*buffer++) << 8;
-  address |= ((UInt64)*buffer);
-  return (void *)address;
-}
-#else
-static inline void *ReadPointer(const unsigned char *buffer) {
-  UInt64 address = ((UInt32)*buffer++) << 24;
-  address |= ((UInt64)*buffer++) << 16;
-  address |= ((UInt64)*buffer++) << 8;
-  address |= ((UInt64)*buffer);
-  return (void *)address;
-}
-#endif
-
-#ifdef ESB_64BIT
-static inline void WritePointer(unsigned char *buffer, void *pointer) {
-  UInt64 address = (UInt64)pointer;
-  *buffer++ = address >> 56;
-  *buffer++ = address >> 48;
-  *buffer++ = address >> 40;
-  *buffer++ = address >> 32;
-  *buffer++ = address >> 24;
-  *buffer++ = address >> 16;
-  *buffer++ = address >> 8;
-  *buffer++ = address;
-}
-#else
-static inline void WritePointer(unsigned char *buffer, void *pointer) {
-  UInt32 address = (UInt32)pointer;
-  *buffer++ = address >> 24;
-  *buffer++ = address >> 16;
-  *buffer++ = address >> 8;
-  *buffer++ = address;
-}
-#endif
 
 CompactStringMap::CompactStringMap(ESB::UInt32 initialCapacity) : _buffer(NULL), _capacity(initialCapacity) {}
 
@@ -84,7 +44,6 @@ Error CompactStringMap::insert(const char *key, UInt32 keySize, void *value, boo
     if (!_buffer) {
       return ESB_OUT_OF_MEMORY;
     }
-    memset(_buffer, 'a', _capacity);
     _buffer[0] = 0;
   }
 
@@ -118,7 +77,7 @@ Error CompactStringMap::insert(const char *key, UInt32 keySize, void *value, boo
 
   // Ensure space for new key
   UInt32 freeSpace = _capacity - (p - _buffer);
-  if (freeSpace < keySize) {
+  if (freeSpace <= keySize) {
     UInt32 requestSize = MAX(_capacity * 2, _capacity + keySize + sizeof(void *) + 1 - freeSpace);
     unsigned char *buffer = (unsigned char *)realloc(_buffer, requestSize);
     if (!buffer) {

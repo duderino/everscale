@@ -61,12 +61,10 @@ class EmbeddedListElement : public Object {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-  // Disabled
-  EmbeddedListElement(const EmbeddedListElement &);
-  EmbeddedListElement &operator=(const EmbeddedListElement &);
-
   EmbeddedListElement *_next;
   EmbeddedListElement *_previous;
+
+  ESB_DISABLE_AUTO_COPY(EmbeddedListElement);
 };
 
 }  // namespace ESB

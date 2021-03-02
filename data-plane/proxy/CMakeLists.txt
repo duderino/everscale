@@ -24,8 +24,6 @@ target_include_directories(proxy PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
 
-target_compile_options(proxy PUBLIC ${CPP_FLAGS})
-
 # Unit tests
 
 set(TEST_INCS

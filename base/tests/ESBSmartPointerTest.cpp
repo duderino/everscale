@@ -34,10 +34,6 @@
 #include <ESTFAssert.h>
 #endif
 
-#ifndef ESB_FIXED_ALLOCATOR_H
-#include <ESBFixedAllocator.h>
-#endif
-
 #ifndef ESTF_CONCURRENCY_DECORATOR_H
 #include <ESTFConcurrencyDecorator.h>
 #endif
@@ -110,6 +106,8 @@ class ReferenceCountSubclass : public ReferenceCount {
 
   int getNumber() { return _number; }
 
+  virtual CleanupHandler *cleanupHandler() { return &SystemAllocator::Instance().cleanupHandler(); }
+
  private:
   int _number;
 };
@@ -126,7 +124,6 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
   SmartPointerDebugger *debugger = SmartPointerDebugger::Instance();
   ESTF::Rand generator;
   ReferenceCountSubclassPointer array[ARRAY_SIZE];
-  FixedAllocator allocator(ARRAY_SIZE * 10, sizeof(ReferenceCountSubclass));
 
   int initialRefs = debugger->size();
   int activeRefs = initialRefs;
@@ -151,13 +148,7 @@ bool SmartPointerTest::run(ESTF::ResultCollector *collector) {
       ++activeRefs;
     }
 
-    // Alternate between the fixed size allocator and the system allocator
-    // The smart pointer will keep track.
-    if (1 == generator.generateRandom(1, 2)) {
-      array[randIdx] = new (allocator) ReferenceCountSubclass(i);
-    } else {
-      array[randIdx] = new ReferenceCountSubclass(i);
-    }
+    array[randIdx] = new (SystemAllocator::Instance()) ReferenceCountSubclass(i);
 
     assert(activeRefs == debugger->size());
     ESTF_ASSERT(collector, i == array[randIdx]->getNumber());

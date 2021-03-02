@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.5)
 project(multiplexers VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-source/ESHttpClient.cpp
-source/ESHttpProxy.cpp
-source/ESHttpProxyMultiplexer.cpp
-source/ESHttpServer.cpp
+        source/ESHttpClient.cpp
+        source/ESHttpProxy.cpp
+        source/ESHttpProxyMultiplexer.cpp
+        source/ESHttpServer.cpp
         )
 
 add_library(multiplexers STATIC ${SOURCE_FILES})
@@ -20,6 +20,4 @@ target_include_directories(multiplexers PRIVATE
 target_include_directories(multiplexers PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
-
-target_compile_options(multiplexers PUBLIC ${CPP_FLAGS})
 

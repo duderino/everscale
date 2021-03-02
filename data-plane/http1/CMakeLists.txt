@@ -50,8 +50,6 @@ target_include_directories(http1 PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
 
-target_compile_options(http1 PUBLIC ${CPP_FLAGS})
-
 # Unit tests
 
 set(TEST_INCS
@@ -68,6 +66,7 @@ SET(TEST_LIBS
         unit-tf
         http1
         http-common
+		config
         base
         )
 

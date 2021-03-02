@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(http-common VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-	source/ESHttpClientStream.cpp
+        source/ESHttpClientStream.cpp
         source/ESHttpHeader.cpp
         source/ESHttpMessage.cpp
         source/ESHttpRequest.cpp
@@ -11,7 +11,7 @@ set(SOURCE_FILES
         source/ESHttpTransaction.cpp
         source/ESHttpUtil.cpp
         source/ESHttpConfig.cpp
-	source/ESHttpServerStream.cpp
+        source/ESHttpServerStream.cpp
         source/ESHttpStream.cpp
         )
 
@@ -26,8 +26,6 @@ target_include_directories(http-common PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
 
-target_compile_options(http-common PUBLIC ${CPP_FLAGS})
-
 # Unit tests
 
 set(TEST_INCS
@@ -38,7 +36,7 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../../unit-tf/include"
         )
 
-set(TEST_LIBS -pthread unit-tf base http-common)
+set(TEST_LIBS -pthread unit-tf http-common config base)
 
 add_gtest(http-common-alignment-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/AlignmentTest.cpp)
 

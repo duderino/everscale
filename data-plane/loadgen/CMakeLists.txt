@@ -22,11 +22,8 @@ target_include_directories(loadgen PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
 
-target_compile_options(loadgen PUBLIC ${CPP_FLAGS})
-
 add_executable(http-loadgen source/ESHttpLoadgen.cpp)
-target_compile_options(http-loadgen PUBLIC ${CPP_FLAGS})
-target_link_libraries(http-loadgen -pthread -ldl unit-tf loadgen multiplexers http1 http-common http-test-common base bssl_ssl bssl_crypto)
+target_link_libraries(http-loadgen -pthread -ldl unit-tf loadgen multiplexers http1 http-common http-test-common config base bssl_ssl bssl_crypto)
 target_include_directories(http-loadgen PRIVATE
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../../base/include"

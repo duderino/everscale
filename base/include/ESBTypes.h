@@ -177,6 +177,11 @@ typedef SSIZE_T SSize;
   CLASS(const CLASS &);              \
   void operator=(const CLASS &);
 
+typedef struct {
+  unsigned char *_data;
+  UInt32 _capacity;
+} SizedBuffer;
+
 }  // namespace ESB
 
 #endif

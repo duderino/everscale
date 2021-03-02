@@ -13,8 +13,8 @@
 #include <ESBAllocator.h>
 #endif
 
-#ifndef ESB_SYSTEM_ALLOCATOR_H
-#include <ESBSystemAllocator.h>
+#ifndef ESB_EMBEDDED_LIST_ELEMENT_H
+#include <ESBEmbeddedListElement.h>
 #endif
 
 namespace ESB {
@@ -26,7 +26,7 @@ namespace ESB {
  *  @see SmartPointer
  *  @ingroup smart_ptr
  */
-class ReferenceCount {
+class ReferenceCount : public EmbeddedListElement {
   friend class SmartPointer;
 
  public:
@@ -55,54 +55,10 @@ class ReferenceCount {
     return result;
   }
 
-  /** Operator new
-   *
-   *  @param size The size of the object
-   *  @return The new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size) noexcept {
-    ReferenceCount *object = (ReferenceCount *)SystemAllocator::Instance().allocate(size);
-
-    if (object) {
-      object->_allocator = &SystemAllocator::Instance();
-    }
-
-    return object;
-  }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept {
-    ReferenceCount *object = (ReferenceCount *)allocator.allocate(size);
-
-    if (object) {
-      object->_allocator = &allocator;
-    }
-
-    return object;
-  }
-
-  /** Operator delete
-   *
-   *  @param object The object to delete.
-   */
-  inline void operator delete(void *object) {
-    if (((ReferenceCount *)object)->_allocator) {
-      ((ReferenceCount *)object)->_allocator->deallocate(object);
-    }
-  }
-
  private:
-  //  Disabled
-  ReferenceCount(const ReferenceCount &);
-  ReferenceCount &operator=(const ReferenceCount &);
-
   SharedInt _refCount;
-  Allocator *_allocator;
+
+  ESB_DISABLE_AUTO_COPY(ReferenceCount);
 };
 
 }  // namespace ESB

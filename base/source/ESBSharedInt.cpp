@@ -16,7 +16,6 @@ SharedInt::~SharedInt() {}
 
 SharedInt &SharedInt::operator=(SharedInt &counter) {
   set(counter.get());
-
   return *this;
 }
 

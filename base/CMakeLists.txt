@@ -73,6 +73,7 @@ set(SOURCE_FILES
         source/ESBTimeSource.cpp
         source/ESBTLSSocket.cpp
         )
+
 add_library(base STATIC ${SOURCE_FILES})
 add_dependencies(base bssl)
 
@@ -83,8 +84,6 @@ target_include_directories(base PRIVATE
 target_include_directories(base PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
-
-#target_compile_options(base PUBLIC ${CPP_FLAGS})
 
 # Unit tests
 
