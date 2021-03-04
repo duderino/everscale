@@ -136,16 +136,21 @@ const EmbeddedMapElement *SharedEmbeddedMap::find(const void *key) const {
   }
 
   UInt32 bucket = _callbacks.hash(key) % _numBuckets;
-  ReadScopeLock lock(bucketLock(bucket));
+  WriteScopeLock lock(bucketLock(bucket));
 
   EmbeddedMapElement *elem = (EmbeddedMapElement *)_buckets[bucket].first();
   for (; elem; elem = (EmbeddedMapElement *)elem->next()) {
     if (0 == _callbacks.compare(key, elem->key())) {
-      return elem;
+      break;
     }
   }
 
-  return NULL;
+  if (elem && _buckets[bucket].first() != elem) {
+    _buckets[bucket].remove(elem);
+    _buckets[bucket].addFirst(elem);
+  }
+
+  return elem;
 }
 
 bool SharedEmbeddedMap::validate(double *chiSquared) const {
