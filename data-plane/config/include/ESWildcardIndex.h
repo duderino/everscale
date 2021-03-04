@@ -49,7 +49,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the key already exists and updateIfExists is false,
    * another error code otherwise.
    */
-  inline ESB::Error insert(const char *key, void *value, bool updateIfExists = false) {
+  inline ESB::Error insert(const char *key, ESB::SmartPointer &value, bool updateIfExists = false) {
     return key ? insert(key, strlen(key), value, updateIfExists) : ESB_NULL_POINTER;
   }
 
@@ -64,7 +64,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the key already exists and updateIfExists is false,
    * another error code otherwise.
    */
-  ESB::Error insert(const char *key, ESB::UInt32 keySize, void *value, bool updateIfExists = false);
+  ESB::Error insert(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value, bool updateIfExists = false);
 
   /**
    * Remove a string key from the map.  O(n)
@@ -87,18 +87,22 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * Return the value associated with a string key, if it can be found.  O(n)
    *
    * @param key The NULL-terminated string key to look for
-   * @return The value associated with the key if found, NULL otherwise.
+   * @param value Will point to the value if found
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  inline void *find(const char *key) const { return key ? find(key, strlen(key)) : NULL; }
+  inline ESB::Error find(const char *key, ESB::SmartPointer &value) const {
+    return key ? find(key, strlen(key), value) : ESB_NULL_POINTER;
+  }
 
   /**
    * Return the value associated with a string key, if it can be found.  O(n)
    *
    * @param key The string key to look for
    * @param keySize The size (length) of the string key
-   * @return The value associated with the key if found, NULL otherwise.
+   * @param value Will point to the value if found
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  void *find(const char *key, ESB::UInt32 keySize) const;
+  ESB::Error find(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value) const;
 
   /**
    * Update a string key with a new pointer.  O(n)
@@ -109,7 +113,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param old If not NULL, set to the key's associated value before the update.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key doesn't exist, another error code otherwise.
    */
-  inline ESB::Error update(const char *key, void *value, void **old) {
+  inline ESB::Error update(const char *key, ESB::SmartPointer &value, ESB::SmartPointer *old) {
     return key ? update(key, strlen(key), value, old) : ESB_NULL_POINTER;
   }
 
@@ -122,16 +126,11 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param old If not NULL, set to the key's associated value before the update.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key doesn't exist, another error code otherwise.
    */
-  ESB::Error update(const char *key, ESB::UInt32 keySize, void *value, void **old);
+  ESB::Error update(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value, ESB::SmartPointer *old);
 
   /** Remove all key/value pairs from the map.  O(1).
-   *  <p>
-   *  This will only deallocate memory used by the map's internal nodes.
-   *  </p>
-   *
-   *  @return ESB_SUCCESS if successful, another error code otherwise.
    */
-  ESB::Error clear();
+  void clear();
 
   typedef unsigned char Marker;
 
@@ -160,7 +159,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param marker The marker set by the prior call or firstMarker().
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
    */
-  ESB::Error next(const char **key, ESB::UInt32 *keySize, void **value, const Marker **marker) const;
+  ESB::Error next(const char **key, ESB::UInt32 *keySize, ESB::SmartPointer &value, const Marker **marker) const;
 
   /** Placement new.
    *
@@ -180,6 +179,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
 
  private:
   unsigned char *find(const ESB::SizedBuffer &buffer, const char *key, ESB::UInt32 keySize, bool *exists) const;
+  void clear(const ESB::SizedBuffer &buffer);
 
   char *_key;                   // NULL terminated, fixed.
   ESB::SizedBuffer _wildcards;  // fixed storage for wildcards

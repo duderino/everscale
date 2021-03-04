@@ -137,13 +137,12 @@ class SmartPointer {
    */
   inline bool isNull() const { return !_ptr; }
 
-  /** Set the wrapped object to null, deleting it if it this is the last
-   *    reference.
+  /**
+   * Return the raw pointer.
+   *
+   * @return The raw pointer wrapped by this smart pointer.
    */
-  inline void setNull() {
-    PTR_DEC();
-    _ptr = NULL;
-  }
+  inline ReferenceCount *raw() { return _ptr; }
 
   /** Compare two smart pointers based on the address of their wrapped
    *    objects.

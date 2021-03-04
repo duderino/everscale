@@ -58,13 +58,7 @@ WildcardIndexNode::WildcardIndexNode() {
   // See Create() for most of the initialization
 }
 
-WildcardIndexNode::~WildcardIndexNode() {
-  if (_extra._data) {
-    free(_extra._data);
-    _extra._data = NULL;
-    _extra._capacity = 0;
-  }
-}
+WildcardIndexNode::~WildcardIndexNode() { clear(); }
 
 unsigned char *WildcardIndexNode::find(const ESB::SizedBuffer &buffer, const char *key, ESB::UInt32 keySize,
                                        bool *exists) const {
@@ -95,7 +89,8 @@ unsigned char *WildcardIndexNode::find(const ESB::SizedBuffer &buffer, const cha
   return p;
 }
 
-ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, void *value, bool updateIfExists) {
+ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value,
+                                     bool updateIfExists) {
   if (!key) {
     return ESB_NULL_POINTER;
   }
@@ -108,6 +103,10 @@ ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, void 
     return ESB_OVERFLOW;
   }
 
+  if (value.isNull()) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
   // Find the insertion point in _wildcards
   bool keyExists = false;
   unsigned char *p = find(_wildcards, key, keySize, &keyExists);
@@ -117,7 +116,10 @@ ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, void 
     if (!updateIfExists) {
       return ESB_UNIQUENESS_VIOLATION;
     }
-    ESB::WritePointer(p + keySize + 1, value);
+    ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
+    ptr->dec();
+    value->inc();
+    ESB::WritePointer(p + keySize + 1, value.raw());
     return ESB_SUCCESS;
   }
   assert(0 == *p);
@@ -133,7 +135,10 @@ ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, void 
       if (!updateIfExists) {
         return ESB_UNIQUENESS_VIOLATION;
       }
-      ESB::WritePointer(q + keySize, value);
+      ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
+      ptr->dec();
+      value->inc();
+      ESB::WritePointer(q + keySize, value.raw());
       return ESB_SUCCESS;
     }
     assert(0 == *q);
@@ -145,7 +150,8 @@ ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, void 
     *p++ = keySize;
     memcpy(p, key, keySize);
     p += keySize;
-    ESB::WritePointer(p, value);
+    value->inc();
+    ESB::WritePointer(p, value.raw());
     p += sizeof(value);
     *p = 0;
     return ESB_SUCCESS;
@@ -182,7 +188,8 @@ ESB::Error WildcardIndexNode::insert(const char *key, ESB::UInt32 keySize, void 
   *q++ = keySize;
   memcpy(q, key, keySize);
   q += keySize;
-  ESB::WritePointer(q, value);
+  value->inc();
+  ESB::WritePointer(q, value.raw());
   q += sizeof(value);
   *q = 0;
 
@@ -208,6 +215,8 @@ ESB::Error WildcardIndexNode::remove(const char *key, ESB::UInt32 keySize) {
 
   if (keyExists) {
     assert(keySize == *p);
+    ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
+    ptr->dec();
     unsigned char *nextKey = p + keySize + sizeof(void *) + 1;
     ESB::UInt32 promoteSize = _wildcards._capacity - (nextKey - _wildcards._data);
     memmove(p, nextKey, promoteSize);
@@ -228,15 +237,17 @@ ESB::Error WildcardIndexNode::remove(const char *key, ESB::UInt32 keySize) {
   }
   assert(keySize == *p);
 
+  ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
+  ptr->dec();
   unsigned char *nextKey = p + keySize + sizeof(void *) + 1;
   ESB::UInt32 promoteSize = _extra._capacity - (nextKey - _extra._data);
   memmove(p, nextKey, promoteSize);
   return ESB_SUCCESS;
 }
 
-void *WildcardIndexNode::find(const char *key, ESB::UInt32 keySize) const {
+ESB::Error WildcardIndexNode::find(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value) const {
   if (!key || 0 == keySize || ESB_UINT8_MAX < keySize) {
-    return NULL;
+    return ESB_CANNOT_FIND;
   }
 
   // Find the key
@@ -245,48 +256,7 @@ void *WildcardIndexNode::find(const char *key, ESB::UInt32 keySize) const {
 
   if (keyExists) {
     assert(keySize == *p);
-    return ESB::ReadPointer(p + keySize + 1);
-  }
-  assert(0 == *p);
-
-  if (!_extra._data) {
-    return NULL;
-  }
-
-  p = find(_extra, key, keySize, &keyExists);
-
-  if (keyExists) {
-    assert(keySize == *p);
-    return ESB::ReadPointer(p + keySize + 1);
-  }
-
-  assert(0 == *p);
-  return NULL;
-}
-
-ESB::Error WildcardIndexNode::update(const char *key, ESB::UInt32 keySize, void *value, void **old) {
-  if (!key) {
-    return ESB_NULL_POINTER;
-  }
-
-  if (keySize < 1) {
-    return ESB_UNDERFLOW;
-  }
-
-  if (keySize > ESB_UINT8_MAX) {
-    return ESB_OVERFLOW;
-  }
-
-  // Find the key
-  bool keyExists = false;
-  unsigned char *p = find(_wildcards, key, keySize, &keyExists);
-
-  if (keyExists) {
-    assert(keySize == *p);
-    if (old) {
-      *old = ESB::ReadPointer(p + keySize + 1);
-    }
-    ESB::WritePointer(p + keySize + 1, value);
+    value = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
     return ESB_SUCCESS;
   }
   assert(0 == *p);
@@ -299,10 +269,7 @@ ESB::Error WildcardIndexNode::update(const char *key, ESB::UInt32 keySize, void 
 
   if (keyExists) {
     assert(keySize == *p);
-    if (old) {
-      *old = ESB::ReadPointer(p + keySize + 1);
-    }
-    ESB::WritePointer(p + keySize + 1, value);
+    value = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
     return ESB_SUCCESS;
   }
 
@@ -310,16 +277,101 @@ ESB::Error WildcardIndexNode::update(const char *key, ESB::UInt32 keySize, void 
   return ESB_CANNOT_FIND;
 }
 
-ESB::Error WildcardIndexNode::clear() {
-  _wildcards._data[0] = 0;
-  if (_extra._data) {
-    _extra._data[0] = 0;
+ESB::Error WildcardIndexNode::update(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value,
+                                     ESB::SmartPointer *old) {
+  if (!key) {
+    return ESB_NULL_POINTER;
   }
-  return ESB_SUCCESS;
+
+  if (keySize < 1) {
+    return ESB_UNDERFLOW;
+  }
+
+  if (keySize > ESB_UINT8_MAX) {
+    return ESB_OVERFLOW;
+  }
+
+  if (value.isNull()) {
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  // Find the key
+  bool keyExists = false;
+  unsigned char *p = find(_wildcards, key, keySize, &keyExists);
+
+  if (keyExists) {
+    assert(keySize == *p);
+    ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
+    if (old) {
+      *old = ptr;
+    }
+    ptr->dec();
+    value->inc();
+    ESB::WritePointer(p + keySize + 1, value.raw());
+    return ESB_SUCCESS;
+  }
+  assert(0 == *p);
+
+  if (!_extra._data) {
+    return ESB_CANNOT_FIND;
+  }
+
+  p = find(_extra, key, keySize, &keyExists);
+
+  if (keyExists) {
+    assert(keySize == *p);
+    ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + keySize + 1);
+    if (old) {
+      *old = ptr;
+    }
+    ptr->dec();
+    value->inc();
+    ESB::WritePointer(p + keySize + 1, value.raw());
+    return ESB_SUCCESS;
+  }
+
+  assert(0 == *p);
+  return ESB_CANNOT_FIND;
 }
 
-ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, void **value, const Marker **marker) const {
-  if (!key || !keySize || !value || !marker) {
+void WildcardIndexNode::clear(const ESB::SizedBuffer &buffer) {
+  if (!buffer._data) {
+    return;
+  }
+
+  unsigned char *p = buffer._data;
+  while (true) {
+    if (!*p) {
+      break;
+    }
+
+    ESB::UInt8 size = (ESB::UInt8)*p;
+
+    // Decrement the stored pointer.  May free the referenced object once the ptr goes out of scope.
+    ESB::SmartPointer ptr = (ESB::ReferenceCount *)ESB::ReadPointer(p + size + 1);
+    ptr->dec();
+
+    // skip to next key
+    p += size + sizeof(void *) + 1;
+    assert(buffer._capacity >= p - buffer._data);
+  }
+
+  buffer._data[0] = 0;
+}
+
+void WildcardIndexNode::clear() {
+  clear(_wildcards);
+  if (_extra._data) {
+    clear(_extra);
+    free(_extra._data);
+    _extra._data = NULL;
+    _extra._capacity = 0U;
+  }
+}
+
+ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, ESB::SmartPointer &value,
+                                   const Marker **marker) const {
+  if (!key || !keySize || !marker) {
     return ESB_NULL_POINTER;
   }
 
@@ -334,7 +386,7 @@ ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, void 
     *keySize = size;
     *key = (const char *)p;
     p += size;
-    *value = ESB::ReadPointer(p);
+    value = (ESB::ReferenceCount *)ESB::ReadPointer(p);
     p += sizeof(void *);
 
     if (*p) {
@@ -360,7 +412,7 @@ ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, void 
     *keySize = size;
     *key = (const char *)p;
     p += size;
-    *value = ESB::ReadPointer(p);
+    value = (ESB::ReferenceCount *)ESB::ReadPointer(p);
     p += sizeof(void *);
     *marker = p;
     return ESB_SUCCESS;
@@ -370,7 +422,8 @@ ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, void 
   return ESB_INVALID_ARGUMENT;
 }
 
-ESB::CleanupHandler *WildcardIndexNode::cleanupHandler() { return nullptr; }
-const void *WildcardIndexNode::key() const { return nullptr; }
+ESB::CleanupHandler *WildcardIndexNode::cleanupHandler() { return NULL; }
+
+const void *WildcardIndexNode::key() const { return _key; }
 
 }  // namespace ES

@@ -23,7 +23,7 @@ class TestCleanupHandler : public CleanupHandler {
   inline int calls() const { return _calls; }
 
  private:
-  int _calls = 0;
+  int _calls;
 
   ESB_DISABLE_AUTO_COPY(TestCleanupHandler);
 };
@@ -116,8 +116,16 @@ TEST(SmartPointer, Subclass) {
   EXPECT_TRUE((*ptr).test());
   EXPECT_FALSE(ptr.isNull());
 
-  ptr.setNull();
+  TestObjectPointer ptr2(ptr);
+  EXPECT_TRUE(ptr2->test());
+  EXPECT_TRUE((*ptr2).test());
+  EXPECT_FALSE(ptr2.isNull());
 
+  ptr = NULL;
+  EXPECT_EQ(cleanups, TestCleanupHandler.calls());
+  EXPECT_EQ(destructions, Destructions);
+
+  ptr2 = NULL;
   EXPECT_EQ(cleanups + 1, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 1, Destructions);
 }
