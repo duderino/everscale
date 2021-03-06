@@ -2,14 +2,6 @@
 #include <ESWildcardIndex.h>
 #endif
 
-#ifndef ESB_STRING_H
-#include <ESBString.h>
-#endif
-
-#ifndef ESB_SMART_POINTER_H
-#include <ESBSmartPointer.h>
-#endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #else
@@ -369,13 +361,12 @@ void WildcardIndexNode::clear() {
   }
 }
 
-ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, ESB::SmartPointer &value,
-                                   const Marker **marker) const {
-  if (!key || !keySize || !marker) {
+ESB::Error WildcardIndexNode::next(const Iterator **it) const {
+  if (!it) {
     return ESB_NULL_POINTER;
   }
 
-  const unsigned char *p = *marker;
+  const unsigned char *p = *it;
 
   if (!*p) {
     return ESB_CANNOT_FIND;
@@ -383,25 +374,21 @@ ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, ESB::
 
   if (_wildcards._data <= p && p < _wildcards._data + _wildcards._capacity) {
     ESB::UInt8 size = (ESB::UInt8)*p++;
-    *keySize = size;
-    *key = (const char *)p;
-    p += size;
-    value = (ESB::ReferenceCount *)ESB::ReadPointer(p);
-    p += sizeof(void *);
+    p += size + sizeof(void *);
 
     if (*p) {
-      *marker = p;
+      *it = p;
       return ESB_SUCCESS;
     }
 
-    // No more keys in _wildcards, but set the marker to the next key in _extra if it has been allocated.
+    // No more keys in _wildcards, but set the iterator to the next key in _extra if it has been allocated.
 
     if (_extra._data) {
-      *marker = _extra._data;
+      *it = _extra._data;
       return ESB_SUCCESS;
     }
 
-    *marker = p;
+    *it = p;
     return ESB_SUCCESS;
   }
 
@@ -409,16 +396,11 @@ ESB::Error WildcardIndexNode::next(const char **key, ESB::UInt32 *keySize, ESB::
 
   if (_extra._data <= p && p < _extra._data + _extra._capacity) {
     ESB::UInt8 size = (ESB::UInt8)*p++;
-    *keySize = size;
-    *key = (const char *)p;
-    p += size;
-    value = (ESB::ReferenceCount *)ESB::ReadPointer(p);
-    p += sizeof(void *);
-    *marker = p;
+    *it = p + size + sizeof(void *);
     return ESB_SUCCESS;
   }
 
-  assert(!"invalid marker");
+  assert(!"invalid iterator");
   return ESB_INVALID_ARGUMENT;
 }
 

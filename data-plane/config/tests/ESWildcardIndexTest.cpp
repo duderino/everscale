@@ -730,42 +730,55 @@ TEST(WildcardIndexNodeTest, Iterate) {
     EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
   }
 
-  const WildcardIndexNode::Marker *marker = node->firstMarker();
   const char *key = NULL;
   ESB::UInt32 keySize;
-  TestObjectPointer value;
+  TestObjectPointer ptr;
+  const WildcardIndexNode::Iterator *it = NULL;
 
-  EXPECT_TRUE(node->hasNext(marker));
-  EXPECT_EQ(ESB_SUCCESS, node->next(&key, &keySize, value, &marker));
+  it = node->first();
+  EXPECT_FALSE(node->last(it));
+  EXPECT_EQ(ESB_SUCCESS, node->key(it, &key, &keySize));
   EXPECT_EQ(3, keySize);
   EXPECT_TRUE(0 == memcmp(key, "foo", 3));
-  EXPECT_EQ(1, value->value());
+  EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
+  EXPECT_EQ(1, ptr->value());
 
-  EXPECT_TRUE(node->hasNext(marker));
-  EXPECT_EQ(ESB_SUCCESS, node->next(&key, &keySize, value, &marker));
+  EXPECT_EQ(ESB_SUCCESS, node->next(&it));
+  EXPECT_FALSE(node->last(it));
+  EXPECT_EQ(ESB_SUCCESS, node->key(it, &key, &keySize));
   EXPECT_EQ(3, keySize);
   EXPECT_TRUE(0 == memcmp(key, "bar", 3));
-  EXPECT_EQ(2, value->value());
+  EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
+  EXPECT_EQ(2, ptr->value());
 
   // insertion order is different here than iteration order.
   // The large key (buffer) is inserted into an overflow area
   // The the subsequent key (baz) is inserted into the regular area
   // iteration iterates through the regular area first, then considers the overflow area.
 
-  EXPECT_TRUE(node->hasNext(marker));
-  EXPECT_EQ(ESB_SUCCESS, node->next(&key, &keySize, value, &marker));
+  EXPECT_EQ(ESB_SUCCESS, node->next(&it));
+  EXPECT_FALSE(node->last(it));
+  EXPECT_EQ(ESB_SUCCESS, node->key(it, &key, &keySize));
   EXPECT_EQ(3, keySize);
   EXPECT_TRUE(0 == memcmp(key, "baz", 3));
-  EXPECT_EQ(3, value->value());
+  EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
+  EXPECT_EQ(3, ptr->value());
 
-  EXPECT_TRUE(node->hasNext(marker));
-  EXPECT_EQ(ESB_SUCCESS, node->next(&key, &keySize, value, &marker));
+  EXPECT_EQ(ESB_SUCCESS, node->next(&it));
+  EXPECT_FALSE(node->last(it));
+  EXPECT_EQ(ESB_SUCCESS, node->key(it, &key, &keySize));
   EXPECT_EQ(sizeof(buffer), keySize);
   EXPECT_TRUE(0 == memcmp(key, buffer, sizeof(buffer)));
-  EXPECT_EQ(4, value->value());
+  EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
+  EXPECT_EQ(4, ptr->value());
 
-  EXPECT_FALSE(node->hasNext(marker));
-  EXPECT_EQ(ESB_CANNOT_FIND, node->next(&key, &keySize, value, &marker));
+  // end of iteration
+
+  EXPECT_EQ(ESB_SUCCESS, node->next(&it));
+  EXPECT_TRUE(node->last(it));
+  EXPECT_EQ(ESB_CANNOT_FIND, node->next(&it));
+  EXPECT_EQ(ESB_CANNOT_FIND, node->key(it, &key, &keySize));
+  EXPECT_EQ(ESB_CANNOT_FIND, node->value(it, ptr));
 
   delete node;
 }

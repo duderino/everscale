@@ -21,6 +21,10 @@
 #include <ESBSmartPointer.h>
 #endif
 
+#ifndef ESB_STRING_H
+#include <ESBString.h>
+#endif
+
 namespace ES {
 
 /** A cache-line friendly uniquely associative array with string keys and void * values.  Note that this collection uses
@@ -38,6 +42,10 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
   virtual ESB::CleanupHandler *cleanupHandler();
 
   virtual const void *key() const;
+
+  //
+  // CRUD
+  //
 
   /**
    * Insert a string key + pointer pair into the map.  O(n).
@@ -132,34 +140,78 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    */
   void clear();
 
-  typedef unsigned char Marker;
+  //
+  // Iteration. O(n). The node must not be modified (keys added or removed) during the iteration.
+  //
+
+  typedef unsigned char Iterator;
 
   /**
-   * Get a 'marker' that represents the first key in the map, and which can be used to iterate through the collection
-   * using hasNext() and next().
+   * Get a iterator that represents the first key in the node, and which can be used to iterate through the node.
    *
-   * @return the marker for the first key in the map.
+   * @return an iterator pointing to the first key in the node.
    */
-  inline const Marker *firstMarker() const { return _wildcards._data; }
+  inline const Iterator *first() const { return _wildcards._data; }
 
   /**
-   * Determine whether a key exists for the current marker.
+   * Advance the iterator to the next key in the node..
    *
-   * @param marker The marker / current position in the iteration.
-   * @return true if a key exists for the marker, false if the marker points to the end of the map.
-   */
-  inline bool hasNext(const Marker *marker) const { return marker ? *marker : false; }
-
-  /**
-   * Iterate through all string key + value pairs in the map.  O(n).  The map must not be modified during the iteration.
-   *
-   * @param key Will point to the key which will not be NULL terminated
-   * @param keySize The size of the key
-   * @param value The value associated with the key
-   * @param marker The marker set by the prior call or firstMarker().
+   * @param it The current position in the iteration.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
    */
-  ESB::Error next(const char **key, ESB::UInt32 *keySize, ESB::SmartPointer &value, const Marker **marker) const;
+  ESB::Error next(const Iterator **it) const;
+
+  /**
+   * Determine whether the iteration has ended.
+   *
+   * @param it The current position in the iteration.
+   * @return true if a key exists for the position, false if the position points to the end of the node.
+   */
+  inline bool last(const Iterator *it) const { return it ? !*it : true; }
+
+  /**
+   * Get the key associated with an iterator.
+   *
+   * @param it The current it in the iteration.
+   * @param key Will point to the key which will not be NULL terminated
+   * @param keySize The size of the key
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
+   */
+  inline ESB::Error key(const Iterator *it, const char **key, ESB::UInt32 *keySize) const {
+    if (!key || !keySize || !it) {
+      return ESB_NULL_POINTER;
+    }
+
+    const unsigned char *p = it;
+
+    if (!*p) {
+      return ESB_CANNOT_FIND;
+    }
+
+    ESB::UInt8 size = (ESB::UInt8)*p++;
+    *keySize = size;
+    *key = (const char *)p;
+    return ESB_SUCCESS;
+  }
+
+  /**
+   * Get the value associated with an iterator.
+   *
+   * @param it The current it in the iteration.
+   * @param value The value associated with the iterator
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
+   */
+  ESB::Error value(const Iterator *it, ESB::SmartPointer &value) const {
+    const unsigned char *p = it;
+
+    if (!*p) {
+      return ESB_CANNOT_FIND;
+    }
+
+    ESB::UInt8 size = *p;
+    value = (ESB::ReferenceCount *)ESB::ReadPointer(p + size + 1);
+    return ESB_SUCCESS;
+  }
 
   /** Placement new.
    *
