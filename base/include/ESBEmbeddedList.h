@@ -148,12 +148,10 @@ class EmbeddedList {
   bool validate() const;
 
  private:
-  // Disabled
-  EmbeddedList(const EmbeddedList &);
-  EmbeddedList &operator=(const EmbeddedList &);
-
   EmbeddedListElement *_head;
   EmbeddedListElement *_tail;
+
+  ESB_DISABLE_AUTO_COPY(EmbeddedList);
 };
 
 }  // namespace ESB

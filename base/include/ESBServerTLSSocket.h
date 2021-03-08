@@ -58,6 +58,7 @@ class ServerTLSSocket : public TLSSocket {
   ServerTLSSocket &operator=(const ServerTLSSocket &);
 
   SocketAddress _peerAddress;
+
   static SSL_CTX *_Context;
 };
 

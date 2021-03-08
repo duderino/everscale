@@ -18,7 +18,7 @@
 
 using namespace ESB;
 
-class SocketAddressCallbacks : public SharedEmbeddedMap::Callbacks {
+class SocketAddressCallbacks : public EmbeddedMapCallbacks {
  public:
   SocketAddressCallbacks(Allocator &allocator) : _allocator(allocator) {}
 

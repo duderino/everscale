@@ -25,17 +25,30 @@
 #include <ESBString.h>
 #endif
 
+#ifndef ESB_SHARED_EMBEDDED_MAP_H
+#include <ESBSharedEmbeddedMap.h>
+#endif
+
+#ifndef ESB_MUTEX_H
+#include <ESBMutex.h>
+#endif
+
+#ifndef ESB_READ_WRITE_LOCK_H
+#include <ESBReadWriteLock.h>
+#endif
+
 namespace ES {
 
-/** A cache-line friendly uniquely associative array with string keys and void * values.  Note that this collection uses
- * malloc/free/realloc internally and does not use the allocator framework.  Note also that keys must be at least 1 byte
- * and at most 255 bytes.
- *
- *  @ingroup util
+/**
+ * WildcardIndexNodes are internal details of WildcardIndex and you should probably use WildcardIndex instead.
+ * WildcardIndexNodes associate a bunch of wildcard patterns in the leftmost component of a fqdn with the remaining
+ * components of the fqdn (e.g., the wildcard node can associate "foo", "f*", "*", "*o", "f*o", etc with "bar.com" and
+ * can use any of these to match against "foo.bar.com").
  */
 class WildcardIndexNode : public ESB::EmbeddedMapElement {
  public:
   static WildcardIndexNode *Create(const char *key, ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
+  static WildcardIndexNode *Recycle(const char *key, ESB::EmbeddedListElement *element);
 
   virtual ~WildcardIndexNode();
 
@@ -213,6 +226,8 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
     return ESB_SUCCESS;
   }
 
+  inline bool empty() const { return 0 == _wildcards._data[0] && (!_extra._data || 0 == _extra._data[0]); }
+
   /** Placement new.
    *
    *  @param size The size of the object.
@@ -232,6 +247,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
  private:
   unsigned char *find(const ESB::SizedBuffer &buffer, const char *key, ESB::UInt32 keySize, bool *exists) const;
   void clear(const ESB::SizedBuffer &buffer);
+  static WildcardIndexNode *Create(const char *key, int keyLength, unsigned char *block);
 
   char *_key;                   // NULL terminated, fixed.
   ESB::SizedBuffer _wildcards;  // fixed storage for wildcards
@@ -241,6 +257,127 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
   WildcardIndexNode();
 
   ESB_DISABLE_AUTO_COPY(WildcardIndexNode);
+};
+
+/**
+ * An index suitable for performing wildcard matches as described in RFC 2818 and other RFCs.  Wildcard patterns can
+ * have a single '*' which can occur anywhere in the leftmost component of the fqdn (e.g,. "f*.bar.com", "*o.bar.com",
+ * "f*o.bar.com" and "foo.bar.com" are all valid for this index, but patterns like "foo.*.com" or "*o*.bar.com" are not
+ * supported).
+ *
+ * The index also does most-specific matching.  Here 'most-specific' means the match which matches the least number of
+ * characters against the wildcard.  In cases where there are multiple best matches, one will be picked
+ * non-deterministically.
+ *
+ * Wildcard patterns like "*.bar.com" do not match "bar.com".
+ *
+ * RFC 2818 3.1:
+ *
+ * If more than one identity of a given type is present in
+ * the certificate (e.g., more than one dNSName name, a match in any one
+ * of the set is considered acceptable.) Names may contain the wildcard
+ * character * which is considered to match any single domain name
+ * component or component fragment. E.g., *.a.com matches foo.a.com but
+ * not bar.foo.a.com. f*.com matches foo.com but not bar.com.
+ */
+class WildcardIndex : public ESB::EmbeddedMapBase {
+ public:
+  WildcardIndex(ESB::UInt32 numBuckets, ESB::UInt32 numLocks, ESB::Allocator &allocator);
+  virtual ~WildcardIndex();
+
+  /**
+   * Add a new wildcard or exact match pattern to the index
+   *
+   * @param domain The "bar.com" in "f*o.bar.com"
+   * @param wildcard The "f*o" in "f*o.bar.com"
+   * @param value The smart pointer value.  The reference count will be increased by one while it resides in the index.
+   * @param updateIfExists if the domain+wildcard already exists, update the smart pointer to point to the new value
+   * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the domain+wildcard already exists and
+   * updateIfExists is false (the default), another error code otherwise.
+   */
+  ESB::Error insert(const char *domain, const char *wildcard, ESB::SmartPointer &value, bool updateIfExists = false);
+
+  /**
+   * Remove a wildcard or exact match pattern from the index.  If a wildcard is removed, the reference count of the
+   * associated smart pointer will be decremented.
+   *
+   * @param domain The "bar.com" in "f*o.bar.com"
+   * @param wildcard The "f*o" in "f*o.bar.com"
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
+   * otherwise.
+   */
+  ESB::Error remove(const char *domain, const char *wildcard);
+
+  /**
+   * Update the smart pointer value associated with a wildcard or exact match pattern.
+   *
+   * @param domain The "bar.com" in "f*o.bar.com"
+   * @param wildcard The "f*o" in "f*o.bar.com"
+   * @param value The smart pointer value.  The reference count will be increased by one while it resides in the index.
+   * @param old If non-NULL and the wildcard was found in the index, will be set to the previously associated value.
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
+   * otherwise.
+   */
+  ESB::Error update(const char *domain, const char *wildcard, ESB::SmartPointer &value, ESB::SmartPointer *old = NULL);
+
+  /**
+   * Find the smart pointer value associated with a wildcard or exact match pattern - THIS DOES NOT EVALUATE WILDCARD
+   * PATTERNS.
+   *
+   * @param domain The "bar.com" in "f*o.bar.com"
+   * @param wildcard The "f*o" in "f*o.bar.com"
+   * @param value The smart pointer value will be stored here on success.
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
+   * otherwise.
+   */
+  ESB::Error find(const char *domain, const char *wildcard, ESB::SmartPointer &value);
+
+  /**
+   * Evaluate a hostname against all wildcard patterns for the domain and, if any match, return the most specific match.
+   * In the case of a tie (multiple patterns match with the same degree of specificity), the match will be
+   * non-deterministic.
+   *
+   * @param domain The "bar.com" in "f*o.bar.com"
+   * @param hostname The "foo" to match against "f*o.bar.com"
+   * @param value The smart pointer value will be stored here on success.
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if no wildcards in the index matched the hostname, another error
+   * code otherwise.
+   */
+  ESB::Error match(const char *domain, const char *hostname, ESB::SmartPointer &value);
+
+  /**
+   * Remove all wildcards from the index.
+   */
+  inline void clear() {
+    EmbeddedMapBase::clear();  // moves all nodes in _map to the _deadNodes list.
+  }
+
+ private:
+  class WildcardIndexCallbacks : public ESB::EmbeddedMapCallbacks {
+   public:
+    WildcardIndexCallbacks(ESB::Mutex &lock, ESB::EmbeddedList &deadNodes) : _lock(lock), _deadNodes(deadNodes) {}
+    virtual ~WildcardIndexCallbacks(){};
+
+    virtual int compare(const void *f, const void *s) const;
+    virtual ESB::UInt32 hash(const void *key) const;
+    virtual void cleanup(ESB::EmbeddedMapElement *element);
+
+   private:
+    ESB::Mutex &_lock;
+    ESB::EmbeddedList &_deadNodes;
+  };
+
+  inline ESB::Lockable &bucketLock(ESB::UInt32 bucket) const {
+    return 0 == _numBucketLocks ? (ESB::Lockable &)ESB::NullLock::Instance() : _bucketLocks[bucket % _numBucketLocks];
+  }
+
+  ESB::Mutex _deadNodesLock;
+  ESB::EmbeddedList _deadNodes;
+  WildcardIndexCallbacks _callbacks;
+  ESB::UInt32 _numBucketLocks;
+  ESB::ReadWriteLock *_bucketLocks;
+
+  ESB_DISABLE_AUTO_COPY(WildcardIndex);
 };
 
 }  // namespace ES

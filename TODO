@@ -34,6 +34,7 @@ stat:
  - create standalone loadgen to origin tests (3 processes)
 
 tls:
+ - evaluate against https://tools.ietf.org/html/rfc2818
  - revisit HttpClientSocket and HttpServerSocket wantRead and wantWrite:  allow the statemachine to finish the TLS handshake even when the stream is paused.
  - add secure/insecure bit to connected socket log address
  - use password protected private keys

@@ -79,7 +79,21 @@ class ReadWriteLock : public Lockable {
    */
   virtual Error readRelease();
 
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param allocator The source of the object's memory.
+   *  @return The new object or NULL of the memory allocation failed.
+   */
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
+
+  /** Placement new.
+   *
+   *  @param size The size of the object.
+   *  @param lock The source of the object's memory.
+   *  @return The new object or NULL of the memory allocation failed.
+   */
+  inline void *operator new(size_t size, ReadWriteLock *lock) noexcept { return lock; }
 
  private:
   //  Disabled

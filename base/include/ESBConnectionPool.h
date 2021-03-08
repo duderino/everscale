@@ -89,7 +89,7 @@ class ConnectionPool {
   ConnectionPool &operator=(const ConnectionPool &);
 
   // Callbacks for the hash table-based connection pool
-  class SocketAddressCallbacks : public ESB::SharedEmbeddedMap::Callbacks {
+  class SocketAddressCallbacks : public ESB::EmbeddedMapCallbacks {
    public:
     SocketAddressCallbacks(ESB::Allocator &allocator);
 

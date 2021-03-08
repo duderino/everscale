@@ -15,16 +15,16 @@
 #include <ESBSmartPointerDebugger.h>
 #endif
 
-#define PTR_INC()                                   \
-  if (_ptr) {                                       \
-    _ptr->inc();                                    \
-    SmartPointerDebugger::Instance()->insert(_ptr); \
+#define PTR_INC()                                        \
+  if (_ptr) {                                            \
+    _ptr->inc();                                         \
+    ESB::SmartPointerDebugger::Instance()->insert(_ptr); \
   }
 
-#define PTR_DEC()                                   \
-  if (_ptr && 0 == _ptr->dec()) {                   \
-    SmartPointerDebugger::Instance()->remove(_ptr); \
-    destroy();                                      \
+#define PTR_DEC()                                        \
+  if (_ptr && 0 == _ptr->dec()) {                        \
+    ESB::SmartPointerDebugger::Instance()->remove(_ptr); \
+    destroy();                                           \
   }
 
 #else /* ! defined USE_SMART_POINTER_DEBUGGER */

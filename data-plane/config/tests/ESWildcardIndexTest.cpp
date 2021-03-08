@@ -292,6 +292,48 @@ TEST(WildcardIndexNodeTest, RemoveLast) {
   EXPECT_EQ(destructions + 3, Destructions);
 }
 
+TEST(WildcardIndexNodeTest, Empty) {
+  char key[ESB_MAX_HOSTNAME + 1];
+  memset(key, 'a', sizeof(key));
+  key[ESB_MAX_HOSTNAME] = 0;
+  WildcardIndexNode *node = WildcardIndexNode::Create(key);
+
+  char wildcard[ESB_UINT8_MAX + 1];
+  memset(wildcard, 'b', sizeof(wildcard));
+  wildcard[ESB_UINT8_MAX] = 0;
+
+  int cleanups = TestCleanupHandler.calls();
+  int destructions = Destructions;
+
+  EXPECT_TRUE(node->empty());
+
+  {
+    SmartPointer foo = new (SystemAllocator::Instance()) TestObject(1);
+    SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
+    SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
+    SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
+
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", qux));
+  }
+
+  node->remove("foo");
+  EXPECT_FALSE(node->empty());
+  node->remove("bar");
+  EXPECT_FALSE(node->empty());
+  node->remove("qux");
+  EXPECT_FALSE(node->empty());
+  node->remove(wildcard);
+  EXPECT_TRUE(node->empty());
+
+  delete node;
+
+  EXPECT_EQ(cleanups + 4, TestCleanupHandler.calls());
+  EXPECT_EQ(destructions + 4, Destructions);
+}
+
 TEST(WildcardIndexNodeTest, Clear) {
   WildcardIndexNode *node = WildcardIndexNode::Create("foo.bar.baz");
 
@@ -751,10 +793,13 @@ TEST(WildcardIndexNodeTest, Iterate) {
   EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
   EXPECT_EQ(2, ptr->value());
 
-  // insertion order is different here than iteration order.
-  // The large key (buffer) is inserted into an overflow area
-  // The the subsequent key (baz) is inserted into the regular area
-  // iteration iterates through the regular area first, then considers the overflow area.
+  EXPECT_EQ(ESB_SUCCESS, node->next(&it));
+  EXPECT_FALSE(node->last(it));
+  EXPECT_EQ(ESB_SUCCESS, node->key(it, &key, &keySize));
+  EXPECT_EQ(sizeof(buffer), keySize);
+  EXPECT_TRUE(0 == memcmp(key, buffer, sizeof(buffer)));
+  EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
+  EXPECT_EQ(4, ptr->value());
 
   EXPECT_EQ(ESB_SUCCESS, node->next(&it));
   EXPECT_FALSE(node->last(it));
@@ -763,14 +808,6 @@ TEST(WildcardIndexNodeTest, Iterate) {
   EXPECT_TRUE(0 == memcmp(key, "baz", 3));
   EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
   EXPECT_EQ(3, ptr->value());
-
-  EXPECT_EQ(ESB_SUCCESS, node->next(&it));
-  EXPECT_FALSE(node->last(it));
-  EXPECT_EQ(ESB_SUCCESS, node->key(it, &key, &keySize));
-  EXPECT_EQ(sizeof(buffer), keySize);
-  EXPECT_TRUE(0 == memcmp(key, buffer, sizeof(buffer)));
-  EXPECT_EQ(ESB_SUCCESS, node->value(it, ptr));
-  EXPECT_EQ(4, ptr->value());
 
   // end of iteration
 
@@ -781,4 +818,133 @@ TEST(WildcardIndexNodeTest, Iterate) {
   EXPECT_EQ(ESB_CANNOT_FIND, node->value(it, ptr));
 
   delete node;
+}
+
+class WildcardIndexTest : public ::testing::Test {
+ public:
+  WildcardIndexTest() : _index(42, 3, ESB::SystemAllocator::Instance()) {}
+
+  virtual void SetUp() {
+    TestObjectPointer one = new (SystemAllocator::Instance()) TestObject(1);
+    TestObjectPointer two = new (SystemAllocator::Instance()) TestObject(2);
+    TestObjectPointer three = new (SystemAllocator::Instance()) TestObject(3);
+    TestObjectPointer four = new (SystemAllocator::Instance()) TestObject(4);
+    TestObjectPointer five = new (SystemAllocator::Instance()) TestObject(5);
+
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "foo", one));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "b*r", two));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "b*", three));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d2.com", "foo", four));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d2.com", "q*x", five));
+  }
+
+  virtual void TearDown() { _index.clear(); }
+
+ protected:
+  WildcardIndex _index;
+};
+
+TEST_F(WildcardIndexTest, Find) {
+  TestObjectPointer value;
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "foo", value));
+  EXPECT_EQ(1, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*r", value));
+  EXPECT_EQ(2, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*", value));
+  EXPECT_EQ(3, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "foo", value));
+  EXPECT_EQ(4, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "q*x", value));
+  EXPECT_EQ(5, value->value());
+}
+
+TEST_F(WildcardIndexTest, Match) {
+  TestObjectPointer value;
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "foo", value));
+  EXPECT_EQ(1, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "bar", value));
+  EXPECT_EQ(2, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "baz", value));
+  EXPECT_EQ(3, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "foo", value));
+  EXPECT_EQ(4, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "qux", value));
+  EXPECT_EQ(5, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "quux", value));
+  EXPECT_EQ(5, value->value());
+}
+
+TEST_F(WildcardIndexTest, Remove) {
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "foo"));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "b*r"));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "b*"));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d2.com", "foo"));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d2.com", "q*x"));
+
+  TestObjectPointer value;
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "foo", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*r", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "foo", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "q*x", value));
+}
+
+TEST_F(WildcardIndexTest, Update) {
+  {
+    TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
+    TestObjectPointer old;
+
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "foo", value, &old));
+    EXPECT_EQ(1, old->value());
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "b*r", value, &old));
+    EXPECT_EQ(2, old->value());
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "b*", value, &old));
+    EXPECT_EQ(3, old->value());
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d2.com", "foo", value, &old));
+    EXPECT_EQ(4, old->value());
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d2.com", "q*x", value, &old));
+    EXPECT_EQ(5, old->value());
+  }
+
+  TestObjectPointer value;
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "foo", value));
+  EXPECT_EQ(42, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*r", value));
+  EXPECT_EQ(42, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*", value));
+  EXPECT_EQ(42, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "foo", value));
+  EXPECT_EQ(42, value->value());
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "q*x", value));
+  EXPECT_EQ(42, value->value());
+}
+
+TEST_F(WildcardIndexTest, UpdateMiss) {
+  TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
+  TestObjectPointer old;
+
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.update("d1.com", "qux", value, &old));
+  EXPECT_TRUE(old.isNull());
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.update("d3.com", "foo", value, &old));
+  EXPECT_TRUE(old.isNull());
+}
+
+TEST_F(WildcardIndexTest, Clear) {
+  _index.clear();
+
+  TestObjectPointer value;
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "foo", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*r", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "foo", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "q*x", value));
+}
+
+TEST_F(WildcardIndexTest, Uniqueness) {
+  TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "foo", value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "b*r", value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "b*", value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d2.com", "foo", value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d2.com", "q*x", value));
 }

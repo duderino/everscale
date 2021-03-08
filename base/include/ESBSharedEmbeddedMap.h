@@ -25,29 +25,70 @@
 #include <ESBSharedInt.h>
 #endif
 
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
+#endif
+
 namespace ESB {
 
-/** A hash table supporting concurrent access
+/**
+ * All the callbacks needed to customize an embedded map
+ */
+class EmbeddedMapCallbacks : public HashComparator {
+ public:
+  /**
+   * Default constructor
+   */
+  EmbeddedMapCallbacks();
+
+  virtual ~EmbeddedMapCallbacks();
+
+  virtual void cleanup(EmbeddedMapElement *element) = 0;
+};
+
+/**
+ * Not intended for direct use.
+ */
+class EmbeddedMapBase {
+ public:
+  virtual ~EmbeddedMapBase();
+
+ protected:
+  EmbeddedMapBase(EmbeddedMapCallbacks &callbacks, UInt32 numLocks, Allocator &allocator);
+
+  inline UInt32 bucket(const void *key) const { return _callbacks.hash(key) % _numBuckets; }
+
+  EmbeddedMapElement *find(ESB::UInt32 bucket, const void *key);
+
+  Error insert(ESB::UInt32 bucket, EmbeddedMapElement *value);
+
+  EmbeddedMapElement *remove(ESB::UInt32 bucket, const void *key);
+
+  inline void removeElement(ESB::UInt32 bucket, EmbeddedMapElement *element) {
+    if (_buckets) {
+      _buckets[bucket].remove(element);
+    }
+  }
+
+  void clear();
+
+  bool validate(double *chiSquared) const;
+
+  SharedInt _numElements;
+  UInt32 _numBuckets;
+  EmbeddedMapCallbacks &_callbacks;
+  EmbeddedList *_buckets;
+  Allocator &_allocator;
+
+  ESB_DISABLE_AUTO_COPY(EmbeddedMapBase);
+};
+
+/** A hash table supporting concurrent access.  Uniqueness not enforced.
  *
  *  @ingroup util
  */
-class SharedEmbeddedMap {
+class SharedEmbeddedMap : public EmbeddedMapBase {
  public:
-  /**
-   * All the callbacks needed to customize a SharedEmbeddedMap
-   */
-  class Callbacks : public HashComparator {
-   public:
-    /**
-     * Default constructor
-     */
-    Callbacks();
-
-    virtual ~Callbacks();
-
-    virtual void cleanup(EmbeddedMapElement *element) = 0;
-  };
-
   /** Constructor.
    *
    * @param callbacks element comparison and cleanup functions.
@@ -55,16 +96,12 @@ class SharedEmbeddedMap {
    * @param numLocks more locks, less contention, more memory.  if 0, no
    * internal locking will be performed
    */
-  SharedEmbeddedMap(Callbacks &callbacks, UInt32 numBuckets, UInt32 numLocks,
+  SharedEmbeddedMap(EmbeddedMapCallbacks &callbacks, UInt32 numBuckets, UInt32 numLocks,
                     Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.  No cleanup handlers are called
    */
   virtual ~SharedEmbeddedMap();
-
-  /** Remove all elements from the map.
-   */
-  void clear();
 
   /** Insert a key/value pair into the map.  O(1).
    *
@@ -88,9 +125,11 @@ class SharedEmbeddedMap {
    *  @return The value associated with the first occurrence of the key, or NULL
    * if the key couldn't be found.
    */
-  const EmbeddedMapElement *find(const void *key) const;
+  const EmbeddedMapElement *find(const void *key);
 
   inline int size() const { return _numElements.get(); }
+
+  inline void clear() { EmbeddedMapBase::clear(); }
 
   /** Placement new.
    *
@@ -106,22 +145,17 @@ class SharedEmbeddedMap {
    * here if the function returns true.
    * @return true if the map is valid, false otherwise
    */
-  bool validate(double *chiSquared) const;
+  inline bool validate(double *chiSquared) const { return EmbeddedMapBase::validate(chiSquared); }
 
  private:
-  // Disabled
-  SharedEmbeddedMap(const SharedEmbeddedMap &);
-  SharedEmbeddedMap &operator=(const SharedEmbeddedMap &);
+  inline ESB::Lockable &bucketLock(ESB::UInt32 bucket) const {
+    return 0 == _numBucketLocks ? (ESB::Lockable &)ESB::NullLock::Instance() : _bucketLocks[bucket % _numBucketLocks];
+  }
 
-  Lockable &bucketLock(ESB::UInt32 bucket) const;
+  ESB::UInt32 _numBucketLocks;
+  ESB::Mutex *_bucketLocks;
 
-  SharedInt _numElements;
-  UInt32 _numBuckets;
-  UInt32 _numLocks;
-  Callbacks &_callbacks;
-  EmbeddedList *_buckets;
-  mutable Mutex *_locks;
-  Allocator &_allocator;
+  ESB_DISABLE_AUTO_COPY(SharedEmbeddedMap);
 };
 
 }  // namespace ESB
