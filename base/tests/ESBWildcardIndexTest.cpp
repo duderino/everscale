@@ -1,5 +1,5 @@
-#ifndef ES_WILDCARD_INDEX_H
-#include <ESWildcardIndex.h>
+#ifndef ESB_WILDCARD_INDEX_H
+#include <ESBWildcardIndex.h>
 #endif
 
 #ifndef ESB_TYPES_H
@@ -8,16 +8,16 @@
 
 #include <gtest/gtest.h>
 
-namespace ES {
-class TestCleanupHandler : public ESB::CleanupHandler {
+namespace ESB {
+class TestCleanupHandler : public CleanupHandler {
  public:
   TestCleanupHandler() : _calls(0) {}
   virtual ~TestCleanupHandler() {}
 
-  virtual void destroy(ESB::Object *object) {
+  virtual void destroy(Object *object) {
     ++_calls;
     object->~Object();
-    ESB::SystemAllocator::Instance().deallocate(object);
+    SystemAllocator::Instance().deallocate(object);
   }
 
   inline int calls() const { return _calls; }
@@ -31,14 +31,14 @@ class TestCleanupHandler : public ESB::CleanupHandler {
 static TestCleanupHandler TestCleanupHandler;
 static int Destructions = 0;
 
-class TestObject : public ESB::ReferenceCount {
+class TestObject : public ReferenceCount {
  public:
   TestObject(int value) : _value(value) {}
   virtual ~TestObject() { Destructions++; }
 
   inline int value() { return _value; }
 
-  virtual ESB::CleanupHandler *cleanupHandler() { return &TestCleanupHandler; }
+  virtual CleanupHandler *cleanupHandler() { return &TestCleanupHandler; }
 
  private:
   int _value;
@@ -46,10 +46,9 @@ class TestObject : public ESB::ReferenceCount {
   ESB_DISABLE_AUTO_COPY(TestObject);
 };
 
-ESB_SMART_POINTER(TestObject, TestObjectPointer, ESB::SmartPointer);
-}  // namespace ES
+ESB_SMART_POINTER(TestObject, TestObjectPointer, SmartPointer);
+}  // namespace ESB
 
-using namespace ES;
 using namespace ESB;
 
 TEST(WildcardIndexNodeTest, Find) {

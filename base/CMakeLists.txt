@@ -14,7 +14,7 @@ set(SOURCE_FILES
         source/ESBClientTLSSocket.cpp
         source/ESBCommand.cpp
         source/ESBCommandThread.cpp
-	source/ESBCompactStringMap.cpp
+        source/ESBCompactStringMap.cpp
         source/ESBComparator.cpp
         source/ESBConnectedSocket.cpp
         source/ESBConnectionPool.cpp
@@ -72,6 +72,7 @@ set(SOURCE_FILES
         source/ESBTimeSourceCache.cpp
         source/ESBTimeSource.cpp
         source/ESBTLSSocket.cpp
+        source/ESBWildcardIndex.cpp
         )
 
 add_library(base STATIC ${SOURCE_FILES})
@@ -126,6 +127,7 @@ add_gtest(flat-timing-wheel-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE
 add_gtest(compact-string-map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBCompactStringMapTest.cpp)
 add_gtest(string-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBStringTest.cpp)
 add_gtest(smart-pointer-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest2.cpp)
+add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBWildcardIndexTest.cpp)
 
 # Generate certs and private keys
 

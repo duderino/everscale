@@ -1,5 +1,5 @@
-#ifndef ES_WILDCARD_INDEX_H
-#define ES_WILDCARD_INDEX_H
+#ifndef ESB_WILDCARD_INDEX_H
+#define ESB_WILDCARD_INDEX_H
 
 #ifndef ESB_TYPES_H
 #include <ESBTypes.h>
@@ -37,7 +37,7 @@
 #include <ESBReadWriteLock.h>
 #endif
 
-namespace ES {
+namespace ESB {
 
 /**
  * WildcardIndexNodes are internal details of WildcardIndex and you should probably use WildcardIndex instead.
@@ -45,14 +45,14 @@ namespace ES {
  * components of the fqdn (e.g., the wildcard node can associate "foo", "f*", "*", "*o", "f*o", etc with "bar.com" and
  * can use any of these to match against "foo.bar.com").
  */
-class WildcardIndexNode : public ESB::EmbeddedMapElement {
+class WildcardIndexNode : public EmbeddedMapElement {
  public:
-  static WildcardIndexNode *Create(const char *key, ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
-  static WildcardIndexNode *Recycle(const char *key, ESB::EmbeddedListElement *element);
+  static WildcardIndexNode *Create(const char *key, Allocator &allocator = SystemAllocator::Instance());
+  static WildcardIndexNode *Recycle(const char *key, EmbeddedListElement *element);
 
   virtual ~WildcardIndexNode();
 
-  virtual ESB::CleanupHandler *cleanupHandler();
+  virtual CleanupHandler *cleanupHandler();
 
   virtual const void *key() const;
 
@@ -70,7 +70,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the key already exists and updateIfExists is false,
    * another error code otherwise.
    */
-  inline ESB::Error insert(const char *key, ESB::SmartPointer &value, bool updateIfExists = false) {
+  inline Error insert(const char *key, SmartPointer &value, bool updateIfExists = false) {
     return key ? insert(key, strlen(key), value, updateIfExists) : ESB_NULL_POINTER;
   }
 
@@ -85,7 +85,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the key already exists and updateIfExists is false,
    * another error code otherwise.
    */
-  ESB::Error insert(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value, bool updateIfExists = false);
+  Error insert(const char *key, UInt32 keySize, SmartPointer &value, bool updateIfExists = false);
 
   /**
    * Remove a string key from the map.  O(n)
@@ -93,7 +93,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param key The NULL-terminated string key to remove
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  inline ESB::Error remove(const char *key) { return key ? remove(key, strlen(key)) : ESB_NULL_POINTER; }
+  inline Error remove(const char *key) { return key ? remove(key, strlen(key)) : ESB_NULL_POINTER; }
 
   /**
    * Remove a string key from the map.  O(n)
@@ -102,7 +102,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param keySize The size (length) of the string key
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  ESB::Error remove(const char *key, ESB::UInt32 keySize);
+  Error remove(const char *key, UInt32 keySize);
 
   /**
    * Return the value associated with a string key, if it can be found.  O(n)
@@ -111,7 +111,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param value Will point to the value if found
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  inline ESB::Error find(const char *key, ESB::SmartPointer &value) const {
+  inline Error find(const char *key, SmartPointer &value) const {
     return key ? find(key, strlen(key), value) : ESB_NULL_POINTER;
   }
 
@@ -123,7 +123,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param value Will point to the value if found
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  ESB::Error find(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value) const;
+  Error find(const char *key, UInt32 keySize, SmartPointer &value) const;
 
   /**
    * Update a string key with a new pointer.  O(n)
@@ -134,7 +134,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param old If not NULL, set to the key's associated value before the update.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key doesn't exist, another error code otherwise.
    */
-  inline ESB::Error update(const char *key, ESB::SmartPointer &value, ESB::SmartPointer *old) {
+  inline Error update(const char *key, SmartPointer &value, SmartPointer *old) {
     return key ? update(key, strlen(key), value, old) : ESB_NULL_POINTER;
   }
 
@@ -147,7 +147,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param old If not NULL, set to the key's associated value before the update.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key doesn't exist, another error code otherwise.
    */
-  ESB::Error update(const char *key, ESB::UInt32 keySize, ESB::SmartPointer &value, ESB::SmartPointer *old);
+  Error update(const char *key, UInt32 keySize, SmartPointer &value, SmartPointer *old);
 
   /** Remove all key/value pairs from the map.  O(1).
    */
@@ -172,7 +172,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param it The current position in the iteration.
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
    */
-  ESB::Error next(const Iterator **it) const;
+  Error next(const Iterator **it) const;
 
   /**
    * Determine whether the iteration has ended.
@@ -190,7 +190,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param keySize The size of the key
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
    */
-  inline ESB::Error key(const Iterator *it, const char **key, ESB::UInt32 *keySize) const {
+  inline Error key(const Iterator *it, const char **key, UInt32 *keySize) const {
     if (!key || !keySize || !it) {
       return ESB_NULL_POINTER;
     }
@@ -201,7 +201,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
       return ESB_CANNOT_FIND;
     }
 
-    ESB::UInt8 size = (ESB::UInt8)*p++;
+    UInt8 size = (UInt8)*p++;
     *keySize = size;
     *key = (const char *)p;
     return ESB_SUCCESS;
@@ -214,15 +214,15 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    * @param value The value associated with the iterator
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND at the end of the iteration, another error code otherwise.
    */
-  ESB::Error value(const Iterator *it, ESB::SmartPointer &value) const {
+  Error value(const Iterator *it, SmartPointer &value) const {
     const unsigned char *p = it;
 
     if (!*p) {
       return ESB_CANNOT_FIND;
     }
 
-    ESB::UInt8 size = *p;
-    value = (ESB::ReferenceCount *)ESB::ReadPointer(p + size + 1);
+    UInt8 size = *p;
+    value = (ReferenceCount *)ReadPointer(p + size + 1);
     return ESB_SUCCESS;
   }
 
@@ -234,7 +234,7 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
    *  @param allocator The source of the object's memory.
    *  @return Memory for the new object or NULL if the memory allocation failed.
    */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
+  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
   /** Placement new
    *
@@ -245,13 +245,13 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
   inline void *operator new(size_t size, unsigned char *block) noexcept { return block; }
 
  private:
-  unsigned char *find(const ESB::SizedBuffer &buffer, const char *key, ESB::UInt32 keySize, bool *exists) const;
-  void clear(const ESB::SizedBuffer &buffer);
+  unsigned char *find(const SizedBuffer &buffer, const char *key, UInt32 keySize, bool *exists) const;
+  void clear(const SizedBuffer &buffer);
   static WildcardIndexNode *Create(const char *key, int keyLength, unsigned char *block);
 
-  char *_key;                   // NULL terminated, fixed.
-  ESB::SizedBuffer _wildcards;  // fixed storage for wildcards
-  ESB::SizedBuffer _extra;      // growable storage for additional wildcards
+  char *_key;              // NULL terminated, fixed.
+  SizedBuffer _wildcards;  // fixed storage for wildcards
+  SizedBuffer _extra;      // growable storage for additional wildcards
 
   // must use static Create().
   WildcardIndexNode();
@@ -280,9 +280,9 @@ class WildcardIndexNode : public ESB::EmbeddedMapElement {
  * component or component fragment. E.g., *.a.com matches foo.a.com but
  * not bar.foo.a.com. f*.com matches foo.com but not bar.com.
  */
-class WildcardIndex : public ESB::EmbeddedMapBase {
+class WildcardIndex : public EmbeddedMapBase {
  public:
-  WildcardIndex(ESB::UInt32 numBuckets, ESB::UInt32 numLocks, ESB::Allocator &allocator);
+  WildcardIndex(UInt32 numBuckets, UInt32 numLocks, Allocator &allocator);
   virtual ~WildcardIndex();
 
   /**
@@ -295,7 +295,7 @@ class WildcardIndex : public ESB::EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the domain+wildcard already exists and
    * updateIfExists is false (the default), another error code otherwise.
    */
-  ESB::Error insert(const char *domain, const char *wildcard, ESB::SmartPointer &value, bool updateIfExists = false);
+  Error insert(const char *domain, const char *wildcard, SmartPointer &value, bool updateIfExists = false);
 
   /**
    * Remove a wildcard or exact match pattern from the index.  If a wildcard is removed, the reference count of the
@@ -306,7 +306,7 @@ class WildcardIndex : public ESB::EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
    * otherwise.
    */
-  ESB::Error remove(const char *domain, const char *wildcard);
+  Error remove(const char *domain, const char *wildcard);
 
   /**
    * Update the smart pointer value associated with a wildcard or exact match pattern.
@@ -318,7 +318,7 @@ class WildcardIndex : public ESB::EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
    * otherwise.
    */
-  ESB::Error update(const char *domain, const char *wildcard, ESB::SmartPointer &value, ESB::SmartPointer *old = NULL);
+  Error update(const char *domain, const char *wildcard, SmartPointer &value, SmartPointer *old = NULL);
 
   /**
    * Find the smart pointer value associated with a wildcard or exact match pattern - THIS DOES NOT EVALUATE WILDCARD
@@ -330,7 +330,7 @@ class WildcardIndex : public ESB::EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
    * otherwise.
    */
-  ESB::Error find(const char *domain, const char *wildcard, ESB::SmartPointer &value);
+  Error find(const char *domain, const char *wildcard, SmartPointer &value);
 
   /**
    * Evaluate a hostname against all wildcard patterns for the domain and, if any match, return the most specific match.
@@ -343,7 +343,7 @@ class WildcardIndex : public ESB::EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if no wildcards in the index matched the hostname, another error
    * code otherwise.
    */
-  ESB::Error match(const char *domain, const char *hostname, ESB::SmartPointer &value);
+  Error match(const char *domain, const char *hostname, SmartPointer &value);
 
   /**
    * Remove all wildcards from the index.
@@ -353,33 +353,33 @@ class WildcardIndex : public ESB::EmbeddedMapBase {
   }
 
  private:
-  class WildcardIndexCallbacks : public ESB::EmbeddedMapCallbacks {
+  class WildcardIndexCallbacks : public EmbeddedMapCallbacks {
    public:
-    WildcardIndexCallbacks(ESB::Mutex &lock, ESB::EmbeddedList &deadNodes) : _lock(lock), _deadNodes(deadNodes) {}
+    WildcardIndexCallbacks(Mutex &lock, EmbeddedList &deadNodes) : _lock(lock), _deadNodes(deadNodes) {}
     virtual ~WildcardIndexCallbacks(){};
 
     virtual int compare(const void *f, const void *s) const;
-    virtual ESB::UInt32 hash(const void *key) const;
-    virtual void cleanup(ESB::EmbeddedMapElement *element);
+    virtual UInt32 hash(const void *key) const;
+    virtual void cleanup(EmbeddedMapElement *element);
 
    private:
-    ESB::Mutex &_lock;
-    ESB::EmbeddedList &_deadNodes;
+    Mutex &_lock;
+    EmbeddedList &_deadNodes;
   };
 
-  inline ESB::Lockable &bucketLock(ESB::UInt32 bucket) const {
-    return 0 == _numBucketLocks ? (ESB::Lockable &)ESB::NullLock::Instance() : _bucketLocks[bucket % _numBucketLocks];
+  inline Lockable &bucketLock(UInt32 bucket) const {
+    return 0 == _numBucketLocks ? (Lockable &)NullLock::Instance() : _bucketLocks[bucket % _numBucketLocks];
   }
 
-  ESB::Mutex _deadNodesLock;
-  ESB::EmbeddedList _deadNodes;
+  Mutex _deadNodesLock;
+  EmbeddedList _deadNodes;
   WildcardIndexCallbacks _callbacks;
-  ESB::UInt32 _numBucketLocks;
-  ESB::ReadWriteLock *_bucketLocks;
+  UInt32 _numBucketLocks;
+  ReadWriteLock *_bucketLocks;
 
   ESB_DISABLE_AUTO_COPY(WildcardIndex);
 };
 
-}  // namespace ES
+}  // namespace ESB
 
 #endif

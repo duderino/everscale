@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-        source/ESWildcardIndex.cpp
         source/ESConfig.cpp
         source/ESServiceEntry.cpp
         source/ESDestinationRule.cpp
@@ -39,5 +38,4 @@ SET(TEST_LIBS
         base
         )
 
-add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESWildcardIndexTest.cpp)
 
