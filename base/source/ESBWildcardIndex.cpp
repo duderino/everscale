@@ -532,7 +532,7 @@ Error WildcardIndex::insert(const char *domain, const char *wildcard, UInt32 wil
   return ESB_SUCCESS;
 }
 
-Error WildcardIndex::remove(const char *domain, const char *wildcard) {
+Error WildcardIndex::remove(const char *domain, const char *wildcard, UInt32 wildcardSize) {
   if (!domain || !wildcard) {
     return ESB_NULL_POINTER;
   }
@@ -549,7 +549,7 @@ Error WildcardIndex::remove(const char *domain, const char *wildcard) {
     return ESB_CANNOT_FIND;
   }
 
-  Error error = node->remove(wildcard);
+  Error error = node->remove(wildcard, wildcardSize);
   if (ESB_SUCCESS != error) {
     return error;
   }
@@ -562,7 +562,8 @@ Error WildcardIndex::remove(const char *domain, const char *wildcard) {
   return ESB_SUCCESS;
 }
 
-Error WildcardIndex::update(const char *domain, const char *wildcard, SmartPointer &value, SmartPointer *old) {
+Error WildcardIndex::update(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value,
+                            SmartPointer *old) {
   if (!domain || !wildcard) {
     return ESB_NULL_POINTER;
   }
@@ -575,10 +576,10 @@ Error WildcardIndex::update(const char *domain, const char *wildcard, SmartPoint
   WriteScopeLock(bucketLock(bucket));
   WildcardIndexNode *node = (WildcardIndexNode *)EmbeddedMapBase::find(bucket, domain);
 
-  return node ? node->update(wildcard, value, old) : ESB_CANNOT_FIND;
+  return node ? node->update(wildcard, wildcardSize, value, old) : ESB_CANNOT_FIND;
 }
 
-Error WildcardIndex::find(const char *domain, const char *wildcard, SmartPointer &value) {
+Error WildcardIndex::find(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value) {
   if (!domain || !wildcard) {
     return ESB_NULL_POINTER;
   }
@@ -591,10 +592,10 @@ Error WildcardIndex::find(const char *domain, const char *wildcard, SmartPointer
   ReadScopeLock(bucketLock(bucket));
   WildcardIndexNode *node = (WildcardIndexNode *)EmbeddedMapBase::find(bucket, domain);
 
-  return node ? node->find(wildcard, value) : ESB_CANNOT_FIND;
+  return node ? node->find(wildcard, wildcardSize, value) : ESB_CANNOT_FIND;
 }
 
-Error WildcardIndex::match(const char *domain, const char *hostname, SmartPointer &value) {
+Error WildcardIndex::match(const char *domain, const char *hostname, UInt32 hostnameSize, SmartPointer &value) {
   if (!domain || !hostname) {
     return ESB_NULL_POINTER;
   }
@@ -614,7 +615,6 @@ Error WildcardIndex::match(const char *domain, const char *hostname, SmartPointe
   const WildcardIndexNode::Iterator *bestMatchIterator;
   int bestMatchValue = -1;
   const WildcardIndexNode::Iterator *it = node->first();
-  UInt32 hostnameLength = strlen(hostname);
 
   while (true) {
     if (node->last(it)) {
@@ -625,7 +625,7 @@ Error WildcardIndex::match(const char *domain, const char *hostname, SmartPointe
     UInt32 wildcardSize;
 
     node->key(it, &wildcard, &wildcardSize);
-    int matchValue = StringWildcardMatch(wildcard, wildcardSize, hostname, hostnameLength);
+    int matchValue = StringWildcardMatch(wildcard, wildcardSize, hostname, hostnameSize);
 
     if (0 == matchValue) {
       // exact match

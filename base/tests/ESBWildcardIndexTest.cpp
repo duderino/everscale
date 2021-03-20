@@ -62,20 +62,20 @@ TEST(WildcardIndexNodeTest, Find) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 1);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 2);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 3);
 
     EXPECT_EQ(cleanups, TestCleanupHandler.calls());
@@ -94,9 +94,8 @@ TEST(WildcardIndexNodeTest, EnforceUnique) {
   key[ESB_MAX_HOSTNAME] = 0;
   WildcardIndexNode *node = WildcardIndexNode::Create(key);
 
-  char wildcard[ESB_UINT8_MAX + 1];
+  char wildcard[ESB_UINT8_MAX];
   memset(wildcard, 'b', sizeof(wildcard));
-  wildcard[ESB_UINT8_MAX] = 0;
 
   int cleanups = TestCleanupHandler.calls();
   int destructions = Destructions;
@@ -107,15 +106,15 @@ TEST(WildcardIndexNodeTest, EnforceUnique) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, baz));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", qux));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, sizeof(wildcard), baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", 3, qux));
 
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("foo", foo));
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("bar", bar));
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert(wildcard, baz));
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("qux", qux));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert(wildcard, sizeof(wildcard), baz));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("qux", 3, qux));
   }
 
   delete node;
@@ -135,9 +134,9 @@ TEST(WildcardIndexNodeTest, Create) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   EXPECT_EQ(cleanups, TestCleanupHandler.calls());
@@ -148,9 +147,9 @@ TEST(WildcardIndexNodeTest, Create) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(5);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(6);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo, true));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar, true));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz, true));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo, true));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar, true));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz, true));
   }
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
@@ -158,13 +157,13 @@ TEST(WildcardIndexNodeTest, Create) {
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 5);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 6);
   }
 
@@ -188,24 +187,24 @@ TEST(WildcardIndexNodeTest, RemoveFirst) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
-  node->remove("foo");
+  node->remove("foo", 3);
 
   EXPECT_EQ(cleanups + 1, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 1, Destructions);
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("foo", ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("foo", 3, ptr));
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 2);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 3);
   }
 
@@ -226,24 +225,24 @@ TEST(WildcardIndexNodeTest, RemoveMiddle) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
-  node->remove("bar");
+  node->remove("bar", 3);
 
   EXPECT_EQ(cleanups + 1, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 1, Destructions);
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 1);
 
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("bar", ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("bar", 3, ptr));
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 3);
   }
 
@@ -264,25 +263,25 @@ TEST(WildcardIndexNodeTest, RemoveLast) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
-  node->remove("baz");
+  node->remove("baz", 3);
 
   EXPECT_EQ(cleanups + 1, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 1, Destructions);
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 1);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 2);
 
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", 3, ptr));
   }
 
   delete node;
@@ -297,9 +296,8 @@ TEST(WildcardIndexNodeTest, Empty) {
   key[ESB_MAX_HOSTNAME] = 0;
   WildcardIndexNode *node = WildcardIndexNode::Create(key);
 
-  char wildcard[ESB_UINT8_MAX + 1];
+  char wildcard[ESB_UINT8_MAX];
   memset(wildcard, 'b', sizeof(wildcard));
-  wildcard[ESB_UINT8_MAX] = 0;
 
   int cleanups = TestCleanupHandler.calls();
   int destructions = Destructions;
@@ -312,19 +310,19 @@ TEST(WildcardIndexNodeTest, Empty) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, baz));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", qux));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, sizeof(wildcard), baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", 3, qux));
   }
 
-  node->remove("foo");
+  node->remove("foo", 3);
   EXPECT_FALSE(node->empty());
-  node->remove("bar");
+  node->remove("bar", 3);
   EXPECT_FALSE(node->empty());
-  node->remove("qux");
+  node->remove("qux", 3);
   EXPECT_FALSE(node->empty());
-  node->remove(wildcard);
+  node->remove(wildcard, sizeof(wildcard));
   EXPECT_TRUE(node->empty());
 
   delete node;
@@ -344,9 +342,9 @@ TEST(WildcardIndexNodeTest, Clear) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   EXPECT_EQ(cleanups, TestCleanupHandler.calls());
@@ -359,9 +357,9 @@ TEST(WildcardIndexNodeTest, Clear) {
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("foo", ptr));
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("bar", ptr));
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("foo", 3, ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("bar", 3, ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", 3, ptr));
   }
 
   delete node;
@@ -384,10 +382,10 @@ TEST(WildcardIndexNodeTest, ClearLarge) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
     EXPECT_EQ(ESB_SUCCESS, node->insert(buffer, sizeof(buffer), qux));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   EXPECT_EQ(cleanups, TestCleanupHandler.calls());
@@ -400,9 +398,9 @@ TEST(WildcardIndexNodeTest, ClearLarge) {
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("foo", ptr));
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("bar", ptr));
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("foo", 3, ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("bar", 3, ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", 3, ptr));
     EXPECT_EQ(ESB_CANNOT_FIND, node->find(buffer, sizeof(buffer), ptr));
   }
 
@@ -426,20 +424,20 @@ TEST(WildcardIndexNodeTest, LargeKey) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 1);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 2);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 3);
   }
 
@@ -458,9 +456,8 @@ TEST(WildcardIndexNodeTest, LargeKeyAndWildcard) {
   key[ESB_MAX_HOSTNAME] = 0;
   WildcardIndexNode *node = WildcardIndexNode::Create(key);
 
-  char wildcard[ESB_UINT8_MAX + 1];
+  char wildcard[ESB_UINT8_MAX];
   memset(wildcard, 'b', sizeof(wildcard));
-  wildcard[ESB_UINT8_MAX] = 0;
 
   int cleanups = TestCleanupHandler.calls();
   int destructions = Destructions;
@@ -471,29 +468,29 @@ TEST(WildcardIndexNodeTest, LargeKeyAndWildcard) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, baz));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", qux));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, sizeof(wildcard), baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", 3, qux));
 
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("foo", foo));
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("bar", bar));
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert(wildcard, baz));
-    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("qux", qux));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert(wildcard, sizeof(wildcard), baz));
+    EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("qux", 3, qux));
   }
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 1);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 2);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find(wildcard, ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find(wildcard, sizeof(wildcard), ptr));
     EXPECT_EQ(ptr->value(), 3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("qux", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("qux", 3, ptr));
     EXPECT_EQ(ptr->value(), 4);
   }
 
@@ -507,14 +504,12 @@ TEST(WildcardIndexNodeTest, LargeKeyAndWildcard) {
 }
 
 TEST(WildcardIndexNodeTest, RemoveLarge) {
-  char key[ESB_MAX_HOSTNAME + 1];
+  char key[ESB_MAX_HOSTNAME];
   memset(key, 'a', sizeof(key));
-  key[ESB_MAX_HOSTNAME] = 0;
   WildcardIndexNode *node = WildcardIndexNode::Create(key);
 
-  char wildcard[ESB_UINT8_MAX + 1];
+  char wildcard[ESB_UINT8_MAX];
   memset(wildcard, 'b', sizeof(wildcard));
-  wildcard[ESB_UINT8_MAX] = 0;
 
   int cleanups = TestCleanupHandler.calls();
   int destructions = Destructions;
@@ -525,25 +520,25 @@ TEST(WildcardIndexNodeTest, RemoveLarge) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, baz));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", qux));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert(wildcard, sizeof(wildcard), baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("qux", 3, qux));
   }
 
-  node->remove(wildcard);
+  node->remove(wildcard, sizeof(wildcard));
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 1);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 2);
 
-    EXPECT_EQ(ESB_CANNOT_FIND, node->find(wildcard, ptr));
+    EXPECT_EQ(ESB_CANNOT_FIND, node->find(wildcard, sizeof(wildcard), ptr));
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("qux", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("qux", 3, ptr));
     EXPECT_EQ(ptr->value(), 4);
   }
 
@@ -564,10 +559,10 @@ TEST(WildcardIndexNodeTest, InvalidArgs) {
   SmartPointer ptr = new (SystemAllocator::Instance()) TestObject(42);
   EXPECT_EQ(ESB_OVERFLOW, node->insert(buffer, sizeof(buffer), ptr));
   EXPECT_EQ(ESB_UNDERFLOW, node->insert(buffer, 0, ptr, false));
-  EXPECT_EQ(ESB_UNDERFLOW, node->insert("", ptr));
+  EXPECT_EQ(ESB_UNDERFLOW, node->insert("", 0, ptr));
   EXPECT_EQ(ESB_NULL_POINTER, node->insert(NULL, 0, ptr, false));
   ptr = NULL;
-  EXPECT_EQ(ESB_INVALID_ARGUMENT, node->insert("foo", ptr));
+  EXPECT_EQ(ESB_INVALID_ARGUMENT, node->insert("foo", 3, ptr));
 
   delete node;
 }
@@ -580,12 +575,12 @@ TEST(WildcardIndexNodeTest, RemoveMissingKey) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
-  EXPECT_EQ(ESB_CANNOT_FIND, node->remove("qux"));
+  EXPECT_EQ(ESB_CANNOT_FIND, node->remove("qux", 3));
 
   delete node;
 }
@@ -600,9 +595,9 @@ TEST(WildcardIndexNodeTest, DestructorOnlyDecrements) {
   SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
   SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-  EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-  EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-  EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+  EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+  EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+  EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
 
   delete node;
 
@@ -621,9 +616,9 @@ TEST(WildcardIndexNodeTest, Update) {
     SmartPointer bar = new (SystemAllocator::Instance()) TestObject(2);
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   {
@@ -632,11 +627,11 @@ TEST(WildcardIndexNodeTest, Update) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(6);
 
     TestObjectPointer old;
-    EXPECT_EQ(ESB_SUCCESS, node->update("foo", foo, &old));
+    EXPECT_EQ(ESB_SUCCESS, node->update("foo", 3, foo, &old));
     EXPECT_EQ(old->value(), 1);
-    EXPECT_EQ(ESB_SUCCESS, node->update("bar", bar, &old));
+    EXPECT_EQ(ESB_SUCCESS, node->update("bar", 3, bar, &old));
     EXPECT_EQ(old->value(), 2);
-    EXPECT_EQ(ESB_SUCCESS, node->update("baz", baz, &old));
+    EXPECT_EQ(ESB_SUCCESS, node->update("baz", 3, baz, &old));
     EXPECT_EQ(old->value(), 3);
   }
 
@@ -645,13 +640,13 @@ TEST(WildcardIndexNodeTest, Update) {
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 5);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 6);
   }
 
@@ -678,10 +673,10 @@ TEST(WildcardIndexNodeTest, UpdateLarge) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
     EXPECT_EQ(ESB_SUCCESS, node->insert(buffer, sizeof(buffer), qux));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   {
@@ -691,11 +686,11 @@ TEST(WildcardIndexNodeTest, UpdateLarge) {
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(8);
 
     TestObjectPointer old;
-    EXPECT_EQ(ESB_SUCCESS, node->update("foo", foo, &old));
+    EXPECT_EQ(ESB_SUCCESS, node->update("foo", 3, foo, &old));
     EXPECT_EQ(old->value(), 1);
-    EXPECT_EQ(ESB_SUCCESS, node->update("bar", bar, &old));
+    EXPECT_EQ(ESB_SUCCESS, node->update("bar", 3, bar, &old));
     EXPECT_EQ(old->value(), 2);
-    EXPECT_EQ(ESB_SUCCESS, node->update("baz", baz, &old));
+    EXPECT_EQ(ESB_SUCCESS, node->update("baz", 3, baz, &old));
     EXPECT_EQ(old->value(), 3);
     EXPECT_EQ(ESB_SUCCESS, node->update(buffer, sizeof(buffer), qux, &old));
     EXPECT_EQ(old->value(), 4);
@@ -706,13 +701,13 @@ TEST(WildcardIndexNodeTest, UpdateLarge) {
 
   {
     TestObjectPointer ptr;
-    EXPECT_EQ(ESB_SUCCESS, node->find("foo", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("foo", 3, ptr));
     EXPECT_EQ(ptr->value(), 5);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("bar", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("bar", 3, ptr));
     EXPECT_EQ(ptr->value(), 6);
 
-    EXPECT_EQ(ESB_SUCCESS, node->find("baz", ptr));
+    EXPECT_EQ(ESB_SUCCESS, node->find("baz", 3, ptr));
     EXPECT_EQ(ptr->value(), 7);
 
     EXPECT_EQ(ESB_SUCCESS, node->find(buffer, sizeof(buffer), ptr));
@@ -737,16 +732,16 @@ TEST(WildcardIndexNodeTest, UpdateMissingKey) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
     EXPECT_EQ(ESB_SUCCESS, node->insert(buffer, sizeof(buffer), qux));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
   TestObjectPointer old;
-  EXPECT_EQ(ESB_CANNOT_FIND, node->update("qux", value, &old));
-  EXPECT_EQ(ESB_CANNOT_FIND, node->update("quux", value, &old));
+  EXPECT_EQ(ESB_CANNOT_FIND, node->update("qux", 3, value, &old));
+  EXPECT_EQ(ESB_CANNOT_FIND, node->update("quux", 4, value, &old));
 
   delete node;
 }
@@ -765,10 +760,10 @@ TEST(WildcardIndexNodeTest, Iterate) {
     SmartPointer baz = new (SystemAllocator::Instance()) TestObject(3);
     SmartPointer qux = new (SystemAllocator::Instance()) TestObject(4);
 
-    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", foo));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", bar));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("foo", 3, foo));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
     EXPECT_EQ(ESB_SUCCESS, node->insert(buffer, sizeof(buffer), qux));
-    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", baz));
+    EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
   }
 
   const char *key = NULL;
@@ -830,11 +825,11 @@ class WildcardIndexTest : public ::testing::Test {
     TestObjectPointer four = new (SystemAllocator::Instance()) TestObject(4);
     TestObjectPointer five = new (SystemAllocator::Instance()) TestObject(5);
 
-    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "foo", one));
-    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "b*r", two));
-    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "b*", three));
-    EXPECT_EQ(ESB_SUCCESS, _index.insert("d2.com", "foo", four));
-    EXPECT_EQ(ESB_SUCCESS, _index.insert("d2.com", "q*x", five));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "foo", 3, one));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "b*r", 3, two));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d1.com", "b*", 2, three));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d2.com", "foo", 3, four));
+    EXPECT_EQ(ESB_SUCCESS, _index.insert("d2.com", "q*x", 3, five));
   }
 
   virtual void TearDown() { _index.clear(); }
@@ -845,47 +840,47 @@ class WildcardIndexTest : public ::testing::Test {
 
 TEST_F(WildcardIndexTest, Find) {
   TestObjectPointer value;
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "foo", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "foo", 3, value));
   EXPECT_EQ(1, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*r", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*r", 3, value));
   EXPECT_EQ(2, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*", 2, value));
   EXPECT_EQ(3, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "foo", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "foo", 3, value));
   EXPECT_EQ(4, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "q*x", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "q*x", 3, value));
   EXPECT_EQ(5, value->value());
 }
 
 TEST_F(WildcardIndexTest, Match) {
   TestObjectPointer value;
-  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "foo", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "foo", 3, value));
   EXPECT_EQ(1, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "bar", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "bar", 3, value));
   EXPECT_EQ(2, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "baz", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d1.com", "baz", 3, value));
   EXPECT_EQ(3, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "foo", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "foo", 3, value));
   EXPECT_EQ(4, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "qux", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "qux", 3, value));
   EXPECT_EQ(5, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "quux", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.match("d2.com", "quux", 4, value));
   EXPECT_EQ(5, value->value());
 }
 
 TEST_F(WildcardIndexTest, Remove) {
-  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "foo"));
-  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "b*r"));
-  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "b*"));
-  EXPECT_EQ(ESB_SUCCESS, _index.remove("d2.com", "foo"));
-  EXPECT_EQ(ESB_SUCCESS, _index.remove("d2.com", "q*x"));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "foo", 3));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "b*r", 3));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d1.com", "b*", 2));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d2.com", "foo", 3));
+  EXPECT_EQ(ESB_SUCCESS, _index.remove("d2.com", "q*x", 3));
 
   TestObjectPointer value;
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "foo", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*r", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "foo", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "q*x", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "foo", 3, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*r", 3, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*", 2, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "foo", 3, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "q*x", 3, value));
 }
 
 TEST_F(WildcardIndexTest, Update) {
@@ -893,28 +888,28 @@ TEST_F(WildcardIndexTest, Update) {
     TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
     TestObjectPointer old;
 
-    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "foo", value, &old));
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "foo", 3, value, &old));
     EXPECT_EQ(1, old->value());
-    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "b*r", value, &old));
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "b*r", 3, value, &old));
     EXPECT_EQ(2, old->value());
-    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "b*", value, &old));
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d1.com", "b*", 2, value, &old));
     EXPECT_EQ(3, old->value());
-    EXPECT_EQ(ESB_SUCCESS, _index.update("d2.com", "foo", value, &old));
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d2.com", "foo", 3, value, &old));
     EXPECT_EQ(4, old->value());
-    EXPECT_EQ(ESB_SUCCESS, _index.update("d2.com", "q*x", value, &old));
+    EXPECT_EQ(ESB_SUCCESS, _index.update("d2.com", "q*x", 3, value, &old));
     EXPECT_EQ(5, old->value());
   }
 
   TestObjectPointer value;
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "foo", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "foo", 3, value));
   EXPECT_EQ(42, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*r", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*r", 3, value));
   EXPECT_EQ(42, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d1.com", "b*", 2, value));
   EXPECT_EQ(42, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "foo", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "foo", 3, value));
   EXPECT_EQ(42, value->value());
-  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "q*x", value));
+  EXPECT_EQ(ESB_SUCCESS, _index.find("d2.com", "q*x", 3, value));
   EXPECT_EQ(42, value->value());
 }
 
@@ -922,9 +917,9 @@ TEST_F(WildcardIndexTest, UpdateMiss) {
   TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
   TestObjectPointer old;
 
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.update("d1.com", "qux", value, &old));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.update("d1.com", "qux", 3, value, &old));
   EXPECT_TRUE(old.isNull());
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.update("d3.com", "foo", value, &old));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.update("d3.com", "foo", 3, value, &old));
   EXPECT_TRUE(old.isNull());
 }
 
@@ -932,18 +927,18 @@ TEST_F(WildcardIndexTest, Clear) {
   _index.clear();
 
   TestObjectPointer value;
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "foo", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*r", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "foo", value));
-  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "q*x", value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "foo", 3, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*r", 3, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d1.com", "b*", 2, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "foo", 3, value));
+  EXPECT_EQ(ESB_CANNOT_FIND, _index.find("d2.com", "q*x", 3, value));
 }
 
 TEST_F(WildcardIndexTest, Uniqueness) {
   TestObjectPointer value = new (SystemAllocator::Instance()) TestObject(42);
-  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "foo", value));
-  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "b*r", value));
-  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "b*", value));
-  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d2.com", "foo", value));
-  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d2.com", "q*x", value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "foo", 3, value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "b*r", 3, value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d1.com", "b*", 2, value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d2.com", "foo", 3, value));
+  EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, _index.insert("d2.com", "q*x", 3, value));
 }

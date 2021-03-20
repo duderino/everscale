@@ -117,6 +117,19 @@ class ServerTLSContextIndex {
    */
   inline ServerTLSContextPointer &defaultContext() { return _defaultContext; }
 
+  /**
+   * Find the TLS context to use for a given fully qualified domain name (fqdn).
+   *
+   * @param fqdn The fqdn
+   * @param pointer A smart pointer to point to the TLS context if the fqdn is found.
+   * @return ESB_SUCCESS if found, ESB_CANNOT_FIND if a TLS context cannot be found for the fqdn, another error code
+   * otherwise.
+   */
+  Error findContext(const char *fqdn, ServerTLSContextPointer &pointer);
+
+  // TODO support removing and updating contexts.  Need to work out what key to use and how to expose clobbered fqdn to
+  // SAN associations when maskSanConflicts == true.
+
   /** Placement new.
    *
    *  @param size The size of the object.

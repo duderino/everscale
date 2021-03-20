@@ -53,20 +53,6 @@ class WildcardIndexNode : public EmbeddedMapElement {
   //
 
   /**
-   * Insert a string key + pointer pair into the map.  O(n).
-   *
-   * @param key The NULL-terminated string key
-   * @param value The pointer to associate with the string key
-   * @param updateIfExists If true, and the string key already exists, update the value instead of failing the
-   * operation.
-   * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the key already exists and updateIfExists is false,
-   * another error code otherwise.
-   */
-  inline Error insert(const char *key, SmartPointer &value, bool updateIfExists = false) {
-    return key ? insert(key, strlen(key), value, updateIfExists) : ESB_NULL_POINTER;
-  }
-
-  /**
    * Insert a string key + pointer pair into the map.  O(n)
    *
    * @param key The string key
@@ -82,30 +68,11 @@ class WildcardIndexNode : public EmbeddedMapElement {
   /**
    * Remove a string key from the map.  O(n)
    *
-   * @param key The NULL-terminated string key to remove
-   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
-   */
-  inline Error remove(const char *key) { return key ? remove(key, strlen(key)) : ESB_NULL_POINTER; }
-
-  /**
-   * Remove a string key from the map.  O(n)
-   *
    * @param key The string key to remove
    * @param keySize The size (length) of the string key
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
   Error remove(const char *key, UInt32 keySize);
-
-  /**
-   * Return the value associated with a string key, if it can be found.  O(n)
-   *
-   * @param key The NULL-terminated string key to look for
-   * @param value Will point to the value if found
-   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
-   */
-  inline Error find(const char *key, SmartPointer &value) const {
-    return key ? find(key, strlen(key), value) : ESB_NULL_POINTER;
-  }
 
   /**
    * Return the value associated with a string key, if it can be found.  O(n)
@@ -116,19 +83,6 @@ class WildcardIndexNode : public EmbeddedMapElement {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
   Error find(const char *key, UInt32 keySize, SmartPointer &value) const;
-
-  /**
-   * Update a string key with a new pointer.  O(n)
-   *
-   * @param key The NULL-terminated string key to update
-   * @param keySize The size (length) of the string key
-   * @param value The pointer to associate with the string key
-   * @param old If not NULL, set to the key's associated value before the update.
-   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key doesn't exist, another error code otherwise.
-   */
-  inline Error update(const char *key, SmartPointer &value, SmartPointer *old) {
-    return key ? update(key, strlen(key), value, old) : ESB_NULL_POINTER;
-  }
 
   /**
    * Update a string key with a new pointer.  O(n)
@@ -291,10 +245,6 @@ class WildcardIndex : public EmbeddedMapBase {
   Error insert(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value,
                bool updateIfExists = false);
 
-  inline Error insert(const char *domain, const char *wildcard, SmartPointer &value, bool updateIfExists = false) {
-    return insert(domain, wildcard, strlen(wildcard), value, updateIfExists);
-  }
-
   /**
    * Remove a wildcard or exact match pattern from the index.  If a wildcard is removed, the reference count of the
    * associated smart pointer will be decremented.
@@ -304,7 +254,7 @@ class WildcardIndex : public EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
    * otherwise.
    */
-  Error remove(const char *domain, const char *wildcard);
+  Error remove(const char *domain, const char *wildcard, UInt32 wildcardSize);
 
   /**
    * Update the smart pointer value associated with a wildcard or exact match pattern.
@@ -316,7 +266,8 @@ class WildcardIndex : public EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
    * otherwise.
    */
-  Error update(const char *domain, const char *wildcard, SmartPointer &value, SmartPointer *old = NULL);
+  Error update(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value,
+               SmartPointer *old = NULL);
 
   /**
    * Find the smart pointer value associated with a wildcard or exact match pattern - THIS DOES NOT EVALUATE WILDCARD
@@ -328,7 +279,7 @@ class WildcardIndex : public EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the domain+wildcard were not in the index, another error code
    * otherwise.
    */
-  Error find(const char *domain, const char *wildcard, SmartPointer &value);
+  Error find(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value);
 
   /**
    * Evaluate a hostname against all wildcard patterns for the domain and, if any match, return the most specific match.
@@ -341,7 +292,7 @@ class WildcardIndex : public EmbeddedMapBase {
    * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if no wildcards in the index matched the hostname, another error
    * code otherwise.
    */
-  Error match(const char *domain, const char *hostname, SmartPointer &value);
+  Error match(const char *domain, const char *hostname, UInt32 hostnameSize, SmartPointer &value);
 
   /**
    * Remove all wildcards from the index.
