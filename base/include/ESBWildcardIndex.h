@@ -5,16 +5,8 @@
 #include <ESBTypes.h>
 #endif
 
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
-#endif
-
-#ifndef ESB_EMBEDDED_MAP_ELEMENT_H
-#include <ESBEmbeddedMapElement.h>
 #endif
 
 #ifndef ESB_SMART_POINTER_H
@@ -29,8 +21,8 @@
 #include <ESBSharedEmbeddedMap.h>
 #endif
 
-#ifndef ESB_MUTEX_H
-#include <ESBMutex.h>
+#ifndef ESB_SHARED_EMBEDDED_LIST_H
+#include <ESBSharedEmbeddedList.h>
 #endif
 
 #ifndef ESB_READ_WRITE_LOCK_H
@@ -288,14 +280,20 @@ class WildcardIndex : public EmbeddedMapBase {
   /**
    * Add a new wildcard or exact match pattern to the index
    *
-   * @param domain The "bar.com" in "f*o.bar.com"
+   * @param domain The "bar.com" in "f*o.bar.com".  Must be NULL-terminated
    * @param wildcard The "f*o" in "f*o.bar.com"
+   * @param wildcardSize The size of the wildcard not including terminating NULL
    * @param value The smart pointer value.  The reference count will be increased by one while it resides in the index.
    * @param updateIfExists if the domain+wildcard already exists, update the smart pointer to point to the new value
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the domain+wildcard already exists and
    * updateIfExists is false (the default), another error code otherwise.
    */
-  Error insert(const char *domain, const char *wildcard, SmartPointer &value, bool updateIfExists = false);
+  Error insert(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value,
+               bool updateIfExists = false);
+
+  inline Error insert(const char *domain, const char *wildcard, SmartPointer &value, bool updateIfExists = false) {
+    return insert(domain, wildcard, strlen(wildcard), value, updateIfExists);
+  }
 
   /**
    * Remove a wildcard or exact match pattern from the index.  If a wildcard is removed, the reference count of the
@@ -352,10 +350,12 @@ class WildcardIndex : public EmbeddedMapBase {
     EmbeddedMapBase::clear();  // moves all nodes in _map to the _deadNodes list.
   }
 
+  Allocator &allocator() { return _allocator; }
+
  private:
   class WildcardIndexCallbacks : public EmbeddedMapCallbacks {
    public:
-    WildcardIndexCallbacks(Mutex &lock, EmbeddedList &deadNodes) : _lock(lock), _deadNodes(deadNodes) {}
+    WildcardIndexCallbacks(SharedEmbeddedList &deadNodes) : _deadNodes(deadNodes) {}
     virtual ~WildcardIndexCallbacks(){};
 
     virtual int compare(const void *f, const void *s) const;
@@ -363,16 +363,14 @@ class WildcardIndex : public EmbeddedMapBase {
     virtual void cleanup(EmbeddedMapElement *element);
 
    private:
-    Mutex &_lock;
-    EmbeddedList &_deadNodes;
+    SharedEmbeddedList &_deadNodes;
   };
 
   inline Lockable &bucketLock(UInt32 bucket) const {
     return 0 == _numBucketLocks ? (Lockable &)NullLock::Instance() : _bucketLocks[bucket % _numBucketLocks];
   }
 
-  Mutex _deadNodesLock;
-  EmbeddedList _deadNodes;
+  SharedEmbeddedList _deadNodes;
   WildcardIndexCallbacks _callbacks;
   UInt32 _numBucketLocks;
   ReadWriteLock *_bucketLocks;

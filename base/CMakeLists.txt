@@ -46,8 +46,10 @@ set(SOURCE_FILES
         source/ESBReadWriteLock.cpp
         source/ESBReferenceCount.cpp
         source/ESBServerTLSSocket.cpp
+        source/ESBServerTLSContextIndex.cpp
         source/ESBSharedAllocator.cpp
         source/ESBSharedAveragingCounter.cpp
+        source/ESBSharedEmbeddedList.cpp
         source/ESBSharedEmbeddedMap.cpp
         source/ESBSharedEmbeddedQueue.cpp
         source/ESBSharedInt.cpp
@@ -128,6 +130,7 @@ add_gtest(compact-string-map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURC
 add_gtest(string-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBStringTest.cpp)
 add_gtest(smart-pointer-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest2.cpp)
 add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBWildcardIndexTest.cpp)
+add_gtest(server-tls-context-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBServerTLSContextIndexTest.cpp)
 
 # Generate certs and private keys
 

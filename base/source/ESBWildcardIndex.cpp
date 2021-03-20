@@ -457,16 +457,13 @@ UInt32 WildcardIndex::WildcardIndexCallbacks::hash(const void *key) const { retu
 
 void WildcardIndex::WildcardIndexCallbacks::cleanup(EmbeddedMapElement *element) {
   element->~EmbeddedMapElement();
-  _lock.writeAcquire();
   _deadNodes.addFirst(element);
-  _lock.writeRelease();
 }
 
 WildcardIndex::WildcardIndex(UInt32 numBuckets, UInt32 numLocks, Allocator &allocator)
     : EmbeddedMapBase(_callbacks, numBuckets, allocator),
-      _deadNodesLock(),
       _deadNodes(),
-      _callbacks(_deadNodesLock, _deadNodes),
+      _callbacks(_deadNodes),
       _numBucketLocks(MIN(numBuckets, numLocks)),
       _bucketLocks(NULL) {
   if (0 < _numBucketLocks) {
@@ -495,7 +492,8 @@ WildcardIndex::~WildcardIndex() {
   }
 }
 
-Error WildcardIndex::insert(const char *domain, const char *wildcard, SmartPointer &value, bool updateIfExists) {
+Error WildcardIndex::insert(const char *domain, const char *wildcard, UInt32 wildcardSize, SmartPointer &value,
+                            bool updateIfExists) {
   if (!domain || !wildcard) {
     return ESB_NULL_POINTER;
   }
@@ -509,19 +507,17 @@ Error WildcardIndex::insert(const char *domain, const char *wildcard, SmartPoint
   WildcardIndexNode *node = (WildcardIndexNode *)EmbeddedMapBase::find(bucket, domain);
 
   if (node) {
-    return node->insert(wildcard, value, updateIfExists);
+    return node->insert(wildcard, wildcardSize, value, updateIfExists);
   }
 
-  _deadNodesLock.writeAcquire();
   EmbeddedListElement *element = _deadNodes.removeFirst();
-  _deadNodesLock.writeRelease();
 
   node = element ? WildcardIndexNode::Recycle(domain, element) : WildcardIndexNode::Create(domain, _allocator);
   if (!node) {
     return ESB_OUT_OF_MEMORY;
   }
 
-  Error error = node->insert(wildcard, value, updateIfExists);
+  Error error = node->insert(wildcard, wildcardSize, value, updateIfExists);
   if (ESB_SUCCESS != error) {
     _callbacks.cleanup(node);
     return error;

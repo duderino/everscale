@@ -59,6 +59,17 @@ extern void *ReadPointer(const unsigned char *buffer);
  */
 extern void WritePointer(unsigned char *buffer, void *pointer);
 
+/**
+ * Parse a fully qualified domain name (FQDN) into hostname and domain components.
+ *
+ * @param fqdn The fqdn to parse.  Must be NULL-terminated
+ * @param hostname Will point to the beginning of the hostname (or hostname wildcard)
+ * @param hostnameSize The size of the hostname, not including '.' or terminating NULL character
+ * @param domain Will point to the beginning of the domain name (everything after the first '.').  Will be
+ * NULL-terminated.
+ */
+extern void SplitFqdn(const char *fqdn, const char **hostname, UInt32 *hostnameSize, const char **domain);
+
 }  // namespace ESB
 
 #endif

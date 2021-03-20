@@ -42,3 +42,39 @@ TEST(String, WildcardMatch) {
   EXPECT_LT(StringWildcardMatch("foo", "foo"), StringWildcardMatch("foo*", "foo"));
   EXPECT_LT(StringWildcardMatch("foo", "foo"), StringWildcardMatch("*foo", "foo"));
 }
+
+TEST(String, SplitFqdn) {
+  const char *fqdn = "foo.bar.baz";
+  const char *hostname = NULL;
+  UInt32 hostnameSize = 0U;
+  const char *domain = NULL;
+
+  SplitFqdn(fqdn, &hostname, &hostnameSize, &domain);
+  EXPECT_EQ(3, hostnameSize);
+  EXPECT_EQ(0, memcmp(hostname, "foo", hostnameSize));
+  EXPECT_EQ(0, strcmp(domain, "bar.baz"));
+}
+
+TEST(String, SplitFqdnHostnameOnly) {
+  const char *fqdn = "foobarbaz";
+  const char *hostname = NULL;
+  UInt32 hostnameSize = 0U;
+  const char *domain = NULL;
+
+  SplitFqdn(fqdn, &hostname, &hostnameSize, &domain);
+  EXPECT_EQ(9, hostnameSize);
+  EXPECT_EQ(0, memcmp(hostname, "foobarbaz", hostnameSize));
+  EXPECT_EQ(NULL, domain);
+}
+
+TEST(String, SplitFqdnWildcard) {
+  const char *fqdn = "f*.bar.baz";
+  const char *hostname = NULL;
+  UInt32 hostnameSize = 0U;
+  const char *domain = NULL;
+
+  SplitFqdn(fqdn, &hostname, &hostnameSize, &domain);
+  EXPECT_EQ(2, hostnameSize);
+  EXPECT_EQ(0, memcmp(hostname, "f*", hostnameSize));
+  EXPECT_EQ(0, strcmp(domain, "bar.baz"));
+}

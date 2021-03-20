@@ -31,6 +31,10 @@ subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = *.server.everscale.com
+DNS.2 = f*.everscale.com
+DNS.3 = *z.everscale.com
+DNS.4 = b*r.everscale.com
+IP.1 = 1.2.3.4
 EOF
 
 cat << EOF > client.ext
@@ -56,7 +60,7 @@ openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out c
 # Dump Certs
 
 #openssl x509 -in ca.crt -text
-#openssl x509 -in server.crt -text
+openssl x509 -in server.crt -text
 #openssl x509 -in client.crt -text
 
 # Clean up intermediate artifacts

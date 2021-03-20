@@ -176,4 +176,34 @@ void WritePointer(unsigned char *buffer, void *pointer) {
 }
 #endif
 
+void SplitFqdn(const char *fqdn, const char **hostname, UInt32 *hostnameSize, const char **domain) {
+  assert(fqdn);
+  assert(hostname);
+  assert(hostnameSize);
+  assert(domain);
+  if (!fqdn || !hostname || !hostnameSize || !domain) {
+    return;
+  }
+
+  UInt32 size = 0;
+  const char *dot = NULL;
+
+  for (const char *p = fqdn; *p; ++p) {
+    if ('.' == *p) {
+      dot = p;
+      break;
+    }
+    ++size;
+  }
+
+  *hostname = fqdn;
+  *hostnameSize = size;
+
+  if (!dot) {
+    *domain = NULL;
+  } else {
+    *domain = dot + 1;
+  }
+}
+
 }  // namespace ESB

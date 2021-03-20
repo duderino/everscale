@@ -45,6 +45,8 @@ tls:
  - Create integration test that presents tampered cert
  - Create integration test that presents tampered private key
  - SNI-based server certificate presentation
+ - For ServerTLSContextIndex, think through handling of SAN and CN conflicts.  If the winner of a conflict is removed, can a conflict loser take its place?
+ - Refactor ServerTLSContextIndex to support client certificate lookup
  - client side session resumption
  - server side session resumption
  - can boringssl lib's memory be reconciled?
