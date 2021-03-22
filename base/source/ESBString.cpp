@@ -44,15 +44,15 @@ static int ForwardMatch(const char *pattern, UInt32 patternLength, const char *s
       return matchedChars;
     }
 
-    if (pattern[patternIdx] != str[strIdx]) {
-      return -1;
-    }
-
     if (strIdx >= strLength) {
       return patternIdx >= patternLength ? matchedChars : -1;
     }
 
     if (patternIdx >= patternLength) {
+      return -1;
+    }
+
+    if (pattern[patternIdx] != str[strIdx]) {
       return -1;
     }
 
@@ -80,10 +80,6 @@ static int ReverseMatch(const char *pattern, UInt32 patternLength, const char *s
       return matchedChars;
     }
 
-    if (pattern[patternIdx] != str[strIdx]) {
-      return -1;
-    }
-
     if (0 == strIdx) {
       if (0 == patternIdx || '*' == pattern[patternIdx - 1]) {
         return matchedChars + 1;
@@ -92,6 +88,10 @@ static int ReverseMatch(const char *pattern, UInt32 patternLength, const char *s
     }
 
     if (0 == patternIdx) {
+      return -1;
+    }
+
+    if (pattern[patternIdx] != str[strIdx]) {
       return -1;
     }
 

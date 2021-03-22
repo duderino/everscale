@@ -206,29 +206,56 @@ class WildcardIndexNode : public EmbeddedMapElement {
 };
 
 /**
- * An index suitable for performing wildcard matches as described in RFC 2818 and other RFCs.  Wildcard patterns can
- * have a single '*' which can occur anywhere in the leftmost component of the fqdn (e.g,. "f*.bar.com", "*o.bar.com",
- * "f*o.bar.com" and "foo.bar.com" are all valid for this index, but patterns like "foo.*.com" or "*o*.bar.com" are not
- * supported).
+ * An index of smart pointers which implements requirements 1-3 of RFC 6125 wildcard certificate matching.
  *
- * The index also does most-specific matching.  Here 'most-specific' means the match which matches the least number of
- * characters against the wildcard.  In cases where there are multiple best matches, one will be picked
- * non-deterministically.
+ * From https://tools.ietf.org/html/rfc6125#section-6.4.3:
  *
- * Wildcard patterns like "*.bar.com" do not match "bar.com".
+ * 6.4.3.  Checking of Wildcard Certificates
  *
- * RFC 2818 3.1:
+ *   A client employing this specification's rules MAY match the reference
+ *   identifier against a presented identifier whose DNS domain name
+ *   portion contains the wildcard character '*' as part or all of a label
+ *   (following the description of labels and domain names in
+ *   [DNS-CONCEPTS]).
  *
- * If more than one identity of a given type is present in
- * the certificate (e.g., more than one dNSName name, a match in any one
- * of the set is considered acceptable.) Names may contain the wildcard
- * character * which is considered to match any single domain name
- * component or component fragment. E.g., *.a.com matches foo.a.com but
- * not bar.foo.a.com. f*.com matches foo.com but not bar.com.
+ *   For information regarding the security characteristics of wildcard
+ *   certificates, see Section 7.2.
+ *
+ *   If a client matches the reference identifier against a presented
+ *   identifier whose DNS domain name portion contains the wildcard
+ *   character '*', the following rules apply:
+ *
+ *   1.  The client SHOULD NOT attempt to match a presented identifier in
+ *       which the wildcard character comprises a label other than the
+ *       left-most label (e.g., do not match bar.*.example.net).
+ *
+ *   2.  If the wildcard character is the only character of the left-most
+ *       label in the presented identifier, the client SHOULD NOT compare
+ *       against anything but the left-most label of the reference
+ *       identifier (e.g., *.example.com would match foo.example.com but
+ *       not bar.foo.example.com or example.com).
+ *
+ *   3.  The client MAY match a presented identifier in which the wildcard
+ *       character is not the only character of the label (e.g.,
+ *       baz*.example.net and *baz.example.net and b*z.example.net would
+ *       be taken to match baz1.example.net and foobaz.example.net and
+ *       buzz.example.net, respectively).  However, the client SHOULD NOT
+ *       attempt to match a presented identifier where the wildcard
+ *       character is embedded within an A-label or U-label [IDNA-DEFS] of
+ *       an internationalized domain name [IDNA-PROTO].
  */
 class WildcardIndex : public EmbeddedMapBase {
  public:
+  /**
+   * Construct a new index.
+   *
+   * @param numBuckets Number of buckets for internal hash table.  More buckets -> more memory, fewer collisions.
+   * @param numLocks Number of locks for internal hash table.  If 0, no locking.  Else, more locks -> more memory, less
+   * contention.
+   * @param allocator The allocator to use for allocating internal buckets and nodes.
+   */
   WildcardIndex(UInt32 numBuckets, UInt32 numLocks, Allocator &allocator);
+
   virtual ~WildcardIndex();
 
   /**

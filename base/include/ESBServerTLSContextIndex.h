@@ -69,6 +69,45 @@ class ServerTLSContext : public ReferenceCount {
 
 ESB_SMART_POINTER(ServerTLSContext, ServerTLSContextPointer, SmartPointer);
 
+/**
+ * An index of ServerTLSContexts which supports requirements 1-3 of RFC 6125 wildcard certificate matching.
+ *
+ * From https://tools.ietf.org/html/rfc6125#section-6.4.3:
+ *
+ * 6.4.3.  Checking of Wildcard Certificates
+ *
+ *   A client employing this specification's rules MAY match the reference
+ *   identifier against a presented identifier whose DNS domain name
+ *   portion contains the wildcard character '*' as part or all of a label
+ *   (following the description of labels and domain names in
+ *   [DNS-CONCEPTS]).
+ *
+ *   For information regarding the security characteristics of wildcard
+ *   certificates, see Section 7.2.
+ *
+ *   If a client matches the reference identifier against a presented
+ *   identifier whose DNS domain name portion contains the wildcard
+ *   character '*', the following rules apply:
+ *
+ *   1.  The client SHOULD NOT attempt to match a presented identifier in
+ *       which the wildcard character comprises a label other than the
+ *       left-most label (e.g., do not match bar.*.example.net).
+ *
+ *   2.  If the wildcard character is the only character of the left-most
+ *       label in the presented identifier, the client SHOULD NOT compare
+ *       against anything but the left-most label of the reference
+ *       identifier (e.g., *.example.com would match foo.example.com but
+ *       not bar.foo.example.com or example.com).
+ *
+ *   3.  The client MAY match a presented identifier in which the wildcard
+ *       character is not the only character of the label (e.g.,
+ *       baz*.example.net and *baz.example.net and b*z.example.net would
+ *       be taken to match baz1.example.net and foobaz.example.net and
+ *       buzz.example.net, respectively).  However, the client SHOULD NOT
+ *       attempt to match a presented identifier where the wildcard
+ *       character is embedded within an A-label or U-label [IDNA-DEFS] of
+ *       an internationalized domain name [IDNA-PROTO].
+ */
 class ServerTLSContextIndex {
  public:
   /**
@@ -125,7 +164,9 @@ class ServerTLSContextIndex {
    * @return ESB_SUCCESS if found, ESB_CANNOT_FIND if a TLS context cannot be found for the fqdn, another error code
    * otherwise.
    */
-  Error findContext(const char *fqdn, ServerTLSContextPointer &pointer);
+  Error matchContext(const char *fqdn, ServerTLSContextPointer &pointer);
+
+  void clear();
 
   // TODO support removing and updating contexts.  Need to work out what key to use and how to expose clobbered fqdn to
   // SAN associations when maskSanConflicts == true.

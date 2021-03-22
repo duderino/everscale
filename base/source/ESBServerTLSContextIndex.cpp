@@ -264,7 +264,7 @@ Error ServerTLSContextIndex::indexContext(const char *privateKeyPath, const char
   }
 }
 
-Error ServerTLSContextIndex::findContext(const char *fqdn, ServerTLSContextPointer &pointer) {
+Error ServerTLSContextIndex::matchContext(const char *fqdn, ServerTLSContextPointer &pointer) {
   const char *hostname = NULL;
   UInt32 hostnameSize = 0U;
   const char *domain = NULL;
@@ -274,7 +274,12 @@ Error ServerTLSContextIndex::findContext(const char *fqdn, ServerTLSContextPoint
     return ESB_CANNOT_FIND;
   }
 
-  return _contexts.find(domain, hostname, hostnameSize, pointer);
+  return _contexts.match(domain, hostname, hostnameSize, pointer);
+}
+
+void ServerTLSContextIndex::clear() {
+  _contexts.clear();
+  _defaultContext = NULL;
 }
 
 }  // namespace ESB

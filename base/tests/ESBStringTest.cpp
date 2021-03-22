@@ -38,6 +38,9 @@ TEST(String, WildcardMatch) {
   EXPECT_EQ(4, StringWildcardMatch("foo*baz", "foobarbaz"));
   EXPECT_EQ(8, StringWildcardMatch("f*z", "foobarbaz"));
 
+  // By size
+  EXPECT_EQ(0, StringWildcardMatch("foo", 3, "foo.everscale.com", 3));
+
   // Exact matches are less than the most specific wildcard match
   EXPECT_LT(StringWildcardMatch("foo", "foo"), StringWildcardMatch("foo*", "foo"));
   EXPECT_LT(StringWildcardMatch("foo", "foo"), StringWildcardMatch("*foo", "foo"));
