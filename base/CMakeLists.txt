@@ -11,6 +11,7 @@ set(SOURCE_FILES
         source/ESBBuffer.cpp
         source/ESBBufferPool.cpp
         source/ESBClearSocket.cpp
+        source/ESBClientTLSContextIndex.cpp
         source/ESBClientTLSSocket.cpp
         source/ESBCommand.cpp
         source/ESBCommandThread.cpp
@@ -25,13 +26,14 @@ set(SOURCE_FILES
         source/ESBDnsClient.cpp
         source/ESBEmbeddedList.cpp
         source/ESBEmbeddedListElement.cpp
+        source/ESBEmbeddedMapBase.cpp
         source/ESBEmbeddedMapElement.cpp
         source/ESBEpollMultiplexer.cpp
         source/ESBError.cpp
         source/ESBEventSocket.cpp
         source/ESBFixedAllocator.cpp
         source/ESBFlatTimingWheel.cpp
-        source/ESBHostAddress.cpp
+       # source/ESBHostAddress.cpp
         source/ESBList.cpp
         source/ESBListeningSocket.cpp
         source/ESBLockable.cpp
@@ -73,6 +75,8 @@ set(SOURCE_FILES
         source/ESBTimeSeries.cpp
         source/ESBTimeSourceCache.cpp
         source/ESBTimeSource.cpp
+        source/ESBTLSContext.cpp
+        source/ESBTLSContextIndex.cpp
         source/ESBTLSSocket.cpp
         source/ESBWildcardIndex.cpp
         )
@@ -121,16 +125,16 @@ add_gtest(time-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 3
 add_gtest(map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBMapTest2.cpp)
 add_gtest(system-config-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSystemConfigTest.cpp)
 add_gtest(socket-address-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSocketAddressTest.cpp)
-add_gtest(connection-pool-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBConnectionPoolTest.cpp)
-add_gtest(clear-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBClearSocketTest.cpp)
-add_gtest(tls-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSSocketTest.cpp)
+add_gtest(connection-pool-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBConnectionPoolTest.cpp tests/ESBEchoServer.cpp)
+add_gtest(clear-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBClearSocketTest.cpp tests/ESBEchoServer.cpp)
+add_gtest(tls-socket-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSSocketTest.cpp tests/ESBEchoServer.cpp)
 add_gtest(signal-handler-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSignalHandlerTest.cpp)
 add_gtest(flat-timing-wheel-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBFlatTimingWheelTest.cpp)
 add_gtest(compact-string-map-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBCompactStringMapTest.cpp)
 add_gtest(string-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBStringTest.cpp)
 add_gtest(smart-pointer-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest2.cpp)
 add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBWildcardIndexTest.cpp)
-add_gtest(server-tls-context-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBServerTLSContextIndexTest.cpp)
+add_gtest(tls-context-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSContextIndexTest.cpp)
 
 # Generate certs and private keys
 

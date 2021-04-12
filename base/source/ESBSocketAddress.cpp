@@ -36,9 +36,6 @@
 
 namespace ESB {
 
-static const char NULL_TERMINATOR = 0;
-static const char *EMPTY_STRING = &NULL_TERMINATOR;
-
 SocketAddress::SocketAddress() {
 #ifdef HAVE_MEMSET
   memset(&_address, 0, sizeof(Address));
@@ -208,7 +205,5 @@ ESB::Error SocketAddress::setAddress(const char *presentation) {
 
   return ESB_SUCCESS;
 }
-
-const char *SocketAddress::host() const { return EMPTY_STRING; }
 
 }  // namespace ESB

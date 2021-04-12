@@ -93,17 +93,18 @@ class SocketAddress {
    * address is greater than the other address.
    */
   inline int compare(const SocketAddress &address) const {
-    if (_transport != address._transport) {
-      return _transport - address._transport;
-    }
-
-    int result = memcmp(&_address, &address._address, sizeof(_address));
-
+    int result = _transport - address._transport;
     if (0 != result) {
       return result;
     }
 
-    return strcmp(host(), address.host());
+    result = _address.sin_port - address._address.sin_port;
+    if (0 != result) {
+      return result;
+    }
+
+    // TODO support IPv6
+    return _address.sin_addr.s_addr - address._address.sin_addr.s_addr;
   }
 
   /**
@@ -111,14 +112,12 @@ class SocketAddress {
    *
    * @return a hash code
    */
-  inline ESB::UInt32 hash() const {
+  inline ESB::UInt64 hash() const {
     // TODO not IPv6 safe, for IPv6 take the low order bits of the address
-    ESB::UInt32 hash = _address.sin_addr.s_addr;
-    hash |= _address.sin_port << 16;
-    hash |= _address.sin_family << 30;
-    hash |= _transport << 31;
-
-    return (hash * 31 + StringHash(host()));
+    ESB::UInt64 hash = _address.sin_addr.s_addr;
+    hash |= (UInt64)_address.sin_port << 32;
+    hash |= (UInt64)_transport << 48;
+    return hash;
   }
 
   /** Get the address of SocketAddress for use by the platform's socket
@@ -185,12 +184,6 @@ class SocketAddress {
    *  @param transport The transport type.
    */
   void setType(TransportType transport);
-
-  /** Get the hostname (fqdn) associated with the SocketAddress, if any
-   *
-   * @return The hostname associated with the SocketAddress.  If no associated hostname, returns non-NULL empty string.
-   */
-  virtual const char *host() const;
 
   /** Placement new.
    *

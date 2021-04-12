@@ -76,7 +76,8 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
    */
   HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                        HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
-                       HttpClientCounters &clientCounters, HttpServerCounters &serverCounters);
+                       HttpClientCounters &clientCounters, HttpServerCounters &serverCounters,
+                       ESB::ServerTLSContextIndex &contextIndex);
 
   /**
    * Create a client-only multiplexer.
@@ -96,7 +97,8 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
    * @param serverCounters
    */
   HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
-                       HttpServerHandler &serverHandler, HttpServerCounters &serverCounters);
+                       HttpServerHandler &serverHandler, HttpServerCounters &serverCounters,
+                       ESB::ServerTLSContextIndex &contextIndex);
 
   virtual ~HttpProxyMultiplexer();
 

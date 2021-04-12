@@ -14,7 +14,7 @@ namespace ESB {
  * @return a hash code for the string
  * @ingroup util
  */
-extern ESB::UInt32 StringHash(const char *str);
+extern ESB::UInt64 StringHash(const char *str);
 
 /**
  * Determine whether a string matches a wildcard ('*') pattern - at most one wildcard is supported.

@@ -55,18 +55,12 @@ class TLSSocket : public ConnectedSocket {
   virtual bool wantWrite();
 
  protected:
-  static Error Initialize();
   virtual Error startHandshake() = 0;
 
   SSL *_ssl;
   BIO *_bio;
 
- private:
-  // Disabled
-  TLSSocket(const TLSSocket &);
-  TLSSocket &operator=(const TLSSocket &);
-
-  static bool _Initialized;
+  ESB_DISABLE_AUTO_COPY(TLSSocket);
 };
 
 void DescribeTLSError(char *buffer, int size);

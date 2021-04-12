@@ -25,14 +25,18 @@
 #include <ESHttpMultiplexerExtended.h>
 #endif
 
+#ifndef ESB_SERVER_TLS_CONTEXT_INDEX_H
+#include <ESBServerTLSContextIndex.h>
+#endif
+
 namespace ES {
 
 /** A factory that creates and reuses HttpServerSockets
  */
 class HttpServerSocketFactory {
  public:
-  HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
-                          HttpServerCounters &counters, ESB::Allocator &allocator);
+  HttpServerSocketFactory(ESB::ServerTLSContextIndex &contextIndex, HttpMultiplexerExtended &multiplexer,
+                          HttpServerHandler &handler, HttpServerCounters &counters, ESB::Allocator &allocator);
 
   virtual ~HttpServerSocketFactory();
 
@@ -79,6 +83,7 @@ class HttpServerSocketFactory {
     HttpServerSocketFactory &_factory;
   };
 
+  ESB::ServerTLSContextIndex &_contextIndex;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerCounters &_counters;

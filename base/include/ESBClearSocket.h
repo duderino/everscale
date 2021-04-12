@@ -55,11 +55,10 @@ class ClearSocket : public ConnectedSocket {
   inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
 
  private:
-  // Disabled
-  ClearSocket(const ClearSocket &);
-  ClearSocket &operator=(const ClearSocket &);
-
   SocketAddress _peerAddress;
+  SocketKey _key;
+
+  ESB_DISABLE_AUTO_COPY(ClearSocket);
 };
 
 }  // namespace ESB

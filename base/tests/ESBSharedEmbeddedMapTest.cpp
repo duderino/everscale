@@ -30,13 +30,12 @@ class SocketAddressCallbacks : public EmbeddedMapCallbacks {
     return memcmp(first->primitiveAddress(), second->primitiveAddress(), sizeof(SocketAddress::Address));
   }
 
-  virtual UInt32 hash(const void *key) const {
+  virtual UInt64 hash(const void *key) const {
     SocketAddress *addr = (SocketAddress *)key;
-
-    // TODO not IPv6 safe
-    UInt32 hash = addr->primitiveAddress()->sin_addr.s_addr;
-    hash |= addr->primitiveAddress()->sin_family;
-    hash |= addr->primitiveAddress()->sin_port;
+    // TODO not IPv6 safe, for IPv6 take the low order bits of the address
+    ESB::UInt64 hash = addr->primitiveAddress()->sin_addr.s_addr;
+    hash |= (UInt64)addr->primitiveAddress()->sin_port << 32;
+    hash |= (UInt64)addr->type() << 48;
     return hash;
   }
 

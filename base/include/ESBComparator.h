@@ -31,13 +31,12 @@ class Comparator {
 
   /** Compare two locations.
    *
-   *  @param first The first location to compare.
-   *  @param second The second location to compare.
-   *  @return 0 if both locations are equal, a negative number if the first
-   *      location is less than the second, or a positive number if the first
-   *      location is greater than the second.
+   *  @param key The key to lookup.
+   *  @param value The value to compare to the key.
+   *  @return 0 if the key is matches the value, if the key is less than the value, or a positive number if the key is
+   * greater than the value.
    */
-  virtual int compare(const void *first, const void *second) const = 0;
+  virtual int compare(const void *key, const void *value) const = 0;
 };
 
 /** HashComparators add hashing to Comparators.
@@ -56,10 +55,10 @@ class HashComparator : public Comparator {
 
   /** Generate a hash code from a key.
    *
-   *  @param key The first location to compare
+   *  @param key The key to hash
    *  @return the hash code
    */
-  virtual UInt32 hash(const void *key) const = 0;
+  virtual UInt64 hash(const void *key) const = 0;
 };
 
 }  // namespace ESB

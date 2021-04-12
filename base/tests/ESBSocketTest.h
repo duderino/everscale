@@ -17,68 +17,53 @@
 #include <ESBSimpleFileLogger.h>
 #endif
 
+#ifndef ESB_ECHO_SERVER_H
+#include "ESBEchoServer.h"
+#endif
+
 #include <gtest/gtest.h>
 
 namespace ESB {
 
-static SimpleFileLogger TestLogger(stdout, Logger::Warning);
+static SimpleFileLogger TestLogger(stdout, Logger::Info);
 
 class SocketTest : public ::testing::Test {
  public:
-  SocketTest()
-      : _clearListenerAddress("127.0.0.1", ESB_ANY_PORT, SocketAddress::TCP),
-        _secureListenerAddress("127.0.0.1", ESB_ANY_PORT, SocketAddress::TLS),
-        _clearListener("clear", _clearListenerAddress, ESB_UINT16_MAX),
-        _secureListener("secure", _secureListenerAddress, ESB_UINT16_MAX) {
-    for (int i = 0; i < sizeof(_message) - 1; ++i) {
-      _message[i] = '0' + i % 10;
-    }
-
+  SocketTest(Allocator &allocator = SystemAllocator::Instance()) : _server(allocator) {
+    memset(_message, 'a', sizeof(_message));
     _message[sizeof(_message) - 1] = 0;
   }
+  virtual ~SocketTest() {}
 
   static void SetUpTestSuite() { Logger::SetInstance(&TestLogger); }
 
   static void TearDownTestSuite() { Logger::SetInstance(NULL); }
 
   virtual void SetUp() {
-    Error error = _clearListener.bind();
+    Error error = _server.initialize();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", _clearListener.name());
-      assert(!"Cannot bind to ephemeral port");
-      return;
+      ESB_LOG_ERROR_ERRNO(error, "Cannot init echo server");
+      exit(error);
     }
 
-    error = _secureListener.bind();
+    error = _server.start();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot bind to ephemeral port", _secureListener.name());
-      assert(!"Cannot bind to ephemeral port");
-      return;
+      ESB_LOG_ERROR_ERRNO(error, "Cannot start echo server");
+      exit(error);
     }
+  }
 
-    error = _clearListener.listen();
+  virtual void TearDown() {
+    _server.stop();
+    Error error = _server.join();
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port", _clearListener.name());
-      assert(!"Cannot listen on ephemeral port");
-      return;
+      ESB_LOG_ERROR_ERRNO(error, "Cannot join echo server");
+      exit(error);
     }
-
-    error = _secureListener.listen();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "[%s] cannot listen on ephemeral port", _secureListener.name());
-      assert(!"Cannot listen on ephemeral port");
-      return;
-    }
-
-    _clearListenerAddress.setPort(_clearListener.listeningAddress().port());
-    _secureListenerAddress.setPort(_secureListener.listeningAddress().port());
   }
 
  protected:
-  SocketAddress _clearListenerAddress;
-  SocketAddress _secureListenerAddress;
-  ListeningSocket _clearListener;
-  ListeningSocket _secureListener;
+  EchoServer _server;
   char _message[42];
 };
 

@@ -19,7 +19,7 @@ namespace ESB {
  *
  *  @ingroup network
  */
-class HostAddress : public SocketAddress {
+class HostAddress2 : public SocketAddress {
  public:
   /**
    * Default constructor.  Suitable for creating an uninitialized address.
@@ -72,7 +72,6 @@ class HostAddress : public SocketAddress {
   inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
-  char _host[ESB_MAX_HOSTNAME + 1];
 };
 
 }  // namespace ESB

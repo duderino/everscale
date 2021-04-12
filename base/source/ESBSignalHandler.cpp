@@ -83,7 +83,7 @@ void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) {
   const int startFrame = 1;
 #ifdef HAVE_UCONTEXT_T
   {
-    ucontext_t *uc = (ucontext_t *)context;
+    ucontext_t *uc = (ucontext_t *)_context;
 #ifdef ESB_64BIT
     frames[1] = (void *)uc->uc_mcontext.gregs[REG_RIP];
 #else

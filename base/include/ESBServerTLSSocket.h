@@ -5,6 +5,10 @@
 #include <ESBTLSSocket.h>
 #endif
 
+#ifndef ESB_SERVER_TLS_CONTEXT_INDEX_H
+#include <ESBServerTLSContextIndex.h>
+#endif
+
 namespace ESB {
 
 /** ServerTLSSocket are used to connect to other SSL/TLS endpoints and
@@ -14,16 +18,13 @@ namespace ESB {
  */
 class ServerTLSSocket : public TLSSocket {
  public:
-  static Error Initialize(const char *privateKeyPath, const char *certificatePath);
-
-  static void Destroy();
-
   /** Construct a new server socket.
    *
    * @param acceptState init parameters created by the ListeningSocket
    * @param namePrefix A name prefix to be incorporated into log messages
+   * @param contextIndex an index of TLS contexts to be used in SNI serving
    */
-  ServerTLSSocket(const Socket::State &acceptState, const char *namePrefix);
+  ServerTLSSocket(const Socket::State &acceptState, const char *namePrefix, ServerTLSContextIndex &contextIndex);
 
   /** Destroy the socket.  Will close the socket if it has not
    *  already been closed.
@@ -53,13 +54,10 @@ class ServerTLSSocket : public TLSSocket {
   virtual Error startHandshake();
 
  private:
-  // Disabled
-  ServerTLSSocket(const ServerTLSSocket &);
-  ServerTLSSocket &operator=(const ServerTLSSocket &);
-
+  ServerTLSContextIndex &_contextIndex;
   SocketAddress _peerAddress;
 
-  static SSL_CTX *_Context;
+  ESB_DISABLE_AUTO_COPY(ServerTLSSocket);
 };
 
 }  // namespace ESB

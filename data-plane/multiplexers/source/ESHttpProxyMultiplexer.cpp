@@ -250,14 +250,15 @@ static HttpNullServerCounters HttpNullServerCounters;
 
 HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                                            HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
-                                           HttpClientCounters &clientCounters, HttpServerCounters &serverCounters)
+                                           HttpClientCounters &clientCounters, HttpServerCounters &serverCounters,
+                                           ESB::ServerTLSContextIndex &contextIndex)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
+      _serverSocketFactory(contextIndex, *this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
       _clientSocketFactory(*this, clientHandler, clientCounters, _factoryAllocator),
@@ -288,14 +289,15 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _serverCounters(HttpNullServerCounters) {}
 
 HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
-                                           HttpServerHandler &serverHandler, HttpServerCounters &serverCounters)
+                                           HttpServerHandler &serverHandler, HttpServerCounters &serverCounters,
+                                           ESB::ServerTLSContextIndex &contextIndex)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
       _ioBufferPool(HttpConfig::Instance().ioBufferSize(), 0, ESB::NullLock::Instance(), _ioBufferPoolAllocator),
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, serverHandler, serverCounters, _factoryAllocator),
+      _serverSocketFactory(contextIndex, *this, serverHandler, serverCounters, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
       _clientSocketFactory(*this, HttpNullClientHandler, HttpNullClientCounters, _factoryAllocator),

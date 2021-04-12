@@ -17,8 +17,8 @@
 #include <ESBString.h>
 #endif
 
-#ifndef ESB_SHARED_EMBEDDED_MAP_H
-#include <ESBSharedEmbeddedMap.h>
+#ifndef ESB_EMBEDDED_MAP_BASE_H
+#include <ESBEmbeddedMapBase.h>
 #endif
 
 #ifndef ESB_SHARED_EMBEDDED_LIST_H
@@ -27,6 +27,10 @@
 
 #ifndef ESB_READ_WRITE_LOCK_H
 #include <ESBReadWriteLock.h>
+#endif
+
+#ifndef ESB_NULL_LOCK_H
+#include <ESBNullLock.h>
 #endif
 
 namespace ESB {
@@ -337,7 +341,7 @@ class WildcardIndex : public EmbeddedMapBase {
     virtual ~WildcardIndexCallbacks(){};
 
     virtual int compare(const void *f, const void *s) const;
-    virtual UInt32 hash(const void *key) const;
+    virtual UInt64 hash(const void *key) const;
     virtual void cleanup(EmbeddedMapElement *element);
 
    private:

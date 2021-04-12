@@ -8,7 +8,47 @@
 
 using namespace ESB;
 
-class ConnectionPoolTest : public SocketTest {};
+class ConnectionPoolTest : public SocketTest {
+ public:
+  ConnectionPoolTest() : _clientContexts(42, 3, SystemAllocator::Instance()) {}
+
+  virtual ~ConnectionPoolTest() {}
+
+  static void SetUpTestSuite() { SocketTest::SetUpTestSuite(); }
+
+  static void TearDownTestSuite() { SocketTest::TearDownTestSuite(); }
+
+  virtual void SetUp() {
+    SocketTest::SetUp();
+    TLSContext::Params params;
+
+    Error error = _clientContexts.indexDefaultContext(params.caCertificatePath("ca.crt").verifyPeerCertificate(true));
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default client TLS context");
+      exit(error);
+    }
+
+    error = _clientContexts.indexContext(params.reset()
+                                             .privateKeyPath("client.key")
+                                             .certificatePath("client.crt")
+                                             .caCertificatePath("ca.crt")
+                                             .verifyPeerCertificate(true));
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client mTLS context");
+      exit(error);
+    }
+  }
+
+  virtual void TearDown() {
+    _clientContexts.clear();
+    SocketTest::TearDown();
+  }
+
+ protected:
+  ClientTLSContextIndex _clientContexts;
+
+  ESB_DISABLE_AUTO_COPY(ConnectionPoolTest);
+};
 
 static void DestroyConnection(ConnectedSocket *connection) {
   connection->~ConnectedSocket();
@@ -16,7 +56,7 @@ static void DestroyConnection(ConnectedSocket *connection) {
 }
 
 TEST_F(ConnectionPoolTest, AcquireRelease) {
-  ConnectionPool pool("Test", 41, 0);
+  ConnectionPool pool("Test", 41, 0, _clientContexts);
   ConnectedSocket *connection = NULL;
   bool reused = false;
 
@@ -47,7 +87,7 @@ TEST_F(ConnectionPoolTest, AcquireRelease) {
 }
 
 TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
-  ConnectionPool pool("Test", 41, 0);
+  ConnectionPool pool("Test", 41, 0, _clientContexts);
   ConnectedSocket *connection = NULL;
   bool reused = true;
 
@@ -79,15 +119,15 @@ TEST_F(ConnectionPoolTest, AcquireCloseRelease) {
 }
 
 TEST_F(ConnectionPoolTest, DistinctTransport) {
-  ConnectionPool pool("Test", 41, 0);
+  ConnectionPool pool("Test", 41, 0, _clientContexts);
   ConnectedSocket *connection = NULL;
   bool reused = false;
   EmbeddedList connections;
-  HostAddress secureListenerAddress("server.everscale.com", _secureListenerAddress);
+  const char *fqdn = "server.everscale.com";
 
   for (int i = 0; i < 42; ++i) {
     Error error = i % 2 ? pool.acquireClearSocket(_clearListenerAddress, &connection, &reused)
-                        : pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
+                        : pool.acquireTLSSocket(fqdn, _secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(0, pool.hits());
@@ -111,7 +151,7 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
   }
 
   for (int i = 0; i < 42 / 2; ++i) {
-    Error error = pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
+    Error error = pool.acquireTLSSocket(fqdn, _secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(SocketAddress::TLS, connection->peerAddress().type());
@@ -126,7 +166,7 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
   }
 
   {
-    Error error = pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
+    Error error = pool.acquireTLSSocket(fqdn, _secureListenerAddress, &connection, &reused);
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_EQ(SocketAddress::TLS, connection->peerAddress().type());
     EXPECT_EQ(21, pool.hits());
@@ -156,15 +196,15 @@ TEST_F(ConnectionPoolTest, DistinctTransport) {
 }
 
 TEST_F(ConnectionPoolTest, CleanupLiveConnections) {
-  ConnectionPool pool("Test", 41, 0);
+  ConnectionPool pool("Test", 41, 0, _clientContexts);
   ConnectedSocket *connection = NULL;
   bool reused = false;
   EmbeddedList connections;
-  HostAddress secureListenerAddress("server.everscale.com", _secureListenerAddress);
+  const char *fqdn = "server.everscale.com";
 
   for (int i = 0; i < 42; ++i) {
     Error error = i % 2 ? pool.acquireClearSocket(_clearListenerAddress, &connection, &reused)
-                        : pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
+                        : pool.acquireTLSSocket(fqdn, _secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_TRUE(connection->connected());
@@ -188,15 +228,15 @@ TEST_F(ConnectionPoolTest, CleanupLiveConnections) {
 }
 
 TEST_F(ConnectionPoolTest, CleanupDeadConnections) {
-  ConnectionPool pool("Test", 41, 0);
+  ConnectionPool pool("Test", 41, 0, _clientContexts);
   ConnectedSocket *connection = NULL;
   bool reused = false;
   EmbeddedList connections;
-  HostAddress secureListenerAddress("server.everscale.com", _secureListenerAddress);
+  const char *fqdn = "server.everscale.com";
 
   for (int i = 0; i < 42; ++i) {
     Error error = i % 2 ? pool.acquireClearSocket(_clearListenerAddress, &connection, &reused)
-                        : pool.acquireTLSSocket(secureListenerAddress, &connection, &reused);
+                        : pool.acquireTLSSocket(fqdn, _secureListenerAddress, &connection, &reused);
 
     EXPECT_EQ(ESB_SUCCESS, error);
     EXPECT_TRUE(connection->connected());
