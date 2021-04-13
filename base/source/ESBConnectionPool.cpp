@@ -145,14 +145,7 @@ Error ConnectionPool::acquireTLSSocket(const char *fqdn, const SocketAddress &pe
   }
 
   if (socket) {
-    if (0 != socket->peerAddress().compare(peerAddress)) {
-      char buffer[ESB_ADDRESS_PORT_SIZE + 1];
-      peerAddress.logAddress(buffer, sizeof(buffer), -1);
-      buffer[sizeof(buffer) - 1] = 0;
-      ESB_LOG_ERROR_ERRNO(ESB_INVALID_STATE, "Connection pool incorrectly matched key '%s' to socket '%s'", buffer,
-                          socket->name());
-      return ESB_INVALID_STATE;
-    }
+    assert(0 == socket->peerAddress().compare(peerAddress));
     _hits.inc();
     *reused = true;
     *connection = socket;
@@ -251,13 +244,13 @@ int ConnectionPool::SocketAddressCallbacks::compare(const void *f, const void *s
       return key->_peerAddress.compare(object->_peerAddress);
     } else {
       // clear vs. tls
-      return key->_tag - key->_tag;
+      return -1;
     }
   }
 
   if (SocketKey::CLEAR_OBJECT == object->_tag) {
     // tls vs. clear
-    return key->_tag - key->_tag;
+    return 1;
   }
 
   // tls vs. tls
