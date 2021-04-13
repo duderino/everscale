@@ -38,6 +38,8 @@ Error ServerTLSSocket::startHandshake() {
 
     if (_contextIndex.defaultContext()->verifyPeerCertificate()) {
       SSL_set_verify(_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+    } else {
+      SSL_set_verify(_ssl, SSL_VERIFY_NONE, NULL);
     }
   }
 

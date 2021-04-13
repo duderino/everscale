@@ -1,4 +1,5 @@
 stat:
+ - Add test to connection pool test - server closes all connections while client connections are in pool.
  - Create macros for placement new
  - EpollMultiplexer dtor calls cleanup handlers on all active connections.  This returns them to the client/server socket factories instead of destroying them.
  - create WAN test using a special docker image with:  tc qdisc add dev lo root netem delay 100ms 20ms distribution normal

@@ -29,7 +29,7 @@ TLSSocket::TLSSocket(const Socket::State &acceptState, const char *namePrefix)
 TLSSocket::TLSSocket(const char *namePrefix, bool isBlocking)
     : ConnectedSocket(namePrefix, isBlocking), _ssl(NULL), _bio(NULL) {}
 
-TLSSocket::~TLSSocket() {}
+TLSSocket::~TLSSocket() { close(); }
 
 bool TLSSocket::secure() const { return true; }
 

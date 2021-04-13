@@ -6,16 +6,8 @@
 #include <ESBClientTLSSocket.h>
 #endif
 
-#ifndef ESB_SERVER_TLS_SOCKET_H
-#include <ESBServerTLSSocket.h>
-#endif
-
 #ifndef ESB_CLIENT_TLS_CONTEXT_INDEX_H
 #include <ESBClientTLSContextIndex.h>
-#endif
-
-#ifndef ESB_THREAD_H
-#include <ESBThread.h>
 #endif
 
 #include <gtest/gtest.h>
@@ -57,16 +49,13 @@ class TLSSocketTest : public SocketTest {
     SocketTest::SetUp();
   }
 
-  virtual void TearDown() {
-//    _clientMutualContext = NULL;
-//    _clientContexts.clear();
-//    _server.contextIndex().clear();
-    SocketTest::TearDown();
-  }
+  virtual void TearDown() { SocketTest::TearDown(); }
 
  protected:
   ClientTLSContextIndex _clientContexts;
   TLSContextPointer _clientMutualContext;
+
+  ESB_DISABLE_AUTO_COPY(TLSSocketTest);
 };
 
 TEST_F(TLSSocketTest, EchoMessage) {

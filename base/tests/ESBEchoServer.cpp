@@ -244,8 +244,7 @@ EchoServer::EchoServer(Allocator& allocator)
       _clearListener(_multiplexer, _allocator),
       _secureListener(_multiplexer, _allocator, _contextIndex) {}
 
-EchoServer::~EchoServer() {
-}
+EchoServer::~EchoServer() {}
 
 Error EchoServer::initialize() {
   Error error = _clearListener.initialize();
@@ -273,10 +272,6 @@ Error EchoServer::initialize() {
   return ESB_SUCCESS;
 }
 
-void EchoServer::run() {
-  ESB_LOG_INFO("[%s] starting", _multiplexer.name());
-  _multiplexer.run(&_isRunning);
-  ESB_LOG_INFO("[%s] stopping", _multiplexer.name());
-}
+void EchoServer::run() { _multiplexer.run(&_isRunning); }
 
 }  // namespace ESB

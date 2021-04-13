@@ -65,8 +65,8 @@ subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = f*.everscale.com
-DNS.2 = *z.everscale.com
-DNS.3 = b*r.everscale.com
+DNS.2 = b*r.everscale.com
+DNS.3 = *z.everscale.com
 IP.1 = 1.2.3.4
 IP.2 = 5.6.7.8
 EOF
@@ -91,13 +91,49 @@ subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = f*.server.everscale.com
-DNS.2 = *z.server.everscale.com
-DNS.3 = b*r.server.everscale.com
+DNS.2 = b*r.server.everscale.com
+DNS.3 = *z.server.everscale.com
 IP.1 = 1.2.3.4
 IP.2 = 5.6.7.8
 EOF
 
-for variant in client server foo bar baz san1 san2 san3
+cat << EOF > san4.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = b*z.server.everscale.com
+DNS.2 = q*ux.server.everscale.com
+DNS.3 = c*.server.everscale.com
+DNS.4 = *ly.server.everscale.com
+EOF
+
+cat << EOF > san5.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = foo.server.everscale.com
+DNS.2 = bar.server.everscale.com
+DNS.3 = baz.server.everscale.com
+DNS.4 = q*ux.server.everscale.com
+EOF
+
+cat << EOF > san6.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = c*.server.everscale.com
+EOF
+
+for variant in client server foo bar baz san1 san2 san3 san4 san5 san6
 do
   if [ ! -f $variant.key ]; then
 	  openssl genrsa -out $variant.key $KEYSIZE

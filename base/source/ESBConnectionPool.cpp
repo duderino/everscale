@@ -145,7 +145,14 @@ Error ConnectionPool::acquireTLSSocket(const char *fqdn, const SocketAddress &pe
   }
 
   if (socket) {
-    assert(0 == socket->peerAddress().compare(peerAddress));
+    if (0 != socket->peerAddress().compare(peerAddress)) {
+      char buffer[ESB_ADDRESS_PORT_SIZE + 1];
+      peerAddress.logAddress(buffer, sizeof(buffer), -1);
+      buffer[sizeof(buffer) - 1] = 0;
+      ESB_LOG_ERROR_ERRNO(ESB_INVALID_STATE, "Connection pool incorrectly matched key '%s' to socket '%s'", buffer,
+                          socket->name());
+      return ESB_INVALID_STATE;
+    }
     _hits.inc();
     *reused = true;
     *connection = socket;
@@ -199,7 +206,7 @@ void ConnectionPool::release(ConnectedSocket *connection) {
       Error error = socket->peerCertificate(&serverCertificate);
       if (ESB_SUCCESS != error) {
         ESB_LOG_DEBUG("[%s] discarding connection without peer cert from pool", connection->name());
-        connection->close();
+        connection->~ConnectedSocket();
         _deconstructedTLSSockets.addLast(connection);
         return;
       }
