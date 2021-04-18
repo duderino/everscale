@@ -21,8 +21,10 @@
 namespace ES {
 
 HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
-                                                 HttpServerCounters &counters, ESB::Allocator &allocator)
-    : _multiplexer(multiplexer),
+                                                 HttpServerCounters &counters, ESB::ServerTLSContextIndex &contextIndex,
+                                                 ESB::Allocator &allocator)
+    : _contextIndex(contextIndex),
+      _multiplexer(multiplexer),
       _handler(handler),
       _counters(counters),
       _allocator(allocator),
@@ -53,8 +55,8 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
   switch (state.peerAddress().type()) {
     case ESB::SocketAddress::TLS: {
       ESB::EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
-      socket = memory ? new (memory) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name())
-                      : new (_allocator) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name());
+      socket = memory ? new (memory) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name(), _contextIndex)
+                      : new (_allocator) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name(), _contextIndex);
       if (!socket) {
         error = ESB_OUT_OF_MEMORY;
       }

@@ -75,31 +75,10 @@ class HttpProxyNegativeTest
   virtual void TearDown() {}
 
   // Run before all HttpProxyTestMessageBody test cases
-  static void SetUpTestSuite() {
-    ESB::Logger::SetInstance(&TestLogger);
-
-    HttpTestParams params;
-    ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
-      LogCurrentWorkingDirectory(ESB::Logger::Err);
-      exit(error);
-    }
-
-    error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
-      LogCurrentWorkingDirectory(ESB::Logger::Err);
-      exit(error);
-    }
-  }
+  static void SetUpTestSuite() { ESB::Logger::SetInstance(&TestLogger); }
 
   // Run after all HttpProxyTestMessageBody test cases
-  static void TearDownTestSuite() {
-    ESB::ClientTLSSocket::Destroy();
-    ESB::ServerTLSSocket::Destroy();
-    ESB::Logger::SetInstance(NULL);
-  }
+  static void TearDownTestSuite() { ESB::Logger::SetInstance(NULL); }
 
   ESB_DISABLE_AUTO_COPY(HttpProxyNegativeTest);
 };
@@ -130,9 +109,11 @@ TEST_P(HttpProxyNegativeTest, FailCleanly) {
   HttpOriginHandler originHandler(params);
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(0, test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getFailures()->queries());
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(0, test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getFailures()->queries());
 }
 
 // TODO - Start 223: IdleOrigin/HttpProxyNegativeTest.FailCleanly/(1373526,false,true,3,1000,10) - timeout? deadlock?

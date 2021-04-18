@@ -6,198 +6,267 @@
 #include <ESBClientTLSSocket.h>
 #endif
 
-#ifndef ESB_SERVER_TLS_SOCKET_H
-#include <ESBServerTLSSocket.h>
-#endif
-
-#ifndef ESB_THREAD_H
-#include <ESBThread.h>
+#ifndef ESB_CLIENT_TLS_CONTEXT_INDEX_H
+#include <ESBClientTLSContextIndex.h>
 #endif
 
 #include <gtest/gtest.h>
 
 using namespace ESB;
 
-class TLSEchoServer : public Thread {
- public:
-  TLSEchoServer(UInt32 messageSize, ListeningSocket &listeningSocket)
-      : _messageSize(messageSize), _listeningSocket(listeningSocket) {}
-  virtual ~TLSEchoServer(){};
-
- protected:
-  virtual void run() {
-    char *message = (char *)malloc(_messageSize);
-    assert(message);
-    _listeningSocket.setBlocking(true);
-
-    while (isRunning()) {
-      Socket::State state;
-      ESB::Error error = _listeningSocket.accept(&state);
-      assert(ESB_SUCCESS == error);
-      if (ESB_SUCCESS != error) {
-        ESB_LOG_ERROR_ERRNO(error, "[%s] cannot accept socket", _listeningSocket.name());
-        return;
-      }
-
-      ServerTLSSocket server(state, "test");
-      assert(server.connected());
-      assert(server.secure());
-      assert(server.isBlocking());
-
-      while (isRunning()) {
-        UInt32 bytesReceived = 0U;
-        while (bytesReceived < _messageSize && isRunning() && server.connected()) {
-          SSize result = server.receive(message + bytesReceived, _messageSize - bytesReceived);
-          if (0 == result) {
-            server.close();
-            break;
-          } else if (0 > result) {
-            ESB_LOG_ERROR_ERRNO(LastError(), "[%s] cannot receive data", server.name());
-            server.close();
-            break;
-          }
-          bytesReceived += result;
-        }
-
-        UInt32 bytesSent = 0U;
-        while (bytesSent < _messageSize && isRunning() && server.connected()) {
-          SSize result = server.send(message + bytesSent, _messageSize - bytesSent);
-          if (0 >= result) {
-            server.close();
-            ESB_LOG_ERROR_ERRNO(LastError(), "[%s] cannot send data", server.name());
-            break;
-          }
-          bytesSent += result;
-        }
-      }
-
-      server.close();
-    }
-
-    if (message) free(message);
-  }
-
- private:
-  UInt32 _messageSize;
-  ListeningSocket &_listeningSocket;
-};
-
 class TLSSocketTest : public SocketTest {
  public:
-  TLSSocketTest() : _serverThread(sizeof(_message), _secureListener) {}
+  TLSSocketTest() : SocketTest(SystemAllocator::Instance()), _clientContexts(42, 3, SystemAllocator::Instance()) {}
   virtual ~TLSSocketTest(){};
 
-  static void SetUpTestSuite() {
-    SocketTest::SetUpTestSuite();
-
-    const int maxVerifyDepth = 42;
-    const char *caPath = "ca.crt";
-    const char *certPath = "server.crt";
-    const char *keyPath = "server.key";
-
-    {
-      char cwd[ESB_MAX_PATH];
-      if (!getcwd(cwd, sizeof(cwd))) {
-        ESB_LOG_WARNING_ERRNO(LastError(), "Cannot determine current working directory");
-      } else {
-        ESB_LOG_DEBUG("Current working dir: %s", cwd);
-      }
-    }
-
-    Error error = ClientTLSSocket::Initialize(caPath, maxVerifyDepth);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
-      exit(error);
-    }
-
-    error = ServerTLSSocket::Initialize(keyPath, certPath);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
-      exit(error);
-    }
-  }
-
-  static void TearDownTestSuite() {
-    ESB::ClientTLSSocket::Destroy();
-    ESB::ServerTLSSocket::Destroy();
-    SocketTest::TearDownTestSuite();
-  }
-
   virtual void SetUp() {
+    TLSContext::Params params;
+
+    Error error = _server.contextIndex().indexDefaultContext(
+        params.privateKeyPath("server.key").certificatePath("server.crt").verifyPeerCertificate(false));
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default server TLS context");
+      exit(error);
+    }
+
+    error = _clientContexts.indexDefaultContext(params.reset().caCertificatePath("ca.crt").verifyPeerCertificate(true));
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default client TLS context");
+      exit(error);
+    }
+
+    error = _clientContexts.indexContext(params.reset()
+                                             .privateKeyPath("client.key")
+                                             .certificatePath("client.crt")
+                                             .caCertificatePath("ca.crt")
+                                             .verifyPeerCertificate(true),
+                                         &_clientMutualContext);
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client mTLS context");
+      exit(error);
+    }
+
     SocketTest::SetUp();
-    Error error = _serverThread.start();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot start background server thread");
-      exit(error);
-    }
   }
 
-  virtual void TearDown() {
-    _serverThread.stop();
-    Error error = _serverThread.join();
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot join background server thread");
-      exit(error);
-    }
-    SocketTest::TearDown();
-  }
+  virtual void TearDown() { SocketTest::TearDown(); }
 
- private:
-  TLSEchoServer _serverThread;
+ protected:
+  ClientTLSContextIndex _clientContexts;
+  TLSContextPointer _clientMutualContext;
+
+  ESB_DISABLE_AUTO_COPY(TLSSocketTest);
 };
 
 TEST_F(TLSSocketTest, EchoMessage) {
-  HostAddress serverAddress("test.server.everscale.com", _secureListenerAddress);
-  ClientTLSSocket client(serverAddress, "test", true);
+  ClientTLSSocket client("test.server.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(),
+                         true);
 
   Error error = client.connect();
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_TRUE(client.connected());
-  EXPECT_TRUE(client.secure());
-  EXPECT_TRUE(client.isBlocking());
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
 
   SSize result = client.send(_message, sizeof(_message));
-  EXPECT_EQ(result, sizeof(_message));
+  ASSERT_EQ(result, sizeof(_message));
 
   char buffer[sizeof(_message)];
   result = client.receive(buffer, sizeof(buffer));
-  EXPECT_EQ(result, sizeof(buffer));
+  ASSERT_EQ(result, sizeof(buffer));
 
-  EXPECT_TRUE(0 == strcmp(_message, buffer));
-
-  client.close();
+  ASSERT_TRUE(0 == strcmp(_message, buffer));
 }
 
 TEST_F(TLSSocketTest, HostnameMismatch) {
-  HostAddress serverAddress("mismatch.everscale.com", _secureListenerAddress);
-  ClientTLSSocket client(serverAddress, "test", true);
+  ClientTLSSocket client("mismatch.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(),
+                         true);
 
   Error error = client.connect();
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_TRUE(client.connected());
-  EXPECT_TRUE(client.secure());
-  EXPECT_TRUE(client.isBlocking());
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
 
   SSize result = client.send(_message, sizeof(_message));
-  EXPECT_GE(result, -1);
-  EXPECT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
-
-  client.close();
+  ASSERT_GE(result, -1);
+  ASSERT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
 }
 
 TEST_F(TLSSocketTest, CNnotSANmatch) {
-  HostAddress serverAddress("server.everscale.com", _secureListenerAddress);
-  ClientTLSSocket client(serverAddress, "test", true);
+  // Default cert has CN of server.everscale.com and
+  //
+  // [alt_names]
+  // DNS.1 = *.server.everscale.com
+  //
+  // so this should fail validation since
+  //   CN is ignored when alt_names are present
+  //   SNI of server.everscale.com != *.server.everscale.com
+  //
+  ClientTLSSocket client("server.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(),
+                         true);
 
   Error error = client.connect();
-  EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_TRUE(client.connected());
-  EXPECT_TRUE(client.secure());
-  EXPECT_TRUE(client.isBlocking());
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
 
   SSize result = client.send(_message, sizeof(_message));
-  EXPECT_GE(result, -1);
-  EXPECT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
+  ASSERT_GE(result, -1);
+  ASSERT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
+}
 
-  client.close();
+TEST_F(TLSSocketTest, ServerSNI) {
+  {
+    // Default cert has
+    //
+    // [alt_names]
+    // DNS.1 = *.server.everscale.com
+    //
+    // so this should fail validation
+    //
+    ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(),
+                           true);
+
+    Error error = client.connect();
+    ASSERT_EQ(ESB_SUCCESS, error);
+    ASSERT_TRUE(client.connected());
+    ASSERT_TRUE(client.secure());
+    ASSERT_TRUE(client.isBlocking());
+
+    SSize result = client.send(_message, sizeof(_message));
+    ASSERT_GE(result, -1);
+    ASSERT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
+  }
+
+  // san1 has:
+  //
+  // [alt_names]
+  // DNS.1 = f*.everscale.com
+  // DNS.2 = *z.everscale.com
+  // DNS.3 = b*r.everscale.com
+  // IP.1 = 1.2.3.4
+  // IP.2 = 5.6.7.8
+  //
+  // Once it's loaded the foo.everscale.com should match f*.everscale.com
+
+  TLSContext::Params params;
+  ASSERT_EQ(ESB_SUCCESS,
+            _server.contextIndex().indexContext(
+                params.privateKeyPath("san1.key").certificatePath("san1.crt").verifyPeerCertificate(false)));
+
+  ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(), true);
+
+  Error error = client.connect();
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
+
+  SSize result = client.send(_message, sizeof(_message));
+  ASSERT_EQ(result, sizeof(_message));
+
+  char buffer[sizeof(_message)];
+  result = client.receive(buffer, sizeof(buffer));
+  ASSERT_EQ(result, sizeof(buffer));
+
+  ASSERT_TRUE(0 == strcmp(_message, buffer));
+}
+
+TEST_F(TLSSocketTest, MutualTLSHappyPath) {
+  // san1 has:
+  //
+  // [alt_names]
+  // DNS.1 = f*.everscale.com
+  // DNS.2 = *z.everscale.com
+  // DNS.3 = b*r.everscale.com
+  // IP.1 = 1.2.3.4
+  // IP.2 = 5.6.7.8
+  //
+  // Once it's loaded the foo.everscale.com should match f*.everscale.com
+
+  TLSContext::Params params;
+  ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexContext(params.privateKeyPath("san1.key")
+                                                                 .certificatePath("san1.crt")
+                                                                 .caCertificatePath("ca.crt")
+                                                                 .verifyPeerCertificate(true)));
+
+  ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientMutualContext, true);
+
+  Error error = client.connect();
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
+
+  SSize result = client.send(_message, sizeof(_message));
+  ASSERT_EQ(result, sizeof(_message));
+
+  char buffer[sizeof(_message)];
+  result = client.receive(buffer, sizeof(buffer));
+  ASSERT_EQ(result, sizeof(buffer));
+
+  ASSERT_TRUE(0 == strcmp(_message, buffer));
+}
+
+TEST_F(TLSSocketTest, MutualTLSNoClientCert) {
+  // san1 has:
+  //
+  // [alt_names]
+  // DNS.1 = f*.everscale.com
+  // DNS.2 = *z.everscale.com
+  // DNS.3 = b*r.everscale.com
+  // IP.1 = 1.2.3.4
+  // IP.2 = 5.6.7.8
+  //
+  // Once it's loaded the foo.everscale.com should match f*.everscale.com
+
+  TLSContext::Params params;
+  ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexContext(params.privateKeyPath("san1.key")
+                                                                 .certificatePath("san1.crt")
+                                                                 .caCertificatePath("ca.crt")
+                                                                 .verifyPeerCertificate(true)));
+
+  ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(), true);
+
+  Error error = client.connect();
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
+
+  SSize result = client.send(_message, sizeof(_message));
+  ASSERT_GE(result, -1);
+  ASSERT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
+}
+
+TEST_F(TLSSocketTest, MutualTLSNoServerCA) {
+  // san1 has:
+  //
+  // [alt_names]
+  // DNS.1 = f*.everscale.com
+  // DNS.2 = *z.everscale.com
+  // DNS.3 = b*r.everscale.com
+  // IP.1 = 1.2.3.4
+  // IP.2 = 5.6.7.8
+  //
+  // Once it's loaded the foo.everscale.com should match f*.everscale.com
+
+  TLSContext::Params params;
+  ASSERT_EQ(ESB_SUCCESS,
+            _server.contextIndex().indexContext(
+                params.privateKeyPath("san1.key").certificatePath("san1.crt").verifyPeerCertificate(true)));
+
+  ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientMutualContext, true);
+
+  Error error = client.connect();
+  ASSERT_EQ(ESB_SUCCESS, error);
+  ASSERT_TRUE(client.connected());
+  ASSERT_TRUE(client.secure());
+  ASSERT_TRUE(client.isBlocking());
+
+  SSize result = client.send(_message, sizeof(_message));
+  ASSERT_GE(result, -1);
+  ASSERT_EQ(ESB_TLS_HANDSHAKE_ERROR, LastError());
 }

@@ -1,5 +1,6 @@
 stat:
- - Replace use of FetchContent for gtest with ExternalProject.  Fetch content seems to rerun every time forcing relink of every test case because gtest lib are newer.
+ - Add test to connection pool test - server closes all connections while client connections are in pool.
+ - Create macros for placement new
  - EpollMultiplexer dtor calls cleanup handlers on all active connections.  This returns them to the client/server socket factories instead of destroying them.
  - create WAN test using a special docker image with:  tc qdisc add dev lo root netem delay 100ms 20ms distribution normal
  - put detection of remote close in epoll handler and call handleRemoteClose()?  audit how client/server socket handle 0 reads.  Should those also call remote close?  Or just put the remote close logic only there?
@@ -34,6 +35,7 @@ stat:
  - create standalone loadgen to origin tests (3 processes)
 
 tls:
+ - support removal of tls contexts from context index - overshadowed SANs should emerge.
  - evaluate against https://tools.ietf.org/html/rfc2818
  - revisit HttpClientSocket and HttpServerSocket wantRead and wantWrite:  allow the statemachine to finish the TLS handshake even when the stream is paused.
  - add secure/insecure bit to connected socket log address
@@ -51,7 +53,7 @@ tls:
  - server side session resumption
  - can boringssl lib's memory be reconciled?
  - enable ASLR
- - audit initialization for FIPS
+ - audit initialization for FIPS = https://boringssl.googlesource.com/boringssl/+/master/crypto/fipsmodule/FIPS.md
  - Configure and maintain maps of CNs to ServerContexts (for SNI) and CNs to ClientContexts (client map must support one-level wildcard matching).
    Alternatively maintain maps of initialized privatekey+cert+CA tuples and register them with individual SSL contexts when needed.
  - Add support and tests for certificate chains and certificate chain verification

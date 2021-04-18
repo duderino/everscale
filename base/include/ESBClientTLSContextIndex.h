@@ -1,5 +1,5 @@
-#ifndef ESB_SERVER_TLS_CONTEXT_INDEX_H
-#define ESB_SERVER_TLS_CONTEXT_INDEX_H
+#ifndef ESB_CLIENT_TLS_CONTEXT_INDEX_H
+#define ESB_CLIENT_TLS_CONTEXT_INDEX_H
 
 #ifndef ESB_TLS_CONTEXT_INDEX_H
 #include <ESBTLSContextIndex.h>
@@ -8,11 +8,9 @@
 namespace ESB {
 
 /**
- * A TLSContextIndex with an additional default context which can be used for server-SNI interactions.  The default
- * context will handle non-SNI clients with the default cert.  When SNIs are presented, the default context can look
- * up the SNI against the index and potentially replace the context with a better match.
+ * A TLSContextIndex intended for TLS Client use.
  */
-class ServerTLSContextIndex : public TLSContextIndex {
+class ClientTLSContextIndex : public TLSContextIndex {
  public:
   /**
    * Construct a new TLS Context Index.
@@ -22,15 +20,13 @@ class ServerTLSContextIndex : public TLSContextIndex {
    * contention.
    * @param allocator The allocator to use for allocating internal buckets and nodes.
    */
-  ServerTLSContextIndex(UInt32 numBuckets, UInt32 numLocks, Allocator &allocator);
+  ClientTLSContextIndex(UInt32 numBuckets, UInt32 numLocks, Allocator &allocator);
 
-  virtual ~ServerTLSContextIndex();
+  virtual ~ClientTLSContextIndex();
 
   /**
-   * Load the default private key + X509 certificate pair into a TLS context and index the context with all of the
-   * X509 certificate's subject alt names (or just its common name if it has no subject alt names).  This default
-   * context is used for server-side TLS handshakes when the client does not provide the SNI.  For client-side TLS
-   * handshakes this is ignored.
+   * Load a default context to be used when there are no better matches (unless the default context actually is the
+   * best match).
    *
    * @param params private key and certificate paths and other options
    * @return ESB_SUCCESS if successful, ESB_UNIQUENESS_VIOLATION if the default context has already been indexed,
@@ -39,9 +35,9 @@ class ServerTLSContextIndex : public TLSContextIndex {
   Error indexDefaultContext(const TLSContext::Params &params);
 
   /**
-   * Get the default context used for server-side TLS handshakes when the peer/client doesn't provide an SNI.
+   * Get the default context to be used when there are no better matches.
    *
-   * @return The default context for server-side TLS handshakes
+   * @return The default context for client TLS sessions
    */
   inline TLSContextPointer &defaultContext() { return _defaultContext; }
 
@@ -58,7 +54,7 @@ class ServerTLSContextIndex : public TLSContextIndex {
  private:
   TLSContextPointer _defaultContext;
 
-  ESB_DISABLE_AUTO_COPY(ServerTLSContextIndex);
+  ESB_DISABLE_AUTO_COPY(ClientTLSContextIndex);
 };
 
 }  // namespace ESB

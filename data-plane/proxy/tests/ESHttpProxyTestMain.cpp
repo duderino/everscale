@@ -106,20 +106,13 @@ int main(int argc, char **argv) {
   HttpLoadgenHandler loadgenHandler(params);
   HttpRoutingProxyHandler proxyHandler(router);
   HttpOriginHandler originHandler(params);
-
-  error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
-    return error;
-  }
-
-  error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
-    return error;
-  }
-
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  error = test.loadDefaultTLSContexts();
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
   error = test.run();
   if (ESB_SUCCESS != error) {
     return error;
@@ -129,8 +122,8 @@ int main(int argc, char **argv) {
   // Assert all requests succeeded
   //
 
-  const ESB::UInt32 totalSuccesses = test.clientCounters().getSuccesses()->queries();
-  const ESB::UInt32 totalFailures = test.clientCounters().getFailures()->queries();
+  const ESB::UInt32 totalSuccesses = test.client().clientCounters().getSuccesses()->queries();
+  const ESB::UInt32 totalFailures = test.client().clientCounters().getFailures()->queries();
   const ESB::UInt32 totalTransactions = params.connections() * params.requestsPerConnection();
 
   if (totalSuccesses != totalTransactions || 0 < totalFailures) {

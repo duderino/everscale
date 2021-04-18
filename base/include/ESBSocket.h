@@ -156,10 +156,22 @@ class Socket : public EmbeddedMapElement {
   bool _isBlocking;
   SOCKET _sockFd;
 
- private:
-  // Disabled
-  Socket(const Socket &socket);
-  Socket &operator=(const Socket &);
+  ESB_DISABLE_AUTO_COPY(Socket);
+};
+
+/**
+ * Sockets can be stored in connection pools using this key.
+ */
+class SocketKey {
+ public:
+  enum Tag { CLEAR_KEY = 0, CLEAR_OBJECT = 1, TLS_KEY = 2, TLS_OBJECT = 3 };
+
+  SocketKey(const SocketAddress &peerAddress, Tag tag, void *context)
+      : _peerAddress(peerAddress), _tag(tag), _context(context) {}
+
+  const SocketAddress &_peerAddress;
+  Tag _tag;
+  void *_context;
 };
 
 }  // namespace ESB

@@ -29,6 +29,10 @@
 #include <ESBRand.h>
 #endif
 
+#ifndef ESB_SERVER_TLS_CONTEXT_INDEX_H
+#include <ESBServerTLSContextIndex.h>
+#endif
+
 namespace ES {
 
 class HttpServer {
@@ -40,6 +44,10 @@ class HttpServer {
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpServer();
+
+  inline ESB::ServerTLSContextIndex &serverTlsContextIndex() { return _serverContextIndex; }
+
+  inline const ESB::ServerTLSContextIndex &serverTlsContextIndex() const { return _serverContextIndex; }
 
   /**
    * Enqueue a command to be run on a multiplexer thread.  If the
@@ -125,6 +133,7 @@ class HttpServer {
   ESB::List _multiplexers;
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
+  ESB::ServerTLSContextIndex _serverContextIndex;
   HttpServerSimpleCounters _serverCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
 

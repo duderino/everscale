@@ -600,7 +600,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
     }
   }
 
-  ESB_LOG_NOTICE("[%s] stopped", name());
+  ESB_LOG_NOTICE("[%s] multiplexer thread stopped", name());
   destroy();
   return false;
 }

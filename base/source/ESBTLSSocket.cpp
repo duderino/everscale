@@ -11,23 +11,17 @@
 
 namespace ESB {
 
-bool TLSSocket::_Initialized = false;
-
-Error TLSSocket::Initialize() {
-  if (_Initialized) {
-    return ESB_SUCCESS;
+class TLSInitializer {
+ public:
+  TLSInitializer() {
+    if (1 != OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS, NULL)) {
+      fprintf(stderr, "Cannot initialize openssl library\n");
+      exit(1);
+    }
   }
+};
 
-  SSL_load_error_strings();
-
-  if (!OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS, NULL)) {
-    ESB_LOG_TLS_ERROR("Cannot initialize TLS library");
-    return ESB_GENERAL_TLS_ERROR;
-  }
-
-  _Initialized = true;
-  return ESB_SUCCESS;
-}
+static TLSInitializer Initializer;
 
 TLSSocket::TLSSocket(const Socket::State &acceptState, const char *namePrefix)
     : ConnectedSocket(acceptState, namePrefix), _ssl(NULL), _bio(NULL) {}
@@ -35,7 +29,7 @@ TLSSocket::TLSSocket(const Socket::State &acceptState, const char *namePrefix)
 TLSSocket::TLSSocket(const char *namePrefix, bool isBlocking)
     : ConnectedSocket(namePrefix, isBlocking), _ssl(NULL), _bio(NULL) {}
 
-TLSSocket::~TLSSocket() {}
+TLSSocket::~TLSSocket() { close(); }
 
 bool TLSSocket::secure() const { return true; }
 

@@ -221,6 +221,7 @@ class ConnectedSocket : public Socket {
   ESB::Error updateLocalAddress();
 
   SocketAddress _localAddress;
+
   // <prefix>:<ip addr>:<port>-<ip addr>:<port>,<port>
   mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 +
                            ESB_MAX_UINT32_STRING_LENGTH];

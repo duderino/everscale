@@ -147,7 +147,7 @@ Error WildcardIndexNode::insert(const char *key, UInt32 keySize, SmartPointer &v
   }
   assert(0 == *p);
 
-  // Find the insertion point in the _extra spillover buffer
+  // Find the insertion point in the context spillover buffer
   unsigned char *q = NULL;
 
   if (_extra._data) {
@@ -180,7 +180,7 @@ Error WildcardIndexNode::insert(const char *key, UInt32 keySize, SmartPointer &v
     return ESB_SUCCESS;
   }
 
-  // use _extra spillover area, (re)allocating memory if necessary
+  // use context spillover area, (re)allocating memory if necessary
 
   if (!_extra._data) {
     _extra._data = (unsigned char *)malloc(MAX(DefaultAlloc, keySize + sizeof(SmartPointer) + 1));
@@ -410,7 +410,7 @@ Error WildcardIndexNode::next(const Iterator **it) const {
       return ESB_SUCCESS;
     }
 
-    // No more keys in _wildcards, but set the iterator to the next key in _extra if it has been allocated.
+    // No more keys in _wildcards, but set the iterator to the next key in context if it has been allocated.
 
     if (_extra._data) {
       *it = _extra._data;
@@ -453,7 +453,7 @@ int WildcardIndex::WildcardIndexCallbacks::compare(const void *f, const void *s)
   return strcmp((const char *)f, (const char *)s);
 }
 
-UInt32 WildcardIndex::WildcardIndexCallbacks::hash(const void *key) const { return StringHash((const char *)key); }
+UInt64 WildcardIndex::WildcardIndexCallbacks::hash(const void *key) const { return StringHash((const char *)key); }
 
 void WildcardIndex::WildcardIndexCallbacks::cleanup(EmbeddedMapElement *element) {
   element->~EmbeddedMapElement();
