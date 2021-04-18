@@ -33,6 +33,10 @@
 #include <ESBConnectionPool.h>
 #endif
 
+#ifndef ESB_CLIENT_TLS_CONTEXT_INDEX_H
+#include <ESBClientTLSContextIndex.h>
+#endif
+
 namespace ES {
 
 /** A factory that creates and reuses HttpClientSockets
@@ -43,13 +47,21 @@ class HttpClientSocketFactory {
    *
    */
   HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
-                          HttpClientCounters &counters, ESB::Allocator &allocator);
+                          HttpClientCounters &counters, ESB::ClientTLSContextIndex &contextIndex,
+                          ESB::Allocator &allocator);
 
   /** Destructor.
    */
   virtual ~HttpClientSocketFactory();
 
-  HttpClientSocket *create(HttpClientTransaction *transaction);
+  /**
+   * Create a new http client socket, potentially reusing the underlying TCP connection in the process.
+   *
+   * @param transaction The client transction which will be executed on the socket
+   * @param socket If successful, this will point to the created socket
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  ESB::Error create(HttpClientTransaction *transaction, HttpClientSocket **socket);
 
   /**
    * Execute the client transaction.  If this method returns ESB_SUCCESS, then

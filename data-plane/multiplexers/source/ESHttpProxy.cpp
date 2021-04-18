@@ -10,12 +10,18 @@
 #include <ESHttpProxyMultiplexer.h>
 #endif
 
+#ifndef ES_HTTP_CONFIG_H
+#include <ESHttpConfig.h>
+#endif
+
 namespace ES {
 
 HttpProxy::HttpProxy(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec,
                      HttpProxyHandler &proxyHandler, ESB::Allocator &allocator)
     : HttpServer(namePrefix, threads, idleTimeoutMsec, proxyHandler, allocator),
       _proxyHandler(proxyHandler),
+      _clientContextIndex(HttpConfig::Instance().tlsContextBuckets(), HttpConfig::Instance().tlsContextLocks(),
+                          _allocator),
       _clientCounters(60, 1, _allocator) {}
 
 HttpProxy::~HttpProxy() {}
@@ -47,8 +53,9 @@ ESB::Error HttpProxy::push(HttpClientCommand *command, int idx) {
 }
 
 ESB::SocketMultiplexer *HttpProxy::createMultiplexer() {
-  return new (_allocator) HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec,
-                                               _proxyHandler, _proxyHandler, _clientCounters, _serverCounters);
+  return new (_allocator)
+      HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec, _proxyHandler,
+                           _proxyHandler, _clientCounters, _serverCounters, _clientContextIndex, _serverContextIndex);
 }
 
 }  // namespace ES

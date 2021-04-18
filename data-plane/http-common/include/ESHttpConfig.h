@@ -14,6 +14,8 @@ class HttpConfig {
   inline ESB::UInt32 ioBufferSize() const { return _ioBufferSize; }
   inline ESB::UInt32 ioBufferChunkSize() const { return _ioBufferChunkSize; }
   inline ESB::UInt32 connectionPoolBuckets() const { return _connectionPoolBuckets; };
+  inline ESB::UInt32 tlsContextBuckets() const { return _connectionPoolBuckets; };
+  inline ESB::UInt32 tlsContextLocks() const { return MIN(47, _connectionPoolBuckets); };
 
  private:
   // Singleton

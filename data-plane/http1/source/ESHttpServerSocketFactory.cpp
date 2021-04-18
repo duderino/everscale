@@ -20,9 +20,9 @@
 
 namespace ES {
 
-HttpServerSocketFactory::HttpServerSocketFactory(ESB::ServerTLSContextIndex &contextIndex,
-                                                 HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
-                                                 HttpServerCounters &counters, ESB::Allocator &allocator)
+HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
+                                                 HttpServerCounters &counters, ESB::ServerTLSContextIndex &contextIndex,
+                                                 ESB::Allocator &allocator)
     : _contextIndex(contextIndex),
       _multiplexer(multiplexer),
       _handler(handler),

@@ -40,9 +40,17 @@ class HttpIntegrationTest {
                       HttpClientHandler &clientHandler, HttpServerHandler &serverHandler);
   virtual ~HttpIntegrationTest();
 
+  ESB::Error loadDefaultTLSContexts();
   ESB::Error run();
 
-  inline const HttpClientCounters &clientCounters() const { return _client.clientCounters(); }
+  inline HttpClient &client() { return _client; }
+  inline const HttpClient &client() const { return _client; }
+
+  inline HttpProxy &proxy() { return _proxy; }
+  inline const HttpProxy &proxy() const { return _proxy; }
+
+  inline HttpServer &origin() { return _origin; }
+  inline const HttpServer &origin() const { return _origin; }
 
  private:
   const HttpTestParams &_params;

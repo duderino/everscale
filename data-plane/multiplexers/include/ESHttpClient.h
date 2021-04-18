@@ -29,6 +29,10 @@
 #include <ESBRand.h>
 #endif
 
+#ifndef ESB_CLIENT_TLS_CONTEXT_INDEX_H
+#include <ESBClientTLSContextIndex.h>
+#endif
+
 namespace ES {
 
 class HttpClient {
@@ -40,6 +44,10 @@ class HttpClient {
              ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpClient();
+
+  inline ESB::ClientTLSContextIndex &clientTlsContextIndex() { return _clientContextIndex; }
+
+  inline const ESB::ClientTLSContextIndex &clientTlsContextIndex() const { return _clientContextIndex; }
 
   /**
    * Enqueue a command to be run on a multiplexer thread.  If the
@@ -68,10 +76,6 @@ class HttpClient {
   inline const HttpClientCounters &clientCounters() const { return _clientCounters; }
 
  private:
-  // disabled
-  HttpClient(const HttpClient &);
-  void operator=(const HttpClient &);
-
   typedef enum {
     ES_HTTP_CLIENT_IS_INITIALIZED = 0,
     ES_HTTP_CLIENT_IS_STARTED = 1,
@@ -88,8 +92,11 @@ class HttpClient {
   ESB::List _multiplexers;
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
+  ESB::ClientTLSContextIndex _clientContextIndex;
   HttpClientHistoricalCounters _clientCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
+
+  ESB_DISABLE_AUTO_COPY(HttpClient);
 };
 
 }  // namespace ES

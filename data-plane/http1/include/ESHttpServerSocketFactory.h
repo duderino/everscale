@@ -35,8 +35,9 @@ namespace ES {
  */
 class HttpServerSocketFactory {
  public:
-  HttpServerSocketFactory(ESB::ServerTLSContextIndex &contextIndex, HttpMultiplexerExtended &multiplexer,
-                          HttpServerHandler &handler, HttpServerCounters &counters, ESB::Allocator &allocator);
+  HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
+                          HttpServerCounters &counters, ESB::ServerTLSContextIndex &contextIndex,
+                          ESB::Allocator &allocator);
 
   virtual ~HttpServerSocketFactory();
 

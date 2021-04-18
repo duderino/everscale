@@ -10,6 +10,10 @@
 #include <ESHttpProxyMultiplexer.h>
 #endif
 
+#ifndef ES_HTTP_CONFIG_H
+#include <ESHttpConfig.h>
+#endif
+
 namespace ES {
 
 HttpServer::HttpServer(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 idleTimeoutMsec,
@@ -22,6 +26,8 @@ HttpServer::HttpServer(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 
       _multiplexers(),
       _threadPool(namePrefix, _threads),
       _rand(),
+      _serverContextIndex(HttpConfig::Instance().tlsContextBuckets(), HttpConfig::Instance().tlsContextLocks(),
+                          _allocator),
       _serverCounters() {
   strncpy(_name, namePrefix, sizeof(_name));
   _name[sizeof(_name) - 1] = 0;
@@ -161,7 +167,7 @@ void HttpServer::destroy() {
 
 ESB::SocketMultiplexer *HttpServer::createMultiplexer() {
   return new (_allocator) HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec,
-                                               _serverHandler, _serverCounters);
+                                               _serverHandler, _serverCounters, _serverContextIndex);
 }
 
 void HttpServer::destroyMultiplexer(ESB::SocketMultiplexer *multiplexer) {

@@ -9,6 +9,10 @@ EmbeddedMapCallbacks::~EmbeddedMapCallbacks() {}
 
 EmbeddedMapBase::EmbeddedMapBase(EmbeddedMapCallbacks &callbacks, UInt32 numBuckets, Allocator &allocator)
     : _numElements(), _numBuckets(numBuckets), _callbacks(callbacks), _buckets(NULL), _allocator(allocator) {
+  if (0 == numBuckets) {
+    return;
+  }
+
   _buckets = (EmbeddedList *)_allocator.allocate(numBuckets * sizeof(EmbeddedList));
   if (!_buckets) {
     return;

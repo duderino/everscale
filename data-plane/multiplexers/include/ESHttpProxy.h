@@ -17,6 +17,10 @@
 #include <ESHttpClientCommand.h>
 #endif
 
+#ifndef ESB_CLIENT_TLS_CONTEXT_INDEX_H
+#include <ESBClientTLSContextIndex.h>
+#endif
+
 namespace ES {
 
 class HttpProxy : public HttpServer {
@@ -28,6 +32,10 @@ class HttpProxy : public HttpServer {
             ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpProxy();
+
+  inline ESB::ClientTLSContextIndex &clientTlsContextIndex() { return _clientContextIndex; }
+
+  inline const ESB::ClientTLSContextIndex &clientTlsContextIndex() const { return _clientContextIndex; }
 
   /**
    * Enqueue a command to be run on a multiplexer thread.  If the
@@ -48,6 +56,7 @@ class HttpProxy : public HttpServer {
 
  private:
   HttpProxyHandler &_proxyHandler;
+  ESB::ClientTLSContextIndex _clientContextIndex;
   HttpClientHistoricalCounters _clientCounters;
 
   ESB_DISABLE_AUTO_COPY(HttpProxy);

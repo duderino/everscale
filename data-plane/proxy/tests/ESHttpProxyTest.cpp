@@ -73,31 +73,10 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
   virtual void TearDown() {}
 
   // Run before all HttpProxyTest test cases
-  static void SetUpTestSuite() {
-    ESB::Logger::SetInstance(&TestLogger);
-
-    HttpTestParams params;
-    ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
-      LogCurrentWorkingDirectory(ESB::Logger::Err);
-      exit(error);
-    }
-
-    error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
-      LogCurrentWorkingDirectory(ESB::Logger::Err);
-      exit(error);
-    }
-  }
+  static void SetUpTestSuite() { ESB::Logger::SetInstance(&TestLogger); }
 
   // Run after all HttpProxyTest test cases
-  static void TearDownTestSuite() {
-    ESB::ClientTLSSocket::Destroy();
-    ESB::ServerTLSSocket::Destroy();
-    ESB::Logger::SetInstance(NULL);
-  }
+  static void TearDownTestSuite() { ESB::Logger::SetInstance(NULL); }
 
   ESB_DISABLE_AUTO_COPY(HttpProxyTest);
 };
@@ -123,9 +102,11 @@ TEST_P(HttpProxyTest, ClientToServer) {
   HttpOriginHandler originHandler(params);
   HttpIntegrationTest test(params, originListener, loadgenHandler, originHandler);
 
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
 }
 
 TEST_P(HttpProxyTest, ClientToProxyToServer) {
@@ -149,9 +130,11 @@ TEST_P(HttpProxyTest, ClientToProxyToServer) {
   HttpOriginHandler originHandler(params);
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
 }
 
 class HttpSmallChunkOriginHandler : public HttpOriginHandler {
@@ -232,9 +215,11 @@ TEST_P(HttpProxyTest, SmallChunks) {
   HttpSmallChunkOriginHandler originHandler(params, maxChunkSize);
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
 }
 
 class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
@@ -250,31 +235,10 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
   virtual void TearDown() {}
 
   // Run before all HttpProxyTestMessageBody test cases
-  static void SetUpTestSuite() {
-    ESB::Logger::SetInstance(&TestLogger);
-
-    HttpTestParams params;
-    ESB::Error error = ESB::ClientTLSSocket::Initialize(params.caPath(), params.maxVerifyDepth());
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client TLS support");
-      LogCurrentWorkingDirectory(ESB::Logger::Err);
-      exit(error);
-    }
-
-    error = ESB::ServerTLSSocket::Initialize(params.serverKeyPath(), params.serverCertPath());
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server TLS support");
-      LogCurrentWorkingDirectory(ESB::Logger::Err);
-      exit(error);
-    }
-  }
+  static void SetUpTestSuite() { ESB::Logger::SetInstance(&TestLogger); }
 
   // Run after all HttpProxyTestMessageBody test cases
-  static void TearDownTestSuite() {
-    ESB::ClientTLSSocket::Destroy();
-    ESB::ServerTLSSocket::Destroy();
-    ESB::Logger::SetInstance(NULL);
-  }
+  static void TearDownTestSuite() { ESB::Logger::SetInstance(NULL); }
 
   ESB_DISABLE_AUTO_COPY(HttpProxyTestMessageBody);
 };
@@ -309,7 +273,9 @@ TEST_P(HttpProxyTestMessageBody, BodySizes) {
   HttpOriginHandler originHandler(params);
   HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
 
-  EXPECT_EQ(ESB_SUCCESS, test.run());
-  EXPECT_EQ(params.connections() * params.requestsPerConnection(), test.clientCounters().getSuccesses()->queries());
-  EXPECT_EQ(0, test.clientCounters().getFailures()->queries());
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
 }
