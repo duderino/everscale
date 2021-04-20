@@ -30,6 +30,7 @@ WildcardIndexNode *WildcardIndexNode::Create(const char *key, int keyLength, uns
   memcpy(node->_key, key, keyLength);
   node->_key[keyLength] = 0;
   node->_wildcards._data = (unsigned char *)node->_key + keyLength + 1;
+  node->_wildcards._data[0] = 0;
   node->_wildcards._capacity = DefaultAlloc - sizeof(WildcardIndexNode) - keyLength - 1;
   node->_extra._data = NULL;
   node->_extra._capacity = 0;
@@ -175,7 +176,7 @@ Error WildcardIndexNode::insert(const char *key, UInt32 keySize, SmartPointer &v
     p += keySize;
     value->inc();
     WritePointer(p, value.raw());
-    p += sizeof(value);
+    p += sizeof(void *);
     *p = 0;
     return ESB_SUCCESS;
   }
@@ -183,7 +184,7 @@ Error WildcardIndexNode::insert(const char *key, UInt32 keySize, SmartPointer &v
   // use context spillover area, (re)allocating memory if necessary
 
   if (!_extra._data) {
-    _extra._data = (unsigned char *)malloc(MAX(DefaultAlloc, keySize + sizeof(SmartPointer) + 1));
+    _extra._data = (unsigned char *)malloc(MAX(DefaultAlloc, keySize + sizeof(void *) + 1));
     if (!_extra._data) {
       return ESB_OUT_OF_MEMORY;
     }
@@ -195,7 +196,7 @@ Error WildcardIndexNode::insert(const char *key, UInt32 keySize, SmartPointer &v
   // Ensure space for new key
   freeSpace = _extra._capacity - (q - _extra._data);
   if (freeSpace <= keySize + sizeof(void *) + 2) {
-    UInt32 requestSize = MAX(_extra._capacity * 2, _extra._capacity + keySize + sizeof(SmartPointer) + 1 - freeSpace);
+    UInt32 requestSize = MAX(_extra._capacity * 2, _extra._capacity + keySize + sizeof(void *) + 2 - freeSpace);
     unsigned char *buffer = (unsigned char *)realloc(_extra._data, requestSize);
     if (!buffer) {
       return ESB_OUT_OF_MEMORY;
@@ -212,7 +213,7 @@ Error WildcardIndexNode::insert(const char *key, UInt32 keySize, SmartPointer &v
   q += keySize;
   value->inc();
   WritePointer(q, value.raw());
-  q += sizeof(value);
+  q += sizeof(void *);
   *q = 0;
 
   return ESB_SUCCESS;

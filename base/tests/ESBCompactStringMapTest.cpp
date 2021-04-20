@@ -173,7 +173,7 @@ TEST(CompactStringMapTest, Realloc) {
   value = (int *)map.find("bar");
   EXPECT_EQ(&bar, value);
 
-  value = (int *)map.find(buffer);
+  value = (int *)map.find(buffer, sizeof(buffer));
   EXPECT_EQ(&qux, value);
 
   value = (int *)map.find("baz");
@@ -202,7 +202,7 @@ TEST(CompactStringMapTest, RemoveLarge) {
   value = (int *)map.find("bar");
   EXPECT_EQ(&bar, value);
 
-  value = (int *)map.find(buffer);
+  value = (int *)map.find(buffer, sizeof(buffer));
   EXPECT_EQ(NULL, value);
 
   value = (int *)map.find("baz");

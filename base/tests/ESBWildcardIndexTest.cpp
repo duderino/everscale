@@ -51,6 +51,16 @@ ESB_SMART_POINTER(TestObject, TestObjectPointer, SmartPointer);
 
 using namespace ESB;
 
+static void Delete(WildcardIndexNode **node) {
+  if (!*node) {
+    return;
+  }
+
+  (*node)->~WildcardIndexNode();
+  free(*node);
+  *node = NULL;
+}
+
 TEST(WildcardIndexNodeTest, Find) {
   WildcardIndexNode *node = WildcardIndexNode::Create("foo.bar.baz");
 
@@ -82,7 +92,7 @@ TEST(WildcardIndexNodeTest, Find) {
     EXPECT_EQ(destructions, Destructions);
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
@@ -117,7 +127,7 @@ TEST(WildcardIndexNodeTest, EnforceUnique) {
     EXPECT_EQ(ESB_UNIQUENESS_VIOLATION, node->insert("qux", 3, qux));
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 4, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 4, Destructions);
@@ -170,7 +180,7 @@ TEST(WildcardIndexNodeTest, Create) {
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 6, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 6, Destructions);
@@ -208,7 +218,7 @@ TEST(WildcardIndexNodeTest, RemoveFirst) {
     EXPECT_EQ(ptr->value(), 3);
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
@@ -246,7 +256,7 @@ TEST(WildcardIndexNodeTest, RemoveMiddle) {
     EXPECT_EQ(ptr->value(), 3);
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
@@ -284,7 +294,7 @@ TEST(WildcardIndexNodeTest, RemoveLast) {
     EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", 3, ptr));
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
@@ -325,7 +335,7 @@ TEST(WildcardIndexNodeTest, Empty) {
   node->remove(wildcard, sizeof(wildcard));
   EXPECT_TRUE(node->empty());
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 4, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 4, Destructions);
@@ -362,7 +372,7 @@ TEST(WildcardIndexNodeTest, Clear) {
     EXPECT_EQ(ESB_CANNOT_FIND, node->find("baz", 3, ptr));
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
@@ -404,7 +414,7 @@ TEST(WildcardIndexNodeTest, ClearLarge) {
     EXPECT_EQ(ESB_CANNOT_FIND, node->find(buffer, sizeof(buffer), ptr));
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 4, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 4, Destructions);
@@ -444,7 +454,7 @@ TEST(WildcardIndexNodeTest, LargeKey) {
   EXPECT_EQ(cleanups, TestCleanupHandler.calls());
   EXPECT_EQ(destructions, Destructions);
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 3, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 3, Destructions);
@@ -497,15 +507,16 @@ TEST(WildcardIndexNodeTest, LargeKeyAndWildcard) {
   EXPECT_EQ(cleanups, TestCleanupHandler.calls());
   EXPECT_EQ(destructions, Destructions);
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 4, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 4, Destructions);
 }
 
 TEST(WildcardIndexNodeTest, RemoveLarge) {
-  char key[ESB_MAX_HOSTNAME];
+  char key[ESB_MAX_HOSTNAME + 1];
   memset(key, 'a', sizeof(key));
+  key[sizeof(key) - 1] = 0;
   WildcardIndexNode *node = WildcardIndexNode::Create(key);
 
   char wildcard[ESB_UINT8_MAX];
@@ -545,7 +556,7 @@ TEST(WildcardIndexNodeTest, RemoveLarge) {
   EXPECT_EQ(cleanups + 1, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 1, Destructions);
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 4, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 4, Destructions);
@@ -564,7 +575,7 @@ TEST(WildcardIndexNodeTest, InvalidArgs) {
   ptr = NULL;
   EXPECT_EQ(ESB_INVALID_ARGUMENT, node->insert("foo", 3, ptr));
 
-  delete node;
+  Delete(&node);
 }
 
 TEST(WildcardIndexNodeTest, RemoveMissingKey) {
@@ -582,7 +593,7 @@ TEST(WildcardIndexNodeTest, RemoveMissingKey) {
 
   EXPECT_EQ(ESB_CANNOT_FIND, node->remove("qux", 3));
 
-  delete node;
+  Delete(&node);
 }
 
 TEST(WildcardIndexNodeTest, DestructorOnlyDecrements) {
@@ -599,7 +610,7 @@ TEST(WildcardIndexNodeTest, DestructorOnlyDecrements) {
   EXPECT_EQ(ESB_SUCCESS, node->insert("bar", 3, bar));
   EXPECT_EQ(ESB_SUCCESS, node->insert("baz", 3, baz));
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups, TestCleanupHandler.calls());
   EXPECT_EQ(destructions, Destructions);
@@ -650,7 +661,7 @@ TEST(WildcardIndexNodeTest, Update) {
     EXPECT_EQ(ptr->value(), 6);
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 6, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 6, Destructions);
@@ -714,7 +725,7 @@ TEST(WildcardIndexNodeTest, UpdateLarge) {
     EXPECT_EQ(ptr->value(), 8);
   }
 
-  delete node;
+  Delete(&node);
 
   EXPECT_EQ(cleanups + 8, TestCleanupHandler.calls());
   EXPECT_EQ(destructions + 8, Destructions);
@@ -743,7 +754,7 @@ TEST(WildcardIndexNodeTest, UpdateMissingKey) {
   EXPECT_EQ(ESB_CANNOT_FIND, node->update("qux", 3, value, &old));
   EXPECT_EQ(ESB_CANNOT_FIND, node->update("quux", 4, value, &old));
 
-  delete node;
+  Delete(&node);
 }
 
 TEST(WildcardIndexNodeTest, Iterate) {
@@ -811,7 +822,7 @@ TEST(WildcardIndexNodeTest, Iterate) {
   EXPECT_EQ(ESB_CANNOT_FIND, node->key(it, &key, &keySize));
   EXPECT_EQ(ESB_CANNOT_FIND, node->value(it, ptr));
 
-  delete node;
+  Delete(&node);
 }
 
 class WildcardIndexTest : public ::testing::Test {

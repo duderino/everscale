@@ -78,7 +78,7 @@ Error CompactStringMap::insert(const char *key, UInt32 keySize, void *value, boo
   // Ensure space for new key
   UInt32 freeSpace = _capacity - (p - _buffer);
   if (freeSpace <= keySize + sizeof(void *) + 2) {
-    UInt32 requestSize = MAX(_capacity * 2, _capacity + keySize + sizeof(void *) + 1 - freeSpace);
+    UInt32 requestSize = MAX(_capacity * 2, _capacity + keySize + sizeof(void *) + 2 - freeSpace);
     unsigned char *buffer = (unsigned char *)realloc(_buffer, requestSize);
     if (!buffer) {
       return ESB_OUT_OF_MEMORY;
@@ -94,7 +94,7 @@ Error CompactStringMap::insert(const char *key, UInt32 keySize, void *value, boo
   memcpy(p, key, keySize);
   p += keySize;
   WritePointer(p, value);
-  p += sizeof(value);
+  p += sizeof(void *);
   *p = 0;
 
   return ESB_SUCCESS;
