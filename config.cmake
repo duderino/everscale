@@ -42,6 +42,13 @@ int main () {
   return 0 == counter && 1 == c;
 }" HAVE_X86_ASM)
 
+check_cxx_source_compiles("
+int main () {
+  int counter = 1;
+  counter = __atomic_add_fetch(&counter, 1, __ATOMIC_RELAXED);
+  return 2 == counter;
+}" HAVE_GCC_ATOMIC_INTRINSICS)
+
 check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_type_size("off_t" HAVE_OFF_T)
 check_type_size("size_t" HAVE_SIZE_T)

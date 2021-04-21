@@ -6,9 +6,7 @@ namespace ESB {
 
 SharedInt::SharedInt() : _counter(0) {}
 
-SharedInt::SharedInt(int value) : _counter(value) {}
-
-SharedInt::SharedInt(bool value) : _counter(value ? 1 : 0) {}
+SharedInt::SharedInt(UInt32 value) : _counter(value) {}
 
 SharedInt::SharedInt(SharedInt &counter) { set(counter.get()); }
 
