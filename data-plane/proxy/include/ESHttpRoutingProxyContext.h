@@ -32,15 +32,15 @@ class HttpRoutingProxyContext {
 
   void setReceivedOutboundResponse(bool receivedOutboundResponse);
 
-  inline ESB::UInt32 requestBodyBytesForwarded() const { return _requestBodyBytesForwarded; }
+  inline ESB::UInt64 requestBodyBytesForwarded() const { return _requestBodyBytesForwarded; }
 
-  inline void addRequestBodyBytesForwarded(ESB::UInt32 requestBodyBytesForwarded) {
+  inline void addRequestBodyBytesForwarded(ESB::UInt64 requestBodyBytesForwarded) {
     _requestBodyBytesForwarded += requestBodyBytesForwarded;
   }
 
-  inline ESB::UInt32 responseBodyBytesForwarded() const { return _responseBodyBytesForwarded; }
+  inline ESB::UInt64 responseBodyBytesForwarded() const { return _responseBodyBytesForwarded; }
 
-  inline void addResponseBodyBytesForwarded(ESB::UInt32 responseBodyBytesSent) {
+  inline void addResponseBodyBytesForwarded(ESB::UInt64 responseBodyBytesSent) {
     _responseBodyBytesForwarded += responseBodyBytesSent;
   }
 
@@ -60,8 +60,8 @@ class HttpRoutingProxyContext {
   HttpServerStream *_serverStream;
   HttpClientStream *_clientStream;
   int _flags;
-  ESB::UInt32 _requestBodyBytesForwarded;
-  ESB::UInt32 _responseBodyBytesForwarded;
+  ESB::UInt64 _requestBodyBytesForwarded;
+  ESB::UInt64 _responseBodyBytesForwarded;
 };
 
 }  // namespace ES

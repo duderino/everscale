@@ -84,6 +84,37 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
 // use secure if true
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
 
+// TEST(HttpProxyTest, DebuggingTest) {
+//  HttpTestParams params;
+//  params.connections(1)
+//      .requestsPerConnection(1)
+//      .clientThreads(1)
+//      .proxyThreads(1)
+//      .originThreads(1)
+//      .requestSize(0)
+//      .responseSize(ESB_UINT64_MAX)
+//      .originTimeoutMsec(60 * 1000 * 1000)
+//      .proxyTimeoutMsec(60 * 1000 * 1000)
+//      .clientTimeoutMsec(60 * 1000 * 1000)
+//      .hostHeader("test.server.everscale.com")
+//      .secure(true)
+//      .logLevel(ESB::Logger::Info);
+//
+//  EphemeralListener originListener("origin-listener", params.secure());
+//  EphemeralListener proxyListener("proxy-listener", params.secure());
+//  HttpFixedRouter router(originListener.localDestination());
+//  HttpLoadgenHandler loadgenHandler(params);
+//  HttpRoutingProxyHandler proxyHandler(router);
+//  HttpOriginHandler originHandler(params);
+//  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
+//
+//  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+//  ASSERT_EQ(ESB_SUCCESS, test.run());
+//  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+//            test.client().clientCounters().getSuccesses()->queries());
+//  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+//}
+
 TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
   params.connections(50)
@@ -139,19 +170,19 @@ TEST_P(HttpProxyTest, ClientToProxyToServer) {
 
 class HttpSmallChunkOriginHandler : public HttpOriginHandler {
  public:
-  HttpSmallChunkOriginHandler(const HttpTestParams &params, ESB::UInt32 maxChunkSize)
+  HttpSmallChunkOriginHandler(const HttpTestParams &params, ESB::UInt64 maxChunkSize)
       : HttpOriginHandler(params), _counter(), _maxChunkSize(maxChunkSize) {}
 
   virtual ~HttpSmallChunkOriginHandler() {}
 
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                       ESB::UInt32 *bytesAvailable) {
+                                       ESB::UInt64 *bytesAvailable) {
     ESB::Error error = HttpOriginHandler::offerResponseBody(multiplexer, stream, bytesAvailable);
     if (ESB_SUCCESS != error) {
       return error;
     }
 
-    ESB::UInt32 iteration = (ESB::UInt32)_counter.inc();
+    ESB::UInt32 iteration = _counter.inc();
     *bytesAvailable = MIN(*bytesAvailable, iteration % _maxChunkSize + 1);
     return ESB_SUCCESS;
   }
@@ -162,24 +193,24 @@ class HttpSmallChunkOriginHandler : public HttpOriginHandler {
   void operator=(const HttpSmallChunkOriginHandler &);
 
   ESB::SharedInt _counter;
-  const ESB::UInt32 _maxChunkSize;
+  const ESB::UInt64 _maxChunkSize;
 };
 
 class HttpSmallChunkLoadgenHandler : public HttpLoadgenHandler {
  public:
-  HttpSmallChunkLoadgenHandler(const HttpTestParams &params, ESB::UInt32 maxChunkSize)
+  HttpSmallChunkLoadgenHandler(const HttpTestParams &params, ESB::UInt64 maxChunkSize)
       : HttpLoadgenHandler(params), _counter(), _maxChunkSize(maxChunkSize) {}
 
   virtual ~HttpSmallChunkLoadgenHandler() {}
 
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &stream,
-                                       ESB::UInt32 *bytesAvailable) {
+                                       ESB::UInt64 *bytesAvailable) {
     ESB::Error error = HttpLoadgenHandler::offerRequestBody(multiplexer, stream, bytesAvailable);
     if (ESB_SUCCESS != error) {
       return error;
     }
 
-    ESB::UInt32 iteration = (ESB::UInt32)_counter.inc();
+    ESB::UInt32 iteration = _counter.inc();
     *bytesAvailable = MIN(*bytesAvailable, iteration % _maxChunkSize + 1);
     return ESB_SUCCESS;
   }
@@ -190,7 +221,7 @@ class HttpSmallChunkLoadgenHandler : public HttpLoadgenHandler {
   void operator=(const HttpSmallChunkLoadgenHandler &);
 
   ESB::SharedInt _counter;
-  const ESB::UInt32 _maxChunkSize;
+  const ESB::UInt64 _maxChunkSize;
 };
 
 TEST_P(HttpProxyTest, SmallChunks) {

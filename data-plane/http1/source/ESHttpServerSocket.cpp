@@ -43,7 +43,7 @@ class HttpResponseBodyProducer : public HttpServerHandler {
   }
 
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                       ESB::UInt32 *bytesAvailable) {
+                                       ESB::UInt64 *bytesAvailable) {
     if (!bytesAvailable) {
       return ESB_NULL_POINTER;
     }
@@ -59,7 +59,7 @@ class HttpResponseBodyProducer : public HttpServerHandler {
   }
 
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                         unsigned char *body, ESB::UInt32 bytesRequested) {
+                                         unsigned char *body, ESB::UInt64 bytesRequested) {
     assert(bytesRequested <= _size - _bytesProduced);
     if (bytesRequested > _size - _bytesProduced) {
       return ESB_INVALID_ARGUMENT;
@@ -71,8 +71,8 @@ class HttpResponseBodyProducer : public HttpServerHandler {
   }
 
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                        const unsigned char *body, ESB::UInt32 bytesOffered,
-                                        ESB::UInt32 *bytesConsumed) {
+                                        const unsigned char *body, ESB::UInt64 bytesOffered,
+                                        ESB::UInt64 *bytesConsumed) {
     assert(!"function should not be called");
     return ESB_OPERATION_NOT_SUPPORTED;
   }
@@ -86,15 +86,15 @@ class HttpResponseBodyProducer : public HttpServerHandler {
     assert(!"function should not be called");
   }
 
-  inline ESB::UInt32 bytesProduced() const { return _bytesProduced; };
+  inline ESB::UInt64 bytesProduced() const { return _bytesProduced; };
 
  private:
   HttpResponseBodyProducer(const HttpResponseBodyProducer &disabled);
   void operator=(const HttpResponseBodyProducer &disabled);
 
   unsigned const char *_buffer;
-  ESB::UInt32 _size;
-  ESB::UInt32 _bytesProduced;
+  ESB::UInt64 _size;
+  ESB::UInt64 _bytesProduced;
 };
 
 /**
@@ -105,7 +105,7 @@ class HttpResponseBodyProducer : public HttpServerHandler {
  */
 class HttpRequestBodyConsumer : public HttpServerHandler {
  public:
-  HttpRequestBodyConsumer(unsigned const char *buffer, ESB::UInt32 size)
+  HttpRequestBodyConsumer(unsigned const char *buffer, ESB::UInt64 size)
       : _buffer(buffer), _size(size), _bytesConsumed(0), _bytesOffered(0) {}
   virtual ~HttpRequestBodyConsumer() {}
 
@@ -125,26 +125,26 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
   }
 
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                       ESB::UInt32 *bytesAvailable) {
+                                       ESB::UInt64 *bytesAvailable) {
     assert(!"function should not be called");
     return ESB_OPERATION_NOT_SUPPORTED;
   }
 
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                         unsigned char *body, ESB::UInt32 bytesRequested) {
+                                         unsigned char *body, ESB::UInt64 bytesRequested) {
     assert(!"function should not be called");
     return ESB_OPERATION_NOT_SUPPORTED;
   }
 
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                        const unsigned char *body, ESB::UInt32 bytesOffered,
-                                        ESB::UInt32 *bytesConsumed) {
+                                        const unsigned char *body, ESB::UInt64 bytesOffered,
+                                        ESB::UInt64 *bytesConsumed) {
     if (!body || !bytesConsumed) {
       return ESB_NULL_POINTER;
     }
 
     _bytesOffered = bytesOffered;
-    ESB::UInt32 bytesToCopy = MIN(_size - _bytesConsumed, bytesOffered);
+    ESB::UInt64 bytesToCopy = MIN(_size - _bytesConsumed, bytesOffered);
 
     if (0 == bytesOffered) {
       // last chunk so advance state machine
@@ -168,26 +168,26 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
     assert(!"function should not be called");
   }
 
-  inline ESB::UInt32 bytesConsumed() const { return _bytesConsumed; };
+  inline ESB::UInt64 bytesConsumed() const { return _bytesConsumed; };
 
-  inline ESB::UInt32 bytesOffered() const { return _bytesOffered; }
+  inline ESB::UInt64 bytesOffered() const { return _bytesOffered; }
 
  private:
   HttpRequestBodyConsumer(const HttpRequestBodyConsumer &disabled);
   void operator=(const HttpRequestBodyConsumer &disabled);
 
   unsigned const char *_buffer;
-  ESB::UInt32 _size;
-  ESB::UInt32 _bytesConsumed;
-  ESB::UInt32 _bytesOffered;
+  ESB::UInt64 _size;
+  ESB::UInt64 _bytesConsumed;
+  ESB::UInt64 _bytesOffered;
 };
 
 HttpServerSocket::HttpServerSocket(ESB::ConnectedSocket *socket, HttpServerHandler &handler,
                                    HttpMultiplexerExtended &multiplexer, HttpServerCounters &counters,
                                    ESB::CleanupHandler &cleanupHandler)
     : _state(SERVER_TRANSACTION_BEGIN),
-      _bodyBytesWritten(0),
       _requestsPerConnection(0),
+      _bodyBytesWritten(0),
       _bytesAvailable(0),
       _multiplexer(multiplexer),
       _handler(handler),
@@ -261,7 +261,7 @@ ESB::Error HttpServerSocket::handleConnect() {
   return ESB_INVALID_STATE;  // remove from multiplexer
 }
 
-ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt64 *bytesAvailable) {
   if (!bytesAvailable) {
     return ESB_NULL_POINTER;
   }
@@ -273,7 +273,7 @@ ESB::Error HttpServerSocket::requestBodyAvailable(ESB::UInt32 *bytesAvailable) {
   return error;
 }
 
-ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead) {
+ESB::Error HttpServerSocket::readRequestBody(unsigned char *chunk, ESB::UInt64 bytesRequested, ESB::UInt64 *bytesRead) {
   assert(chunk);
   if (!chunk) {
     return ESB_NULL_POINTER;
@@ -320,8 +320,8 @@ ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
   return advanceStateMachine(_handler, SERVER_ADVANCE_SEND);
 }
 
-ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered,
-                                              ESB::UInt32 *bytesConsumed) {
+ESB::Error HttpServerSocket::sendResponseBody(unsigned const char *chunk, ESB::UInt64 bytesOffered,
+                                              ESB::UInt64 *bytesConsumed) {
   if (!chunk || !bytesConsumed) {
     return ESB_NULL_POINTER;
   }
@@ -659,8 +659,8 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
   //
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt32 bytesAvailable = 0U;
-    ESB::UInt32 bytesConsumed = 0U;
+    ESB::UInt64 bytesAvailable = 0U;
+    ESB::UInt64 bytesConsumed = 0U;
     ESB::Error error = ESB_SUCCESS;
 
     if (ESB_SUCCESS != (error = currentChunkBytesAvailable(&bytesAvailable))) {
@@ -687,7 +687,7 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
       }
     }
 
-    ESB_LOG_DEBUG("[%s] offering request chunk of size %u", _socket->name(), bytesAvailable);
+    ESB_LOG_DEBUG("[%s] offering request chunk of size %lu", _socket->name(), bytesAvailable);
 
     switch (error = handler.consumeRequestBody(_multiplexer, *this, _recvBuffer->buffer() + _recvBuffer->readPosition(),
                                                bytesAvailable, &bytesConsumed)) {
@@ -709,12 +709,12 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
 
     error = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
     if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %u request chunk bytes", _socket->name(), bytesAvailable);
+      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %lu request chunk bytes", _socket->name(), bytesAvailable);
       return error;  // remove from multiplexer
     }
     _bytesAvailable -= bytesConsumed;
 
-    ESB_LOG_DEBUG("[%s] handler consumed %u out of %u request chunk bytes", _socket->name(), bytesConsumed,
+    ESB_LOG_DEBUG("[%s] handler consumed %lu out of %lu request chunk bytes", _socket->name(), bytesConsumed,
                   bytesAvailable);
   }
 
@@ -796,8 +796,8 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
   assert(SERVER_FORMATTING_BODY & _state);
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt32 maxChunkSize = 0;
-    ESB::UInt32 offeredSize = 0;
+    ESB::UInt64 maxChunkSize = 0;
+    ESB::UInt64 offeredSize = 0;
 
     ESB::Error error = handler.offerResponseBody(_multiplexer, *this, &offeredSize);
     switch (error) {
@@ -809,7 +809,7 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
       case ESB_BREAK:
         return ESB_BREAK;
       case ESB_SUCCESS:
-        ESB_LOG_DEBUG("[%s] handler offers response chunk of %u bytes", _socket->name(), offeredSize);
+        ESB_LOG_DEBUG("[%s] handler offers response chunk of %lu bytes", _socket->name(), offeredSize);
         break;
       default:
         ESB_LOG_DEBUG_ERRNO(error, "[%s] handler error offering response chunk", _socket->name());
@@ -836,7 +836,7 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
       return error;
     }
 
-    ESB::UInt32 chunkSize = MIN(offeredSize, maxChunkSize);
+    ESB::UInt64 chunkSize = MIN(offeredSize, maxChunkSize);
 
     // ask the handler to produce chunkSize bytes of body data
 
@@ -849,13 +849,13 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
       case ESB_PAUSE:
         break;
       default:
-        ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response chunk of size %u", _socket->name(), chunkSize);
+        ESB_LOG_INFO_ERRNO(error, "[%s] cannot format response chunk of size %lu", _socket->name(), chunkSize);
         return error;
     }
 
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
     _bodyBytesWritten += chunkSize;
-    ESB_LOG_DEBUG("[%s] formatted response chunk of size %u", _socket->name(), chunkSize);
+    ESB_LOG_DEBUG("[%s] formatted response chunk of size %lu", _socket->name(), chunkSize);
 
     // beginBlock reserves space for this operation, it should never fail
     if (ESB_SUCCESS != (error = formatEndChunk())) {
@@ -909,7 +909,7 @@ ESB::Error HttpServerSocket::stateEndTransaction() {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable) {
+ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt64 *bytesAvailable) {
   if (0 < _bytesAvailable) {
     *bytesAvailable = _bytesAvailable;
     return ESB_SUCCESS;
@@ -920,7 +920,7 @@ ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
     return ESB_SUCCESS;
   }
 
-  ESB::UInt32 bufferOffset = 0U;  // TODO can probably kill bufferOffset entirely
+  ESB::UInt64 bufferOffset = 0U;  // TODO can probably kill bufferOffset entirely
   switch (ESB::Error error = _transaction->getParser()->parseBody(_recvBuffer, &bufferOffset, bytesAvailable)) {
     case ESB_SUCCESS:
       _bytesAvailable = *bytesAvailable;
@@ -928,7 +928,7 @@ ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
         ESB_LOG_DEBUG("[%s] parsed last chunk", _socket->name());
         addFlag(SERVER_LAST_CHUNK_RECEIVED);
       } else {
-        ESB_LOG_DEBUG("[%s] %u request bytes available in current chunk", _socket->name(), *bytesAvailable);
+        ESB_LOG_DEBUG("[%s] %lu request bytes available in current chunk", _socket->name(), *bytesAvailable);
       }
       return ESB_SUCCESS;
     case ESB_AGAIN:
@@ -940,7 +940,7 @@ ESB::Error HttpServerSocket::currentChunkBytesAvailable(ESB::UInt32 *bytesAvaila
   }
 }
 
-ESB::Error HttpServerSocket::formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize) {
+ESB::Error HttpServerSocket::formatStartChunk(ESB::UInt64 chunkSize, ESB::UInt64 *maxChunkSize) {
   ESB::Error error = _transaction->getFormatter()->beginBlock(_sendBuffer, chunkSize, maxChunkSize);
   switch (error) {
     case ESB_SUCCESS:
@@ -1028,12 +1028,12 @@ ESB::Error HttpServerSocket::flushSendBuffer() {
     ESB::SSize bytesSent = _socket->send(_sendBuffer);
 
     if (0 > bytesSent) {
-      if (ESB_AGAIN == bytesSent) {
-        ESB_LOG_DEBUG("[%s] would block flushing response output buffer", _socket->name());
+      ESB::Error error = ESB::LastError();
+      if (ESB_AGAIN == error) {
+        ESB_LOG_DEBUG_ERRNO(error, "[%s] output socket buffer is full", _socket->name());
         return ESB_AGAIN;  // keep in multiplexer
       }
 
-      ESB::Error error = ESB::LastError();
       assert(ESB_SUCCESS != error);
       ESB_LOG_INFO_ERRNO(error, "[%s] error flushing response output buffer", _socket->name());
       return error;  // remove from multiplexer

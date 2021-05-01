@@ -60,9 +60,15 @@ class HttpTestParams {
     return *this;
   }
 
-  HttpTestParams &requestSize(ESB::UInt32 requestSize);
+  inline HttpTestParams &requestSize(ESB::UInt64 requestSize) {
+    _requestSize = requestSize;
+    return *this;
+  }
 
-  HttpTestParams &responseSize(ESB::UInt32 responseSize);
+  inline HttpTestParams &responseSize(ESB::UInt64 responseSize) {
+    _responseSize = responseSize;
+    return *this;
+  }
 
   inline HttpTestParams &useContentLengthHeader(bool useContentLengthHeader) {
     _useContentLengthHeader = useContentLengthHeader;
@@ -148,9 +154,9 @@ class HttpTestParams {
 
   inline ESB::UInt32 requestsPerConnection() const { return _requestsPerConnection; }
 
-  inline ESB::UInt32 requestSize() const { return _requestSize; }
+  inline ESB::UInt64 requestSize() const { return _requestSize; }
 
-  inline ESB::UInt32 responseSize() const { return _responseSize; }
+  inline ESB::UInt64 responseSize() const { return _responseSize; }
 
   inline bool useContentLengthHeader() const { return _useContentLengthHeader; }
 
@@ -169,10 +175,6 @@ class HttpTestParams {
   inline const char *contentType() const { return _contentType; }
 
   inline const char *absPath() const { return _absPath; }
-
-  inline const unsigned char *requestBody() const { return _requestBody; }
-
-  inline const unsigned char *responseBody() const { return _responseBody; }
 
   inline const char *caPath() const { return _caPath; }
 
@@ -230,6 +232,8 @@ class HttpTestParams {
     return *this;
   }
 
+  void printUsage(const char *progName) const;
+
  private:
   ESB::UInt16 _port;
   ESB::UInt32 _clientThreads;
@@ -237,8 +241,8 @@ class HttpTestParams {
   ESB::UInt32 _proxyThreads;
   ESB::UInt32 _connections;
   ESB::UInt32 _requestsPerConnection;
-  ESB::UInt32 _requestSize;
-  ESB::UInt32 _responseSize;
+  ESB::UInt64 _requestSize;
+  ESB::UInt64 _responseSize;
   ESB::UInt32 _clientTimeoutMsec;
   ESB::UInt32 _proxyTimeoutMsec;
   ESB::UInt32 _originTimeoutMsec;
@@ -251,8 +255,6 @@ class HttpTestParams {
   const char *_method;
   const char *_contentType;
   const char *_absPath;
-  unsigned char *_requestBody;
-  unsigned char *_responseBody;
   char _caPath[ESB_MAX_PATH + 1];
   char _serverKeyPath[ESB_MAX_PATH + 1];
   char _serverCertPath[ESB_MAX_PATH + 1];

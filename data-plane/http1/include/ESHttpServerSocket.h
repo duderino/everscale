@@ -32,8 +32,6 @@
 namespace ES {
 
 /** A socket that receives and echoes back HTTP requests
- *
- * TODO implement idle check
  */
 class HttpServerSocket : public HttpSocket, public HttpServerStream {
  public:
@@ -149,9 +147,9 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   virtual ESB::Error sendEmptyResponse(int statusCode, const char *reasonPhrase);
   virtual ESB::Error sendResponse(const HttpResponse &response);
 
-  virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt32 bytesOffered, ESB::UInt32 *bytesConsumed);
-  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable);
-  virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead);
+  virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt64 bytesOffered, ESB::UInt64 *bytesConsumed);
+  virtual ESB::Error requestBodyAvailable(ESB::UInt64 *bytesAvailable);
+  virtual ESB::Error readRequestBody(unsigned char *chunk, ESB::UInt64 bytesRequested, ESB::UInt64 *bytesRead);
 
  private:
   // State machine argument flags
@@ -245,17 +243,17 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   // TODO use or remove
   ESB::Error updateInterestList(bool updateMultiplexer);
 
-  ESB::Error currentChunkBytesAvailable(ESB::UInt32 *bytesAvailable);
-  ESB::Error formatStartChunk(ESB::UInt32 chunkSize, ESB::UInt32 *maxChunkSize);
+  ESB::Error currentChunkBytesAvailable(ESB::UInt64 *bytesAvailable);
+  ESB::Error formatStartChunk(ESB::UInt64 chunkSize, ESB::UInt64 *maxChunkSize);
   ESB::Error formatEndChunk();
   ESB::Error fillReceiveBuffer();
   ESB::Error flushSendBuffer();
   ESB::Error setResponse(int statusCode, const char *reasonPhrase);
 
   int _state;
-  ESB::UInt32 _bodyBytesWritten;
   int _requestsPerConnection;
-  ESB::UInt32 _bytesAvailable;
+  ESB::UInt64 _bodyBytesWritten;
+  ESB::UInt64 _bytesAvailable;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   HttpServerTransaction *_transaction;

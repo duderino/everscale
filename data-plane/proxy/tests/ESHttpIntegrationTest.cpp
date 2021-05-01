@@ -50,20 +50,20 @@ class HttpNullProxyHandler : public HttpProxyHandler {
   }
 
   virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                      ESB::UInt32 *bytesAvailable) {
+                                      ESB::UInt64 *bytesAvailable) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
   virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                        unsigned char *body, ESB::UInt32 bytesRequested) {
+                                        unsigned char *body, ESB::UInt64 bytesRequested) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
   virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                         const unsigned char *body, ESB::UInt32 bytesOffered,
-                                         ESB::UInt32 *bytesConsumed) {
+                                         const unsigned char *body, ESB::UInt64 bytesOffered,
+                                         ESB::UInt64 *bytesConsumed) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
@@ -94,20 +94,20 @@ class HttpNullProxyHandler : public HttpProxyHandler {
   }
 
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                        unsigned const char *body, ESB::UInt32 bytesOffered,
-                                        ESB::UInt32 *bytesConsumed) {
+                                        unsigned const char *body, ESB::UInt64 bytesOffered,
+                                        ESB::UInt64 *bytesConsumed) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                       ESB::UInt32 *bytesAvailable) {
+                                       ESB::UInt64 *bytesAvailable) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }
 
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                         unsigned char *body, ESB::UInt32 bytesRequested) {
+                                         unsigned char *body, ESB::UInt64 bytesRequested) {
     assert(!"should not be called");
     return ESB_NOT_IMPLEMENTED;
   }

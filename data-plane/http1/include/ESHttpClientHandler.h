@@ -62,7 +62,7 @@ class HttpClientHandler {
    * transaction.
    */
   virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                      ESB::UInt32 *bytesAvailable) = 0;
+                                      ESB::UInt64 *bytesAvailable) = 0;
   /**
    * Copy body bytes to the caller, which consumes it in the process.
    *
@@ -75,7 +75,7 @@ class HttpClientHandler {
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
   virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                        unsigned char *body, ESB::UInt32 bytesRequested) = 0;
+                                        unsigned char *body, ESB::UInt64 bytesRequested) = 0;
 
   /**
    * Incrementally process a response body.  This will be called 1+ times as the
@@ -95,8 +95,8 @@ class HttpClientHandler {
    * transaction.
    */
   virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                         const unsigned char *body, ESB::UInt32 bytesOffered,
-                                         ESB::UInt32 *bytesConsumed) = 0;
+                                         const unsigned char *body, ESB::UInt64 bytesOffered,
+                                         ESB::UInt64 *bytesConsumed) = 0;
 
   /**
    * Handle the end of a request (request body has been fully sent)

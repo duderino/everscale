@@ -755,8 +755,8 @@ ESB::Error ParserFormatterTest::parseHeaders(const char *filename, int fd, HttpM
 
 ESB::Error ParserFormatterTest::parseBody(const char *filename, int fd, HttpMessageParser &parser, ESB::Buffer &body) {
   while (true) {
-    ESB::UInt32 bufferOffset = 0;
-    ESB::UInt32 chunkSize = 0;
+    ESB::UInt64 bufferOffset = 0;
+    ESB::UInt64 chunkSize = 0;
     ESB::Error error = parser.parseBody(&_inputBuffer, &bufferOffset, &chunkSize);
 
     if (ESB_AGAIN == error) {
@@ -871,8 +871,8 @@ ESB::Error ParserFormatterTest::formatHeaders(const char *filename, int fd, Http
 ESB::Error ParserFormatterTest::formatBody(const char *filename, int fd, HttpMessageFormatter &formatter,
                                            ESB::Buffer &body) {
   while (body.isReadable()) {
-    ESB::UInt32 chunkSize = _random.generate(1, body.readable());
-    ESB::UInt32 availableSize = 0U;
+    ESB::UInt64 chunkSize = _random.generate(1, body.readable());
+    ESB::UInt64 availableSize = 0U;
 
     // Begin chunk
     while (true) {

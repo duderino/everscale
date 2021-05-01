@@ -47,8 +47,8 @@ ESB::Error HttpOriginHandler::receiveRequestHeaders(HttpMultiplexer &stack, Http
 }
 
 ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                 const unsigned char *chunk, ESB::UInt32 chunkSize,
-                                                 ESB::UInt32 *bytesConsumed) {
+                                                 const unsigned char *chunk, ESB::UInt64 chunkSize,
+                                                 ESB::UInt64 *bytesConsumed) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_SERVER_RECV_BODY:
       stream.pauseSend(false);
@@ -68,17 +68,14 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
 
 #ifndef NDEBUG
   for (int i = 0; i < chunkSize; ++i) {
-    char expected = 'a' + (context->bytesReceived() + i) % 26;
-    if (expected != chunk[i]) {
-      assert(chunk[i] == expected);
-    }
+    assert(chunk[i] == 'a');
   }
 #endif
 
   *bytesConsumed = chunkSize;
   context->setBytesReceived(context->bytesReceived() + chunkSize);
 
-  ESB_LOG_DEBUG("[%s] received %u or %u/%u request body bytes", stream.logAddress(), chunkSize,
+  ESB_LOG_DEBUG("[%s] received %lu or %lu/%lu request body bytes", stream.logAddress(), chunkSize,
                 context->bytesReceived(), _params.requestSize());
 
   HttpResponse &response = stream.response();
@@ -88,7 +85,7 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   }
 
   if (0 <= _params.requestSize() && _params.requestSize() != context->bytesReceived()) {
-    ESB_LOG_ERROR("[%s] missing %u bytes from %u byte response body", stream.logAddress(),
+    ESB_LOG_ERROR("[%s] missing %lu bytes from %lu byte response body", stream.logAddress(),
                   _params.requestSize() - context->bytesReceived(), _params.requestSize());
   }
   assert(context->bytesReceived() == _params.requestSize());
@@ -111,7 +108,7 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   ESB::Error error;
 
   if (_params.useContentLengthHeader()) {
-    error = response.addHeader(stream.allocator(), "Content-Length", "%u", _params.requestSize());
+    error = response.addHeader(stream.allocator(), "Content-Length", "%lu", _params.requestSize());
   } else {
     error = response.addHeader("Transfer-Encoding", "chunked", stream.allocator());
   }
@@ -131,7 +128,7 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
 }
 
 ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                ESB::UInt32 *bytesAvailable) {
+                                                ESB::UInt64 *bytesAvailable) {
   switch (_params.disruptTransaction()) {
     case HttpTestParams::STALL_SERVER_SEND_BODY:
       stream.pauseSend(false);
@@ -151,20 +148,20 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, Ht
 }
 
 ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                                  unsigned char *chunk, ESB::UInt32 bytesRequested) {
+                                                  unsigned char *chunk, ESB::UInt64 bytesRequested) {
   assert(chunk);
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   assert(bytesRequested <= _params.responseSize() - context->bytesSent());
 
-  ESB::UInt32 totalBytesRemaining = _params.responseSize() - context->bytesSent();
-  ESB::UInt32 bytesToSend = bytesRequested > totalBytesRemaining ? totalBytesRemaining : bytesRequested;
+  ESB::UInt64 totalBytesRemaining = _params.responseSize() - context->bytesSent();
+  ESB::UInt64 bytesToSend = MIN(bytesRequested, totalBytesRemaining);
 
-  memcpy(chunk, ((unsigned char *)_params.responseBody()) + context->bytesSent(), bytesToSend);
+  memset(chunk, 'b', bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
 
-  ESB_LOG_DEBUG("[%s] sent %u or %u/%u response body bytes", stream.logAddress(), bytesToSend, context->bytesSent(),
+  ESB_LOG_DEBUG("[%s] sent %lu or %lu/%lu response body bytes", stream.logAddress(), bytesToSend, context->bytesSent(),
                 _params.responseSize());
 
   return ESB_SUCCESS;

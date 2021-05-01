@@ -83,7 +83,7 @@ ESB::Error HttpLoadgenSeedCommand::buildRequest(HttpClientTransaction *transacti
   }
 
   if (_params.useContentLengthHeader()) {
-    error = request.addHeader(transaction->allocator(), "Content-Length", "%u", _params.requestSize());
+    error = request.addHeader(transaction->allocator(), "Content-Length", "%lu", _params.requestSize());
   } else {
     error = request.addHeader("Transfer-Encoding", "chunked", transaction->allocator());
   }

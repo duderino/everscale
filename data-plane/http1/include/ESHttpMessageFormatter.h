@@ -74,7 +74,7 @@ class HttpMessageFormatter {
    * @return ESB_SUCCESS if successful, ESB_AGAIN if the buffer runs out of
    * space, another error code otherwise.
    */
-  ESB::Error beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 offeredSize, ESB::UInt32 *maxChunkSize);
+  ESB::Error beginBlock(ESB::Buffer *outputBuffer, ESB::UInt64 offeredSize, ESB::UInt64 *maxChunkSize);
 
   ESB::Error endBlock(ESB::Buffer *outputBuffer);
 
@@ -124,13 +124,13 @@ class HttpMessageFormatter {
   // chunk          = chunk-size [ chunk-extension ] CRLF
   //                  ...
   // chunk-size     = 1*HEX
-  ESB::Error beginChunk(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize, ESB::UInt32 *availableSize);
+  ESB::Error beginChunk(ESB::Buffer *outputBuffer, ESB::UInt64 requestedSize, ESB::UInt64 *availableSize);
 
   // chunk          = ...
   //                  chunk-data CRLF
   ESB::Error endChunk(ESB::Buffer *outputBuffer);
 
-  ESB::Error beginUnencodedBlock(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize, ESB::UInt32 *availableSize);
+  ESB::Error beginUnencodedBlock(ESB::Buffer *outputBuffer, ESB::UInt64 requestedSize, ESB::UInt64 *availableSize);
 
   int _state;
   const HttpHeader *_currentHeader;

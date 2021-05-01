@@ -42,8 +42,6 @@ HttpTestParams::HttpTestParams()
       _method("GET"),
       _contentType("octet-stream"),
       _absPath("/"),
-      _requestBody(NULL),
-      _responseBody(NULL),
       _maxVerifyDepth(3),
       _disruptTransaction(HAPPY_PATH) {
   caPath(CA_PATH);
@@ -51,63 +49,34 @@ HttpTestParams::HttpTestParams()
   serverCertPath(CERT_PATH);
 }
 
-HttpTestParams::~HttpTestParams() {
-  if (_requestBody) {
-    free((void *)_requestBody);
-    _requestBody = NULL;
-  }
-  if (_responseBody) {
-    free((void *)_responseBody);
-    _responseBody = NULL;
-  }
-}
+HttpTestParams::~HttpTestParams() {}
 
-HttpTestParams &HttpTestParams::requestSize(ESB::UInt32 requestSize) {
-  if (_requestBody) {
-    free((void *)_requestBody);
-  }
-
-  _requestBody = (unsigned char *)malloc(requestSize);
-  for (int i = 0; i < requestSize; ++i) {
-    _requestBody[i] = 'a' + i % 26;
-  }
-  _requestSize = requestSize;
-  return *this;
-}
-
-HttpTestParams &HttpTestParams::responseSize(ESB::UInt32 responseSize) {
-  if (_responseBody) {
-    free((void *)_responseBody);
-  }
-
-  _responseBody = (unsigned char *)malloc(responseSize);
-  for (int i = 0; i < responseSize; ++i) {
-    _responseBody[i] = 'A' + i % 26;
-  }
-  _responseSize = responseSize;
-  return *this;
-}
-
-static void printUsage(const char *progName) {
+void HttpTestParams::printUsage(const char *progName) const {
   fprintf(stderr, "Usage: %s <options>\n", progName);
   fprintf(stderr, "\n");
   fprintf(stderr, "\tOptions:\n");
-  fprintf(stderr, "\t--clientThreads <number, default 1>\n");
-  fprintf(stderr, "\t--originThreads <number, default 1>\n");
-  fprintf(stderr, "\t--proxyThreads <number, default 1>\n");
-  fprintf(stderr, "\t--connections <number, default 1>\n");
-  fprintf(stderr, "\t--requestsPerConnection <number, default 1>\n");
-  fprintf(stderr, "\t--port <number, default 0/pick free ephemeral>\n");
-  fprintf(stderr, "\t--reuseConnections <number, default to 1/reuse>\n");
-  fprintf(stderr, "\t--secure <number, default to 0/insecure>\n");
-  fprintf(stderr, "\t--caCertPath <path, defaults to " CA_PATH ">\n");
-  fprintf(stderr, "\t--serverKeyPath <path, defaults to " KEY_PATH ">\n");
-  fprintf(stderr, "\t--serverCertPath <path, defaults to " CERT_PATH ">\n");
+  fprintf(stderr, "\t--clientThreads <number, default %u>\n", clientThreads());
+  fprintf(stderr, "\t--originThreads <number, default %u>\n", originThreads());
+  fprintf(stderr, "\t--proxyThreads <number, default %u>\n", proxyThreads());
+  fprintf(stderr, "\t--connections <number, default %u>\n", connections());
+  fprintf(stderr, "\t--requestsPerConnection <number, default %u>\n", requestsPerConnection());
+  fprintf(stderr, "\t--port <number, default %u (0 means use any free ephemeral)>\n", port());
+  fprintf(stderr, "\t--reuseConnections <number, default %u>\n", reuseConnections());
+  fprintf(stderr, "\t--requestBodySize <number, default %lu>\n", requestSize());
+  fprintf(stderr, "\t--responseBodySize <number, default %lu>\n", responseSize());
+  fprintf(stderr, "\t--clientTimeoutMsec <number, default %u>\n", clientTimeoutMsec());
+  fprintf(stderr, "\t--proxyTimeoutMsec <number, default %u>\n", proxyTimeoutMsec());
+  fprintf(stderr, "\t--originTimeoutMsec <number, default %u>\n", originTimeoutMsec());
+  fprintf(stderr, "\t--secure <number, default %u>\n", secure());
+  fprintf(stderr, "\t--caCertPath <path, default %s>\n", caPath());
+  fprintf(stderr, "\t--serverKeyPath <path, default %s>\n", serverKeyPath());
+  fprintf(stderr, "\t--serverCertPath <path, default %s>\n", serverCertPath());
+  fprintf(stderr, "\t--hostHeader <string, default %s>\n", hostHeader());
   fprintf(stderr, "\t--logError\n");
   fprintf(stderr, "\t--logWarning\n");
   fprintf(stderr, "\t--logInfo\n");
   fprintf(stderr, "\t--logDebug\n");
-  fprintf(stderr, "\t--logLevel <Log Level, defults to 6/NOTICE>\n");
+  fprintf(stderr, "\t--logLevel <Log Level, default %u>\n", logLevel());
   fprintf(stderr, "\n");
   fprintf(stderr,
           "\tLog Levels:\n"
@@ -136,11 +105,17 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
                                       {"connections", required_argument, NULL, 's'},
                                       {"requestsPerConnection", required_argument, NULL, 'i'},
                                       {"reuseConnections", required_argument, NULL, 'r'},
+                                      {"requestBodySize", required_argument, NULL, 0},
+                                      {"responseBodySize", required_argument, NULL, 0},
+                                      {"clientTimeoutMsec", required_argument, NULL, 0},
+                                      {"proxyTimeoutMsec", required_argument, NULL, 0},
+                                      {"originTimeoutMsec", required_argument, NULL, 0},
                                       {"port", required_argument, NULL, 't'},
                                       {"secure", required_argument, NULL, 0},
                                       {"caCertPath", required_argument, NULL, 0},
                                       {"serverKeyPath", required_argument, NULL, 0},
                                       {"serverCertPath", required_argument, NULL, 0},
+                                      {"hostHeader", required_argument, NULL, 0},
                                       {"logError", no_argument, NULL, 0},
                                       {"logWarning", no_argument, NULL, 0},
                                       {"logInfo", no_argument, NULL, 0},
@@ -163,6 +138,8 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
           serverKeyPath(optarg);
         } else if (0 == strcasecmp("serverCertPath", options[idx].name)) {
           serverCertPath(optarg);
+        } else if (0 == strcasecmp("hostHeader", options[idx].name)) {
+          hostHeader(optarg);
         } else if (0 == strcasecmp("logError", options[idx].name)) {
           logLevel(ESB::Logger::Err);
         } else if (0 == strcasecmp("logWarning", options[idx].name)) {
@@ -171,6 +148,16 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
           logLevel(ESB::Logger::Info);
         } else if (0 == strcasecmp("logDebug", options[idx].name)) {
           logLevel(ESB::Logger::Debug);
+        } else if (0 == strcasecmp("requestBodySize", options[idx].name)) {
+          requestSize(strtoul(optarg, NULL, 10));
+        } else if (0 == strcasecmp("responseBodySize", options[idx].name)) {
+          responseSize(strtoul(optarg, NULL, 10));
+        } else if (0 == strcasecmp("clientTimeoutMsec", options[idx].name)) {
+          clientTimeoutMsec(atoi(optarg));
+        } else if (0 == strcasecmp("proxyTimeoutMsec", options[idx].name)) {
+          proxyTimeoutMsec(atoi(optarg));
+        } else if (0 == strcasecmp("originTimeoutMsec", options[idx].name)) {
+          originTimeoutMsec(atoi(optarg));
         } else {
           printUsage(argv[0]);
           return ESB_INVALID_ARGUMENT;
@@ -236,7 +223,7 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
 void HttpTestParams::dump() {
   ESB_LOG_NOTICE(
       "[params] clientThreads=%u, proxyThreads=%u, originThreads=%u, connections=%u, requestsPerConnection=%u, "
-      "secure=%s, reuseConnection=%s, requestSize=%u, responseSize=%u, destination=%s, caPath=%s, serverKeyPath=%s, "
+      "secure=%s, reuseConnection=%s, requestSize=%lu, responseSize=%lu, destination=%s, caPath=%s, serverKeyPath=%s, "
       "serverCertPath=%s",
       _clientThreads, _proxyThreads, _originThreads, _connections, _requestsPerConnection, _secure ? "true" : "false",
       _reuseConnections ? "true" : "false", _requestSize, _responseSize, _destinationAddress, _caPath, _serverKeyPath,

@@ -81,8 +81,8 @@ class HttpServerHandler {
    * transaction.
    */
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                        unsigned const char *body, ESB::UInt32 bytesOffered,
-                                        ESB::UInt32 *bytesConsumed) = 0;
+                                        unsigned const char *body, ESB::UInt64 bytesOffered,
+                                        ESB::UInt64 *bytesConsumed) = 0;
 
   /**
    * Offer body bytes to the caller, if necessary producing more data as a
@@ -98,7 +98,7 @@ class HttpServerHandler {
    * transaction.
    */
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                       ESB::UInt32 *bytesAvailable) = 0;
+                                       ESB::UInt64 *bytesAvailable) = 0;
   /**
    * Copy body bytes to the caller, which consumes it in the process.
    *
@@ -111,7 +111,7 @@ class HttpServerHandler {
    * return value other than ESB_SUCCESS will abort the current transaction.
    */
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                         unsigned char *body, ESB::UInt32 bytesRequested) = 0;
+                                         unsigned char *body, ESB::UInt64 bytesRequested) = 0;
 
   /**
    * Handle the end of a transaction.  This is called regardless of the

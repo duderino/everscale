@@ -25,12 +25,12 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream);
   virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &multiplexer, HttpServerStream &serverStream);
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                        unsigned const char *body, ESB::UInt32 bytesOffered,
-                                        ESB::UInt32 *bytesConsumed);
+                                        unsigned const char *body, ESB::UInt64 bytesOffered,
+                                        ESB::UInt64 *bytesConsumed);
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                       ESB::UInt32 *bytesAvailable);
+                                       ESB::UInt64 *bytesAvailable);
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
-                                         unsigned char *body, ESB::UInt32 bytesRequested);
+                                         unsigned char *body, ESB::UInt64 bytesRequested);
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
                               HttpServerHandler::State state);
 
@@ -41,12 +41,12 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   virtual ESB::Error beginTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
   virtual ESB::Error receiveResponseHeaders(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
   virtual ESB::Error offerRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                      ESB::UInt32 *bytesAvailable);
+                                      ESB::UInt64 *bytesAvailable);
   virtual ESB::Error produceRequestBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                        unsigned char *body, ESB::UInt32 bytesRequested);
+                                        unsigned char *body, ESB::UInt64 bytesRequested);
   virtual ESB::Error consumeResponseBody(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
-                                         const unsigned char *body, ESB::UInt32 bytesOffered,
-                                         ESB::UInt32 *bytesConsumed);
+                                         const unsigned char *body, ESB::UInt64 bytesOffered,
+                                         ESB::UInt64 *bytesConsumed);
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                               HttpClientHandler::State state);
   virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);

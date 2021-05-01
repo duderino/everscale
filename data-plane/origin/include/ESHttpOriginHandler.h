@@ -25,19 +25,17 @@ class HttpOriginHandler : public HttpServerHandler {
   virtual ESB::Error beginTransaction(HttpMultiplexer &stack, HttpServerStream &stream);
   virtual ESB::Error receiveRequestHeaders(HttpMultiplexer &stack, HttpServerStream &stream);
   virtual ESB::Error consumeRequestBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                        unsigned const char *chunk, ESB::UInt32 chunkSize, ESB::UInt32 *bytesConsumed);
+                                        unsigned const char *chunk, ESB::UInt64 chunkSize, ESB::UInt64 *bytesConsumed);
   virtual ESB::Error offerResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream,
-                                       ESB::UInt32 *bytesAvailable);
+                                       ESB::UInt64 *bytesAvailable);
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream, unsigned char *chunk,
-                                         ESB::UInt32 bytesRequested);
+                                         ESB::UInt64 bytesRequested);
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state);
 
  private:
-  // Disabled
-  HttpOriginHandler(const HttpOriginHandler &);
-  void operator=(const HttpOriginHandler &);
-
   const HttpTestParams &_params;
+
+  ESB_DISABLE_AUTO_COPY(HttpOriginHandler);
 };
 
 }  // namespace ES

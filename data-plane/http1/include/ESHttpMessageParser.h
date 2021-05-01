@@ -74,9 +74,9 @@ class HttpMessageParser {
    * @return ESB_SUCCESS if successful, ESB_AGAIN if the buffer needs to be
    *  compacted and filled, another error code otherwise.
    */
-  ESB::Error parseBody(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition, ESB::UInt32 *chunkSize);
+  ESB::Error parseBody(ESB::Buffer *inputBuffer, ESB::UInt64 *startingPosition, ESB::UInt64 *chunkSize);
 
-  ESB::Error consumeBody(ESB::Buffer *inputBuffer, ESB::UInt32 bytesConsumed);
+  ESB::Error consumeBody(ESB::Buffer *inputBuffer, ESB::UInt64 bytesConsumed);
 
   /**
    * Skips any body trailer.  Necessary only if the connection will be reused.
@@ -118,7 +118,7 @@ class HttpMessageParser {
   //                  last-chunk
   //                  trailer
   //                  CRLF
-  ESB::Error parseChunkedBody(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition, ESB::UInt32 *chunkSize);
+  ESB::Error parseChunkedBody(ESB::Buffer *inputBuffer, ESB::UInt64 *startingPosition, ESB::UInt64 *chunkSize);
 
   // chunk-size     = 1*HEX
   ESB::Error parseChunkSize(ESB::Buffer *inputBuffer);
@@ -130,14 +130,14 @@ class HttpMessageParser {
   ESB::Error parseChunkExtension(ESB::Buffer *inputBuffer);
 
   // chunk-data     = chunk-size(OCTET)
-  ESB::Error parseChunkData(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition, ESB::UInt32 *chunkSize);
+  ESB::Error parseChunkData(ESB::Buffer *inputBuffer, ESB::UInt64 *startingPosition, ESB::UInt64 *chunkSize);
 
   // chunk          = ... CRLF
   ESB::Error parseEndChunk(ESB::Buffer *inputBuffer);
 
-  ESB::Error parseMultipartBody(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition, ESB::UInt32 *chunkSize);
+  ESB::Error parseMultipartBody(ESB::Buffer *inputBuffer, ESB::UInt64 *startingPosition, ESB::UInt64 *chunkSize);
 
-  ESB::Error parseUnencodedBody(ESB::Buffer *inputBuffer, ESB::UInt32 *startingPosition, ESB::UInt32 *chunkSize);
+  ESB::Error parseUnencodedBody(ESB::Buffer *inputBuffer, ESB::UInt64 *startingPosition, ESB::UInt64 *chunkSize);
 
   ESB::Error postParse(HttpMessage &message);
 };

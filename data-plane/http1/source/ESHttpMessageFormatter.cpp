@@ -268,8 +268,8 @@ ESB::Error HttpMessageFormatter::formatFieldValue(ESB::Buffer *outputBuffer, con
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer, ESB::UInt32 offeredSize,
-                                            ESB::UInt32 *maxChunkSize) {
+ESB::Error HttpMessageFormatter::beginBlock(ESB::Buffer *outputBuffer, ESB::UInt64 offeredSize,
+                                            ESB::UInt64 *maxChunkSize) {
   if (!outputBuffer || !maxChunkSize) {
     return ESB_NULL_POINTER;
   }
@@ -348,8 +348,8 @@ ESB::Error HttpMessageFormatter::endBody(ESB::Buffer *outputBuffer) {
   return ESB_INVALID_STATE;
 }
 
-ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
-                                            ESB::UInt32 *availableSize) {
+ESB::Error HttpMessageFormatter::beginChunk(ESB::Buffer *outputBuffer, ESB::UInt64 requestedSize,
+                                            ESB::UInt64 *availableSize) {
   // chunk          = chunk-size [ chunk-extension ] CRLF
   //                  ...
   // chunk-size     = 1*HEX
@@ -406,8 +406,8 @@ ESB::Error HttpMessageFormatter::endChunk(ESB::Buffer *outputBuffer) {
   return ESB_SUCCESS;
 }
 
-ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer, ESB::UInt32 requestedSize,
-                                                     ESB::UInt32 *availableSize) {
+ESB::Error HttpMessageFormatter::beginUnencodedBlock(ESB::Buffer *outputBuffer, ESB::UInt64 requestedSize,
+                                                     ESB::UInt64 *availableSize) {
   assert(ES_FORMATTING_UNENCODED_BODY & _state);
   assert(0 < requestedSize);
   assert(availableSize);

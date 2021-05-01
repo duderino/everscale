@@ -49,8 +49,8 @@ class HttpServerStream : public HttpStream {
    * @return ESB_SUCCESS if 1+ bytes consumed, ESB_AGAIN if send buffer full and
    * underlying socket send buffer is full, another error code otherwise.
    */
-  virtual ESB::Error sendResponseBody(unsigned const char *body, ESB::UInt32 bytesOffered,
-                                      ESB::UInt32 *bytesConsumed) = 0;
+  virtual ESB::Error sendResponseBody(unsigned const char *body, ESB::UInt64 bytesOffered,
+                                      ESB::UInt64 *bytesConsumed) = 0;
 
   /**
    * Determine how many bytes of request body data can be read without blocking.
@@ -62,7 +62,7 @@ class HttpServerStream : public HttpStream {
    * empty and there is no data to be read on the underlying socket, or another
    * error code otherwise.
    */
-  virtual ESB::Error requestBodyAvailable(ESB::UInt32 *bytesAvailable) = 0;
+  virtual ESB::Error requestBodyAvailable(ESB::UInt64 *bytesAvailable) = 0;
 
   /**
    * Read up to bytesRequested of request body data.
@@ -75,7 +75,7 @@ class HttpServerStream : public HttpStream {
    * returned, ESB_INVALID_ARGUMENT if bytesRequested exceeds bytesAvailable (use requestBodyAvailable() first), another
    * error code otherwise.
    */
-  virtual ESB::Error readRequestBody(unsigned char *body, ESB::UInt32 bytesRequested, ESB::UInt32 *bytesRead) = 0;
+  virtual ESB::Error readRequestBody(unsigned char *body, ESB::UInt64 bytesRequested, ESB::UInt64 *bytesRead) = 0;
 
  private:
   // Disabled
