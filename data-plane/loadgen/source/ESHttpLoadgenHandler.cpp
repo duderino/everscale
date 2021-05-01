@@ -43,6 +43,7 @@ ESB::Error HttpLoadgenHandler::offerRequestBody(HttpMultiplexer &multiplexer, Ht
   assert(maxChunkSize);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
+  assert(context->bytesSent() <= _params.requestSize());
   *maxChunkSize = _params.requestSize() - context->bytesSent();
   return ESB_SUCCESS;
 }
@@ -53,10 +54,15 @@ ESB::Error HttpLoadgenHandler::produceRequestBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
   assert(context);
+  assert(context->bytesSent() <= _params.requestSize());
   assert(bytesRequested <= _params.requestSize() - context->bytesSent());
 
   ESB::UInt64 totalBytesRemaining = _params.requestSize() - context->bytesSent();
   ESB::UInt64 bytesToSend = MIN(bytesRequested, totalBytesRemaining);
+
+  if (0 == bytesToSend) {
+    return ESB_SUCCESS;
+  }
 
   memset(chunk, 'a', bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
@@ -143,8 +149,9 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
       if (0 <= _params.responseSize() && _params.responseSize() != context->bytesReceived()) {
-        ESB_LOG_ERROR("[%s] missing %lu bytes from %lu byte response body", stream.logAddress(),
-                      _params.responseSize() - context->bytesReceived(), _params.responseSize());
+        ESB_LOG_ERROR("[%s] expected %lu response body bytes but received %lu bytes (delta %lu)", stream.logAddress(),
+                      _params.responseSize(), context->bytesReceived(),
+                      _params.responseSize() - context->bytesReceived());
       }
       assert(context->bytesReceived() == _params.responseSize());
       break;

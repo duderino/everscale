@@ -68,11 +68,14 @@
 
 namespace ESB {
 
+static const UInt32 MAX_TIMEOUT_MSEC = 30 * 60 * 1000;  // 30 min
+static const UInt32 MIN_TIMEOUT_MSEC = 10;              // 10 msec
+
 EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleTimeoutMsec, UInt32 maxSockets,
                                    Allocator &allocator)
     : SocketMultiplexer(),
       _epollDescriptor(INVALID_SOCKET),
-      _idleTimeoutMsec(MAX(idleTimeoutMsec, 10)),
+      _idleTimeoutMsec(MIN(MAX(idleTimeoutMsec, MIN_TIMEOUT_MSEC), MAX_TIMEOUT_MSEC)),
       _maxSockets(MAX(maxSockets, 1)),
       _events(NULL),
       _eventCache(NULL),
@@ -80,7 +83,7 @@ EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleTimeoutMse
       _activeSocketCount(),
       _activeSockets(),
       _deadSockets(),
-      _timingWheel(5 * 60 * 1000 / _idleTimeoutMsec * 10, _idleTimeoutMsec / 10, Time::Instance().now(), _allocator) {
+      _timingWheel(MAX_TIMEOUT_MSEC * 2 / MIN_TIMEOUT_MSEC, MIN_TIMEOUT_MSEC, Time::Instance().now(), _allocator) {
   strncpy(_namePrefix, namePrefix, sizeof(_namePrefix));
   _namePrefix[sizeof(_namePrefix) - 1] = 0;
 

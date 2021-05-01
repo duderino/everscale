@@ -84,37 +84,6 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
 // use secure if true
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
 
-// TEST(HttpProxyTest, DebuggingTest) {
-//  HttpTestParams params;
-//  params.connections(1)
-//      .requestsPerConnection(1)
-//      .clientThreads(1)
-//      .proxyThreads(1)
-//      .originThreads(1)
-//      .requestSize(0)
-//      .responseSize(ESB_UINT64_MAX)
-//      .originTimeoutMsec(60 * 1000 * 1000)
-//      .proxyTimeoutMsec(60 * 1000 * 1000)
-//      .clientTimeoutMsec(60 * 1000 * 1000)
-//      .hostHeader("test.server.everscale.com")
-//      .secure(true)
-//      .logLevel(ESB::Logger::Info);
-//
-//  EphemeralListener originListener("origin-listener", params.secure());
-//  EphemeralListener proxyListener("proxy-listener", params.secure());
-//  HttpFixedRouter router(originListener.localDestination());
-//  HttpLoadgenHandler loadgenHandler(params);
-//  HttpRoutingProxyHandler proxyHandler(router);
-//  HttpOriginHandler originHandler(params);
-//  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
-//
-//  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
-//  ASSERT_EQ(ESB_SUCCESS, test.run());
-//  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-//            test.client().clientCounters().getSuccesses()->queries());
-//  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
-//}
-
 TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
   params.connections(50)
@@ -149,6 +118,68 @@ TEST_P(HttpProxyTest, ClientToProxyToServer) {
       .originThreads(2)
       .requestSize(1024)
       .responseSize(1024)
+      .hostHeader("test.server.everscale.com")
+      .secure(std::get<0>(GetParam()))
+      .logLevel(ESB::Logger::Warning);
+
+  EphemeralListener originListener("origin-listener", params.secure());
+  EphemeralListener proxyListener("proxy-listener", params.secure());
+  HttpFixedRouter router(originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+}
+
+TEST_P(HttpProxyTest, LargeResponse) {
+  HttpTestParams params;
+  params.connections(1)
+      .requestsPerConnection(1)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
+      .requestSize(0)
+      .responseSize(ESB_UINT32_MAX * 2)
+      .originTimeoutMsec(ESB_UINT32_MAX)
+      .proxyTimeoutMsec(ESB_UINT32_MAX)
+      .clientTimeoutMsec(ESB_UINT32_MAX)
+      .hostHeader("test.server.everscale.com")
+      .secure(std::get<0>(GetParam()))
+      .logLevel(ESB::Logger::Warning);
+
+  EphemeralListener originListener("origin-listener", params.secure());
+  EphemeralListener proxyListener("proxy-listener", params.secure());
+  HttpFixedRouter router(originListener.localDestination());
+  HttpLoadgenHandler loadgenHandler(params);
+  HttpRoutingProxyHandler proxyHandler(router);
+  HttpOriginHandler originHandler(params);
+  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
+
+  ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
+  ASSERT_EQ(ESB_SUCCESS, test.run());
+  ASSERT_EQ(params.connections() * params.requestsPerConnection(),
+            test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+}
+
+TEST_P(HttpProxyTest, LargeRequest) {
+  HttpTestParams params;
+  params.connections(1)
+      .requestsPerConnection(1)
+      .clientThreads(1)
+      .proxyThreads(1)
+      .originThreads(1)
+      .requestSize(ESB_UINT32_MAX * 2)
+      .responseSize(0)
+      .originTimeoutMsec(ESB_UINT32_MAX)
+      .proxyTimeoutMsec(ESB_UINT32_MAX)
+      .clientTimeoutMsec(ESB_UINT32_MAX)
       .hostHeader("test.server.everscale.com")
       .secure(std::get<0>(GetParam()))
       .logLevel(ESB::Logger::Warning);

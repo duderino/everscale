@@ -143,6 +143,7 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, Ht
 
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
+  assert(context->bytesSent() <= _params.responseSize());
   *bytesAvailable = _params.responseSize() - context->bytesSent();
   return ESB_SUCCESS;
 }
@@ -153,10 +154,15 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
+  assert(context->bytesSent() <= _params.responseSize());
   assert(bytesRequested <= _params.responseSize() - context->bytesSent());
 
   ESB::UInt64 totalBytesRemaining = _params.responseSize() - context->bytesSent();
   ESB::UInt64 bytesToSend = MIN(bytesRequested, totalBytesRemaining);
+
+  if (0 == bytesToSend) {
+    return ESB_SUCCESS;
+  }
 
   memset(chunk, 'b', bytesToSend);
   context->setBytesSent(context->bytesSent() + bytesToSend);
