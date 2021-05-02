@@ -75,7 +75,7 @@ EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleTimeoutMse
                                    Allocator &allocator)
     : SocketMultiplexer(),
       _epollDescriptor(INVALID_SOCKET),
-      _idleTimeoutMsec(MIN(MAX(idleTimeoutMsec, MIN_TIMEOUT_MSEC), MAX_TIMEOUT_MSEC)),
+      _idleTimeoutMsec(0 == idleTimeoutMsec ? 0 : MIN(MAX(idleTimeoutMsec, MIN_TIMEOUT_MSEC), MAX_TIMEOUT_MSEC)),
       _maxSockets(MAX(maxSockets, 1)),
       _events(NULL),
       _eventCache(NULL),
@@ -177,7 +177,7 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
     return ESB_OVERFLOW;
   }
 
-  if (!socket->permanent()) {
+  if (0 < _idleTimeoutMsec && !socket->permanent()) {
     Error error = _timingWheel.insert(&socket->timer(), _idleTimeoutMsec, Time::Instance().now());
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "[%s] cannot add socket to timing wheel", socket->name());
@@ -574,7 +574,7 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
 
       assert(INVALID_SOCKET != socket->socketDescriptor());
 
-      if (socket->permanent()) {
+      if (socket->permanent() || 0 == _idleTimeoutMsec) {
         updateMultiplexedSocket(socket);
         continue;
       }

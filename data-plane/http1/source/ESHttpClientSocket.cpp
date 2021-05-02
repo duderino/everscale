@@ -81,7 +81,7 @@ class HttpRequestBodyProducer : public HttpClientHandler {
     assert(!"function should not be called");
   }
 
-  inline ESB::UInt32 bytesProduced() const { return _bytesProduced; };
+  inline ESB::UInt64 bytesProduced() const { return _bytesProduced; };
 
  private:
   HttpRequestBodyProducer(const HttpRequestBodyProducer &disabled);
@@ -134,7 +134,7 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
     }
 
     _bytesOffered = bytesOffered;
-    ESB::UInt32 bytesToCopy = MIN(_size - _bytesConsumed, bytesOffered);
+    ESB::UInt64 bytesToCopy = MIN(_size - _bytesConsumed, bytesOffered);
 
     if (0 == bytesOffered) {
       // last chunk so advance state machine
@@ -650,7 +650,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
   assert(_sendBuffer);
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt64 maxChunkSize = 0;
+    ESB::UInt64 chunkSize = 0;
     ESB::UInt64 offeredSize = 0;
 
     ESB::Error error = handler.offerRequestBody(_multiplexer, *this, &offeredSize);
@@ -684,11 +684,9 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
       }
     }
 
-    if (ESB_SUCCESS != (error = formatStartChunk(offeredSize, &maxChunkSize))) {
+    if (ESB_SUCCESS != (error = formatStartChunk(offeredSize, &chunkSize))) {
       return error;
     }
-
-    ESB::UInt32 chunkSize = MIN(offeredSize, maxChunkSize);
 
     // let the handler consume chunkSize bytes of body data
 
@@ -701,13 +699,13 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
       case ESB_PAUSE:
         break;
       default:
-        ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %u", _socket->name(), chunkSize);
+        ESB_LOG_INFO_ERRNO(error, "[%s] cannot format request chunk of size %lu", _socket->name(), chunkSize);
         return error;
     }
 
     _sendBuffer->setWritePosition(_sendBuffer->writePosition() + chunkSize);
     _bodyBytesWritten += chunkSize;
-    ESB_LOG_DEBUG("[%s] formatted request chunk of size %u", _socket->name(), chunkSize);
+    ESB_LOG_DEBUG("[%s] formatted request chunk of size %lu", _socket->name(), chunkSize);
 
     // beginBlock reserves space for this operation, it should never fail
     if (ESB_SUCCESS != (error = formatEndChunk())) {
@@ -837,9 +835,11 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
       ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %lu response chunk bytes", _socket->name(), bytesAvailable);
       return error;  // remove from multiplexer
     }
+    assert(_bytesAvailable >= bytesConsumed);
     _bytesAvailable -= bytesConsumed;
 
-    ESB_LOG_DEBUG("[%s] consumed %lu out of %lu response chunk bytes", _socket->name(), bytesConsumed, bytesAvailable);
+    ESB_LOG_DEBUG("[%s] consumed %lu out of %lu response chunk bytes, %lu bytes still available", _socket->name(),
+                  bytesConsumed, bytesAvailable, _bytesAvailable);
   }
 
   return ESB_SHUTDOWN;
@@ -895,8 +895,7 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
-  ESB_LOG_DEBUG("[%s] %u bytes in output buffer", _socket->name(), _sendBuffer->readable());
-
+  bool flushed = false;
   while (!_multiplexer.shutdown() && _sendBuffer->isReadable()) {
     ESB::SSize bytesSent = _socket->send(_sendBuffer);
 
@@ -904,7 +903,7 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
       ESB::Error error = ESB::LastError();
       if (ESB_AGAIN == error) {
         ESB_LOG_DEBUG_ERRNO(error, "[%s] output socket buffer is full", _socket->name());
-        return ESB_AGAIN;  // keep in multiplexer
+        return flushed ? ESB_SUCCESS : ESB_AGAIN;  // keep in multiplexer
       }
 
       assert(ESB_SUCCESS != error);
@@ -912,11 +911,12 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
       return error;  // remove from multiplexer
     }
 
+    flushed = true;
     clearFlag(FIRST_USE_AFTER_REUSE);
     ESB_LOG_DEBUG("[%s] flushed %ld bytes from request output buffer", _socket->name(), bytesSent);
   }
 
-  return _sendBuffer->isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;
+  return _multiplexer.shutdown() ? ESB_SHUTDOWN : ESB_SUCCESS;
 }
 
 const char *HttpClientSocket::logAddress() const { return _socket->name(); }

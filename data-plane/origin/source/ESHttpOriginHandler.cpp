@@ -65,10 +65,16 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   assert(bytesConsumed);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
+  assert(chunkSize + context->bytesReceived() <= _params.requestSize());
 
 #ifndef NDEBUG
-  for (int i = 0; i < chunkSize; ++i) {
-    assert(chunk[i] == 'a');
+  {
+    const ESB::UInt64 bytesReceived = context->bytesReceived();
+    for (ESB::UInt64 i = 0; i < chunkSize; ++i) {
+      char actual = chunk[i];
+      char expected = 'a' + (bytesReceived + i) % 26;
+      assert(actual == expected);
+    }
   }
 #endif
 
@@ -141,6 +147,7 @@ ESB::Error HttpOriginHandler::offerResponseBody(HttpMultiplexer &multiplexer, Ht
       break;
   }
 
+  assert(bytesAvailable);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
   assert(context->bytesSent() <= _params.responseSize());
@@ -154,26 +161,29 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
   assert(0 < bytesRequested);
   HttpOriginContext *context = (HttpOriginContext *)stream.context();
   assert(context);
-  assert(context->bytesSent() <= _params.responseSize());
-  assert(bytesRequested <= _params.responseSize() - context->bytesSent());
 
-  ESB::UInt64 totalBytesRemaining = _params.responseSize() - context->bytesSent();
-  ESB::UInt64 bytesToSend = MIN(bytesRequested, totalBytesRemaining);
+  const ESB::UInt64 bytesSent = context->bytesSent();
+  assert(bytesSent <= _params.responseSize());
+  assert(bytesRequested <= _params.responseSize() - bytesSent);
 
-  if (0 == bytesToSend) {
-    return ESB_SUCCESS;
+#ifndef NDEBUG
+  // Verified in HttpLoadgenHandler::consumeResponseBody
+  for (ESB::UInt64 i = 0; i < bytesRequested; ++i) {
+    chunk[i] = 'A' + (bytesSent + i) % 26;
   }
+#endif
 
-  memset(chunk, 'b', bytesToSend);
-  context->setBytesSent(context->bytesSent() + bytesToSend);
+  context->setBytesSent(bytesSent + bytesRequested);
 
-  ESB_LOG_DEBUG("[%s] sent %lu or %lu/%lu response body bytes", stream.logAddress(), bytesToSend, context->bytesSent(),
-                _params.responseSize());
+  ESB_LOG_DEBUG("[%s] sent %lu or %lu/%lu response body bytes", stream.logAddress(), bytesRequested,
+                context->bytesSent(), _params.responseSize());
 
   return ESB_SUCCESS;
 }
 
 void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
+  HttpOriginContext *context = (HttpOriginContext *)stream.context();
+
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
       ESB_LOG_INFO("[%s] Transaction failed at begin state", stream.logAddress());
@@ -193,15 +203,24 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
       ESB_LOG_INFO("[%s] Transaction failed at response body send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
+      if (context) {
+        if (_params.requestSize() != context->bytesReceived()) {
+          ESB_LOG_ERROR("[%s] expected %lu request body bytes but received %lu bytes (delta %lu)", stream.logAddress(),
+                        _params.requestSize(), context->bytesReceived(),
+                        _params.requestSize() - context->bytesReceived());
+        }
+        assert(context->bytesReceived() == _params.requestSize());
+      }
       break;
     default:
+      assert(!"Transaction failed at unknown state");
       ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
 
-  HttpOriginContext *context = (HttpOriginContext *)stream.context();
   if (!context) {
     return;
   }
+
   ESB::Allocator &allocator = stream.allocator();
 
   context->~HttpOriginContext();

@@ -23,7 +23,7 @@ static bool CloseAfterErrorResponse = true;
  */
 class HttpResponseBodyProducer : public HttpServerHandler {
  public:
-  HttpResponseBodyProducer(unsigned const char *buffer, ESB::UInt32 size)
+  HttpResponseBodyProducer(unsigned const char *buffer, ESB::UInt64 size)
       : _buffer(buffer), _size(size), _bytesProduced(0) {}
   virtual ~HttpResponseBodyProducer() {}
 
@@ -712,6 +712,7 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
       ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %lu request chunk bytes", _socket->name(), bytesAvailable);
       return error;  // remove from multiplexer
     }
+    assert(_bytesAvailable >= bytesConsumed);
     _bytesAvailable -= bytesConsumed;
 
     ESB_LOG_DEBUG("[%s] handler consumed %lu out of %lu request chunk bytes", _socket->name(), bytesConsumed,
@@ -796,7 +797,7 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
   assert(SERVER_FORMATTING_BODY & _state);
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt64 maxChunkSize = 0;
+    ESB::UInt64 chunkSize = 0;
     ESB::UInt64 offeredSize = 0;
 
     ESB::Error error = handler.offerResponseBody(_multiplexer, *this, &offeredSize);
@@ -832,15 +833,11 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
       }
     }
 
-    if (ESB_SUCCESS != (error = formatStartChunk(offeredSize, &maxChunkSize))) {
+    if (ESB_SUCCESS != (error = formatStartChunk(offeredSize, &chunkSize))) {
       return error;
     }
 
-    ESB::UInt64 chunkSize = MIN(offeredSize, maxChunkSize);
-
     // ask the handler to produce chunkSize bytes of body data
-
-    // TODO KEEF extract bytes actually produce and pass to buffer instead of asserting the full amount is produced.
 
     switch (error = handler.produceResponseBody(_multiplexer, *this,
                                                 _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize)) {
@@ -1024,6 +1021,7 @@ ESB::Error HttpServerSocket::flushSendBuffer() {
     return ESB_OVERFLOW;  // remove from multiplexer
   }
 
+  bool flushed = false;
   while (!_multiplexer.shutdown() && _sendBuffer->isReadable()) {
     ESB::SSize bytesSent = _socket->send(_sendBuffer);
 
@@ -1031,7 +1029,7 @@ ESB::Error HttpServerSocket::flushSendBuffer() {
       ESB::Error error = ESB::LastError();
       if (ESB_AGAIN == error) {
         ESB_LOG_DEBUG_ERRNO(error, "[%s] output socket buffer is full", _socket->name());
-        return ESB_AGAIN;  // keep in multiplexer
+        return flushed ? ESB_SUCCESS : ESB_AGAIN;  // keep in multiplexer
       }
 
       assert(ESB_SUCCESS != error);
@@ -1039,10 +1037,11 @@ ESB::Error HttpServerSocket::flushSendBuffer() {
       return error;  // remove from multiplexer
     }
 
+    flushed = true;
     ESB_LOG_DEBUG("[%s] flushed %ld bytes from response output buffer", _socket->name(), bytesSent);
   }
 
-  return _sendBuffer->isReadable() ? ESB_SHUTDOWN : ESB_SUCCESS;
+  return _multiplexer.shutdown() ? ESB_SHUTDOWN : ESB_SUCCESS;
 }
 
 ESB::Error HttpServerSocket::setResponse(int statusCode, const char *reasonPhrase) {
