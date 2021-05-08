@@ -146,12 +146,12 @@ TEST_P(HttpProxyTest, LargeResponse) {
       .originThreads(1)
       .requestSize(0)
       .responseSize(ESB_UINT32_MAX * 2)
-      .originTimeoutMsec(60 * 1000)
-      .proxyTimeoutMsec(60 * 1000)
-      .clientTimeoutMsec(60 * 1000)
+      .originTimeoutMsec(30 * 60 * 1000)
+      .proxyTimeoutMsec(30 * 60 * 1000)
+      .clientTimeoutMsec(30 * 60 * 1000)
       .hostHeader("test.server.everscale.com")
       .secure(std::get<0>(GetParam()))
-      .logLevel(ESB::Logger::Warning);
+      .logLevel(ESB::Logger::Info);
 
   EphemeralListener originListener("origin-listener", params.secure());
   EphemeralListener proxyListener("proxy-listener", params.secure());
@@ -177,12 +177,12 @@ TEST_P(HttpProxyTest, LargeRequest) {
       .originThreads(1)
       .requestSize(ESB_UINT32_MAX * 2)
       .responseSize(0)
-      .originTimeoutMsec(60 * 1000)
-      .proxyTimeoutMsec(60 * 1000)
-      .clientTimeoutMsec(60 * 1000)
+      .originTimeoutMsec(30 * 60 * 1000)
+      .proxyTimeoutMsec(30 * 60 * 1000)
+      .clientTimeoutMsec(30 * 60 * 1000)
       .hostHeader("test.server.everscale.com")
       .secure(std::get<0>(GetParam()))
-      .logLevel(ESB::Logger::Warning);
+      .logLevel(ESB::Logger::Info);
 
   EphemeralListener originListener("origin-listener", params.secure());
   EphemeralListener proxyListener("proxy-listener", params.secure());

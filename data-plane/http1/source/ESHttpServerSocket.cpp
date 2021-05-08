@@ -688,9 +688,23 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
     }
 
     ESB_LOG_DEBUG("[%s] offering request chunk of size %lu", _socket->name(), bytesAvailable);
+    error = handler.consumeRequestBody(_multiplexer, *this, _recvBuffer->buffer() + _recvBuffer->readPosition(),
+                                       bytesAvailable, &bytesConsumed);
 
-    switch (error = handler.consumeRequestBody(_multiplexer, *this, _recvBuffer->buffer() + _recvBuffer->readPosition(),
-                                               bytesAvailable, &bytesConsumed)) {
+    if (0 < bytesConsumed) {
+      ESB::Error error2 = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
+      if (ESB_SUCCESS != error2) {
+        ESB_LOG_DEBUG_ERRNO(error2, "[%s] cannot consume %lu request chunk bytes", _socket->name(), bytesAvailable);
+        return error2;  // remove from multiplexer
+      }
+      assert(_bytesAvailable >= bytesConsumed);
+      _bytesAvailable -= bytesConsumed;
+
+      ESB_LOG_DEBUG("[%s] handler consumed %lu out of %lu request chunk bytes", _socket->name(), bytesConsumed,
+                    bytesAvailable);
+    }
+
+    switch (error) {
       case ESB_BREAK:
         return ESB_BREAK;
       case ESB_SUCCESS:
@@ -706,17 +720,6 @@ ESB::Error HttpServerSocket::stateReceiveRequestBody(HttpServerHandler &handler)
         ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection before last request body chunk", _socket->name());
         return error;
     }
-
-    error = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %lu request chunk bytes", _socket->name(), bytesAvailable);
-      return error;  // remove from multiplexer
-    }
-    assert(_bytesAvailable >= bytesConsumed);
-    _bytesAvailable -= bytesConsumed;
-
-    ESB_LOG_DEBUG("[%s] handler consumed %lu out of %lu request chunk bytes", _socket->name(), bytesConsumed,
-                  bytesAvailable);
   }
 
   return ESB_SHUTDOWN;
@@ -856,6 +859,7 @@ ESB::Error HttpServerSocket::stateSendResponseBody(HttpServerHandler &handler) {
 
     // beginBlock reserves space for this operation, it should never fail
     if (ESB_SUCCESS != (error = formatEndChunk())) {
+      ESB_LOG_INFO_ERRNO(error, "[%s] cannot end response chunk", _socket->name());
       return error;
     }
   }

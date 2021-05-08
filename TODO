@@ -1,4 +1,5 @@
-stat:
+stat: 
+ - add test with really small socket buffers
  - hierarchical timing wheels to reduce ESB_OVERFLOW errors when scheduling timeouts beyond the timingwheel window.
  - put detection of remote close in epoll handler and call handleRemoteClose()?  audit how client/server socket handle 0 reads.  Should those also call remote close?  Or just put the remote close logic only there?
         [1613321028:18967:ERR] [orig-server:127.0.0.1:35641>127.0.0.1:37400,578] missing 1373526 bytes from 1373526 byte response body [/root/project/http/origin/source/ESHttpOriginHandler.cpp:92]

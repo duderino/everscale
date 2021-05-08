@@ -259,7 +259,7 @@ ESB::Error HttpClientSocket::handleConnect() {
   assert(!(ABORTED & _state));
   assert(_socket->connected());
 
-  ESB_LOG_INFO("[%s] Connected to peer", _socket->name());
+  ESB_LOG_INFO("[%s] connected to peer", _socket->name());
 
   stateTransition(TRANSACTION_BEGIN);
   return handleWritable();
@@ -688,9 +688,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
       return error;
     }
 
-    // let the handler consume chunkSize bytes of body data
-
-    // TODO KEEF extract bytes actually produce and pass to buffer instead of asserting the full amount is produced.
+    // ask the handler to produce chunkSize bytes of body data
 
     switch (error = handler.produceRequestBody(_multiplexer, *this,
                                                _sendBuffer->buffer() + _sendBuffer->writePosition(), chunkSize)) {
@@ -709,6 +707,7 @@ ESB::Error HttpClientSocket::stateSendRequestBody(HttpClientHandler &handler) {
 
     // beginBlock reserves space for this operation, it should never fail
     if (ESB_SUCCESS != (error = formatEndChunk())) {
+      ESB_LOG_INFO_ERRNO(error, "[%s] cannot end request chunk", _socket->name());
       return error;
     }
   }
@@ -785,16 +784,16 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
   //
 
   while (!_multiplexer.shutdown()) {
-    ESB::UInt64 bytesAvailable = 0U;
+    ESB::UInt64 bytesOffered = 0U;
     ESB::UInt64 bytesConsumed = 0U;
     ESB::Error error = ESB_SUCCESS;
 
-    if (ESB_SUCCESS != (error = currentChunkBytesAvailable(&bytesAvailable))) {
+    if (ESB_SUCCESS != (error = currentChunkBytesAvailable(&bytesOffered))) {
       return error;
     }
 
     // if last chunk
-    if (0 == bytesAvailable) {
+    if (0 == bytesOffered) {
       ESB_LOG_DEBUG("[%s] offering last chunk", _socket->name());
       stateTransition(TRANSACTION_END);
       unsigned char byte = 0;
@@ -813,11 +812,24 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
       }
     }
 
-    ESB_LOG_DEBUG("[%s] offering response chunk of size %lu", _socket->name(), bytesAvailable);
+    ESB_LOG_DEBUG("[%s] offering response chunk of size %lu", _socket->name(), bytesOffered);
+    error = handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + _recvBuffer->readPosition(),
+                                        bytesOffered, &bytesConsumed);
 
-    switch (error =
-                handler.consumeResponseBody(_multiplexer, *this, _recvBuffer->buffer() + _recvBuffer->readPosition(),
-                                            bytesAvailable, &bytesConsumed)) {
+    if (0 < bytesConsumed) {
+      ESB::Error error2 = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
+      if (ESB_SUCCESS != error2) {
+        ESB_LOG_DEBUG_ERRNO(error2, "[%s] cannot consume %lu response chunk bytes", _socket->name(), bytesOffered);
+        return error2;  // remove from multiplexer
+      }
+      assert(_bytesAvailable >= bytesConsumed);
+      _bytesAvailable -= bytesConsumed;
+
+      ESB_LOG_DEBUG("[%s] consumed %lu out of %lu response chunk bytes, %lu bytes still available", _socket->name(),
+                    bytesConsumed, bytesOffered, _bytesAvailable);
+    }
+
+    switch (error) {
       case ESB_BREAK:
         return ESB_BREAK;
       case ESB_SUCCESS:
@@ -829,17 +841,6 @@ ESB::Error HttpClientSocket::stateReceiveResponseBody(HttpClientHandler &handler
         ESB_LOG_DEBUG_ERRNO(error, "[%s] handler aborting connection before last response body chunk", _socket->name());
         return error;  // remove from multiplexer
     }
-
-    error = _transaction->getParser()->consumeBody(_recvBuffer, bytesConsumed);
-    if (ESB_SUCCESS != error) {
-      ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot consume %lu response chunk bytes", _socket->name(), bytesAvailable);
-      return error;  // remove from multiplexer
-    }
-    assert(_bytesAvailable >= bytesConsumed);
-    _bytesAvailable -= bytesConsumed;
-
-    ESB_LOG_DEBUG("[%s] consumed %lu out of %lu response chunk bytes, %lu bytes still available", _socket->name(),
-                  bytesConsumed, bytesAvailable, _bytesAvailable);
   }
 
   return ESB_SHUTDOWN;

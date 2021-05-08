@@ -206,11 +206,17 @@ ESB::Error HttpRoutingProxyHandler::consumeRequestBody(HttpMultiplexer &multiple
     return ESB_AGAIN;
   }
 
-  switch (ESB::Error error = clientStream.sendRequestBody(body, bytesOffered, bytesConsumed)) {
+  *bytesConsumed = 0;
+  ESB::Error error = clientStream.sendRequestBody(body, bytesOffered, bytesConsumed);
+
+  if (0 < *bytesConsumed) {
+    context->addRequestBodyBytesForwarded(*bytesConsumed);
+    ESB_LOG_DEBUG("[%s] forwarding %lu/%lu request body bytes", clientStream.logAddress(), *bytesConsumed,
+                  context->requestBodyBytesForwarded());
+  }
+
+  switch (error) {
     case ESB_SUCCESS:
-      context->addRequestBodyBytesForwarded(*bytesConsumed);
-      ESB_LOG_DEBUG("[%s] forwarding %lu/%lu request body bytes", clientStream.logAddress(), *bytesConsumed,
-                    context->requestBodyBytesForwarded());
       return ESB_SUCCESS;
     case ESB_PAUSE:
       ESB_LOG_DEBUG("[%s] server recv blocked on %lu request body bytes", clientStream.logAddress(), *bytesConsumed);
@@ -408,11 +414,17 @@ ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multipl
 
   HttpServerStream &serverStream = *context->serverStream();
 
-  switch (ESB::Error error = serverStream.sendResponseBody(body, bytesOffered, bytesConsumed)) {
+  *bytesConsumed = 0;
+  ESB::Error error = serverStream.sendResponseBody(body, bytesOffered, bytesConsumed);
+
+  if (0 < *bytesConsumed) {
+    context->addResponseBodyBytesForwarded(*bytesConsumed);
+    ESB_LOG_DEBUG("[%s] forwarding %lu/%lu response body bytes", serverStream.logAddress(), *bytesConsumed,
+                  context->responseBodyBytesForwarded());
+  }
+
+  switch (error) {
     case ESB_SUCCESS:
-      context->addResponseBodyBytesForwarded(*bytesConsumed);
-      ESB_LOG_DEBUG("[%s] forwarding %lu/%lu response body bytes", serverStream.logAddress(), *bytesConsumed,
-                    context->responseBodyBytesForwarded());
       if (bytesOffered == 0) {
         // prepare server stream for reuse
         serverStream.resumeRecv(false);
