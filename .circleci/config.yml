@@ -18,7 +18,7 @@ jobs:
               BUILD_TYPE=DEBUG cmake . && make && make test
   tsan:
     docker:
-      - image: jtblatt/everscale-build:01-10-21b
+      - image: jtblatt/everscale-build:05-12-21
     steps:
       - checkout
       - run:
@@ -34,7 +34,7 @@ jobs:
               BUILD_TYPE=TSAN cmake . && make && make test
   asan:
     docker:
-      - image: jtblatt/everscale-build:01-10-21b
+      - image: jtblatt/everscale-build:05-12-21
     steps:
       - checkout
       - run:
@@ -50,7 +50,7 @@ jobs:
               BUILD_TYPE=ASAN cmake . && make && make test
   release:
     docker:
-      - image: jtblatt/everscale-build:01-10-21b
+      - image: jtblatt/everscale-build:05-12-21
     steps:
       - checkout
       - run:
@@ -66,7 +66,7 @@ jobs:
               BUILD_TYPE=RELEASE cmake . && make && make test
   "allocators disabled":
     docker:
-      - image: jtblatt/everscale-build:01-10-21b
+      - image: jtblatt/everscale-build:05-12-21
     steps:
       - checkout
       - run:
