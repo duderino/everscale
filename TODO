@@ -1,6 +1,5 @@
-stat: 
- - add test with really small socket buffers
- - hierarchical timing wheels to reduce ESB_OVERFLOW errors when scheduling timeouts beyond the timingwheel window.
+stat:
+ - add counters to detect runaway epoll events (e.g., writable notifications when there is no data to send)
  - put detection of remote close in epoll handler and call handleRemoteClose()?  audit how client/server socket handle 0 reads.  Should those also call remote close?  Or just put the remote close logic only there?
         [1613321028:18967:ERR] [orig-server:127.0.0.1:35641>127.0.0.1:37400,578] missing 1373526 bytes from 1373526 byte response body [/root/project/http/origin/source/ESHttpOriginHandler.cpp:92]
         [1613321028:18967:CRT] [Aborted: 1/14]: gsignal
@@ -31,11 +30,15 @@ stat:
     - Connection reuse false test seems to be borked.  Does loadgen keep reusing the connection after close?  Clue:
         [1613340628:15905:WRN] [prox-server:127.0.0.1:38719>127.0.0.1:51460,1535] cannot send server response: Cleanup [/home/jblatt/src/duderino/everscale/http/proxy/source/ESHttpRoutingProxyHandler.cpp:167]
  - create standalone loadgen to origin tests (3 processes)
- - Add test to connection pool test - server closes all connections while client connections are in pool.
  - EpollMultiplexer dtor calls cleanup handlers on all active connections.  This returns them to the client/server socket factories instead of destroying them.
  - create WAN test using a special docker image with:  tc qdisc add dev lo root netem delay 100ms 20ms distribution normal
- - interop test with other stacks
- - add ability to pause sockets, then resume after n time units.
+ - interop test with nodejs:  https://github.com/apache/trafficserver/pull/131/files#diff-7044deb3d91355abdd40d4f21f39a354ef0de8eb18d1f9d49e147cea927729b0
+ - proxy handler should sanitize/drop/merge inbound request headers and outbound response headers
+ - add test with really small socket buffers
+ - Add test to connection pool test - server closes all connections while client connections are in pool.
+ - ipv6 support
+ - root metrics store
+ - root config store
 
 tls:
  - HTTP server should assert that client hostname matches server certificate (CN or SANs).
@@ -53,10 +56,16 @@ tls:
  - Create integration test that presents tampered private key
  - client side session resumption
  - server side session resumption
- - can boringssl lib's memory be reconciled?
+ - can boringssl lib's memory be reconciled with allocator framework?
  - enable ASLR
- - audit initialization for FIPS = https://boringssl.googlesource.com/boringssl/+/master/crypto/fipsmodule/FIPS.md
- - Add support and tests for certificate chains and certificate chain verification
+ - audit initialization for FIPS = https://boringssl.googlesource.com/boringssl/+/master/crypto/fipsmodule/FIPS.md and https://github.com/envoyproxy/envoy/commit/a734887ad06609cf0b3c023d38239bf3e79d3717
+ - perfect forward secrecy
+ - ocsp staples
+
+
+scheduling:
+ - hierarchical timing wheels to reduce ESB_OVERFLOW errors when scheduling timeouts beyond the timingwheel window.
+ - add delay support (call me back later) with cancellation to epoll sockets and handlers
 
 daemon:
  - Base class with preFork and postFork functions.  Subclass can bind to privileged ports in preFork
@@ -97,7 +106,19 @@ performance and efficiency:
  - Consider filling the recv buffer with data for the next transaction but not processing it until the current transaction completes.
  - compare performance of RELEASE vs RELEASENOPOOL vs. RELEASENOPOOL+tcmalloc on bare metal.  If allocators aren't the best option, limit their use to HttpTransaction and use standard new/delete/new[]/delete[] everywhere else.
  - try https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=70da268b569d32a9fddeea85dc18043de9d89f89
- - Reduce the number of hostname copies in HttpClientSocketFactory (parsePeerAddr -> hostname, hostname -> hostAddress, hostAddress -> ClientTLSConnection)
+ - TCP tx and rx 0 copy
+ - RSS and pinning threads to cores
+ - ktls sockmap and splice
+ - TFO
+ - Experiment with larger userspace and TCP buffers
+ - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers?  woudl ahve to ensure that no more than num max fds will be used in a multiplexer - don't accept new connections unless you have 2 fd free (1 fd for server connection, 1 fd for client connection)
+ - hierarchical timing wheels to reduce memory usage for timers
+ - wildcard indicies - support per-silo vs. global option (currently global only)
+ - TLS_AES_128_GCM_SHA256
+   - https://en.wikipedia.org/wiki/AES_instruction_set
+   - https://en.wikipedia.org/wiki/Coffee_Lake
+   - https://ark.intel.com/content/www/us/en/ark/products/191789/intel-core-i9-9900-processor-16m-cache-up-to-5-00-ghz.html
+   - https://www.cyberciti.biz/faq/how-to-find-out-aes-ni-advanced-encryption-enabled-on-linux-system/
 
 connection pool rework:
  - fix regression caused by switch from rb tree to hash table for connection pool.  https://docs.google.com/spreadsheets/d/1UOR-96YUOYD5poKrTPQv_GthBPWZb_fJzd6D4k0aNIk/edit#gid=2084099544
@@ -106,12 +127,11 @@ connection pool rework:
  - evict old connections
 
 code health:
- - Create macros for placement new
+ - Create macros for placement new / add noexcept and allocator references to all uses of placement new
  - Share more code between HttpClientSocket and HttpServerSocket
  - replace all these memcpy's of ESB::Buffer internals with a convenience function
  - Fewer log levels.  just error, warning, info, debug
  - Naming consistency:  pool to factory, create to acquire, destroy to release, handler to callback, getFoo to foo
- - add noexcept and allocator references to all uses of placement new
  - use allocator cleanup handlers in embedded list test and more widely
  - use references instead of pointers when they shouldn't be NULL
  - reduce the number of name() and getName() functions
@@ -126,7 +146,8 @@ router:
 
 load shedding:
  - pause/resume for http listening sockets (overloaded use case).  support PAUSE returns from HttpServerHandler::acceptConnection
- - each multiplexer allocs array of max fd epoll events.  instead divide max fds by num multiplexers?  woudl ahve to ensure that no more than num max fds will be used in a multiplexer - don't accept new connections unless you have 2 fd free (1 fd for server connection, 1 fd for client connection)
+ - load shedding dimensions - inbound connections, outbound connections, memory...
+ - per-destination/origin load shedding
 
 http stack test
  - support many virtual IPs in client server tests so we can exercise more ports.  Current max tested is 25k client -> 25k server.
@@ -146,10 +167,6 @@ allocators:
 containers:
  - lockless linked list
  - lockless hash table which uses lockless linked lists
-
-sockets:
- - ipv6 support
- - ktls sockmap and splice
 
 cmake:
  - doxygen
@@ -173,23 +190,19 @@ http stuff
  - add user agent/server agent headers
  - remove sensitive headers while proxying
  - fix double add of Transfer-Encoding: chunked.... strip headers that control connection lifetime during proxying
- - idle timeout
  - max requests per connection option (1 disables keepalives, 0 is unlimited)
  - max header size option
  - max body size option
  - save don't skip trailer
  - slow loris defense - not just idle time, also max transaction latency
  - h2 support, move parsing and formatting state from sockets to transactions
- - perfect forward secrecy
- - sni-based cert serving
- - ocsp staples
  - support 100 Continue - server side already supported?  client side - do after connection reuse?
  - support max requests per connection
  - support receiving half closed from client while still sending outstanding response
  - make all the unsigned chars in HttpMessage, HttpRequest, and HttpReponse chars?  UTF-8 only in encoded form?
 
 URL 
- - canonicalization / encode and decode per RFC.  either recursively/fully decode or don't decode multiply encoded sequences.  if decode, must handle utf-8 encoding
+ - canonicalization / encode and decode per https://url.spec.whatwg.org/
  - fully but lazily parse query string - if requested parse into a list of key value pairs.
 
 bootstrap config
@@ -198,16 +211,12 @@ bootstrap config
  - could potentially break into multiple files for scalability, but then need cross-file atomic update mechanism.
  - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid filling disk
 
-xds support
- - protobuf stubs
-
 logging
- - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages
+ - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages and increment drop counter.
  - add trace id extension header, copy across all transactions, and include in log messages
 
 metrics:
  - calc percentiles in latency - https://www.codeproject.com/Articles/25656/Calculating-Percentiles-in-Memory-bound-Applicatio
- - add counters to detect runaway epoll events
  - granular metrics for client and server sockets - break down failures by state and type (idle, error type)
  - metrics for TLS client and server errors
  - connection pool hit rate (averaging counter, add 1 for hit, 0 for miss)

@@ -78,8 +78,7 @@ int main(int argc, char **argv) {
   // Create listening socket
   //
 
-  ESB::ListeningSocket listener("origin-listener",
-                                ESB::SocketAddress("0.0.0.0", params.port(), ESB::SocketAddress::TCP), ESB_UINT16_MAX);
+  ESB::ListeningSocket listener("origin-listener",ESB::SocketAddress("0.0.0.0", params.port(), params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP), ESB_UINT16_MAX);
 
   error = listener.bind();
   if (ESB_SUCCESS != error) {
@@ -89,12 +88,6 @@ int main(int argc, char **argv) {
 
   ESB_LOG_NOTICE("[%s] bound to port %u", listener.name(), listener.listeningAddress().port());
 
-  error = listener.listen();
-  if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot listen on port %u", listener.listeningAddress().port());
-    return error;
-  }
-
   // Init
 
   HttpOriginHandler handler(params);
@@ -102,13 +95,26 @@ int main(int argc, char **argv) {
 
   error = server.initialize();
   if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot initialize server");
     return error;
+  }
+
+  if (params.secure()) {
+    ESB::TLSContext::Params tlsParams;
+    error = server.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
+                                                                               .certificatePath(params.serverCertPath())
+                                                                               .verifyPeerCertificate(false));
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server's default TLS server context");
+      return error;
+    }
   }
 
   // Start
 
   error = server.start();
   if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot start server");
     return error;
   }
 
@@ -116,6 +122,7 @@ int main(int argc, char **argv) {
 
   error = server.addListener(listener);
   if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot add listener");
     return error;
   }
 
@@ -132,6 +139,7 @@ int main(int argc, char **argv) {
 
   error = server.join();
   if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot join server");
     return error;
   }
 

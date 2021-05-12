@@ -34,9 +34,11 @@ HttpServer::HttpServer(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 
 }
 
 HttpServer::~HttpServer() {
-  if (!(_state.get() & ES_HTTP_SERVER_IS_DESTROYED)) {
-    destroy();
+  if (_state.get() & ES_HTTP_SERVER_IS_DESTROYED) {
+    return;
   }
+
+    destroy();
 }
 
 ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {

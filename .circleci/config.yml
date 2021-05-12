@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   debug:
     docker:
-      - image: jtblatt/everscale-build:01-10-21b
+      - image: jtblatt/everscale-build:05-12-21
     steps:
       - checkout
       - run:

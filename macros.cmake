@@ -29,3 +29,10 @@ macro(add_unit_test NAME INCS LIBS CWD TIMEOUT)
             )
 endmacro()
 
+macro(add_mocha_test NAME CWD TIMEOUT)
+    math(EXPR millis "${TIMEOUT} * 1000")
+    add_test(NAME ${NAME}
+            COMMAND ${MOCHA} -t ${millis} ${ARGN}
+            WORKING_DIRECTORY ${CWD})
+endmacro()
+

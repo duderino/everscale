@@ -10,7 +10,9 @@ RUN apt-get update && apt-get install -y \
     wget \
     git \
     libssl-dev \
-    software-properties-common 
+    software-properties-common \
+    clang-format \
+    mocha
 
 RUN cd /usr/lib \ 
     && wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz \

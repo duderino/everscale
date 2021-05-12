@@ -7,15 +7,27 @@ set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/third_party/src/)
 include(ExternalProject)
 
 #
-# clang-format
+# clang-format for make format
 #
 
 find_program(CLANG_FORMAT "clang-format")
 
 if (NOT CLANG_FORMAT)
-    message(STATUS "clang-format not found.")
+    message(FATAL_ERROR "clang-format not found.  Try: sudo apt install clang-format")
 else ()
     message(STATUS "clang-format found: ${CLANG_FORMAT}")
+endif ()
+
+#
+# mocha for nodejs-based interop tests
+#
+
+find_program(MOCHA "mocha")
+
+if (NOT MOCHA)
+    message(FATAL_ERROR "mocha not found.  Try: sudo apt install mocha")
+else ()
+    message(STATUS "mocha found: ${MOCHA}")
 endif ()
 
 #
