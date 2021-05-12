@@ -32,7 +32,7 @@ endmacro()
 macro(add_mocha_test NAME CWD TIMEOUT)
     math(EXPR millis "${TIMEOUT} * 1000")
     add_test(NAME ${NAME}
-            COMMAND ${MOCHA} -t ${millis} ${ARGN}
+            COMMAND env BUILD_TYPE=${CMAKE_BUILD_TYPE} ${MOCHA} -t ${millis} ${ARGN}
             WORKING_DIRECTORY ${CWD})
 endmacro()
 

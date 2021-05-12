@@ -72,8 +72,10 @@ describe('Example', function () {
                     assert.equal(expected_status_code, res.statusCode);
 
                     res.on('data', function (chunk) {
-                        for (var i = 0; i < chunk.length; ++i) {
-                            assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
+                        if (process.env['BUILD_TYPE'] != 'RELEASE') {
+                            for (var i = 0; i < chunk.length; ++i) {
+                                assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
+                            }
                         }
 
                         bytes_received += chunk.length;
