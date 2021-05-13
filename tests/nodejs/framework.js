@@ -182,7 +182,7 @@ module.exports.tf_new = function (args) {
                         log_cb('INFO', "Process arguments: " + JSON.stringify(args));
                         log_cb('INFO', "Process environment: " + JSON.stringify(env));
 
-                        proc = child_process.spawn(proc_conf.path, args, {env: env});
+                        proc = child_process.spawn(proc_conf.path, args, {env: env, maxBuffer: 42 * 1024 * 1024});
                         break;
 
                     case 'node':
@@ -270,13 +270,11 @@ module.exports.tf_new = function (args) {
                         delete servers[pid];
 
                         if (code === 0) {
-                            log_cb('INFO', name + ' exited: code=' + code +
-                                ', pid=' + pid);
+                            log_cb('INFO', name + ' exited: code=' + code + ', pid=' + pid);
                             return;
                         }
 
-                        log_cb('ERROR', name + ' exited: code=' + code +
-                            ', pid=' + pid);
+                        log_cb('ERROR', name + ' exited: code=' + code + ', pid=' + pid);
                         process.exit(1);
                     });
                 })();

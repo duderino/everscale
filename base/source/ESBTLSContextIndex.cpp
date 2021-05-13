@@ -96,7 +96,7 @@ Error TLSContextIndex::matchContext(const char *fqdn, TLSContextPointer &pointer
   const char *domain = NULL;
 
   SplitFqdn(fqdn, &hostname, &hostnameSize, &domain);
-  if (!*domain || !*hostname || 0 == hostnameSize) {
+  if (!domain || !*domain || !hostname || !*hostname || 0 == hostnameSize) {
     return ESB_CANNOT_FIND;
   }
 
