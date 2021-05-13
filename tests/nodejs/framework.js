@@ -1,4 +1,6 @@
-// TODO only log on log_thresh.   add guard statements
+var fs = require('fs');
+var path = require('path');
+var os = require('os');
 
 module.exports.tf_new = function (args) {
     if (!args) {
@@ -61,6 +63,12 @@ module.exports.tf_new = function (args) {
         fs.rmdirSync(base_path);
     };
 
+    var dump_to_tmp_file = function (data) {
+        var file_name = path.join(os.tmpdir(), "test-" + Math.random().toString(16));
+        fs.writeFileSync(file_name, data);
+        return file_name;
+    }
+
     var checkports = function (done, hostports) {
         var connect = require('net').connect;
 
@@ -76,6 +84,10 @@ module.exports.tf_new = function (args) {
                 return;
             }
 
+            if (hostport.unlink) {
+                fs.unlinkSync(hostport.unlink);
+            }
+
             checkports(done, hostports);
         };
 
@@ -87,11 +99,14 @@ module.exports.tf_new = function (args) {
             var hostport = hostports[0];
             hostport['retries'] = hostport['retries'] - 1;
 
-            if (0 == hostport['retries'] % 27) {
+            if (0 === hostport['retries'] % 27) {
                 log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
             }
 
             if (0 >= hostport['retries']) {
+                if (hostport.unlink) {
+                    fs.unlinkSync(hostport.unlink);
+                }
                 throw "Cannot connect to: " + hostport.host + ':' + hostport.port;
             }
 
@@ -151,6 +166,7 @@ module.exports.tf_new = function (args) {
 
             var child_process = require('child_process');
             var hostports = []; // array of { port: 123, host: 'foo.com' } pairs
+            var tmp_file = null;
 
             for (var proc_name in config.servers) {
                 var proc_conf = config.servers[proc_name];
@@ -182,72 +198,53 @@ module.exports.tf_new = function (args) {
                         log_cb('INFO', "Process arguments: " + JSON.stringify(args));
                         log_cb('INFO', "Process environment: " + JSON.stringify(env));
 
-                        proc = child_process.spawn(proc_conf.path, args, {env: env, maxBuffer: 42 * 1024 * 1024});
-                        break;
+                        proc = child_process.spawn(proc_conf.path, args, {
+                            env: env,
+                            maxBuffer: 42 * 1024 * 1024,
+                            stdio: ['ignore', 'inherit', 'inherit']
+                        });
 
-                    case 'node':
-
-                        var script = proc_conf.script;
-
-                        if (!script) {
-                            throw "Node process " + proc_name + " missing script";
+                        // used to detect when the server is up.
+                        for (var endpoint_name in proc_conf.endpoints) {
+                            var endpoint = proc_conf.endpoints[endpoint_name];
+                            hostports.push({
+                                port: endpoint.port,
+                                host: endpoint.hostname,
+                                retries: 1000
+                            });
                         }
-
-                        var node_args = [script].concat(proc_conf.args);
-
-                        log_cb('INFO', 'Spawn ' + proc_name + ': ' + 'node ' + node_args.join(' '));
-
-                        proc = child_process.spawn('node', node_args, {env: process.env});
 
                         break;
 
                     case 'origin':
 
-                        if (!args.origin_path) {
+                        if (!proc_conf.path) {
                             throw "Path to origin.js is mandatory";
                         }
 
-                        var origin_args = [
-                            args.origin_path,
-                            proc_name,
-                            args.config_path
-                        ];
+                        var tmp_file = dump_to_tmp_file(JSON.stringify(proc_conf));
+                        var args = [proc_conf.path, tmp_file];
+                        log_cb('INFO', 'Spawn: node ' + args.join(' '));
+                        proc = child_process.spawn('/usr/bin/node', args, {
+                            maxBuffer: 42 * 1024 * 1024,
+                            stdio: ['ignore', 'inherit', 'inherit']
+                        });
 
-                        log_cb('INFO', 'Spawn ' + proc_name + ': ' + 'node ' + origin_args.join(' '));
-
-                        proc = child_process.spawn('node', origin_args, {});
-
-                        break;
-
-                    case 'other':
-
-                        var exe = proc_conf.executable;
-
-                        if (!exe) {
-                            throw "Other process " + proc_name + " missing executable";
+                        // used to detect when the server is up.
+                        for (var endpoint_name in proc_conf.endpoints) {
+                            var endpoint = proc_conf.endpoints[endpoint_name];
+                            hostports.push({
+                                port: endpoint.port,
+                                host: endpoint.hostname,
+                                retries: 1000,
+                                unlink: tmp_file
+                            });
                         }
-
-                        var other_args = proc_conf.args || [];
-
-                        log_cb('INFO', 'Spawn ' + proc_name + ': ' + exe + ' ' + other_args.join(' '));
-
-                        proc = child_process.spawn(exe, other_args, {env: process.env});
 
                         break;
 
                     default:
                         throw "Unknown process type: " + proc_type;
-                }
-
-                // used to detect when the server is up.
-                for (var endpoint_name in proc_conf.endpoints) {
-                    var endpoint = proc_conf.endpoints[endpoint_name];
-
-                    hostports.push({
-                        port: endpoint.port,
-                        host: endpoint.hostname,
-                        retries: 1000
-                    });
                 }
 
                 if (!proc) {
@@ -257,14 +254,6 @@ module.exports.tf_new = function (args) {
                 (function () {
                     var name = proc_name;
                     var pid = proc.pid;
-
-                    proc.stdout.on('data', function (data) {
-                        log_cb('DEBUG', name + ': ' + chomp(data));
-                    });
-
-                    proc.stderr.on('data', function (data) {
-                        log_cb('WARN', name + ': ' + chomp(data));
-                    });
 
                     proc.on('close', function (code) {
                         delete servers[pid];

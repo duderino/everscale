@@ -1,14 +1,15 @@
-if (4 > process.argv.length) {
-    console.error("usage: node origin.js <id> <json config file>");
+console.error("HELLO WORLD!");
+
+if (3 !== process.argv.length) {
+    console.error("usage: node origin.js <json config file>");
     process.exit(1);
 }
 
-var full_conf = JSON.parse(require('fs').readFileSync(process.argv[3]));
-var conf = full_conf.servers[process.argv[2]];
+var fs = require('fs');
+
+var conf = JSON.parse(fs.readFileSync(process.argv[2]));
 
 if (!conf) {
-    console.error("Config file '" + process.argv[3] + "' is missing section"
-        + " for servers::" + process.argv[2]);
     process.exit(1);
 }
 
@@ -91,15 +92,15 @@ var server = require('http').createServer(function (request, response) {
     }
 });
 
-// Listen on all interfaces
+// Listen on all endpoints
 
 // TODO HTTPS
 
-if (!conf.interfaces || !conf.interfaces.http || !conf.interfaces.http.port) {
+if (!conf.endpoints || !conf.endpoints.http || !conf.endpoints.http.port) {
     console.error("Config file '" + process.argv[3] + "' is missing http port"
         + " for servers::" + process.argv[2]);
     process.exit(1);
 }
 
-server.listen(conf.interfaces.http.port);
+server.listen(conf.endpoints.http.port);
 
