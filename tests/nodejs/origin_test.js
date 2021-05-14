@@ -13,21 +13,12 @@ var root_dir = "../..";
 var ca_path = root_dir + "/base/tests/ca.crt";
 
 describe('Direct to origin server tests', function () {
-    var tf = null;
-
-    after(function (done) {
-        if (tf) {
-            tf.stop(done);
-            // TODO wait until process exits so anu bound ports are unbound before the next test.
-        }
-    });
-
     it('Everscale origin works for HTTP 1.1', function (done) {
         var origin_port = 8080;
         var expected_status_code = 200;
         var expected_response_size = 1024;
 
-        tf = framework.tf_new({
+        var tf = framework.tf_new({
             log_cb: log,
             config: {
                 "servers": {
@@ -80,12 +71,13 @@ describe('Direct to origin server tests', function () {
                         assert(expected_response_size >= bytes_received);
                         if (bytes_received === expected_response_size) {
                             // End test (or timeout and fail)
-                            done();
+                            tf.stop(done);
                         }
                     });
                 });
 
             req.on('error', function (e) {
+                tf.stop(done);
                 assert.fail(e, null, e.toString());
             });
 
@@ -98,7 +90,7 @@ describe('Direct to origin server tests', function () {
         var expected_status_code = 200;
         var expected_response_size = 1024;
 
-        tf = framework.tf_new({
+        var tf = framework.tf_new({
             log_cb: log,
             config: {
                 "servers": {
@@ -165,12 +157,13 @@ describe('Direct to origin server tests', function () {
                         assert(expected_response_size >= bytes_received);
                         if (bytes_received === expected_response_size) {
                             // End test (or timeout and fail)
-                            done();
+                            tf.stop(done);
                         }
                     });
                 });
 
             req.on('error', function (e) {
+                tf.stop(done);
                 assert.fail(e, null, e.toString());
             });
 
@@ -180,14 +173,14 @@ describe('Direct to origin server tests', function () {
 
     it('Test origin works for HTTP 1.1', function (done) {
         var hostname = 'localhost';
-        var origin_port = 8888;
+        var origin_port = 8080;
         var expected_status_code = 200;
         var num_chunks = 10;
         var chunk_size_bytes = 1024;
         var expected_response_size = num_chunks * chunk_size_bytes;
         var chunk_byte_value = 99;
 
-        tf = framework.tf_new({
+        var tf = framework.tf_new({
             log_cb: log,
             config: {
                 "servers": {
@@ -243,12 +236,13 @@ describe('Direct to origin server tests', function () {
                         assert(expected_response_size >= bytes_received);
                         if (bytes_received === expected_response_size) {
                             // End test (or timeout and fail)
-                            done();
+                            tf.stop(done);
                         }
                     });
                 });
 
             req.on('error', function (e) {
+                tf.stop(done);
                 assert.fail(e, null, e.toString());
             });
 

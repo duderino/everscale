@@ -1,6 +1,127 @@
 var fs = require('fs');
 var path = require('path');
 var os = require('os');
+var connect = require('net').connect;
+
+origin_new = function (name, config, log_cb) {
+    if (!config) {
+        throw "Missing config";
+    }
+
+    //
+    // Private variables, functions, and setup
+    //
+
+    if (!log_cb) {
+        log_cb = function (thresh, data) {
+        };
+    }
+
+    var server = require('http').createServer(function (request, response) {
+        // Send 404 if the method or path doesn't map to an action
+
+        if (!config.actions || !config.actions[request.method] ||
+            !config.actions[request.method][request.url]) {
+            log_cb('DEBUG', '404: ' + request.method + ' ' + request.url);
+            response.writeHead(404, {});
+            response.end();
+            return;
+        }
+
+        var action = config.actions[request.method][request.url];
+
+        // Recycle the response chunk for the action
+
+        if (!action.response_chunk) {
+            var chunk_size_bytes = action.chunk_size_bytes || 1024;
+            var chunk_byte_value = action.chunk_byte_value || 42;
+
+            action.response_chunk = new Buffer(chunk_size_bytes);
+            action.response_chunk.fill(chunk_byte_value);
+        }
+
+        // Send the configured response
+
+        // Config settings. Default as necessary
+        var delay_first_chunk_millis = action.delay_first_chunk_millis || 0;
+        var num_chunks = action.num_chunks || 0;
+        var delay_between_chunk_millis = action.delay_between_chunk_millis || 0;
+        var status_code = action.status_code || 200;
+        var headers = action.headers || {};
+
+        // Per-action state.
+        var response_chunk = action.response_chunk;
+
+        // Per-transaction state.
+        var chunks_sent = 0;
+
+        // Send headers
+
+        response.writeHead(status_code, headers);
+
+        // Send no chunks
+
+        if (chunks_sent >= num_chunks) {
+            response.end();
+            return;
+        }
+
+        // Send n chunks
+
+        var send_chunk = function () {
+            ++chunks_sent;
+
+            // Last chunk
+
+            if (chunks_sent >= num_chunks) {
+                response.end(response_chunk);
+                return;
+            }
+
+            // Intermediate chunk
+
+            response.write(response_chunk);
+
+            if (0 < delay_between_chunk_millis) {
+                setTimeout(send_chunk, delay_between_chunk_millis);
+            } else {
+                process.nextTick(send_chunk);
+            }
+        };
+
+        if (0 < delay_first_chunk_millis) {
+            setTimeout(send_chunk, delay_first_chunk_millis);
+        } else {
+            process.nextTick(send_chunk);
+        }
+    });
+
+    // Listen on all endpoints
+
+    // TODO HTTPS
+
+    if (!config.endpoints || !config.endpoints.http || !config.endpoints.http.port) {
+        log_cb("ERROR", "Config is missing http port for origin");
+        throw "Config is missing http port for origin";
+    }
+
+    server.listen(config.endpoints.http.port);
+
+    log_cb('INFO', "origin is listening on port " + config.endpoints.http.port);
+
+    //
+    // Public variables and functions
+    //
+
+    return {
+        stop: function () {
+            server.close();
+            log_cb('INFO', "origin '" + name + "' has been stopped");
+        },
+        name: name,
+        config: config
+    }
+}
 
 module.exports.tf_new = function (args) {
     if (!args) {
@@ -22,23 +143,13 @@ module.exports.tf_new = function (args) {
         };
     }
 
-    var fs = require('fs');
     var config = args.config;
-    var servers = {}; // pid to proc object
+    var processes = {}; // pid to proc object
+    var origins = {} // name to origin objects
+    var startup_hostports = []; // array of { port: 123, host: 'foo.com' } pairs
+    var shutdown_hostports = []; // array of { port: 123, host: 'foo.com' } pairs
 
     var exit_cb = function (exit_code) {
-        for (var proc_name in servers) {
-            var proc = servers[proc_name];
-            if (!proc) {
-                continue;
-            }
-
-            log_cb('DEBUG', "Stopping process: pid=" + proc.pid);
-            proc.kill('SIGTERM');
-        }
-
-        servers = {};
-
         log_cb('INFO', 'Exiting: code=' + exit_code);
     };
 
@@ -63,32 +174,40 @@ module.exports.tf_new = function (args) {
         fs.rmdirSync(base_path);
     };
 
-    var dump_to_tmp_file = function (data) {
-        var file_name = path.join(os.tmpdir(), "test-" + Math.random().toString(16));
-        fs.writeFileSync(file_name, data);
-        return file_name;
-    }
-
-    var checkports = function (done, hostports) {
-        var connect = require('net').connect;
-
+    var checkports = function (hostports, connect_is_success, done) {
         var connected_cb = function () {
             var hostport = hostports[0];
 
-            log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
+            // for checking process startup (wait until connect succeeds)
 
-            hostports.shift();
+            if (connect_is_success) {
+                log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
 
-            if (0 >= hostports.length) {
-                done();
+                hostports.shift();
+
+                if (0 >= hostports.length) {
+                    done();
+                    return;
+                }
+
+                checkports(done, hostports);
                 return;
             }
 
-            if (hostport.unlink) {
-                fs.unlinkSync(hostport.unlink);
+            // for checking process shutdown (retry until connect fails)
+
+            hostport['retries'] = hostport['retries'] - 1;
+
+            if (0 === hostport['retries'] % 27) {
+                log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
             }
 
-            checkports(done, hostports);
+            if (0 >= hostport['retries']) {
+                throw "Connected to: " + hostport.host + ':' + hostport.port;
+            }
+
+            var client = connect(hostport, connected_cb);
+            client.on('error', error_cb);
         };
 
         var error_cb = function () {
@@ -97,22 +216,37 @@ module.exports.tf_new = function (args) {
             }
 
             var hostport = hostports[0];
-            hostport['retries'] = hostport['retries'] - 1;
 
-            if (0 === hostport['retries'] % 27) {
-                log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
-            }
+            // for checking process startup (wait until connect succeeds)
 
-            if (0 >= hostport['retries']) {
-                if (hostport.unlink) {
-                    fs.unlinkSync(hostport.unlink);
+            if (connect_is_success) {
+                hostport['retries'] = hostport['retries'] - 1;
+
+                if (0 === hostport['retries'] % 27) {
+                    log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
                 }
-                throw "Cannot connect to: " + hostport.host + ':' + hostport.port;
+
+                if (0 >= hostport['retries']) {
+                    throw "Cannot connect to: " + hostport.host + ':' + hostport.port;
+                }
+
+                var client = connect(hostport, connected_cb);
+                client.on('error', error_cb);
+                return;
             }
 
-            var client = connect(hostport, connected_cb);
+            // for checking process shutdown (retry until connect fails)
 
-            client.on('error', error_cb);
+            log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
+
+            hostports.shift();
+
+            if (0 >= hostports.length) {
+                done();
+                return;
+            }
+
+            checkports(hostports, connect_is_success, done);
         };
 
         if (0 >= hostports.length) {
@@ -121,11 +255,8 @@ module.exports.tf_new = function (args) {
         }
 
         var hostport = hostports[0];
-
         log_cb('DEBUG', 'Checking: ' + hostport.host + ':' + hostport.port);
-
         var client = connect(hostport, connected_cb);
-
         client.on('error', error_cb);
     };
 
@@ -165,7 +296,6 @@ module.exports.tf_new = function (args) {
             });
 
             var child_process = require('child_process');
-            var hostports = []; // array of { port: 123, host: 'foo.com' } pairs
             var tmp_file = null;
 
             for (var proc_name in config.servers) {
@@ -204,47 +334,30 @@ module.exports.tf_new = function (args) {
                             stdio: ['ignore', 'inherit', 'inherit']
                         });
 
-                        // used to detect when the server is up.
-                        for (var endpoint_name in proc_conf.endpoints) {
-                            var endpoint = proc_conf.endpoints[endpoint_name];
-                            hostports.push({
-                                port: endpoint.port,
-                                host: endpoint.hostname,
-                                retries: 1000
-                            });
-                        }
-
                         break;
 
                     case 'origin':
 
-                        if (!proc_conf.path) {
-                            throw "Path to origin.js is mandatory";
-                        }
-
-                        var tmp_file = dump_to_tmp_file(JSON.stringify(proc_conf));
-                        var args = [proc_conf.path, tmp_file];
-                        log_cb('INFO', 'Spawn: node ' + args.join(' '));
-                        proc = child_process.spawn('/usr/bin/node', args, {
-                            maxBuffer: 42 * 1024 * 1024,
-                            stdio: ['ignore', 'inherit', 'inherit']
-                        });
-
-                        // used to detect when the server is up.
-                        for (var endpoint_name in proc_conf.endpoints) {
-                            var endpoint = proc_conf.endpoints[endpoint_name];
-                            hostports.push({
-                                port: endpoint.port,
-                                host: endpoint.hostname,
-                                retries: 1000,
-                                unlink: tmp_file
-                            });
-                        }
-
+                        origins[proc_name] = origin_new(proc_name, proc_conf, log_cb);
                         break;
 
                     default:
                         throw "Unknown process type: " + proc_type;
+                }
+
+                // used to detect when the server is up.
+                for (var endpoint_name in proc_conf.endpoints) {
+                    var endpoint = proc_conf.endpoints[endpoint_name];
+                    startup_hostports.push({
+                        port: endpoint.port,
+                        host: endpoint.hostname,
+                        retries: 1000
+                    });
+                    shutdown_hostports.push({
+                        port: endpoint.port,
+                        host: endpoint.hostname,
+                        retries: 1000
+                    });
                 }
 
                 if (!proc) {
@@ -256,7 +369,7 @@ module.exports.tf_new = function (args) {
                     var pid = proc.pid;
 
                     proc.on('close', function (code) {
-                        delete servers[pid];
+                        delete processes[pid];
 
                         if (code === 0) {
                             log_cb('INFO', name + ' exited: code=' + code + ', pid=' + pid);
@@ -264,21 +377,35 @@ module.exports.tf_new = function (args) {
                         }
 
                         log_cb('ERROR', name + ' exited: code=' + code + ', pid=' + pid);
-                        process.exit(1);
+                        //process.exit(1);
                     });
                 })();
 
-                servers[proc.pid] = proc;
+                processes[proc.pid] = proc;
             }
 
-            if (done) {
-                checkports(done, hostports);
-            }
+            checkports(startup_hostports, true, done);
         },
         stop: function (done) {
-            if (done) {
-                done();
+            for (var proc_name in processes) {
+                var proc = processes[proc_name];
+                if (!proc) {
+                    continue;
+                }
+
+                log_cb('DEBUG', "Stopping process: pid=" + proc.pid);
+                proc.kill('SIGKILL');
             }
+            processes = {};
+
+            for (var origin_name in origins) {
+                log_cb('DEBUG', "Stopping origin: " + origin_name);
+                var origin = origins[origin_name];
+                origin.stop();
+            }
+            origins = {}
+
+            checkports(shutdown_hostports, false, done);
         },
         config: config
     };
