@@ -18,6 +18,8 @@ origin_new = function (name, config, log_cb) {
     }
 
     var server = require('http').createServer(function (request, response) {
+        log_cb("DEBUG", "Received request: " + request.toString());
+
         // Send 404 if the method or path doesn't map to an action
 
         if (!config.actions || !config.actions[request.method] ||
@@ -149,10 +151,6 @@ module.exports.tf_new = function (args) {
     var startup_hostports = []; // array of { port: 123, host: 'foo.com' } pairs
     var shutdown_hostports = []; // array of { port: 123, host: 'foo.com' } pairs
 
-    var exit_cb = function (exit_code) {
-        log_cb('INFO', 'Exiting: code=' + exit_code);
-    };
-
     var rm_rf = function (base_path) {
         if (!fs.existsSync(base_path)) {
             return;
@@ -177,12 +175,11 @@ module.exports.tf_new = function (args) {
     var checkports = function (hostports, connect_is_success, done) {
         var connected_cb = function () {
             var hostport = hostports[0];
+            log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
 
             // for checking process startup (wait until connect succeeds)
 
             if (connect_is_success) {
-                log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
-
                 hostports.shift();
 
                 if (0 >= hostports.length) {
@@ -197,17 +194,14 @@ module.exports.tf_new = function (args) {
             // for checking process shutdown (retry until connect fails)
 
             hostport['retries'] = hostport['retries'] - 1;
-
-            if (0 === hostport['retries'] % 27) {
-                log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
-            }
-
             if (0 >= hostport['retries']) {
                 throw "Connected to: " + hostport.host + ':' + hostport.port;
             }
 
-            var client = connect(hostport, connected_cb);
-            client.on('error', error_cb);
+            setTimeout(function() {
+                var client = connect(hostport, connected_cb);
+                client.on('error', error_cb);
+            }, 100);
         };
 
         var error_cb = function () {
@@ -216,31 +210,27 @@ module.exports.tf_new = function (args) {
             }
 
             var hostport = hostports[0];
+            log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
 
             // for checking process startup (wait until connect succeeds)
 
             if (connect_is_success) {
                 hostport['retries'] = hostport['retries'] - 1;
-
-                if (0 === hostport['retries'] % 27) {
-                    log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
-                }
-
                 if (0 >= hostport['retries']) {
                     throw "Cannot connect to: " + hostport.host + ':' + hostport.port;
                 }
 
-                var client = connect(hostport, connected_cb);
-                client.on('error', error_cb);
+                setTimeout(function() {
+                    var client = connect(hostport, connected_cb);
+                    client.on('error', error_cb);
+                }, 100);
+
                 return;
             }
 
             // for checking process shutdown (retry until connect fails)
 
-            log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
-
             hostports.shift();
-
             if (0 >= hostports.length) {
                 done();
                 return;
@@ -278,23 +268,6 @@ module.exports.tf_new = function (args) {
 
     return {
         start: function (done) {
-            process.on('exit', exit_cb);
-
-            process.on('uncaughtException', function (error) {
-                log_cb('ERROR', 'Caught exception: ' +
-                    error.stack || error.toString());
-                exit_cb(1);
-                process.exit(1);
-            });
-
-            process.on('SIGTERM', function () {
-                process.exit(0);
-            });
-
-            process.on('SIGINT', function () {
-                process.exit(0);
-            });
-
             var child_process = require('child_process');
             var tmp_file = null;
 
@@ -308,7 +281,7 @@ module.exports.tf_new = function (args) {
                 }
 
                 switch (proc_type) {
-                    case 'executable':
+                    case 'async process':
                         var args = [];
                         for (key in proc_conf.args) {
                             args.push(key);
@@ -334,9 +307,55 @@ module.exports.tf_new = function (args) {
                             stdio: ['ignore', 'inherit', 'inherit']
                         });
 
+                        (function () {
+                            var name = proc_name;
+                            var pid = proc.pid;
+
+                            proc.on('exit', function (code, signal) {
+                                delete processes[pid];
+                                log_cb(code === 0 ? 'INFO' : 'ERROR', 'Process \'' + name + '\' exited with ' + (code || signal) + ', pid=' + pid);
+                            });
+                        })();
+
+                        processes[proc.pid] = proc;
+
                         break;
 
-                    case 'origin':
+                    case 'sync process':
+                        var args = [];
+                        for (key in proc_conf.args) {
+                            args.push(key);
+                            var value = proc_conf.args[key];
+                            if (null != value) {
+                                args.push(value);
+                            }
+                        }
+
+                        Array.from(proc_conf.args, ([key, value]) => (key, value))
+
+                        var env = new Map();
+                        for (key in proc_conf.env) {
+                            env[key] = proc_conf.env[key];
+                        }
+
+                        log_cb('INFO', "Process arguments: " + JSON.stringify(args));
+                        log_cb('INFO', "Process environment: " + JSON.stringify(env));
+
+                        result = child_process.spawnSync(proc_conf.path, args, {
+                            env: env,
+                            maxBuffer: 42 * 1024 * 1024,
+                            stdio: ['ignore', 'inherit', 'inherit']
+                        });
+
+                        log_cb('INFO', "Sync process finished: " + result.toString())
+
+                        if (done) {
+                            done(result);
+                        }
+
+                        return result;
+
+                    case 'node origin':
 
                         origins[proc_name] = origin_new(proc_name, proc_conf, log_cb);
                         break;
@@ -359,42 +378,19 @@ module.exports.tf_new = function (args) {
                         retries: 1000
                     });
                 }
-
-                if (!proc) {
-                    continue;
-                }
-
-                (function () {
-                    var name = proc_name;
-                    var pid = proc.pid;
-
-                    proc.on('close', function (code) {
-                        delete processes[pid];
-
-                        if (code === 0) {
-                            log_cb('INFO', name + ' exited: code=' + code + ', pid=' + pid);
-                            return;
-                        }
-
-                        log_cb('ERROR', name + ' exited: code=' + code + ', pid=' + pid);
-                        //process.exit(1);
-                    });
-                })();
-
-                processes[proc.pid] = proc;
             }
 
             checkports(startup_hostports, true, done);
         },
         stop: function (done) {
-            for (var proc_name in processes) {
-                var proc = processes[proc_name];
+            for (var proc_pid in processes) {
+                var proc = processes[proc_pid];
                 if (!proc) {
                     continue;
                 }
 
                 log_cb('DEBUG', "Stopping process: pid=" + proc.pid);
-                proc.kill('SIGKILL');
+                proc.kill('SIGTERM');
             }
             processes = {};
 

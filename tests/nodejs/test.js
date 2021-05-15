@@ -12,8 +12,8 @@ var log = function (thresh, data) {
 var root_dir = "../..";
 var ca_path = root_dir + "/base/tests/ca.crt";
 
-describe('Direct to origin server tests', function () {
-    it('Everscale origin works for HTTP 1.1', function (done) {
+describe('Interoperability tests with Node.js', function () {
+    it('Node.js client to Everscale origin (HTTP 1.1)', function (done) {
         var origin_port = 8080;
         var expected_status_code = 200;
         var expected_response_size = 1024;
@@ -22,8 +22,8 @@ describe('Direct to origin server tests', function () {
             log_cb: log,
             config: {
                 "servers": {
-                    "origin": {
-                        "type": "executable",
+                    "Everscale origin": {
+                        "type": "async process",
                         "path": root_dir + "/data-plane/origin/http-origin",
                         "args": {
                             "--originThreads": 1,
@@ -85,7 +85,7 @@ describe('Direct to origin server tests', function () {
         });
     });
 
-    it('Everscale origin works for HTTPS 1.1', function (done) {
+    it('Node.js client to Everscale origin (HTTPS 1.1)', function (done) {
         var origin_port = 8443;
         var expected_status_code = 200;
         var expected_response_size = 1024;
@@ -94,8 +94,8 @@ describe('Direct to origin server tests', function () {
             log_cb: log,
             config: {
                 "servers": {
-                    "origin": {
-                        "type": "executable",
+                    "Everscale origin": {
+                        "type": "async process",
                         "path": root_dir + "/data-plane/origin/http-origin",
                         "args": {
                             "--originThreads": 1,
@@ -171,7 +171,7 @@ describe('Direct to origin server tests', function () {
         });
     });
 
-    it('Test origin works for HTTP 1.1', function (done) {
+    it('Node.js client to Node.js origin (HTTP 1.1)', function (done) {
         var hostname = 'localhost';
         var origin_port = 8080;
         var expected_status_code = 200;
@@ -184,8 +184,8 @@ describe('Direct to origin server tests', function () {
             log_cb: log,
             config: {
                 "servers": {
-                    "origin": {
-                        "type": "origin",
+                    "Node origin": {
+                        "type": "node origin",
                         "path": "./origin.js",
                         "actions": {
                             "GET": {
@@ -247,6 +247,58 @@ describe('Direct to origin server tests', function () {
             });
 
             req.end();
+        });
+    });
+
+    it('Everscale client to Everscale origin (HTTP 1.1)', function (done) {
+        var origin_port = 8080;
+        var response_size = 1024;
+
+        var tf = framework.tf_new({
+            log_cb: log,
+            config: {
+                "servers": {
+                    "Everscale origin": {
+                        "type": "async process",
+                        "path": root_dir + "/data-plane/origin/http-origin",
+                        "args": {
+                            "--originThreads": 3,
+                            "--port": origin_port,
+                            "--originTimeoutMsec": 30000,
+                            "--secure": 0,
+                            "--responseBodySize": response_size,
+                            "--logWarn": null
+                        },
+                        "endpoints": {
+                            "http": {
+                                "type": "http",
+                                "hostname": "localhost",
+                                "port": origin_port
+                            }
+                        }
+                    },
+                    "Everscale loadgen": {
+                        "type": "sync process",
+                        "path": root_dir + "/data-plane/loadgen/http-loadgen",
+                        "args": {
+                            "--clientThreads": 3,
+                            "--connections": 300,
+                            "--requestsPerConnection": 30,
+                            "--reuseConnections": 1,
+                            "--port": origin_port,
+                            "--clientTimeoutMsec": 30000,
+                            "--secure": 0,
+                            "--responseBodySize": response_size,
+                            "--logWarn": null
+                        }
+                    }
+                }
+            }
+        });
+
+        tf.start(function (result) {
+            assert.equal(0, result.status);
+            tf.stop(done);
         });
     });
 });

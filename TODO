@@ -29,7 +29,6 @@ stat:
         [1613339818:13448:WRN] SERVER AVG TRANS PER CONNECTION: N=770, MEAN=3246.75, VAR=127045.33, MIN=2.00, MAX=3498.00 [/home/jblatt/src/duderino/everscale/base/source/ESBSharedAveragingCounter.cpp:33]
     - Connection reuse false test seems to be borked.  Does loadgen keep reusing the connection after close?  Clue:
         [1613340628:15905:WRN] [prox-server:127.0.0.1:38719>127.0.0.1:51460,1535] cannot send server response: Cleanup [/home/jblatt/src/duderino/everscale/http/proxy/source/ESHttpRoutingProxyHandler.cpp:167]
- - create standalone loadgen to origin tests (3 processes)
  - EpollMultiplexer dtor calls cleanup handlers on all active connections.  This returns them to the client/server socket factories instead of destroying them.
  - create WAN test using a special docker image with:  tc qdisc add dev lo root netem delay 100ms 20ms distribution normal
  - interop test with nodejs:  https://github.com/apache/trafficserver/pull/131/files#diff-7044deb3d91355abdd40d4f21f39a354ef0de8eb18d1f9d49e147cea927729b0

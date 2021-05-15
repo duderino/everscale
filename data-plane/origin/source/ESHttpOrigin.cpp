@@ -78,7 +78,10 @@ int main(int argc, char **argv) {
   // Create listening socket
   //
 
-  ESB::ListeningSocket listener("origin-listener",ESB::SocketAddress("0.0.0.0", params.port(), params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP), ESB_UINT16_MAX);
+  ESB::ListeningSocket listener(
+      "origin-listener",
+      ESB::SocketAddress("0.0.0.0", params.port(), params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP),
+      ESB_UINT16_MAX);
 
   error = listener.bind();
   if (ESB_SUCCESS != error) {
@@ -102,8 +105,8 @@ int main(int argc, char **argv) {
   if (params.secure()) {
     ESB::TLSContext::Params tlsParams;
     error = server.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
-                                                                               .certificatePath(params.serverCertPath())
-                                                                               .verifyPeerCertificate(false));
+                                                                   .certificatePath(params.serverCertPath())
+                                                                   .verifyPeerCertificate(false));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server's default TLS server context");
       return error;

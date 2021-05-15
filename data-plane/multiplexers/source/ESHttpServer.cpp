@@ -38,7 +38,7 @@ HttpServer::~HttpServer() {
     return;
   }
 
-    destroy();
+  destroy();
 }
 
 ESB::Error HttpServer::push(HttpServerCommand *command, int idx) {
