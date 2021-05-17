@@ -22,6 +22,7 @@ _deps
 http-loadgen
 http-origin
 http-proxy-test-main
+http-proxy
 base/tests/*.srl
 base/tests/*.key
 base/tests/*.crt

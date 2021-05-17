@@ -11,6 +11,10 @@ var log = function (thresh, data) {
 
 var root_dir = "../..";
 var ca_path = root_dir + "/base/tests/ca.crt";
+var ca_bytes = fs.readFileSync(ca_path);
+
+var connections = 50;
+var requests_per_connection = 50;
 
 describe('Interoperability tests with Node.js', function () {
     it('Node.js client to Everscale origin (HTTP 1.1)', function (done) {
@@ -46,42 +50,60 @@ describe('Interoperability tests with Node.js', function () {
         });
 
         tf.start(function () {
-            var bytes_received = 0;
-            var req = http.request(
-                {
-                    hostname: "localhost",
-                    port: origin_port,
-                    path: "/foo/bar/baz",
-                    method: 'GET'
-                },
-                function (res) {
-                    log('DEBUG', 'STATUS: ' + res.statusCode);
-                    log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
+            var total_remaining_requests = connections * requests_per_connection;
 
-                    assert.equal(expected_status_code, res.statusCode);
+            for (var i = 0; i < connections; ++i) {
+                var connection = function (remaining_connection_requests) {
+                    var bytes_received = 0;
+                    var req = http.request(
+                        {
+                            hostname: "localhost",
+                            port: origin_port,
+                            path: "/foo/bar/baz",
+                            method: 'GET'
+                        },
+                        function (res) {
+                            log('DEBUG', 'STATUS: ' + res.statusCode);
+                            log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
 
-                    res.on('data', function (chunk) {
-                        if (process.env['BUILD_TYPE'] !== 'RELEASE') {
-                            for (var i = 0; i < chunk.length; ++i) {
-                                assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
-                            }
-                        }
+                            assert.equal(expected_status_code, res.statusCode);
 
-                        bytes_received += chunk.length;
-                        assert(expected_response_size >= bytes_received);
-                        if (bytes_received === expected_response_size) {
-                            // End test (or timeout and fail)
-                            tf.stop(done);
-                        }
+                            res.on('data', function (chunk) {
+                                if (process.env['BUILD_TYPE'] !== 'RELEASE') {
+                                    for (var i = 0; i < chunk.length; ++i) {
+                                        assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
+                                    }
+                                }
+
+                                bytes_received += chunk.length;
+                                assert(expected_response_size >= bytes_received);
+                                if (bytes_received === expected_response_size) {
+                                    // End HTTP transaction
+                                    --total_remaining_requests;
+                                    --remaining_connection_requests;
+
+                                    if (0 < remaining_connection_requests) {
+                                        connection(remaining_connection_requests);
+                                        return;
+                                    }
+
+                                    if (0 === total_remaining_requests) {
+                                        tf.stop(done);
+                                    }
+                                }
+                            });
+                        });
+
+                    req.on('error', function (e) {
+                        // Fail HTTP transaction
+                        tf.stop(done);
+                        assert.fail(e, null, e.toString());
                     });
-                });
 
-            req.on('error', function (e) {
-                tf.stop(done);
-                assert.fail(e, null, e.toString());
-            });
-
-            req.end();
+                    req.end();
+                };
+                connection(requests_per_connection);
+            }
         });
     });
 
@@ -121,53 +143,71 @@ describe('Interoperability tests with Node.js', function () {
         });
 
         tf.start(function () {
-            var bytes_received = 0;
-            var req = https.request(
-                {
-                    hostname: "localhost",
-                    servername: "test.server.everscale.com",
-                    port: origin_port,
-                    path: "/foo/bar/baz",
-                    method: 'GET',
-                    ca: fs.readFileSync(ca_path),
-                    // key: fs.readFileSync(root_dir + "/base/tests/client.key"),
-                    // cert: fs.readFileSync(root_dir + "/base/tests/client.crt"),
-                    checkServerIdentity: function (host, cert) {
-                        const err = tls.checkServerIdentity(host, cert);
-                        if (err) {
-                            log('ERROR', 'TLS handshake failed: ' + err);
-                            return err;
-                        }
-                    }
-                },
-                function (res) {
-                    log('DEBUG', 'STATUS: ' + res.statusCode);
-                    log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
+            var total_remaining_requests = connections * requests_per_connection;
 
-                    assert.equal(expected_status_code, res.statusCode);
-
-                    res.on('data', function (chunk) {
-                        if (process.env['BUILD_TYPE'] !== 'RELEASE') {
-                            for (var i = 0; i < chunk.length; ++i) {
-                                assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
+            for (var i = 0; i < connections; ++i) {
+                var connection = function (remaining_connection_requests) {
+                    var bytes_received = 0;
+                    var req = https.request(
+                        {
+                            hostname: "localhost",
+                            servername: "test.server.everscale.com",
+                            port: origin_port,
+                            path: "/foo/bar/baz",
+                            method: 'GET',
+                            ca: ca_bytes,
+                            // key: fs.readFileSync(root_dir + "/base/tests/client.key"),
+                            // cert: fs.readFileSync(root_dir + "/base/tests/client.crt"),
+                            checkServerIdentity: function (host, cert) {
+                                const err = tls.checkServerIdentity(host, cert);
+                                if (err) {
+                                    log('ERROR', 'TLS handshake failed: ' + err);
+                                    return err;
+                                }
                             }
-                        }
+                        },
+                        function (res) {
+                            log('DEBUG', 'STATUS: ' + res.statusCode);
+                            log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
 
-                        bytes_received += chunk.length;
-                        assert(expected_response_size >= bytes_received);
-                        if (bytes_received === expected_response_size) {
-                            // End test (or timeout and fail)
-                            tf.stop(done);
-                        }
+                            assert.equal(expected_status_code, res.statusCode);
+
+                            res.on('data', function (chunk) {
+                                if (process.env['BUILD_TYPE'] !== 'RELEASE') {
+                                    for (var i = 0; i < chunk.length; ++i) {
+                                        assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
+                                    }
+                                }
+
+                                bytes_received += chunk.length;
+                                assert(expected_response_size >= bytes_received);
+                                if (bytes_received === expected_response_size) {
+                                    // End HTTP transaction
+                                    --total_remaining_requests;
+                                    --remaining_connection_requests;
+
+                                    if (0 < remaining_connection_requests) {
+                                        connection(remaining_connection_requests);
+                                        return;
+                                    }
+
+                                    if (0 === total_remaining_requests) {
+                                        tf.stop(done);
+                                    }
+                                }
+                            });
+                        });
+
+                    req.on('error', function (e) {
+                        // Fail HTTP transaction
+                        tf.stop(done);
+                        assert.fail(e, null, e.toString());
                     });
-                });
 
-            req.on('error', function (e) {
-                tf.stop(done);
-                assert.fail(e, null, e.toString());
-            });
-
-            req.end();
+                    req.end();
+                };
+                connection(requests_per_connection);
+            }
         });
     });
 
@@ -189,7 +229,7 @@ describe('Interoperability tests with Node.js', function () {
                         "path": "./origin.js",
                         "actions": {
                             "GET": {
-                                "/foo/bar": {
+                                "/foo/bar/baz": {
                                     "status_code": expected_status_code,
                                     "headers": {},
                                     "delay_first_chunk_millis": 0,
@@ -213,40 +253,54 @@ describe('Interoperability tests with Node.js', function () {
         });
 
         tf.start(function () {
-            var bytes_received = 0;
-            var req = http.request(
-                {
-                    hostname: hostname,
-                    port: origin_port,
-                    path: "/foo/bar",
-                    method: 'GET'
-                },
-                function (res) {
-                    log('DEBUG', 'STATUS: ' + res.statusCode);
-                    log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
+            var total_remaining_requests = connections * requests_per_connection;
 
-                    assert.equal(expected_status_code, res.statusCode);
+            for (var i = 0; i < connections; ++i) {
+                var connection = function (remaining_connection_requests) {
+                    var bytes_received = 0;
+                    var req = http.request(
+                        {
+                            hostname: "localhost",
+                            port: origin_port,
+                            path: "/foo/bar/baz",
+                            method: 'GET'
+                        },
+                        function (res) {
+                            log('DEBUG', 'STATUS: ' + res.statusCode);
+                            log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
 
-                    res.on('data', function (chunk) {
-                        for (var i = 0; i < chunk.length; ++i) {
-                            assert.equal(chunk_byte_value, chunk[i]);
-                        }
+                            assert.equal(expected_status_code, res.statusCode);
 
-                        bytes_received += chunk.length;
-                        assert(expected_response_size >= bytes_received);
-                        if (bytes_received === expected_response_size) {
-                            // End test (or timeout and fail)
-                            tf.stop(done);
-                        }
+                            res.on('data', function (chunk) {
+                                bytes_received += chunk.length;
+                                assert(expected_response_size >= bytes_received);
+                                if (bytes_received === expected_response_size) {
+                                    // End HTTP transaction
+                                    --total_remaining_requests;
+                                    --remaining_connection_requests;
+
+                                    if (0 < remaining_connection_requests) {
+                                        connection(remaining_connection_requests);
+                                        return;
+                                    }
+
+                                    if (0 === total_remaining_requests) {
+                                        tf.stop(done);
+                                    }
+                                }
+                            });
+                        });
+
+                    req.on('error', function (e) {
+                        // Fail HTTP transaction
+                        tf.stop(done);
+                        assert.fail(e, null, e.toString());
                     });
-                });
 
-            req.on('error', function (e) {
-                tf.stop(done);
-                assert.fail(e, null, e.toString());
-            });
-
-            req.end();
+                    req.end();
+                };
+                connection(requests_per_connection);
+            }
         });
     });
 
@@ -282,8 +336,8 @@ describe('Interoperability tests with Node.js', function () {
                         "path": root_dir + "/data-plane/loadgen/http-loadgen",
                         "args": {
                             "--clientThreads": 3,
-                            "--connections": 300,
-                            "--requestsPerConnection": 30,
+                            "--connections": connections,
+                            "--requestsPerConnection": requests_per_connection,
                             "--reuseConnections": 1,
                             "--port": origin_port,
                             "--clientTimeoutMsec": 30000,
