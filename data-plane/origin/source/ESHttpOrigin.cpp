@@ -42,7 +42,7 @@ using namespace ES;
 
 int main(int argc, char **argv) {
   HttpTestParams params;
-  params.originThreads(3).port(8080).logLevel(ESB::Logger::Notice);
+  params.originThreads(3).originPort(8080).logLevel(ESB::Logger::Notice);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
     return error;
@@ -78,10 +78,10 @@ int main(int argc, char **argv) {
   // Create listening socket
   //
 
-  ESB::ListeningSocket listener(
-      "origin-listener",
-      ESB::SocketAddress("0.0.0.0", params.port(), params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP),
-      ESB_UINT16_MAX);
+  ESB::ListeningSocket listener("origin-listener",
+                                ESB::SocketAddress("0.0.0.0", params.originPort(),
+                                                   params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP),
+                                ESB_UINT16_MAX);
 
   error = listener.bind();
   if (ESB_SUCCESS != error) {

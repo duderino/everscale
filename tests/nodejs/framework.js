@@ -3,6 +3,32 @@ var path = require('path');
 var os = require('os');
 var connect = require('net').connect;
 
+//
+// cleanup all child processes on exit (but not if parent process is killed by signal 9 - no way of handling that)
+//
+
+var processes = {};
+var exit_cb = function () {
+    for (var proc_pid in processes) {
+        var proc = processes[proc_pid];
+        if (proc) {
+            proc.kill('SIGTERM');
+        }
+    }
+    processes = {};
+};
+
+process.on('exit', exit_cb);
+process.on('uncaughtException', exit_cb);
+process.on('SIGINT', exit_cb);
+process.on('SIGTERM', exit_cb);
+process.on('SIGUSR1', exit_cb);
+process.on('SIGUSR2', exit_cb);
+
+//
+// simple Node.js-based origin server
+//
+
 origin_new = function (name, config, log_cb) {
     if (!config) {
         throw "Missing config";
@@ -18,7 +44,7 @@ origin_new = function (name, config, log_cb) {
     }
 
     var server = require('http').createServer(function (request, response) {
-        log_cb("DEBUG", "Received request: " + request.toString());
+        log_cb("DEBUG", "Origin received request: " + request.method + " " + request.url + ", headers: " + request.rawHeaders);
 
         // Send 404 if the method or path doesn't map to an action
 
@@ -125,6 +151,10 @@ origin_new = function (name, config, log_cb) {
     }
 }
 
+//
+// test framework entry point
+//
+
 module.exports.tf_new = function (args) {
     if (!args) {
         throw "Missing args";
@@ -146,7 +176,6 @@ module.exports.tf_new = function (args) {
     }
 
     var config = args.config;
-    var processes = {}; // pid to proc object
     var origins = {} // name to origin objects
     var startup_hostports = []; // array of { port: 123, host: 'foo.com' } pairs
     var shutdown_hostports = []; // array of { port: 123, host: 'foo.com' } pairs
@@ -173,55 +202,25 @@ module.exports.tf_new = function (args) {
     };
 
     var checkports = function (hostports, connect_is_success, done) {
-        var connected_cb = function () {
-            var hostport = hostports[0];
-            log_cb('DEBUG', 'Connected to: ' + hostport.host + ':' + hostport.port);
-
-            // for checking process startup (wait until connect succeeds)
-
-            if (connect_is_success) {
-                hostports.shift();
-
-                if (0 >= hostports.length) {
-                    done();
-                    return;
-                }
-
-                checkports(done, hostports);
-                return;
-            }
-
-            // for checking process shutdown (retry until connect fails)
-
-            hostport['retries'] = hostport['retries'] - 1;
-            if (0 >= hostport['retries']) {
-                throw "Connected to: " + hostport.host + ':' + hostport.port;
-            }
-
-            setTimeout(function() {
-                var client = connect(hostport, connected_cb);
-                client.on('error', error_cb);
-            }, 100);
-        };
-
         var error_cb = function () {
             if (!hostports[0]) {
                 return;
             }
 
             var hostport = hostports[0];
-            log_cb('DEBUG', 'Cannot connect to: ' + hostport.host + ':' + hostport.port);
 
             // for checking process startup (wait until connect succeeds)
 
             if (connect_is_success) {
+                log_cb('DEBUG', 'Waiting for ' + hostport.host + ':' + hostport.port + " to open");
+
                 hostport['retries'] = hostport['retries'] - 1;
                 if (0 >= hostport['retries']) {
                     throw "Cannot connect to: " + hostport.host + ':' + hostport.port;
                 }
 
-                setTimeout(function() {
-                    var client = connect(hostport, connected_cb);
+                setTimeout(function () {
+                    var client = connect(hostport.port, hostport.host, connected_cb);
                     client.on('error', error_cb);
                 }, 100);
 
@@ -229,6 +228,8 @@ module.exports.tf_new = function (args) {
             }
 
             // for checking process shutdown (retry until connect fails)
+
+            log_cb('DEBUG', hostport.host + ':' + hostport.port + " is closed");
 
             hostports.shift();
             if (0 >= hostports.length) {
@@ -239,13 +240,52 @@ module.exports.tf_new = function (args) {
             checkports(hostports, connect_is_success, done);
         };
 
+        var connected_cb = function () {
+            var hostport = hostports[0];
+
+            // for checking process startup (wait until connect succeeds)
+
+            if (connect_is_success) {
+                log_cb('DEBUG', hostport.host + ':' + hostport.port + " is open");
+
+                hostports.shift();
+
+                if (0 >= hostports.length) {
+                    done();
+                    return;
+                }
+
+                checkports(hostports, connect_is_success, done);
+                return;
+            }
+
+            // for checking process shutdown (retry until connect fails)
+            log_cb('DEBUG', 'Waiting for ' + hostport.host + ':' + hostport.port + " to close");
+
+            hostport['retries'] = hostport['retries'] - 1;
+            if (0 >= hostport['retries']) {
+                throw "Connected to: " + hostport.host + ':' + hostport.port;
+            }
+
+            setTimeout(function () {
+                var client = connect(hostport.port, hostport.host, connected_cb);
+                client.on('error', error_cb);
+            }, 100);
+        };
+
         if (0 >= hostports.length) {
             done();
             return;
         }
 
         var hostport = hostports[0];
-        log_cb('DEBUG', 'Checking: ' + hostport.host + ':' + hostport.port);
+
+        if (connect_is_success) {
+            log_cb('DEBUG', 'Waiting for ' + hostport.host + ':' + hostport.port + " to open");
+        } else {
+            log_cb('DEBUG', 'Waiting for ' + hostport.host + ':' + hostport.port + " to close");
+        }
+
         var client = connect(hostport, connected_cb);
         client.on('error', error_cb);
     };
@@ -370,12 +410,12 @@ module.exports.tf_new = function (args) {
                     startup_hostports.push({
                         port: endpoint.port,
                         host: endpoint.hostname,
-                        retries: 1000
+                        retries: 10
                     });
                     shutdown_hostports.push({
                         port: endpoint.port,
                         host: endpoint.hostname,
-                        retries: 1000
+                        retries: 10
                     });
                 }
             }
@@ -383,16 +423,7 @@ module.exports.tf_new = function (args) {
             checkports(startup_hostports, true, done);
         },
         stop: function (done) {
-            for (var proc_pid in processes) {
-                var proc = processes[proc_pid];
-                if (!proc) {
-                    continue;
-                }
-
-                log_cb('DEBUG', "Stopping process: pid=" + proc.pid);
-                proc.kill('SIGTERM');
-            }
-            processes = {};
+            exit_cb();
 
             for (var origin_name in origins) {
                 log_cb('DEBUG', "Stopping origin: " + origin_name);

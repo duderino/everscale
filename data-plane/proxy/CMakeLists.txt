@@ -42,7 +42,7 @@ target_include_directories(proxy PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
 
-add_executable(http-proxy source/ESHttpProxy.cpp)
+add_executable(http-proxy source/ESHttpProxyMain.cpp)
 target_link_libraries(http-proxy ${LIBS})
 target_include_directories(http-proxy PRIVATE ${INCS})
 

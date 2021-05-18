@@ -22,7 +22,8 @@ namespace ES {
 #define KEY_PATH BASE_TEST_DIR "server.key"
 
 HttpTestParams::HttpTestParams()
-    : _port(0),
+    : _proxyPort(0),
+      _originPort(0),
       _clientThreads(1),
       _originThreads(1),
       _proxyThreads(1),
@@ -60,7 +61,10 @@ void HttpTestParams::printUsage(const char *progName) const {
   fprintf(stderr, "\t--proxyThreads <number, default %u>\n", proxyThreads());
   fprintf(stderr, "\t--connections <number, default %u>\n", connections());
   fprintf(stderr, "\t--requestsPerConnection <number, default %u>\n", requestsPerConnection());
-  fprintf(stderr, "\t--port <number, default %u (0 means use any free ephemeral)>\n", port());
+  fprintf(stderr, "\t--proxyPort <number, default %u (0 means use any free ephemeral)>\n", proxyPort());
+  fprintf(stderr, "\t--originPort <number, default %u (0 means use any free ephemeral)>\n", originPort());
+  fprintf(stderr, "\t--destinationAddress <IP addr, default %s>\n", destinationAddress());
+  fprintf(stderr, "\t--destinationPort <number, default %u (0 means use any free ephemeral)>\n", destinationPort());
   fprintf(stderr, "\t--reuseConnections <number, default %u>\n", reuseConnections());
   fprintf(stderr, "\t--requestBodySize <number, default %lu>\n", requestSize());
   fprintf(stderr, "\t--responseBodySize <number, default %lu>\n", responseSize());
@@ -111,6 +115,10 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
                                       {"proxyTimeoutMsec", required_argument, NULL, 0},
                                       {"originTimeoutMsec", required_argument, NULL, 0},
                                       {"port", required_argument, NULL, 't'},
+                                      {"proxyPort", required_argument, NULL, 0},
+                                      {"originPort", required_argument, NULL, 0},
+                                      {"destinationPort", required_argument, NULL, 0},
+                                      {"destinationAddress", required_argument, NULL, 0},
                                       {"secure", required_argument, NULL, 0},
                                       {"caCertPath", required_argument, NULL, 0},
                                       {"serverKeyPath", required_argument, NULL, 0},
@@ -140,6 +148,14 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
           serverCertPath(optarg);
         } else if (0 == strcasecmp("hostHeader", options[idx].name)) {
           hostHeader(optarg);
+        } else if (0 == strcasecmp("proxyPort", options[idx].name)) {
+          proxyPort(atoi(optarg));
+        } else if (0 == strcasecmp("originPort", options[idx].name)) {
+          originPort(atoi(optarg));
+        } else if (0 == strcasecmp("destinationPort", options[idx].name)) {
+          destinationPort(atoi(optarg));
+        } else if (0 == strcasecmp("destinationAddress", options[idx].name)) {
+          destinationAddress(optarg);
         } else if (0 == strcasecmp("logError", options[idx].name)) {
           logLevel(ESB::Logger::Err);
         } else if (0 == strcasecmp("logWarning", options[idx].name)) {
@@ -200,7 +216,8 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
         reuseConnections(0 != atoi(optarg));
         break;
       case 't':
-        port(atoi(optarg));
+        fprintf(stderr, "Use --proxyPort and --originPort instead of --port and -t\n");
+        exit(1);
         break;
       case 'h':
         printUsage(argv[0]);
@@ -223,11 +240,12 @@ ESB::Error HttpTestParams::override(int argc, char **argv) {
 void HttpTestParams::dump() {
   ESB_LOG_NOTICE(
       "[params] clientThreads=%u, proxyThreads=%u, originThreads=%u, connections=%u, requestsPerConnection=%u, "
-      "secure=%s, reuseConnection=%s, requestSize=%lu, responseSize=%lu, destination=%s, caPath=%s, serverKeyPath=%s, "
-      "serverCertPath=%s",
+      "secure=%s, reuseConnection=%s, requestSize=%lu, responseSize=%lu, destination=%s:%u, caPath=%s, "
+      "serverKeyPath=%s, "
+      "serverCertPath=%s, proxyPort=%u, originPort=%u",
       _clientThreads, _proxyThreads, _originThreads, _connections, _requestsPerConnection, _secure ? "true" : "false",
-      _reuseConnections ? "true" : "false", _requestSize, _responseSize, _destinationAddress, _caPath, _serverKeyPath,
-      _serverCertPath);
+      _reuseConnections ? "true" : "false", _requestSize, _responseSize, _destinationAddress, _destinationPort, _caPath,
+      _serverKeyPath, _serverCertPath, _proxyPort, _originPort);
 }
 
 }  // namespace ES

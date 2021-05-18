@@ -16,7 +16,121 @@ var ca_bytes = fs.readFileSync(ca_path);
 var connections = 50;
 var requests_per_connection = 50;
 
+var httpAgent = new http.Agent({ keepAlive: true })
+var httpsAgent = new https.Agent({ keepAlive: true })
+
 describe('Interoperability tests with Node.js', function () {
+    it('Node.js client to Everscale proxy to Everscale origin (HTTP 1.1)', function (done) {
+        var origin_port = 8080;
+        var proxy_port = 8081;
+        var expected_status_code = 200;
+        var expected_response_size = 1024;
+
+        var tf = framework.tf_new({
+            log_cb: log,
+            config: {
+                "servers": {
+                    "Everscale proxy": {
+                        "type": "async process",
+                        "path": root_dir + "/data-plane/proxy/http-proxy",
+                        "args": {
+                            "--proxyThreads": 1,
+                            "--proxyPort": proxy_port,
+                            "--originPort": origin_port,
+                            "--proxyTimeoutMsec": 30000,
+                            "--secure": 0,
+                            "--logWarn": null
+                        },
+                        "endpoints": {
+                            "http": {
+                                "type": "http",
+                                "hostname": "localhost",
+                                "port": proxy_port
+                            }
+                        }
+                    },
+                    "Everscale origin": {
+                        "type": "async process",
+                        "path": root_dir + "/data-plane/origin/http-origin",
+                        "args": {
+                            "--originThreads": 1,
+                            "--originPort": origin_port,
+                            "--originTimeoutMsec": 30000,
+                            "--secure": 0,
+                            "--responseBodySize": expected_response_size,
+                            "--logWarn": null
+                        },
+                        "endpoints": {
+                            "http": {
+                                "type": "http",
+                                "hostname": "localhost",
+                                "port": origin_port
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        tf.start(function () {
+            var total_remaining_requests = connections * requests_per_connection;
+
+            for (var i = 0; i < connections; ++i) {
+                var connection = function (remaining_connection_requests) {
+                    var bytes_received = 0;
+                    var req = http.request(
+                        {
+                            hostname: "localhost",
+                            port: proxy_port,
+                            path: "/foo/bar/baz",
+                            method: 'GET',
+                            agent: httpAgent
+                        },
+                        function (res) {
+                            log('DEBUG', 'Client received response, status: ' + res.statusCode + ", headers: " + res.rawHeaders);
+
+                            assert.equal(expected_status_code, res.statusCode);
+
+                            res.on('data', function (chunk) {
+                                if (process.env['BUILD_TYPE'] !== 'RELEASE') {
+                                    for (var i = 0; i < chunk.length; ++i) {
+                                        assert.equal("A".charCodeAt(0) + (bytes_received + i) % 26, chunk[i]);
+                                    }
+                                }
+
+                                bytes_received += chunk.length;
+                                assert(expected_response_size >= bytes_received);
+                                if (bytes_received === expected_response_size) {
+                                    // End HTTP transaction
+                                    --total_remaining_requests;
+                                    --remaining_connection_requests;
+
+                                    if (0 < remaining_connection_requests) {
+                                        connection(remaining_connection_requests);
+                                        return;
+                                    }
+
+                                    if (0 === total_remaining_requests) {
+                                        tf.stop(done);
+                                    }
+                                }
+                            });
+                        });
+
+                    req.on('error', function (e) {
+                        // Fail HTTP transaction
+                        tf.stop(done);
+                        assert.fail(e, null, e.toString());
+                    });
+
+                    req.end();
+                };
+                connection(requests_per_connection);
+            }
+        });
+    });
+
+
     it('Node.js client to Everscale origin (HTTP 1.1)', function (done) {
         var origin_port = 8080;
         var expected_status_code = 200;
@@ -31,7 +145,7 @@ describe('Interoperability tests with Node.js', function () {
                         "path": root_dir + "/data-plane/origin/http-origin",
                         "args": {
                             "--originThreads": 1,
-                            "--port": origin_port,
+                            "--originPort": origin_port,
                             "--originTimeoutMsec": 30000,
                             "--secure": 0,
                             "--responseBodySize": expected_response_size,
@@ -60,11 +174,11 @@ describe('Interoperability tests with Node.js', function () {
                             hostname: "localhost",
                             port: origin_port,
                             path: "/foo/bar/baz",
-                            method: 'GET'
+                            method: 'GET',
+                            agent: httpAgent
                         },
                         function (res) {
-                            log('DEBUG', 'STATUS: ' + res.statusCode);
-                            log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
+                            log('DEBUG', 'Client received response, status: ' + res.statusCode + ", headers: " + res.rawHeaders);
 
                             assert.equal(expected_status_code, res.statusCode);
 
@@ -121,14 +235,15 @@ describe('Interoperability tests with Node.js', function () {
                         "path": root_dir + "/data-plane/origin/http-origin",
                         "args": {
                             "--originThreads": 1,
-                            "--port": origin_port,
+                            "--originPort": origin_port,
                             "--originTimeoutMsec": 30000,
                             "--secure": 1,
                             "--responseBodySize": expected_response_size,
                             "--caCertPath": ca_path,
                             "--serverCertPath": root_dir + "/base/tests/server.crt",
                             "--serverKeyPath": root_dir + "/base/tests/server.key",
-                            "--logWarn": null
+                            "--logWarn": null,
+                            agent: httpsAgent
                         },
                         "endpoints": {
                             "http": {
@@ -167,8 +282,7 @@ describe('Interoperability tests with Node.js', function () {
                             }
                         },
                         function (res) {
-                            log('DEBUG', 'STATUS: ' + res.statusCode);
-                            log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
+                            log('DEBUG', 'Client received response, status: ' + res.statusCode + ", headers: " + res.rawHeaders);
 
                             assert.equal(expected_status_code, res.statusCode);
 
@@ -263,11 +377,11 @@ describe('Interoperability tests with Node.js', function () {
                             hostname: "localhost",
                             port: origin_port,
                             path: "/foo/bar/baz",
-                            method: 'GET'
+                            method: 'GET',
+                            agent: httpAgent
                         },
                         function (res) {
-                            log('DEBUG', 'STATUS: ' + res.statusCode);
-                            log('DEBUG', 'HEADERS: ' + JSON.stringify(res.headers));
+                            log('DEBUG', 'Client received response, status: ' + res.statusCode + ", headers: " + res.rawHeaders);
 
                             assert.equal(expected_status_code, res.statusCode);
 
@@ -317,7 +431,7 @@ describe('Interoperability tests with Node.js', function () {
                         "path": root_dir + "/data-plane/origin/http-origin",
                         "args": {
                             "--originThreads": 3,
-                            "--port": origin_port,
+                            "--originPort": origin_port,
                             "--originTimeoutMsec": 30000,
                             "--secure": 0,
                             "--responseBodySize": response_size,
@@ -339,7 +453,8 @@ describe('Interoperability tests with Node.js', function () {
                             "--connections": connections,
                             "--requestsPerConnection": requests_per_connection,
                             "--reuseConnections": 1,
-                            "--port": origin_port,
+                            "--destinationAddress": "127.0.0.1",
+                            "--destinationPort": origin_port,
                             "--clientTimeoutMsec": 30000,
                             "--secure": 0,
                             "--responseBodySize": response_size,

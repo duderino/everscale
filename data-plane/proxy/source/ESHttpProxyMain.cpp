@@ -6,16 +6,12 @@
 #include <ESHttpTestParams.h>
 #endif
 
-#ifndef ES_EPHEMERAL_LISTENER_H
-#include <ESEphemeralListener.h>
+#ifndef ES_HTTP_ROUTING_PROXY_HANDLER_H
+#include <ESHttpRoutingProxyHandler.h>
 #endif
 
-#ifndef ES_HTTP_ORIGIN_HANDLER_H
-#include <ESHttpOriginHandler.h>
-#endif
-
-#ifndef ES_HTTP_SERVER_H
-#include <ESHttpServer.h>
+#ifndef ES_HTTP_PROXY_H
+#include <ESHttpProxy.h>
 #endif
 
 #ifndef ESB_SYSTEM_CONFIG_H
@@ -30,22 +26,41 @@
 #include <ESBTimeSourceCache.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #ifndef ESB_SIGNAL_HANDLER_H
 #include <ESBSignalHandler.h>
+#endif
+
+#ifndef ES_HTTP_FIXED_ROUTER_H
+#include "ESHttpFixedRouter.h"
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 using namespace ES;
 
 int main(int argc, char **argv) {
   HttpTestParams params;
-  params.originThreads(3).port(8080).logLevel(ESB::Logger::Notice);
+  params.logLevel(ESB::Logger::Notice);
   ESB::Error error = params.override(argc, argv);
   if (ESB_SUCCESS != error) {
     return error;
+  }
+
+  if (0 == params.proxyPort()) {
+    fprintf(stderr, "--proxyPort is required\n");
+    return 1;
+  }
+
+  if (0 == params.originPort()) {
+    fprintf(stderr, "--originPort is required\n");
+    return 1;
+  }
+
+  if (params.proxyPort() == params.originPort()) {
+    fprintf(stderr, "--proxyPort and --originPort must be different\n");
+    return 1;
   }
 
   ESB::TimeSourceCache timeCache(ESB::SystemTimeSource::Instance());
@@ -78,10 +93,10 @@ int main(int argc, char **argv) {
   // Create listening socket
   //
 
-  ESB::ListeningSocket listener(
-      "origin-listener",
-      ESB::SocketAddress("0.0.0.0", params.port(), params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP),
-      ESB_UINT16_MAX);
+  ESB::ListeningSocket listener("proxy-listener",
+                                ESB::SocketAddress("0.0.0.0", params.proxyPort(),
+                                                   params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP),
+                                ESB_UINT16_MAX);
 
   error = listener.bind();
   if (ESB_SUCCESS != error) {
@@ -93,37 +108,47 @@ int main(int argc, char **argv) {
 
   // Init
 
-  HttpOriginHandler handler(params);
-  HttpServer server("origin", params.originThreads(), params.originTimeoutMsec(), handler);
+  ESB::SocketAddress originAddress(params.destinationAddress(), params.originPort(),
+                                   params.secure() ? ESB::SocketAddress::TLS : ESB::SocketAddress::TCP);
+  HttpFixedRouter router(originAddress);
+  HttpRoutingProxyHandler handler(router);
+  HttpProxy proxy("prox", params.proxyThreads(), params.proxyTimeoutMsec(), handler);
 
-  error = server.initialize();
+  error = proxy.initialize();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot initialize server");
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot initialize proxy");
     return error;
   }
 
   if (params.secure()) {
     ESB::TLSContext::Params tlsParams;
-    error = server.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
-                                                                   .certificatePath(params.serverCertPath())
-                                                                   .verifyPeerCertificate(false));
+    error = proxy.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
+                                                                  .certificatePath(params.serverCertPath())
+                                                                  .verifyPeerCertificate(false));
     if (ESB_SUCCESS != error) {
-      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server's default TLS server context");
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize proxy's default TLS server context");
+      return error;
+    }
+
+    error = proxy.clientTlsContextIndex().indexDefaultContext(
+        tlsParams.reset().caCertificatePath(params.caPath()).verifyPeerCertificate(true));
+    if (ESB_SUCCESS != error) {
+      ESB_LOG_ERROR_ERRNO(error, "Cannot initialize proxy's default TLS client context");
       return error;
     }
   }
 
   // Start
 
-  error = server.start();
+  error = proxy.start();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot start server");
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot start proxy");
     return error;
   }
 
   // add listening sockets to running server
 
-  error = server.addListener(listener);
+  error = proxy.addListener(listener);
   if (ESB_SUCCESS != error) {
     ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot add listener");
     return error;
@@ -137,17 +162,17 @@ int main(int argc, char **argv) {
 
   // Stop server
 
-  server.stop();
+  proxy.stop();
   timeCache.stop();
 
-  error = server.join();
+  error = proxy.join();
   if (ESB_SUCCESS != error) {
-    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot join server");
+    ESB_LOG_CRITICAL_ERRNO(error, "[main] cannot join proxy");
     return error;
   }
 
-  server.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
-  server.destroy();
+  proxy.serverCounters().log(ESB::Logger::Instance(), ESB::Logger::Severity::Notice);
+  proxy.destroy();
 
   error = timeCache.join();
   if (ESB_SUCCESS != error) {

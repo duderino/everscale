@@ -30,8 +30,18 @@ class HttpTestParams {
 
   void dump();
 
-  inline HttpTestParams &port(ESB::UInt16 port) {
-    _port = port;
+  inline HttpTestParams &proxyPort(ESB::UInt16 port) {
+    _proxyPort = port;
+    return *this;
+  }
+
+  inline HttpTestParams &originPort(ESB::UInt16 port) {
+    _originPort = port;
+    return *this;
+  }
+
+  inline HttpTestParams &destinationPort(ESB::UInt16 port) {
+    _destinationPort = port;
     return *this;
   }
 
@@ -142,7 +152,11 @@ class HttpTestParams {
     return *this;
   }
 
-  inline ESB::UInt16 port() const { return _port; }
+  inline ESB::UInt16 proxyPort() const { return _proxyPort; }
+
+  inline ESB::UInt16 originPort() const { return _originPort; }
+
+  inline ESB::UInt16 destinationPort() const { return _destinationPort; }
 
   inline ESB::UInt32 clientThreads() const { return _clientThreads; }
 
@@ -235,7 +249,9 @@ class HttpTestParams {
   void printUsage(const char *progName) const;
 
  private:
-  ESB::UInt16 _port;
+  ESB::UInt16 _proxyPort;
+  ESB::UInt16 _originPort;
+  ESB::UInt16 _destinationPort;
   ESB::UInt32 _clientThreads;
   ESB::UInt32 _originThreads;
   ESB::UInt32 _proxyThreads;
