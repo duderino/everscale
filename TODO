@@ -1,3 +1,29 @@
+config:
+ - add JSON parser to base.
+   - Create JsonElement subclass of EmbeddedMapElement.  Subclasses must implement type(), find(), and possibly visit() pure virtuals.
+   - Create JsonObject (wrap EmbeddedMap), JsonArray (wrap EmbeddedList), JsonString, JsonInteger, JsonFloat, JsonBoolean, and JsonNull subclasses of JsonElement - all of these must return NOT_IMPLEMENTED and assert if key() is called on them.
+   - Subclass JsonElement for Pairs: JsonStringPair, JsonIntegerPair, JsonFloatPair.  These take any JsonElement value and implement key().
+   - JsonObject only allows adding Pairs.  JsonArray only allows adding non-Pairs.
+   - Create chained find() functions that always return a object you can call find() on - return a JsonNotFound object so you can call repeatedly in the chain without barfing on a non-terminal miss.  Then just check it once at the end.
+   - Parser uses https://github.com/zserge/jsmn with DiscardAllocator for all memory allocation and EmbeddedList of JsonElements as a LIFO stack.  Pass in const char *s.
+ - add JsonConfigFile to base
+   - Use fread, etc to feed bytes to the parser
+   - Protect root node with ReadWriteLock - getting the root node should return a lock that can be passed to a scope lock:  ReadScopeLock lock = config.root(&root);
+     - Better: subclass ReadScopeLock to store both lock and root internally - construct with a pair struct copied by value from config.root().  This object should only return const reference to the root node.
+   - Integrate with SignalHandler to re-read config file on SIGHUP
+   - Update config with RCU - get write lock, swap root nodes, reset allocator used for old root node - probably just maintain 2 discard allocators and somehow track old vs. new
+
+metrics:
+   - add metrics store to base
+      - Create Metric subclass of EmbeddedMapElement.  Use fixed-length string keys
+      - Allocate with discard allocator and recycle dead Metrics
+      - Use SharedEmbeddedMap with 0 locks - create a teeny convenience wrapper for this so it's obvious it's not locked?
+      - Use timing wheel to track and evict idle metrics
+      - Use per-silo/per-multiplexer, so no synchronization required
+   - add metrics aggreation
+      - Main thread periodically and push Commands to all multiplexers to all metric from multiplexer/silo and update root metrics store.  
+      - Push Commands sequentialy (wait for each to finish before pushing next command) and add locking to root metrics store updates if TSAN complains
+
 stat:
  - rename HttpTestParams HttpArguments or similar
  - add counters to detect runaway epoll events (e.g., writable notifications when there is no data to send)
@@ -37,8 +63,6 @@ stat:
  - add test with really small socket buffers
  - Add test to connection pool test - server closes all connections while client connections are in pool.
  - ipv6 support
- - root metrics store
- - root config store
 
 tls:
  - HTTP server should assert that client hostname matches server certificate (CN or SANs).
@@ -146,6 +170,8 @@ router:
  - client trans routing:  resolve to destination address.   Use in ESHttpClientSocketFactory::ExecuteClientTransaction()
  - make VIP/hostname first class member of transaction.  only routers can set it.  a naive router could set it to the host:port from the request URI
  - create simple DNS based async router impl.  Threadpool + synchronous DNS system resolver + local TTL and LRU-based cache.
+ - CIDR ranges
+ - Seco range - https://github.com/eam/libcrange, https://github.com/square/grange
 
 load shedding:
  - pause/resume for http listening sockets (overloaded use case).  support PAUSE returns from HttpServerHandler::acceptConnection
@@ -207,12 +233,6 @@ http stuff
 URL 
  - canonicalization / encode and decode per https://url.spec.whatwg.org/
  - fully but lazily parse query string - if requested parse into a list of key value pairs.
-
-bootstrap config
- - reload when file changes or on SIGHUP.  ports, buffer sizes, etc
- - xds agent could just regenerate this, serializing updates and using atomic moves
- - could potentially break into multiple files for scalability, but then need cross-file atomic update mechanism.
- - journalling approach?  base bootstrap file.  log of incremental updates.   compress incremental updates to avoid filling disk
 
 logging
  - rotating file logger - batch into memory buffers and flush occasionally.  double buffer.  fill one while flush other.  if one to be filled is too small, drop messages and increment drop counter.
