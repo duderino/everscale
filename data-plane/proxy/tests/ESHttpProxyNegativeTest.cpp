@@ -158,7 +158,7 @@ INSTANTIATE_TEST_SUITE_P(IdleOrigin, HttpProxyNegativeTest,
                                                               HttpTestParams::STALL_SERVER_RECV_BODY,
                                                               HttpTestParams::STALL_SERVER_SEND_HEADERS,
                                                               HttpTestParams::STALL_SERVER_SEND_BODY),
-                                            ::testing::Values(1000), ::testing::Values(10)));
+                                            ::testing::Values(10 * 1000), ::testing::Values(10)));
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec

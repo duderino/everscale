@@ -1,30 +1,4 @@
-config:
- - add JSON parser to base.
-   - Create JsonElement subclass of EmbeddedMapElement.  Subclasses must implement type(), find(), and possibly visit() pure virtuals.
-   - Create JsonObject (wrap EmbeddedMap), JsonArray (wrap EmbeddedList), JsonString, JsonInteger, JsonFloat, JsonBoolean, and JsonNull subclasses of JsonElement - all of these must return NOT_IMPLEMENTED and assert if key() is called on them.
-   - Subclass JsonElement for Pairs: JsonStringPair, JsonIntegerPair, JsonFloatPair.  These take any JsonElement value and implement key().
-   - JsonObject only allows adding Pairs.  JsonArray only allows adding non-Pairs.
-   - Create chained find() functions that always return a object you can call find() on - return a JsonNotFound object so you can call repeatedly in the chain without barfing on a non-terminal miss.  Then just check it once at the end.
-   - Parser uses https://github.com/zserge/jsmn with DiscardAllocator for all memory allocation and EmbeddedList of JsonElements as a LIFO stack.  Pass in const char *s.
- - add JsonConfigFile to base
-   - Use fread, etc to feed bytes to the parser
-   - Protect root node with ReadWriteLock - getting the root node should return a lock that can be passed to a scope lock:  ReadScopeLock lock = config.root(&root);
-     - Better: subclass ReadScopeLock to store both lock and root internally - construct with a pair struct copied by value from config.root().  This object should only return const reference to the root node.
-   - Integrate with SignalHandler to re-read config file on SIGHUP
-   - Update config with RCU - get write lock, swap root nodes, reset allocator used for old root node - probably just maintain 2 discard allocators and somehow track old vs. new
-
-metrics:
-   - add metrics store to base
-      - Create Metric subclass of EmbeddedMapElement.  Use fixed-length string keys
-      - Allocate with discard allocator and recycle dead Metrics
-      - Use SharedEmbeddedMap with 0 locks - create a teeny convenience wrapper for this so it's obvious it's not locked?
-      - Use timing wheel to track and evict idle metrics
-      - Use per-silo/per-multiplexer, so no synchronization required
-   - add metrics aggreation
-      - Main thread periodically and push Commands to all multiplexers to all metric from multiplexer/silo and update root metrics store.  
-      - Push Commands sequentialy (wait for each to finish before pushing next command) and add locking to root metrics store updates if TSAN complains
-
-stat:
+top:
  - rename HttpTestParams HttpArguments or similar
  - add counters to detect runaway epoll events (e.g., writable notifications when there is no data to send)
  - put detection of remote close in epoll handler and call handleRemoteClose()?  audit how client/server socket handle 0 reads.  Should those also call remote close?  Or just put the remote close logic only there?
@@ -61,8 +35,130 @@ stat:
  - interop test with nodejs:  https://github.com/apache/trafficserver/pull/131/files#diff-7044deb3d91355abdd40d4f21f39a354ef0de8eb18d1f9d49e147cea927729b0
  - proxy handler should sanitize/drop/merge inbound request headers and outbound response headers
  - add test with really small socket buffers
- - Add test to connection pool test - server closes all connections while client connections are in pool.
+ - Add test case to connection pool test - server closes all connections while client connections are in pool.
  - ipv6 support
+
+config:
+ - add JSON parser to base.
+   - Create JsonElement subclass of EmbeddedMapElement.  Subclasses must implement type(), find(), and possibly visit() pure virtuals.
+   - Create JsonObject (wrap EmbeddedMap), JsonArray (wrap EmbeddedList), JsonString, JsonInteger, JsonFloat, JsonBoolean, and JsonNull subclasses of JsonElement - all of these must return NOT_IMPLEMENTED and assert if key() is called on them.
+   - Subclass JsonElement for Pairs: JsonStringPair, JsonIntegerPair, JsonFloatPair.  These take any JsonElement value and implement key().
+   - JsonObject only allows adding Pairs.  JsonArray only allows adding non-Pairs.
+   - Create chained find() functions that always return a object you can call find() on - return a JsonNotFound object so you can call repeatedly in the chain without barfing on a non-terminal miss.  Then just check it once at the end.
+   - Parser uses https://github.com/zserge/jsmn with DiscardAllocator for all memory allocation and EmbeddedList of JsonElements as a LIFO stack.  Pass in const char *s.
+ - add JsonConfigFile to base
+   - Use fread, etc to feed bytes to the parser
+   - Protect root node with ReadWriteLock - getting the root node should return a lock that can be passed to a scope lock:  ReadScopeLock lock = config.root(&root);
+     - Better: subclass ReadScopeLock to store both lock and root internally - construct with a pair struct copied by value from config.root().  This object should only return const reference to the root node.
+   - Integrate with SignalHandler to re-read config file on SIGHUP
+   - Update config with RCU - get write lock, swap root nodes, reset allocator used for old root node - probably just maintain 2 discard allocators and somehow track old vs. new
+ - yaml to JSON conversion
+ - enforce config file versioning
+ - discard allocator per parse action.
+ - discard allocator per parsed entity. take block_size hint/override from config.
+ - RCU update per entity id.  entity id is the unit of config update.
+ - Update and use global settings
+ - Config language additions:
+    - Support local setting of cluster loads, potentially by tying them to limits.  Can then be adjusted based on arbitrary outbound response headers (e.g,. my current load is 20), etc.
+    - Max requests per connection.  Requires an attribute count
+    - Retry requests.  Requires an attribute count + outbound request state + backtrack into inbound request DAG.
+    - Canarying and incremental rollouts.  Consistent hashing vs. naive - use to pick a LOAD_BALANCER
+ - Building blocks: conditions, actions, rules, transitions, expressions
+ - Add marks and annotations to connections, requests, and responses
+ - Define an expression language to do things like rewrite URLs with a subset from the original request (redirect
+   use case), select values >, >=, <, <=, ==, != (WAF anomaly scores and remaining retries), arithmetically adjusting
+      - For value of 301 Location header
+      - For metrics
+      - For rewrites
+      - For annotations (include subset of request in an annotation's value)
+ - Conditions: PROPERTY (READ), ACQUIRE_SLOT, GEO_COUNTRY,
+ - Actions: CREATE, UPDATE (Mark, Attributes, Headers, URI), DELETE, LOG, MEASURE, transition,
+ - CRUD actions
+ - ports with TLS config
+ - filter DAGs
+ - Filters: RULE_LIST, EXTENSION, REQUEST, CLOSE, CLEANUP, RESPONSE, LOAD_BALANCER, SEND ...
+ - Indices: PATH_WILDCARD_MAP, FQDN_WILDCARD_MAP, CIDR_MAP, STRING_MAP, ...
+ - Geo: COUNTRY_CODE_MAP
+ - Clusters
+ - TLS indexes
+ - Limits: max, rate, top n
+ - Seco range https://github.com/eam/libcrange.
+ - CIDRv4 and CIDRv6
+ - WAF + security rules + SANITIZE
+ - EXTENSION: extern C extension API, pass through config
+ - Validation:
+      - Ports: ip+port pairs should always be unique.  If INADDR_ANY is used with a port, only INADDR_ANY can be used.
+      - All referenced ids should exist and be the right type
+      - Max string lengths and max integer limits
+      - type, entity, transitions, etc string names map to valid enums.
+      - id values are valid UUIDs (so they can be converted to more compact binary representations).
+      - id values are unique or at least unique within type.
+      - files like certs, keys, and shared libs actually exist
+      - All filter DAGs must really be DAGs - no cycles... with the exception of retrying requests
+      - All filter DAGs must terminate with a CLEANUP filter
+      - All elements must have mandatory fields present (e.g., TLS contexts always need a default context)
+      - Marking entities before they could exist (e.g., marking an inbound request in an inbound connection)
+      - Transitioning into another DAG with the exception of retrying OUTBOUND_REQUEST
+      - Max 127 distinct marks per entity type (e.g., INBOUND_CONNECTION, OUTBOUND_REQUEST, etc)
+      - config file version is not supported
+      - An extension's API version is not supported
+      - An extension cannot be loaded for any reason (extensions are dlopen()ed during the validation phase)
+      - LEAST_LOADED iteration is used on a cluster with non-ENDPOINT_LOADS
+      - WARNING: Clusters: CIDR and Seco ranges and scalars should not intersect
+      - WARNING: No ids of any type should exist if they are not reachable from an inbound port object
+ - Support haproxy, ATS, etc config FEs that generate BE JSON (barf on extensions)
+ - golang, ruby, or python internal DSL for generating BE JSON
+ - Use https://developers.google.com/blockly to create a visual config file editor and host it behind the proxy.  Custom renderer can show a graph view of the filters.  Custom generator can spit out config files.  Somehow load existing config files to visualize and modify.
+ - Script that reads config file and spits out a dot file for graphviz.
+ - Consider exposing connection/request/response state to condition expressions
+ - Consider moving TLS section from ports to inbound connection
+ - Consider moving TLS section from clusters to outbound connection
+ - Consider expressing connection pool in outbound connection DAG
+ - Consider load shedding by closing listening sockets
+ - Consider exposing callbacks that can be invoked when a connection/request/response transitions to a set of states
+ - Consider expressing L7 protocol as a connection filter
+ - Consider expressing send response as an action, not a transition to a dedicated filter
+ - Use cases:
+     - Max requests per connection.  Requires an attribute count
+     - Retry requests.  Requires an attribute count + outbound request state + backtrack into inbound request DAG.
+     - Canarying and incremental rollouts.  Consistent hashing vs. naive
+     - Retries (backtrack into request filter DAG)
+     - Routing and basic load balancing
+     - Hierarchical failover (local, zonal, regional)
+     - Rewrites/transformations:  inbound, outbound X request, response
+     - WAF and sanitizers
+     - Anti-DoS (preventing clients from using more than their fair share)
+     - Load shedding (protecting the proxy itself): stop accepting, accept and close, delay request
+     - End to end backpressure from outbound overload to inbound delay (protecting the origin)
+     = Filter extensions with fail open and fail closed examples
+     - Marking to model complex matches
+     - Marking to relay state across connections, requests, and responses X inbound, outbound
+     - Marking to modify control flow
+     - Cluster definition via CIDR and Seco ranges, FQDN and ip:port pair literals
+     - Firewall scenarios: default deny with CIDR and Geo and more sophisticated exceptions
+     - TLS indexes.  Server side SNI serving and client side selection
+     - Marking and routing based on TLS properties
+     - mTLS-based access controls, and anonymous access
+     - Metrics:  increment, decrement, set integer/float values and average/percentile latency
+     - Error Logging: severity + printf style formats referring to subsets of the request/response/connection etc.
+     - Tracing: adding trace id headers, appending information to existing trace headers.
+     - Cookie/token validation and issuing using custom extension
+     - Randomized exponential backoff for retries
+     - Rate limit on arbitrary keys (connections, inbound request attributes, etc)
+     - Rate limit by adding delay
+  - Remote update protocol.  Just call the same internal APIs as the config file based updater.
+  - Support no-op updates: checksum each id.  If the checksum doesn't change just R not RCU?  Deal with race condition.
+
+metrics:
+   - add metrics store to base
+      - Create Metric subclass of EmbeddedMapElement.  Use fixed-length string keys
+      - Allocate with discard allocator and recycle dead Metrics
+      - Use SharedEmbeddedMap with 0 locks - create a teeny convenience wrapper for this so it's obvious it's not locked?
+      - Use timing wheel to track and evict idle metrics
+      - Use per-silo/per-multiplexer, so no synchronization required
+   - add metrics aggreation
+      - Main thread periodically and push Commands to all multiplexers to all metric from multiplexer/silo and update root metrics store.  
+      - Push Commands sequentialy (wait for each to finish before pushing next command) and add locking to root metrics store updates if TSAN complains
 
 tls:
  - HTTP server should assert that client hostname matches server certificate (CN or SANs).
@@ -230,8 +326,11 @@ http stuff
  - support receiving half closed from client while still sending outstanding response
  - make all the unsigned chars in HttpMessage, HttpRequest, and HttpReponse chars?  UTF-8 only in encoded form?
 
+WAF
+ - https://coreruleset.org/
+
 URL 
- - canonicalization / encode and decode per https://url.spec.whatwg.org/
+ - canonicalization / encode and decode per https://url.spec.whatwg.org/ and https://chromium.googlesource.com/chromium/src/+/HEAD/url/url_canon_path.cc
  - fully but lazily parse query string - if requested parse into a list of key value pairs.
 
 logging

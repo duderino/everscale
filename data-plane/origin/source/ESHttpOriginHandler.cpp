@@ -91,7 +91,7 @@ ESB::Error HttpOriginHandler::consumeRequestBody(HttpMultiplexer &multiplexer, H
   }
 
   if (0 <= _params.requestSize() && _params.requestSize() != context->bytesReceived()) {
-    ESB_LOG_ERROR("[%s] missing %lu bytes from %lu byte response body", stream.logAddress(),
+    ESB_LOG_ERROR("[%s] missing %lu bytes from %lu byte request body", stream.logAddress(),
                   _params.requestSize() - context->bytesReceived(), _params.requestSize());
   }
   assert(context->bytesReceived() == _params.requestSize());
