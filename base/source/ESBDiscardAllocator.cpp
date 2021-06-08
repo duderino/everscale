@@ -147,6 +147,14 @@ DiscardAllocator::Chunk *DiscardAllocator::allocateChunk(int chunkSize) {
 
   return chunk;
 }
+
 CleanupHandler &DiscardAllocator::cleanupHandler() { return _cleanupHandler; }
+
+bool DiscardAllocator::reallocates() { return false; }
+
+void *DiscardAllocator::reallocate(void *block, UWord size) {
+  assert(!"DiscardAllocators do not support reallocate");
+  return NULL;
+}
 
 }  // namespace ESB

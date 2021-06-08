@@ -89,7 +89,7 @@ BuddyAllocator::BuddyAllocator(UInt32 size, Allocator &source)
   if (1 > size || ESB_AVAIL_LIST_LENGTH < size) return;
 
   for (int i = 0; i < ESB_AVAIL_LIST_LENGTH; ++i) {
-    _availList[i] = 0;
+    _availList[i] = NULL;
   }
 
   _poolKVal = size;
@@ -102,12 +102,12 @@ void *BuddyAllocator::allocate(UWord size) {
   return SystemAllocator::Instance().allocate(size);
 #else
   if (0 == size) {
-    return 0;
+    return NULL;
   }
 
   if (!_pool) {
     if (ESB_SUCCESS != initialize()) {
-      return 0;
+      return NULL;
     }
   }
 
@@ -120,17 +120,17 @@ void *BuddyAllocator::allocate(UWord size) {
 
   KVal minimumKVal = GetKVal(size);
   KVal actualKVal = minimumKVal;
-  char *elem = 0;
+  char *elem = NULL;
 
   for (; actualKVal < ESB_AVAIL_LIST_LENGTH; ++actualKVal) {
-    if (0 != _availList[actualKVal]) {
+    if (_availList[actualKVal]) {
       elem = (char *)popAvailList(actualKVal);
       break;
     }
   }
 
   if (!elem) {
-    return 0;
+    return NULL;
   }
 
   //
@@ -142,7 +142,7 @@ void *BuddyAllocator::allocate(UWord size) {
   assert(actualKVal >= minimumKVal);
 
   AvailListElem *right = (AvailListElem *)elem;
-  AvailListElem *left = 0;
+  AvailListElem *left = NULL;
 
   while (minimumKVal < actualKVal) {
     --actualKVal;
@@ -151,8 +151,8 @@ void *BuddyAllocator::allocate(UWord size) {
 
     right->_kVal = actualKVal;
 
-    left->_linkB = 0;
-    left->_linkF = 0;
+    left->_linkB = NULL;
+    left->_linkF = NULL;
     left->_kVal = actualKVal;
     left->_tag = 0;
 
@@ -190,11 +190,11 @@ Error BuddyAllocator::deallocate(void *block) {
   //
 
   AvailListElem *elem = (AvailListElem *)trueAddress;
-  AvailListElem *buddy = 0;
+  AvailListElem *buddy = NULL;
 
-  assert(0 == elem->_linkB);
-  assert(0 == elem->_linkF);
-  assert(0 == elem->_tag);
+  assert(!elem->_linkB);
+  assert(!elem->_linkF);
+  assert(!elem->_tag);
 
   //
   //  For as long as we can, start coalescing buddies.  Two buddies can be
@@ -307,8 +307,8 @@ Error BuddyAllocator::initialize() {
 
   AvailListElem *elem = (AvailListElem *)_pool;
 
-  elem->_linkB = 0;
-  elem->_linkF = 0;
+  elem->_linkB = NULL;
+  elem->_linkF = NULL;
   elem->_tag = 1;
   elem->_kVal = _poolKVal;
 
@@ -322,15 +322,61 @@ Error BuddyAllocator::destroy() {
     return ESB_INVALID_STATE;
   }
 
-  if (0 == _availList[_poolKVal]) {
+  if (!_availList[_poolKVal]) {
     return ESB_IN_USE;
   }
 
   _sourceAllocator.deallocate((void *)_pool);
-  _pool = 0;
+  _pool = NULL;
 
   return ESB_SUCCESS;
 }
 CleanupHandler &BuddyAllocator::cleanupHandler() { return _cleanupHandler; }
+
+bool BuddyAllocator::reallocates() { return true; }
+
+void *BuddyAllocator::reallocate(void *oldBlock, UWord size) {
+#ifdef ESB_NO_ALLOC
+  return SystemAllocator::Instance().reallocoate(block, size);
+#else
+  if (!oldBlock) {
+    return allocate(size);
+  }
+
+  if (0 == size) {
+    deallocate(oldBlock);
+    return NULL;
+  }
+
+  if (!_pool) {
+    assert(!"allocator has not been initialized");
+    return NULL;
+  }
+
+  char *trueAddress = ((char *)oldBlock) - sizeof(AvailListElem);
+
+  if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
+    assert(!"allocator does not own block");
+    return NULL;
+  }
+
+  //
+  // This naive implementation always copies, but at least fails cleanly
+  //
+
+  AvailListElem *elem = (AvailListElem *)trueAddress;
+  UWord originalSize = (ESB_UWORD_C(1) << elem->_kVal) - sizeof(AvailListElem);
+
+  void *newBlock = allocate(size);
+  if (!newBlock) {
+    return NULL;
+  }
+
+  memcpy(newBlock, oldBlock, MIN(size, originalSize));
+  deallocate(oldBlock);
+
+  return newBlock;
+#endif
+}
 
 }  // namespace ESB

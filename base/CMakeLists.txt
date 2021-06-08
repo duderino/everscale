@@ -33,7 +33,7 @@ set(SOURCE_FILES
         source/ESBEventSocket.cpp
         source/ESBFixedAllocator.cpp
         source/ESBFlatTimingWheel.cpp
-       # source/ESBHostAddress.cpp
+        source/ESBJsonParser.cpp
         source/ESBList.cpp
         source/ESBListeningSocket.cpp
         source/ESBLockable.cpp
@@ -82,7 +82,7 @@ set(SOURCE_FILES
         )
 
 add_library(base STATIC ${SOURCE_FILES})
-add_dependencies(base bssl)
+add_dependencies(base bssl yajl)
 
 target_include_directories(base PRIVATE
         "${PROJECT_SOURCE_DIR}/source"
@@ -101,7 +101,7 @@ set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/../unit-tf/include"
         )
 
-set(TEST_LIBS -pthread -ldl unit-tf base bssl_ssl bssl_crypto)
+set(TEST_LIBS -pthread -ldl unit-tf base bssl_ssl bssl_crypto yajl)
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
@@ -135,6 +135,7 @@ add_gtest(string-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests
 add_gtest(smart-pointer-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest2.cpp)
 add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBWildcardIndexTest.cpp)
 add_gtest(tls-context-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSContextIndexTest.cpp)
+add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonParserTest.cpp)
 
 # Generate certs and private keys
 

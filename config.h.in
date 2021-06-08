@@ -126,6 +126,7 @@
 
 #cmakedefine HAVE_STDLIB_H @HAVE_STDLIB_H@
 #cmakedefine HAVE_MALLOC @HAVE_MALLOC@
+#cmakedefine HAVE_REALLOC @HAVE_REALLOC@
 #cmakedefine HAVE_FREE @HAVE_FREE@
 #cmakedefine HAVE_ABORT @HAVE_ABORT@
 #cmakedefine HAVE_RAND_R @HAVE_RAND_R@

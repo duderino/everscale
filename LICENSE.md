@@ -39,6 +39,10 @@ gRPC is dynamically fetched from https://github.com/grpc/grpc and is used as a r
 
 Example code from https://github.com/grpc/grpc/blob/master/examples/cpp/helloworld/ was used and is Copyright 2018 gRPC authors and offered under Apache 2 license (http://www.apache.org/licenses/LICENSE-2.0).
 
+7) yajl JSON SAX parser.  ISC License
+
+yajl is used for parsing JSON.  It is fetched at buildtime from a mirror of https://github.com/lloyd/yajl and statically linked in.
+
 n) Textbooks and academic papers.
 
 Some algorithms and data structures in this project were derived from the following textbooks and other academic sources:

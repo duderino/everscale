@@ -44,4 +44,18 @@ Error SystemAllocator::deallocate(void *block) {
 
 CleanupHandler &SystemAllocator::cleanupHandler() { return _cleanupHandler; }
 
+bool SystemAllocator::reallocates() { return true; }
+
+void *SystemAllocator::reallocate(void *block, UWord size) {
+  if (!block && 0 == size) {
+    return NULL;
+  }
+
+#ifdef HAVE_REALLOC
+  return realloc(block, size);
+#else
+#error "Platform requires realloc or equivalent"
+#endif
+}
+
 }  // namespace ESB

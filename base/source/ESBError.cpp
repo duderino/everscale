@@ -100,7 +100,8 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "TLS handshake failed",
                                           "TLS session error",
                                           "TLS general error",
-                                          "Underflow"};
+                                          "Underflow",
+                                          "Cannot parse"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

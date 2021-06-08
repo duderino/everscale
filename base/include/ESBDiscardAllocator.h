@@ -103,6 +103,23 @@ class DiscardAllocator : public Allocator {
   virtual Error deallocate(void *block);
 
   /**
+   * Determine whether the implementation supports reallocation.
+   *
+   * @return false
+   */
+  virtual bool reallocates();
+
+  /**
+   * Reallocate a block of memory or create a new block of memory if necessary.  Regardless, the contents of the
+   * original block will be present in the returned block.
+   *
+   * @param block The block to reallocate
+   * @param size
+   * @return a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   */
+  virtual void *reallocate(void *block, UWord size);
+
+  /**
    * Get a cleanup handler to free memory returned by this allocator.  The
    * lifetime of the cleanup handler is the lifetime of the allocator.
    *
@@ -128,10 +145,6 @@ class DiscardAllocator : public Allocator {
   static inline ESB::UInt32 SizeofChunk(ESB::UInt32 alignmentSize) { return ESB_ALIGN(sizeof(Chunk), alignmentSize); }
 
  private:
-  //  Disabled
-  DiscardAllocator(const DiscardAllocator &);
-  DiscardAllocator &operator=(const DiscardAllocator &);
-
   typedef struct Chunk {
     Chunk *_next;
     UWord _idx;
@@ -150,6 +163,8 @@ class DiscardAllocator : public Allocator {
   UInt32 _chunkSize;
   Allocator &_source;
   AllocatorCleanupHandler _cleanupHandler;
+
+  ESB_DISABLE_AUTO_COPY(DiscardAllocator);
 };
 
 }  // namespace ESB

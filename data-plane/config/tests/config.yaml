@@ -19,167 +19,183 @@ entities:
   #
   # TLS Contexts
   #
-  # Example TLS server context
-  - id: TLS-CTX:ec23c29b-605e-4b0b-8bae-a4c4692e6164
-    materials:
-      key:
-        path: "/foo/bar/baz.key"
-      certificate:
-        path: "/foo/bar/baz.crt"
-      ca:
-        paths: [ "/foo/bar/ca.crt" ]
-    options:
-      # Valid peer_verification values are VERIFY_NONE, VERIFY_ALWAYS, VERIFY_IF_CERT.  VERIFY_IF_CERT can be used to give lesser privileges to anonymous clients
-      peer_verification: VERIFY_NONE
-  # Example TLS client context
-  - id: TLS-CTX:518aa91c-1b06-4364-a0bd-850a04563fa9
-    materials:
-      ca:
-        path: "/foo/bar/ca.key"
-    options:
-      peer_verification: VERIFY_ALWAYS
-      certificate_chain_depth: 42
-  # Example mTLS client or server context
-  - id: TLS-CTX:cdad51ab-9f54-4b9a-bbb5-38568f978019
-    materials:
-      key:
-        path: "/foo/bar/baz.key"
-      certificate:
-        path: "/foo/bar/baz.crt"
-      ca:
-        path: "/foo/bar/ca.crt"
-    options:
-      peer_verification: VERIFY_ALWAYS
-      certificate_chain_depth: 42
+  - tls_context:
+      # Example TLS server context
+      id: TLS-CTX:ec23c29b-605e-4b0b-8bae-a4c4692e6164
+      materials:
+        key:
+          path: "/foo/bar/baz.key"
+        certificate:
+          path: "/foo/bar/baz.crt"
+        ca:
+          paths: [ "/foo/bar/ca.crt" ]
+      options:
+        # Valid peer_verification values are VERIFY_NONE, VERIFY_ALWAYS, VERIFY_IF_CERT.  VERIFY_IF_CERT can be used to give lesser privileges to anonymous clients
+        peer_verification: VERIFY_NONE
+  - tls_context:
+      # Example TLS client context
+      id: TLS-CTX:518aa91c-1b06-4364-a0bd-850a04563fa9
+      materials:
+        ca:
+          path: "/foo/bar/ca.key"
+      options:
+        peer_verification: VERIFY_ALWAYS
+        certificate_chain_depth: 42
+  - tls_context:
+      # Example mTLS client or server context
+      id: TLS-CTX:cdad51ab-9f54-4b9a-bbb5-38568f978019
+      materials:
+        key:
+          path: "/foo/bar/baz.key"
+        certificate:
+          path: "/foo/bar/baz.crt"
+        ca:
+          path: "/foo/bar/ca.crt"
+      options:
+        peer_verification: VERIFY_ALWAYS
+        certificate_chain_depth: 42
   #
   # TLS Indices
   #
-  # Server TLS context index
-  - id: TLS-IDX:81607fb3-7453-4372-995a-5e1f1317fd23
-    # The default server context is used if the peer does not use SNI
-    default_context: TLS-CTX:ec23c29b-605e-4b0b-8bae-a4c4692e6164
-    # Additional certs are indexed by their SANs.  The cert with the SAN that matches the SNI most-specifically
-    # will be used.
-    contexts:
-      - TLS-CTX:cdad51ab-9f54-4b9a-bbb5-38568f978019
-  # Client TLS context index
-  - id: TLS-IDX:0d50e7dd-2e76-4d3e-b401-2826265893a8
-    # The default client context is use if the value of the Host: header doesn't any indexed certificates.
-    default_context: TLS-CTX:518aa91c-1b06-4364-a0bd-850a04563fa9
-    # Additional certs are indexed by their SANs.  The cert that best matches the Host: header will be used, unless
-    # no certificates match in which case the default_context will be used.
-    contexts:
-      - TLS-CTX:cdad51ab-9f54-4b9a-bbb5-38568f978019
+  - tls_index:
+      # Server TLS context index
+      id: TLS-IDX:81607fb3-7453-4372-995a-5e1f1317fd23
+      # The default server context is used if the peer does not use SNI
+      default_context: TLS-CTX:ec23c29b-605e-4b0b-8bae-a4c4692e6164
+      # Additional certs are indexed by their SANs.  The cert with the SAN that matches the SNI most-specifically
+      # will be used.
+      contexts:
+        - TLS-CTX:cdad51ab-9f54-4b9a-bbb5-38568f978019
+  - tls_index:
+      # Client TLS context index
+      id: TLS-IDX:0d50e7dd-2e76-4d3e-b401-2826265893a8
+      # The default client context is use if the value of the Host: header doesn't any indexed certificates.
+      default_context: TLS-CTX:518aa91c-1b06-4364-a0bd-850a04563fa9
+      # Additional certs are indexed by their SANs.  The cert that best matches the Host: header will be used, unless
+      # no certificates match in which case the default_context will be used.
+      contexts:
+        - TLS-CTX:cdad51ab-9f54-4b9a-bbb5-38568f978019
   #
   # Security Rules
   #
-  - id: SEC-RULE:e46160d1-6489-4ee9-b1c6-98ac27a00d30
-    ruleset: TODO_PATH_RULES
-  - id: SEC-RULE:2524fbb2-e48a-4c33-80f6-99560ed20f71
-    ruleset: TODO_HOST_HEADER_RULES
-  - id: SEC-RULE:7db999e7-2601-46d5-b9e0-07a66248d382
-    ruleset: TODO_AUTHORIZATION_BEARER_HEADER_RULES
+  - security_rule:
+      id: SEC-RULE:e46160d1-6489-4ee9-b1c6-98ac27a00d30
+      ruleset: TODO_PATH_RULES
+  - security_rule:
+      id: SEC-RULE:2524fbb2-e48a-4c33-80f6-99560ed20f71
+      ruleset: TODO_HOST_HEADER_RULES
+  - security_rule:
+      id: SEC-RULE:7db999e7-2601-46d5-b9e0-07a66248d382
+      ruleset: TODO_AUTHORIZATION_BEARER_HEADER_RULES
   #
   # Limits
   #
-  - id: LIMIT:32c6289a-0a2f-4233-b4cc-b7c2be04731f
-    type: MAX_ACTIVE
-    key: IP_ADDRESS
-    limit: 5
-  - id: LIMIT:934dcdef-bbb3-4b03-b9de-1b806489e89a
-    type: MAX_ACTIVE
-    key: NONE
-    limit: 32768
-  - id: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-    type: RATE
-    key: IP_ADDRESS
-    limit: 42
-    time: { value: 100, unit: MILLISECOND }
-  # TOP_N filters can protect against cases where one client consumes a grossly disproportionate share of the traffic.
-  # They work best when there are many distinct and active clients, otherwise they produce more false positives.
-  - id: LIMIT:a29722de-295e-4384-a798-238f877f3894
-    type: TOP_N
-    key: STRING
-    # Only the top N keys will be tracked.  On insert, if no open slot, decrement all current keys and evict all 0s.
-    n: 42
-    # keys that exceed this threshold are NON_CONFORMING, otherwise they are CONFORMING.
-    threshold: 10000
+  - limit:
+      id: LIMIT:32c6289a-0a2f-4233-b4cc-b7c2be04731f
+      type: MAX_ACTIVE
+      key: IP_ADDRESS
+      limit: 5
+  - limit:
+      id: LIMIT:934dcdef-bbb3-4b03-b9de-1b806489e89a
+      type: MAX_ACTIVE
+      key: NONE
+      limit: 32768
+  - limit:
+      id: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
+      type: RATE
+      key: IP_ADDRESS
+      limit: 42
+      time: { value: 100, unit: MILLISECOND }
+  - limit:
+      # TOP_N filters can protect against cases where one client consumes a grossly disproportionate share of the traffic.
+      # They work best when there are many distinct and active clients, otherwise they produce more false positives.
+      id: LIMIT:a29722de-295e-4384-a798-238f877f3894
+      type: TOP_N
+      key: STRING
+      # Only the top N keys will be tracked.  On insert, if no open slot, decrement all current keys and evict all 0s.
+      n: 42
+      # keys that exceed this threshold are NON_CONFORMING, otherwise they are CONFORMING.
+      threshold: 10000
   #
   # Clusters
   #
-  - id: CLUSTER:f6033542-400c-48f7-9d9f-d86d470aad08
-    connection:
-      type: TLS
-      context_index: TLX-IDX:0d50e7dd-2e76-4d3e-b401-2826265893a8
-      idle_timeout_millis: 30000
-      outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
-    endpoints:
-      # valid types: IP4, IP6, CIDR4, CIDR6, FQDN, FQDN_RANGE, IP4_RANGE, IP6_RANGE, and ENDPOINT_LOAD
-      - type: CIDR4
-        values: [ 192.168.22.0/24:443, 192.168.24.0/24:443 ]
-      # Range syntax is described in https://github.com/eam/libcrange.  FQDNs are cached according to the record's TTL.
-      - type: IP4_RANGE
-        values: [ 209.131.40.1-209.131.40.255:8443 ]
-  - id: CLUSTER:8d441d8d-245b-44dd-b0aa-997bc9f745ff
-    connection:
-      type: TCP
-      idle_timeout_millis: 30000
-      outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
-    endpoints:
-      # Current loads can also be specified, CIDRs and RANGEs cannot be used since load varies by endpoint.  This
-      # is intended for dynamic updates from a control plane, not static config files.
-      # Clusters that are entirely comprised of endpoints with loads support LEAST_LOADED iteration.  Otherwise only
-      # ROUND_ROBIN iteration may be used.
-      - type: ENDPOINT_LOAD
-        values:
-          - { ip4: 192.168.23.10:8080, requests: 42 }
-          - { ip4: 192.168.23.11:8080, requests: 2 }
-          - { ip4: 192.168.23.12:8080, requests: 34 }
-          - { fqdn: foo.example.com:8080, requests: 23 }
-          - { fqdn: bar.example.com:8080, requests: 24 }
-  - id: CLUSTER:e41e0303-6f68-485a-ba83-b4bad887ca8c
-    connection:
-      type: TCP
-      idle_timeout_millis: 30000
-      connection_filter: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
-    endpoints:
-      - type: ENDPOINT_LOAD
-        values:
-          - { ip4: 192.168.23.45:8080, requests: 10 }
-          - { ip4: 192.168.23.46:8080, requests: 22 }
-          - { ip4: 192.168.23.47:8080, requests: 32 }
+  - cluster:
+      id: CLUSTER:f6033542-400c-48f7-9d9f-d86d470aad08
+      connection:
+        type: TLS
+        context_index: TLX-IDX:0d50e7dd-2e76-4d3e-b401-2826265893a8
+        idle_timeout_millis: 30000
+        outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
+      endpoints:
+        # valid types: IP4, IP6, CIDR4, CIDR6, FQDN, FQDN_RANGE, IP4_RANGE, IP6_RANGE, and ENDPOINT_LOAD
+        - type: CIDR4
+          values: [ 192.168.22.0/24:443, 192.168.24.0/24:443 ]
+        # Range syntax is described in https://github.com/eam/libcrange.  FQDNs are cached according to the record's TTL.
+        - type: IP4_RANGE
+          values: [ 209.131.40.1-209.131.40.255:8443 ]
+  - cluster:
+      id: CLUSTER:8d441d8d-245b-44dd-b0aa-997bc9f745ff
+      connection:
+        type: TCP
+        idle_timeout_millis: 30000
+        outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
+      endpoints:
+        # Current loads can also be specified, CIDRs and RANGEs cannot be used since load varies by endpoint.  This
+        # is intended for dynamic updates from a control plane, not static config files.
+        # Clusters that are entirely comprised of endpoints with loads support LEAST_LOADED iteration.  Otherwise only
+        # ROUND_ROBIN iteration may be used.
+        - type: ENDPOINT_LOAD
+          values:
+            - { ip4: 192.168.23.10:8080, requests: 42 }
+            - { ip4: 192.168.23.11:8080, requests: 2 }
+            - { ip4: 192.168.23.12:8080, requests: 34 }
+            - { fqdn: foo.example.com:8080, requests: 23 }
+            - { fqdn: bar.example.com:8080, requests: 24 }
+  - cluster:
+      id: CLUSTER:e41e0303-6f68-485a-ba83-b4bad887ca8c
+      connection:
+        type: TCP
+        idle_timeout_millis: 30000
+        connection_filter: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
+      endpoints:
+        - type: ENDPOINT_LOAD
+          values:
+            - { ip4: 192.168.23.45:8080, requests: 10 }
+            - { ip4: 192.168.23.46:8080, requests: 22 }
+            - { ip4: 192.168.23.47:8080, requests: 32 }
   #
   # Ports
   #
-  - id: PORT:c542e5a9-4812-4d3d-a09a-6f7e2428a08e
-    addresses:
-      - 0.0.0.0:443
-    type: TLS
-    listen_backlog: 123
-    context_index: TLS-IDX:81607fb3-7453-4372-995a-5e1f1317fd23
-    inbound_connection_dag: IN-CON:a1f5a2ec-ebe4-40a8-8346-403a0b1d10ee
+  - port:
+      id: PORT:c542e5a9-4812-4d3d-a09a-6f7e2428a08e
+      addresses:
+        - 0.0.0.0:443
+      type: TLS
+      listen_backlog: 123
+      context_index: TLS-IDX:81607fb3-7453-4372-995a-5e1f1317fd23
+      inbound_connection_dag: IN-CON:a1f5a2ec-ebe4-40a8-8346-403a0b1d10ee
   #
   # Inbound Connection Filters
   #
-  - id: IN-CONN:a1f5a2ec-ebe4-40a8-8346-403a0b1d10ee
-    type: CIDR_MAP
-    entity: INBOUND_CONNECTION # implied if omitted since we're in the inbound connection filter section
-    attribute: PEER_ADDRESS
-    component: IP_ADDRESS
-    # Map of CIDRs to rules
-    rule_map:
-      # Outer keys are looked up sub-linearly
-      10.0.0.0/8:
-        # All condition/action pairs are evaluated linearly.  An action without a condition is always executed.
-        - actions:
-            # Multiple actions can be applied (in order), but the first transition: stops the iteration
-            - transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1
-      172.16.0.0/12:
-        - actions: [ { transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1 } ]
-      192.168.0.0/16:
-        - actions: [ { transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1 } ]
-      127.0.0.0/8:
-        - actions: [ { transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1 } ]
+  - inbound_connection_cidr_map:
+      id: IN-CONN:a1f5a2ec-ebe4-40a8-8346-403a0b1d10ee
+      entity: INBOUND_CONNECTION # implied if omitted since we're in the inbound connection filter section
+      attribute: PEER_ADDRESS
+      component: IP_ADDRESS
+      # Map of CIDRs to rules
+      rule_map:
+        # Outer keys are looked up sub-linearly
+        10.0.0.0/8:
+          # All condition/action pairs are evaluated linearly.  An action without a condition is always executed.
+          - actions:
+              # Multiple actions can be applied (in order), but the first transition: stops the iteration
+              - transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1
+        172.16.0.0/12:
+          - actions: [ { transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1 } ]
+        192.168.0.0/16:
+          - actions: [ { transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1 } ]
+        127.0.0.0/8:
+          - actions: [ { transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1 } ]
     # Default rules are invoked if no prior actions in the rule_map make a transition.
     default_rules:
       - conditions:
@@ -193,394 +209,394 @@ entities:
           - transition: IN-CONN:9dc45f24-3d80-499a-b7a2-9bac323938d6
       - actions:
           - transition: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777
-  - id: IN-CONN:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-    type: RULE_LIST
-    # List of rules.  Rules are evaluated in order until a transition breaks the iteration or the end of the list
-    # is reached.
-    rules:
-      - conditions:
-          # Enforce a per-IPv4 address max connections (multitenancy fairness, sorry NATs)
-          - type: ACQUIRE_SLOT
-            entity: INBOUND_CONNECTION
-            attribute: PEER_ADDRESS
-            component: IP_ADDRESS # The IP address will be used as the key for the rate limit
-            limit: LIMIT:32c6289a-0a2f-4233-b4cc-b7c2be04731f
-            slots: 1 # Every connection accepted counts as 1 slot against the limit's available slots
-            values: [ CONFORMING ]
-        actions:
-          - mark: HAS_PER_IP_CONNECTION_SLOT
-          # Transitioning to another filter stops the iteration.
-          - transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1
-      - actions:
+  - inbound_connection_rule_list:
+      id: IN-CONN:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
+      # List of rules.  Rules are evaluated in order until a transition breaks the iteration or the end of the list
+      # is reached.
+      rules:
+        - conditions:
+            # Enforce a per-IPv4 address max connections (multitenancy fairness, sorry NATs)
+            - type: ACQUIRE_SLOT
+              entity: INBOUND_CONNECTION
+              attribute: PEER_ADDRESS
+              component: IP_ADDRESS # The IP address will be used as the key for the rate limit
+              limit: LIMIT:32c6289a-0a2f-4233-b4cc-b7c2be04731f
+              slots: 1 # Every connection accepted counts as 1 slot against the limit's available slots
+              values: [ CONFORMING ]
+          actions:
+            - mark: HAS_PER_IP_CONNECTION_SLOT
+            # Transitioning to another filter stops the iteration.
+            - transition: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1
+        - actions:
           - transition: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777
-  - id: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1
-    type: RULE_LIST
-    rules:
-      # All rules are evaluated in the order they are defined here
-      - conditions:
-          - type: PROPERTY
-            entity: INBOUND_CONNECTION
-            attribute: PEER_CERTIFICATE
-            operator: NOT_EXIST
-        actions:
-          # We can't rate limit requests here since we're in the inbound connection filter chain, but we can save
-          # a mark that can be used later in the inbound request filter chain.
-          - mark: ANONYMOUS
-      # Enforce a global cap on inbound connections regardless of source
-      - conditions:
-          - type: ACQUIRE_SLOT
-            entity: INBOUND_CONNECTION  # No key will be used for the rate limit, it's just a max count
-            limit: LIMIT:934dcdef-bbb3-4b03-b9de-1b806489e89a
-            slots: 1  # The default.  A H2 listener could set a higher value since it may carry more traffic.
-            values: [ CONFORMING ]
-        actions:
-          - mark: HAS_GLOBAL_CONNECTION_SLOT
-          - transition: IN-CONN:d573352b-0513-4b11-b8e5-4585ced52369
-      - actions:
-          - transition: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777
-  # Arbitrary extern "C" extensions can also be incorporated
-  - id: IN-CONN:d573352b-0513-4b11-b8e5-4585ced52369
-    type: EXTENSION
-    path: /opt/lib/libfoo.so
-    api: 1.1 # Mandatory field.  Config will be rejected if it doesn't support the extension API version.
-    # Config is pass through to the extension
-    config:
-      foo: qux
-      bar: quux
-    # List of rules to execute after the extension returns and can take different actions based on its return codes.
-    rules:
-      - conditions:
-          - NOT:
-              type: RESULT
-              values: [ 0 ]
-        actions:
-          - transition: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777 # Close connection
-      - actions:
-          - transition: IN-CONN:ad9ffc27-f71f-43ae-8cfe-90583f79266d
+  - inbound_connection_rule_list:
+      id: IN-CONN:0f42a1d1-cb6e-4a7b-be44-35fe34c6d5e1
+      rules:
+        # All rules are evaluated in the order they are defined here
+        - conditions:
+            - type: PROPERTY
+              entity: INBOUND_CONNECTION
+              attribute: PEER_CERTIFICATE
+              operator: NOT_EXIST
+          actions:
+            # We can't rate limit requests here since we're in the inbound connection filter chain, but we can save
+            # a mark that can be used later in the inbound request filter chain.
+            - mark: ANONYMOUS
+        # Enforce a global cap on inbound connections regardless of source
+        - conditions:
+            - type: ACQUIRE_SLOT
+              entity: INBOUND_CONNECTION  # No key will be used for the rate limit, it's just a max count
+              limit: LIMIT:934dcdef-bbb3-4b03-b9de-1b806489e89a
+              slots: 1  # The default.  A H2 listener could set a higher value since it may carry more traffic.
+              values: [ CONFORMING ]
+          actions:
+            - mark: HAS_GLOBAL_CONNECTION_SLOT
+            - transition: IN-CONN:d573352b-0513-4b11-b8e5-4585ced52369
+        - actions:
+            - transition: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777
+  - inbound_connection_extension:
+      # Arbitrary extern "C" extensions can also be incorporated
+      id: IN-CONN:d573352b-0513-4b11-b8e5-4585ced52369
+      path: /opt/lib/libfoo.so
+      api: 1.1 # Mandatory field.  Config will be rejected if it doesn't support the extension API version.
+      # Config is pass through to the extension
+      config:
+        foo: qux
+        bar: quux
+      # List of rules to execute after the extension returns and can take different actions based on its return codes.
+      rules:
+        - conditions:
+            - NOT:
+                type: RESULT
+                values: [ 0 ]
+          actions:
+            - transition: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777 # Close connection
+        - actions:
+            - transition: IN-CONN:ad9ffc27-f71f-43ae-8cfe-90583f79266d
   # This enacts request processing on a connection
-  - id: IN-CONN:ad9ffc27-f71f-43ae-8cfe-90583f79266d
-    type: REQUEST
-    inbound_request_dag: IN-CONN:2c9463aa-daff-4370-9f24-40c900c85160
-    cleanup: IN-CONN:ccc0d16e-4d6b-4e0e-a5c7-7e1c0bc8d627
+  - inbound_connection_request:
+      id: IN-CONN:ad9ffc27-f71f-43ae-8cfe-90583f79266d
+      inbound_request_dag: IN-CONN:2c9463aa-daff-4370-9f24-40c900c85160
+      cleanup: IN-CONN:ccc0d16e-4d6b-4e0e-a5c7-7e1c0bc8d627
   # This will always be called, whether invoked by this config or after the proxy closes the connection
-  - id: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777
-    type: CLOSE
-    cleanup: IN-CONN:ccc0d16e-4d6b-4e0e-a5c7-7e1c0bc8d627
-  - id: IN-CONN:ccc0d16e-4d6b-4e0e-a5c7-7e1c0bc8d627
-    type: CLEANUP
-    rules:
-      - conditions:
-          - type: MARK
-            values: [ HAS_GLOBAL_CONNECTION_SLOT ]
-        actions:
-          # The key and slots must match the rule that set the mark
-          - type: RELEASE_SLOT
-            entity: INBOUND_CONNECTION # Implicit because we're in the inbound connection filters
-            limit: LIMIT:934dcdef-bbb3-4b03-b9de-1b806489e89a
-            slots: 1
-      - conditions:
-          - type: MARK
-            values: [ HAS_PER_IP_CONNECTION_SLOT ]
-        actions:
-          # The key and slots must match the rule that set the mark
-          - type: RELEASE_SLOT
-            entity: INBOUND_CONNECTION
-            attribute: PEER_ADDRESS
-            component: IPV4_ADDRESS
-            limit: LIMIT:32c6289a-0a2f-4233-b4cc-b7c2be04731f
-            slots: 1
-      - actions:
-          - type: MEASURE
-            TODO: todo
-          - type: LOG
-            TODO: todo
+  - inbound_connection_close:
+      id: IN-CONN:891ab9b1-2e4e-4357-9455-c199bc40d777
+      cleanup: IN-CONN:ccc0d16e-4d6b-4e0e-a5c7-7e1c0bc8d627
+  - inbound_connection_cleanup:
+      id: IN-CONN:ccc0d16e-4d6b-4e0e-a5c7-7e1c0bc8d627
+      rules:
+        - conditions:
+            - type: MARK
+              values: [ HAS_GLOBAL_CONNECTION_SLOT ]
+          actions:
+            # The key and slots must match the rule that set the mark
+            - type: RELEASE_SLOT
+              entity: INBOUND_CONNECTION # Implicit because we're in the inbound connection filters
+              limit: LIMIT:934dcdef-bbb3-4b03-b9de-1b806489e89a
+              slots: 1
+        - conditions:
+            - type: MARK
+              values: [ HAS_PER_IP_CONNECTION_SLOT ]
+          actions:
+            # The key and slots must match the rule that set the mark
+            - type: RELEASE_SLOT
+              entity: INBOUND_CONNECTION
+              attribute: PEER_ADDRESS
+              component: IPV4_ADDRESS
+              limit: LIMIT:32c6289a-0a2f-4233-b4cc-b7c2be04731f
+              slots: 1
+        - actions:
+            - type: MEASURE
+              TODO: todo
+            - type: LOG
+              TODO: todo
   #
   # Inbound HTTP Request Filters
   #
-  - id: IN-REQ:2c9463aa-daff-4370-9f24-40c900c85160
-    type: RULE_LIST
-    # List of rules
-    rules:
-      # WAF: Send a 400 Bad Request response if the request looks suspicious
-      - conditions:
-          - type: WAF
-            entity: INBOUND_REQUEST
-            attribute: URI
-            security_rules: SEC-RULE:e46160d1-6489-4ee9-b1c6-98ac27a00d30
-            # Condition evaluates to true if the WAF has a anomaly score greater than or equal to 30
-            anomaly_threshold: 30
-          - type: WAF
-            entity: INBOUND_REQUEST
-            attribute: HEADERS
-            # If component is omitted, all headers would be inspected
-            component: host
-            security_rules: SEC-RULE:2524fbb2-e48a-4c33-80f6-99560ed20f71
-            anomaly_threshold: 30
-          - type: WAF
-            entity: INBOUND_REQUEST
-            attribute: HEADERS
-            component: authorization
-            security_rules: SEC-RULE:7db999e7-2601-46d5-b9e0-07a66248d382
-            anomaly_threshold: 30
-        actions:
-          - transition: IN-REQ:4640c726-9d4a-426d-870d-121aacd2acb5
-      # Otherwise normalize the path and host header since we use them for routing
-      - actions:
-          # Use an aggressively sanitized path for routing, but forward a more conservatively sanitized path
-          - type: CREATE
-            entity: INBOUND_REQUEST
-            attribute: ANNOTATIONS
-            component: SAFE_PATH
-            value:
-              tupe: SANITIZE
+  - inbound_request_rule_list:
+      id: IN-REQ:2c9463aa-daff-4370-9f24-40c900c85160
+      # List of rules
+      rules:
+        # WAF: Send a 400 Bad Request response if the request looks suspicious
+        - conditions:
+            - type: WAF
               entity: INBOUND_REQUEST
               attribute: URI
-              component: PATH
-              transforms: [ RECURSIVE_DECODE, MERGE_SLASHES, RESOLVE_DOTS ]
-          - type: UPDATE
-            entity: INBOUND_REQUEST
-            attribute: URI
-            component: PATH
-            value:
-              type: SANITIZE
-              entity: INBOUND_REQUEST
-              attribute: URI
-              component: PATH
-              transforms: [ NON_NESTED_DECODE, DECODE_SLASHES, MERGE_SLASHES, RESOLVE_DOTS ]
-          # Use only the first host header, dropping any extra ones, and canonicalize the first
-          - type: UPDATE
-            entity: INBOUND_REQUEST
-            attribute: HEADERS
-            component: host
-            value:
-              type: SANITIZE
+              security_rules: SEC-RULE:e46160d1-6489-4ee9-b1c6-98ac27a00d30
+              # Condition evaluates to true if the WAF has a anomaly score greater than or equal to 30
+              anomaly_threshold: 30
+            - type: WAF
               entity: INBOUND_REQUEST
               attribute: HEADERS
+              # If component is omitted, all headers would be inspected
               component: host
-              transforms: [ DROP_EXTRA_HEADERS, CANONICALIZE_HOSTPORT ]
-          - type: UPDATE
-            entity: INBOUND_REQUEST
-            attribute: HEADERS
-            component: authorization
-            value:
-              type: SANITIZE
+              security_rules: SEC-RULE:2524fbb2-e48a-4c33-80f6-99560ed20f71
+              anomaly_threshold: 30
+            - type: WAF
               entity: INBOUND_REQUEST
               attribute: HEADERS
               component: authorization
-              transforms: [ DROP_EXTRA_HEADERS, CANONICALIZE_BEARER_TOKEN ]
-      # Send a 401 Unauthorized if the connection doesn't have a client cert and the path is sensitive
-      - conditions:
-          - AND:
-              - type: PROPERTY
+              security_rules: SEC-RULE:7db999e7-2601-46d5-b9e0-07a66248d382
+              anomaly_threshold: 30
+          actions:
+            - transition: IN-REQ:4640c726-9d4a-426d-870d-121aacd2acb5
+        # Otherwise normalize the path and host header since we use them for routing
+        - actions:
+            # Use an aggressively sanitized path for routing, but forward a more conservatively sanitized path
+            - type: CREATE
+              entity: INBOUND_REQUEST
+              attribute: ANNOTATIONS
+              component: SAFE_PATH
+              value:
+                tupe: SANITIZE
                 entity: INBOUND_REQUEST
                 attribute: URI
                 component: PATH
-                operator: PREFIX
-                values: [ /admin/, /account/ ]
-              - type: MARK
-                entity: INBOUND_CONNECTION
-                values: [ ANONYMOUS ]
-        actions:
-          - transition: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c
-      - actions:
-          - transition: IN-REQ:df5ce3b2-ead9-4a2e-965c-a26d5f7557c6
-      # Track all distinct bearer tokens and if any exceed a threshold that is considered abusive, reject with 429.
-      # Using the sanitized authorization header prevents trivial bypasses due to extra whitespace, etc.
-      - conditions:
-          - type: ACQUIRE_SLOT
-            entity: INBOUND_REQUEST
-            attribute: HEADERS
-            component: authorization
-            limit: LIMIT:a29722de-295e-4384-a798-238f877f3894
-            slots: 1
-            values: [ NON_CONFORMING ]
-        actions:
-          # Reject with 429 Too Many Requests
-          - transition: IN-REQ:31db01c6-f83d-4403-b921-12bd57d9f0de
-  # Use the sanitized path for routing to clusters
-  - id: IN-REQ:df5ce3b2-ead9-4a2e-965c-a26d5f7557c6
-    type: PATH_WILDCARD_MAP
-    entity: INBOUND_REQUEST
-    attribute: ANNOTATIONS
-    component: SAFE_PATH
-    # Map of paths to rules
-    rule_map:
-      # Rules are matched sub-linearly and the most specific match is preferred
-      /foo/bar/baz/*:
-        # Additional conditions can be added here, but the list for a path will be evaluated linearly
+                transforms: [ RECURSIVE_DECODE, MERGE_SLASHES, RESOLVE_DOTS ]
+            - type: UPDATE
+              entity: INBOUND_REQUEST
+              attribute: URI
+              component: PATH
+              value:
+                type: SANITIZE
+                entity: INBOUND_REQUEST
+                attribute: URI
+                component: PATH
+                transforms: [ NON_NESTED_DECODE, DECODE_SLASHES, MERGE_SLASHES, RESOLVE_DOTS ]
+            # Use only the first host header, dropping any extra ones, and canonicalize the first
+            - type: UPDATE
+              entity: INBOUND_REQUEST
+              attribute: HEADERS
+              component: host
+              value:
+                type: SANITIZE
+                entity: INBOUND_REQUEST
+                attribute: HEADERS
+                component: host
+                transforms: [ DROP_EXTRA_HEADERS, CANONICALIZE_HOSTPORT ]
+            - type: UPDATE
+              entity: INBOUND_REQUEST
+              attribute: HEADERS
+              component: authorization
+              value:
+                type: SANITIZE
+                entity: INBOUND_REQUEST
+                attribute: HEADERS
+                component: authorization
+                transforms: [ DROP_EXTRA_HEADERS, CANONICALIZE_BEARER_TOKEN ]
+        # Send a 401 Unauthorized if the connection doesn't have a client cert and the path is sensitive
+        - conditions:
+            - AND:
+                - type: PROPERTY
+                  entity: INBOUND_REQUEST
+                  attribute: URI
+                  component: PATH
+                  operator: PREFIX
+                  values: [ /admin/, /account/ ]
+                - type: MARK
+                  entity: INBOUND_CONNECTION
+                  values: [ ANONYMOUS ]
+          actions:
+            - transition: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c
         - actions:
-            - transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50
-      /foo/bar/*: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
-      /admin/*: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
-      /account/*: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
-    # If no path match, transition to header match
-    default_rules: [ { actions: [ { transition: IN-REQ:4e3bdda9-34f6-442a-9ff1-d76d21d2d68e } ] } ]
-  # Use the sanitized host header for routing to clusters if no paths match
-  - id: IN-REQ:4e3bdda9-34f6-442a-9ff1-d76d21d2d68e
-    type: FQDN_WILDCARD_MAP
-    entity: INBOUND_REQUEST
-    attribute: HEADERS
-    component: host
-    # Map of header wildcards to rules
-    rule_map:
-      # FQDN_WILDCARD_MAP automatically ignores any :<port> that may be present in the key
-      *.example.com: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
-    # If no wildcard patterns match the host header, transition to a filter tha sends a 404 Not Found
-    default_rules: [ { actions: [ { transition: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c } ] } ]
-  - id: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50
-    type: LOAD_BALANCER
-    clusters:
-      # Requests are distributed across clusters in a weighted round robin fashion such that the probability that a
-      # request is sent to a cluster is <cluster weight> / <sum all cluster weights>.  Within a CLUSTER load
-      # balancing can be LEAST_LOADED, but across CLUSTERS only weighted round robin is supported.
-      - { id: CLUSTER:e41e0303-6f68-485a-ba83-b4bad887ca8c, weight: 3 }
-      # A special weight value of SIZE is automatically resolved to the number of members in the cluster (the
-      # transitive closure).   This weight is automatically adjusted as clusters shrink and grown.  If no weight
-      # is specified, the weight defaults to SIZE.
-      - { id: CLUSTER:8d441d8d-245b-44dd-b0aa-997bc9f745ff, weight: SIZE }
-    iteration:
-      # Iteration rules are evaluated for each endpoint while iterating through the endpoint list, either in
-      # ROUND_ROBIN or in LEAST_LOADED order.  For LEAST_LOADED order, all endpoints in the cluster must have their
-      # current loads defined, probably by an external control plane.   Transitioning to an outbound_filter
-      # finishes the iteration.
-      order: LEAST_LOADED
+            - transition: IN-REQ:df5ce3b2-ead9-4a2e-965c-a26d5f7557c6
+        # Track all distinct bearer tokens and if any exceed a threshold that is considered abusive, reject with 429.
+        # Using the sanitized authorization header prevents trivial bypasses due to extra whitespace, etc.
+        - conditions:
+            - type: ACQUIRE_SLOT
+              entity: INBOUND_REQUEST
+              attribute: HEADERS
+              component: authorization
+              limit: LIMIT:a29722de-295e-4384-a798-238f877f3894
+              slots: 1
+              values: [ NON_CONFORMING ]
+          actions:
+            # Reject with 429 Too Many Requests
+            - transition: IN-REQ:31db01c6-f83d-4403-b921-12bd57d9f0de
+  - inbound_request_path_wildcard_map:
+      # Use the sanitized path for routing to clusters
+      id: IN-REQ:df5ce3b2-ead9-4a2e-965c-a26d5f7557c6
+      entity: INBOUND_REQUEST
+      attribute: ANNOTATIONS
+      component: SAFE_PATH
+      # Map of paths to rules
+      rule_map:
+        # Rules are matched sub-linearly and the most specific match is preferred
+        /foo/bar/baz/*:
+          # Additional conditions can be added here, but the list for a path will be evaluated linearly
+          - actions:
+              - transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50
+        /foo/bar/*: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
+        /admin/*: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
+        /account/*: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
+      # If no path match, transition to header match
+      default_rules: [ { actions: [ { transition: IN-REQ:4e3bdda9-34f6-442a-9ff1-d76d21d2d68e } ] } ]
+  - inbound_request_fqdn_wildcard_map:
+      # Use the sanitized host header for routing to clusters if no paths match
+      id: IN-REQ:4e3bdda9-34f6-442a-9ff1-d76d21d2d68e
+      entity: INBOUND_REQUEST
+      attribute: HEADERS
+      component: host
+      # Map of header wildcards to rules
+      rule_map:
+        # FQDN_WILDCARD_MAP automatically ignores any :<port> that may be present in the key
+        *.example.com: [ { actions: [ { transition: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50 } ] } ]
+      # If no wildcard patterns match the host header, transition to a filter tha sends a 404 Not Found
+      default_rules: [ { actions: [ { transition: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c } ] } ]
+  - inbound_request_load_balance:
+      id: IN-REQ:71d899e5-e339-4549-b9cd-d63f2eeadf50
+      clusters:
+        # Requests are distributed across clusters in a weighted round robin fashion such that the probability that a
+        # request is sent to a cluster is <cluster weight> / <sum all cluster weights>.  Within a CLUSTER load
+        # balancing can be LEAST_LOADED, but across CLUSTERS only weighted round robin is supported.
+        - { id: CLUSTER:e41e0303-6f68-485a-ba83-b4bad887ca8c, weight: 3 }
+        # A special weight value of SIZE is automatically resolved to the number of members in the cluster (the
+        # transitive closure).   This weight is automatically adjusted as clusters shrink and grown.  If no weight
+        # is specified, the weight defaults to SIZE.
+        - { id: CLUSTER:8d441d8d-245b-44dd-b0aa-997bc9f745ff, weight: SIZE }
+      iteration:
+        # Iteration rules are evaluated for each endpoint while iterating through the endpoint list, either in
+        # ROUND_ROBIN or in LEAST_LOADED order.  For LEAST_LOADED order, all endpoints in the cluster must have their
+        # current loads defined, probably by an external control plane.   Transitioning to an outbound_filter
+        # finishes the iteration.
+        order: LEAST_LOADED
+        rules:
+          - conditions:
+              # Conditions allow additional dimensions to be considered in addition to current load.  Per-destination
+              # throttles, for instance, can reduce the size of oscillations due to the thundering herd problem where
+              # all requests clobber the least loaded endpoint before the control plane can update that endpoint's
+              # current load.
+              - type: ACQUIRE_SLOT
+                entity: ENDPOINT
+                attribute: PEER_ADDRESS
+                component: IP_ADDRESS   # The IPv4 address will be used as the key for the rate limit
+                limit: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
+                slots: 1   # This is 1 increment per HTTP request since we're in the inbound request filter dag.
+                values: [ CONFORMING ]
+            actions:
+              # Mark the request so we can release the slot later
+              - mark: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
+              # Transition to an outbound filter (i.e., select this endpoint)
+              - outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
+        # invoked if the iteration ends (loops around at most once) without a transition
+        default_rules:
+          # Spill traffic over to a different load balancer
+          - actions:
+              - transition: IN-REQ:fba4f5de-e8ba-4d3d-8fad-942c38991167
+  - inbound_request_load_balance:
+      id: IN-REQ:fba4f5de-e8ba-4d3d-8fad-942c38991167
+      clusters:
+        - { id: CLUSTER:f6033542-400c-48f7-9d9f-d86d470aad08, weight: 3 }
+      iteration:
+        # At least one of the clusters does not have ENDPOINT_LOADs so only ROUND_ROBIN is supported
+        order: ROUND_ROBIN
+        rules:
+          - conditions:
+              # Conditions allow additional dimensions to be considered in addition to current load.  Per-destination
+              # throttles, for instance, can reduce the size of oscillations due to the thundering herd problem where
+              # all requests clobber the least loaded endpoint before the control plane can update that endpoint's
+              # current load.
+              - type: ACQUIRE_SLOT
+                entity: ENDPOINT
+                attribute: PEER_ADDRESS
+                component: IP_ADDRESS   # The IPv4 address will be used as the key for the rate limit
+                limit: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
+                slots: 1   # This is 1 increment per HTTP request since we're in the inbound request filter dag.
+                values: [ CONFORMING ]
+            actions:
+              # Mark the request so we can release the slot later
+              - mark: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
+              # Transition to an outbound filter (i.e., select this endpoint)
+              - outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
+        # invoked if the iteration ends (loops around at most once) without a transition
+        default_rules:
+          # Traffic cannot be spilled over, so reject it with 429 Too Many Requests instead
+          - actions: [ { transition: IN-REQ:31db01c6-f83d-4403-b921-12bd57d9f0de } ]
+  - inbound_request_close:
+      id: IN-REQ:4866b125-c344-44f9-a52e-559a2ccc63fa
+      rules:
+        - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
+  - inbound_request_response:
+      id: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c
+      status_code: 404
+      description: Not Found
+      rules:
+        - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
+  - inbound_request_response:
+      id: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c
+      status_code: 401
+      description: Unauthorized
+      rules:
+        - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
+  - inbound_request_response:
+      id: IN-REQ:31db01c6-f83d-4403-b921-12bd57d9f0de
+      status_code: 429
+      description: Too Many Requests
+      rules:
+        - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
+  - inbound_request_response:
+      id: IN-REQ:4640c726-9d4a-426d-870d-121aacd2acb5
+      status_code: 400
+      description: Bad Request
+      rules:
+        - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
+  - inbound_request_response:
+      id: IN-REQ:91e51cb7-6d75-4bf9-8c7d-17876f988939
+      status_code: 301
+      description: Moved Permanently
+      headers: { location: https://foo.example.com/bar/baz }
+      rules:
+        - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
+  - inbound_request_cleanup:
+      id: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4
       rules:
         - conditions:
-            # Conditions allow additional dimensions to be considered in addition to current load.  Per-destination
-            # throttles, for instance, can reduce the size of oscillations due to the thundering herd problem where
-            # all requests clobber the least loaded endpoint before the control plane can update that endpoint's
-            # current load.
-            - type: ACQUIRE_SLOT
+            - type: MARK
+              values: [ LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1 ]
+          actions:
+            # The key and slots must match the rule that set the mark
+            - type: RELEASE_SLOT
               entity: ENDPOINT
               attribute: PEER_ADDRESS
               component: IP_ADDRESS   # The IPv4 address will be used as the key for the rate limit
               limit: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-              slots: 1   # This is 1 increment per HTTP request since we're in the inbound request filter dag.
-              values: [ CONFORMING ]
-          actions:
-            # Mark the request so we can release the slot later
-            - mark: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-            # Transition to an outbound filter (i.e., select this endpoint)
-            - outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
-      # invoked if the iteration ends (loops around at most once) without a transition
-      default_rules:
-        # Spill traffic over to a different load balancer
-        - actions:
-            - transition: IN-REQ:fba4f5de-e8ba-4d3d-8fad-942c38991167
-  - id: IN-REQ:fba4f5de-e8ba-4d3d-8fad-942c38991167
-    type: LOAD_BALANCER
-    clusters:
-      - { id: CLUSTER:f6033542-400c-48f7-9d9f-d86d470aad08, weight: 3 }
-    iteration:
-      # At least one of the clusters does not have ENDPOINT_LOADs so only ROUND_ROBIN is supported
-      order: ROUND_ROBIN
-      rules:
-        - conditions:
-            # Conditions allow additional dimensions to be considered in addition to current load.  Per-destination
-            # throttles, for instance, can reduce the size of oscillations due to the thundering herd problem where
-            # all requests clobber the least loaded endpoint before the control plane can update that endpoint's
-            # current load.
-            - type: ACQUIRE_SLOT
-              entity: ENDPOINT
-              attribute: PEER_ADDRESS
-              component: IP_ADDRESS   # The IPv4 address will be used as the key for the rate limit
-              limit: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-              slots: 1   # This is 1 increment per HTTP request since we're in the inbound request filter dag.
-              values: [ CONFORMING ]
-          actions:
-            # Mark the request so we can release the slot later
-            - mark: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-            # Transition to an outbound filter (i.e., select this endpoint)
-            - outbound_connection_dag: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
-      # invoked if the iteration ends (loops around at most once) without a transition
-      default_rules:
-        # Traffic cannot be spilled over, so reject it with 429 Too Many Requests instead
-        - actions: [ { transition: IN-REQ:31db01c6-f83d-4403-b921-12bd57d9f0de } ]
-  - id: IN-REQ:4866b125-c344-44f9-a52e-559a2ccc63fa
-    type: CLOSE
-    rules:
-      - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
-  - id: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c
-    type: RESPONSE
-    status_code: 404
-    description: Not Found
-    rules:
-      - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
-  - id: IN-REQ:0f05cd43-7861-4373-903c-8822d83dad5c
-    type: RESPONSE
-    status_code: 401
-    description: Unauthorized
-    rules:
-      - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
-  - id: IN-REQ:31db01c6-f83d-4403-b921-12bd57d9f0de
-    type: RESPONSE
-    status_code: 429
-    description: Too Many Requests
-    rules:
-      - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
-  - id: IN-REQ:4640c726-9d4a-426d-870d-121aacd2acb5
-    type: RESPONSE
-    status_code: 400
-    description: Bad Request
-    rules:
-      - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
-  - id: IN-REQ:91e51cb7-6d75-4bf9-8c7d-17876f988939
-    type: RESPONSE
-    status_code: 301
-    description: Moved Permanently
-    headers: { location: https://foo.example.com/bar/baz }
-    rules:
-      - actions: [ { transition: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4 } ]
-  - id: IN-REQ:370c24fb-6f05-4a7b-b545-ec3bc891eca4
-    type: CLEANUP
-    rules:
-      - conditions:
-          - type: MARK
-            values: [ LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1 ]
-        actions:
-          # The key and slots must match the rule that set the mark
-          - type: RELEASE_SLOT
-            entity: ENDPOINT
-            attribute: PEER_ADDRESS
-            component: IP_ADDRESS   # The IPv4 address will be used as the key for the rate limit
-            limit: LIMIT:9d6c3542-8d4e-48e4-a205-6f15488c1fc1
-            slots: 1
+              slots: 1
   #
   # Outbound Connection Filters
   #
-  - id: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
-    type: REQUEST
-    outbound_request_dag: OUT-REQ:31fce833-b6e8-4c9c-8900-189304354b5f
-    cleanup: OUT-CONN:e4559690-ca02-4eab-9934-66b9d207e24e
-  - id: OUT-CONN:e4559690-ca02-4eab-9934-66b9d207e24e
-    type: CLEANUP
-    rules: [ ]
+  - outbound_connection_request:
+      id: OUT-CONN:57570ae6-ee13-47db-9359-beed35d77609
+      outbound_request_dag: OUT-REQ:31fce833-b6e8-4c9c-8900-189304354b5f
+      cleanup: OUT-CONN:e4559690-ca02-4eab-9934-66b9d207e24e
+  - outbound_connection_cleanup:
+      id: OUT-CONN:e4559690-ca02-4eab-9934-66b9d207e24e
+      rules: [ ]
   #
   # Outbound HTTP Request Filters
   #
-  - id: OUT-REQ:31fce833-b6e8-4c9c-8900-189304354b5f
-    type: SEND
-    outbound_response_dag: OUT-RESP:7703231d-0f36-4577-a6f3-71d0ae14bba9
-    cleanup: OUT-REQ:2081bf5e-991b-47fe-af47-92c6d6e71764
-  - id: OUT-REQ:2081bf5e-991b-47fe-af47-92c6d6e71764
-    type: CLEANUP
-    rules: [ ]
+  - outbound_request_send:
+      id: OUT-REQ:31fce833-b6e8-4c9c-8900-189304354b5f
+      outbound_response_dag: OUT-RESP:7703231d-0f36-4577-a6f3-71d0ae14bba9
+      cleanup: OUT-REQ:2081bf5e-991b-47fe-af47-92c6d6e71764
+  - outbound_request_cleanup:
+      id: OUT-REQ:2081bf5e-991b-47fe-af47-92c6d6e71764
+      rules: [ ]
   #
   # Outbound HTTP Response Filters
   #
-  - id: OUT-RESP:7703231d-0f36-4577-a6f3-71d0ae14bba9
-    type: SEND
-    inbound_response_dag: IN-RESP:f63e4f38-3130-42a3-a256-0c93aef2dbb7
-    cleanup: OUT-RESP:bad06498-41e4-4c47-a4af-4d5f615a7665
-  - id: OUT-RESP:bad06498-41e4-4c47-a4af-4d5f615a7665
-    type: CLEANUP
-    rules: [ ]
+  - outbound_response_receive:
+      id: OUT-RESP:7703231d-0f36-4577-a6f3-71d0ae14bba9
+      inbound_response_dag: IN-RESP:f63e4f38-3130-42a3-a256-0c93aef2dbb7
+      cleanup: OUT-RESP:bad06498-41e4-4c47-a4af-4d5f615a7665
+  - outbound_response_cleanup:
+      id: OUT-RESP:bad06498-41e4-4c47-a4af-4d5f615a7665
+      rules: [ ]
   #
   # Inbound HTTP Response Filters
   #
-  - id: IN-RESP:f63e4f38-3130-42a3-a256-0c93aef2dbb7
-    type: SEND
-    cleanup: IN-RESP:32a00db2-93a6-4657-be80-37695ce6711a
-  - id: IN-RESP:32a00db2-93a6-4657-be80-37695ce6711a
-    type: CLEANUP
-    rules: [ ]
+  - inbound_response_send:
+      id: IN-RESP:f63e4f38-3130-42a3-a256-0c93aef2dbb7
+      cleanup: IN-RESP:32a00db2-93a6-4657-be80-37695ce6711a
+  - inbound_response_end:
+      id: IN-RESP:32a00db2-93a6-4657-be80-37695ce6711a
+      rules: [ ]

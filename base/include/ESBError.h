@@ -267,6 +267,12 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_UNDERFLOW (-35)
 
+/** Document cannot be successfully parsed.
+ *
+ *  @ingroup error
+ */
+#define ESB_CANNOT_PARSE (-36)
+
 }  // namespace ESB
 
 #endif

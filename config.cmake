@@ -150,6 +150,7 @@ check_symbol_exists(assert "assert.h" HAVE_ASSERT)
 
 check_include_file("stdlib.h" HAVE_STDLIB_H)
 check_symbol_exists(malloc "stdlib.h" HAVE_MALLOC)
+check_symbol_exists(realloc "stdlib.h" HAVE_REALLOC)
 check_symbol_exists(free "stdlib.h" HAVE_FREE)
 check_symbol_exists(abort "stdlib.h" HAVE_ABORT)
 check_symbol_exists(rand_r "stdlib.h" HAVE_RAND_R)

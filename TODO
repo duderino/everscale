@@ -41,7 +41,7 @@ top:
 config:
  - add JSON parser to base.
    - Create JsonElement subclass of EmbeddedMapElement.  Subclasses must implement type(), find(), and possibly visit() pure virtuals.
-   - Create JsonObject (wrap EmbeddedMap), JsonArray (wrap EmbeddedList), JsonString, JsonInteger, JsonFloat, JsonBoolean, and JsonNull subclasses of JsonElement - all of these must return NOT_IMPLEMENTED and assert if key() is called on them.
+   - Create JsonMap (wrap EmbeddedMap), JsonArray (wrap EmbeddedList), JsonString, JsonInteger, JsonFloat, JsonBoolean, and JsonNull subclasses of JsonElement - all of these must return NOT_IMPLEMENTED and assert if key() is called on them.
    - Subclass JsonElement for Pairs: JsonStringPair, JsonIntegerPair, JsonFloatPair.  These take any JsonElement value and implement key().
    - JsonObject only allows adding Pairs.  JsonArray only allows adding non-Pairs.
    - Create chained find() functions that always return a object you can call find() on - return a JsonNotFound object so you can call repeatedly in the chain without barfing on a non-terminal miss.  Then just check it once at the end.

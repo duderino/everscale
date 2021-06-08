@@ -103,4 +103,33 @@ set_property(TARGET bssl_crypto
         ${BSSL_LIB_DIR}/libcrypto.a
         )
 
+#
+# yajl JSON SAX parser
+#
 
+set(YAJL_ROOT_DIR ${PROJECT_SOURCE_DIR}/third_party/src/yajl_parser)
+set(YAJL_INCLUDE_DIR ${YAJL_ROOT_DIR}/include)
+set(YAJL_LIB_DIR ${YAJL_ROOT_DIR}/lib)
+
+if (EXISTS ${YAJL_INCLUDE_DIR}/yajl/yajl_parse.h)
+    add_custom_target(yajl_parser COMMAND echo "${YAJL_INCLUDE_DIR} exists, skipping rebuild")
+else ()
+    ExternalProject_Add(yajl_parser
+            PREFIX third_party
+            SOURCE_DIR ${yajl_SOURCE_DIR}
+            BUILD_IN_SOURCE 1
+            GIT_REPOSITORY https://github.com/duderino/yajl.git
+            GIT_TAG 5e3a7856e643b4d6410ddc3f84bc2f38174f2872
+	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+            INSTALL_COMMAND mkdir -p lib && cp yajl-2.1.1/lib/libyajl_s.a lib/libyajl.a && mkdir -p include/yajl && cp src/api/yajl_common.h src/api/yajl_gen.h src/api/yajl_parse.h src/api/yajl_tree.h include/yajl
+            UPDATE_COMMAND ""
+            )
+endif ()
+
+include_directories(${YAJL_INCLUDE_DIR})
+
+add_library(yajl STATIC IMPORTED GLOBAL)
+set_property(TARGET yajl
+        PROPERTY IMPORTED_LOCATION
+        ${YAJL_LIB_DIR}/libyajl.a
+        )

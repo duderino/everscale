@@ -120,4 +120,11 @@ Error FixedAllocator::destroy() {
 
 CleanupHandler &FixedAllocator::cleanupHandler() { return _cleanupHandler; }
 
+bool FixedAllocator::reallocates() { return false; }
+
+void *FixedAllocator::reallocate(void *block, UWord size) {
+  assert(!"FixedAllocators do not support reallocate");
+  return NULL;
+}
+
 }  // namespace ESB

@@ -78,6 +78,23 @@ class BuddyAllocator : public Allocator {
   virtual Error deallocate(void *block);
 
   /**
+   * Determine whether the implementation supports reallocation.
+   *
+   * @return true.
+   */
+  virtual bool reallocates();
+
+  /**
+   * Reallocate a block of memory or create a new block of memory if necessary.  Regardless, the contents of the
+   * original block will be present in the returned block.
+   *
+   * @param block The block to reallocate
+   * @param size
+   * @return a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   */
+  virtual void *reallocate(void *block, UWord size);
+
+  /**
    * Get a cleanup handler to free memory returned by this allocator.  The
    * lifetime of the cleanup handler is the lifetime of the allocator.
    *
