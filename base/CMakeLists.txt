@@ -31,7 +31,6 @@ set(SOURCE_FILES
         source/ESBEpollMultiplexer.cpp
         source/ESBError.cpp
         source/ESBEventSocket.cpp
-        source/ESBFixedAllocator.cpp
         source/ESBFlatTimingWheel.cpp
         source/ESBJsonParser.cpp
         source/ESBList.cpp
@@ -106,7 +105,6 @@ set(TEST_LIBS -pthread -ldl unit-tf base bssl_ssl bssl_crypto yajl)
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
 add_unit_test(discard-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBDiscardAllocatorTest.cpp)
-add_unit_test(fixed-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBFixedAllocatorTest.cpp)
 add_unit_test(list-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBListTest.cpp)
 add_unit_test(lockable-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBLockableTest.cpp)
 add_unit_test(map-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBMapTest.cpp)

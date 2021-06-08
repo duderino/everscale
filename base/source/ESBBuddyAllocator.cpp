@@ -337,7 +337,7 @@ bool BuddyAllocator::reallocates() { return true; }
 
 void *BuddyAllocator::reallocate(void *oldBlock, UWord size) {
 #ifdef ESB_NO_ALLOC
-  return SystemAllocator::Instance().reallocoate(block, size);
+  return SystemAllocator::Instance().reallocate(oldBlock, size);
 #else
   if (!oldBlock) {
     return allocate(size);
