@@ -2,8 +2,8 @@
 #include <ESBJsonParser.h>
 #endif
 
-#ifndef ESB_BUDDY_ALLOCATOR_H
-#include <ESBBuddyAllocator.h>
+#ifndef ESB_BUDDY_CACHE_ALLOCATOR_H
+#include <ESBBuddyCacheAllocator.h>
 #endif
 
 #include <gtest/gtest.h>
@@ -102,41 +102,10 @@ class CountingJsonParser : public JsonParser {
   ESB_DEFAULT_FUNCS(CountingJsonParser);
 };
 
-TEST(JsonParser, SmallDocWithSystemAllocator) {
-  unsigned char buffer[128];
-  CountingJsonParser parser;
-  FILE *doc = fopen("doc1.json", "r");
-  ASSERT_TRUE(doc);
-
-  while (true) {
-    size_t result = fread(buffer, 1, sizeof(buffer), doc);
-    if (0 < result) {
-      ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, result));
-    }
-
-    if (result < sizeof(buffer)) {
-      break;
-    }
-  }
-
-  ASSERT_TRUE(feof(doc));
-  ASSERT_EQ(ESB_SUCCESS, parser.end());
-  ASSERT_EQ(4, parser.onMapStarts());
-  ASSERT_EQ(17, parser.onMapKeys());
-  ASSERT_EQ(parser.onMapEnds(), parser.onMapStarts());
-  ASSERT_EQ(2, parser.onArrayStarts());
-  ASSERT_EQ(parser.onArrayEnds(), parser.onArrayStarts());
-  ASSERT_EQ(1, parser.onNulls());
-  ASSERT_EQ(1, parser.onBooleans());
-  ASSERT_EQ(1, parser.onIntegers());
-  ASSERT_EQ(1, parser.onDoubles());
-  ASSERT_EQ(10, parser.onStrings());
-}
-
-TEST(JsonParser, SmallDocWithBuddyAllocator) {
+TEST(JsonParser, SmallDoc) {
   unsigned char buffer[128];
   // 14 is 2^14 or 16384 bytes of memory for the allocator
-  BuddyAllocator allocator(14, SystemAllocator::Instance());
+  BuddyCacheAllocator allocator(14, SystemAllocator::Instance(), SystemAllocator::Instance());
   CountingJsonParser parser(allocator);
   FILE *doc = fopen("doc1.json", "r");
   ASSERT_TRUE(doc);
@@ -154,6 +123,8 @@ TEST(JsonParser, SmallDocWithBuddyAllocator) {
 
   ASSERT_TRUE(feof(doc));
   ASSERT_EQ(ESB_SUCCESS, parser.end());
+
+  // Assert that all elements were seen
   ASSERT_EQ(4, parser.onMapStarts());
   ASSERT_EQ(17, parser.onMapKeys());
   ASSERT_EQ(parser.onMapEnds(), parser.onMapStarts());
@@ -164,4 +135,86 @@ TEST(JsonParser, SmallDocWithBuddyAllocator) {
   ASSERT_EQ(1, parser.onIntegers());
   ASSERT_EQ(1, parser.onDoubles());
   ASSERT_EQ(10, parser.onStrings());
+
+  // Assert that only the buddy allocator cache was used
+  ASSERT_LT(1024, allocator.cacheBytes());
+  ASSERT_EQ(0, allocator.failoverBytes());
+}
+
+TEST(JsonParser, Large) {
+  unsigned char buffer[128];
+  // 14 is 2^14 or 16384 bytes of memory for the allocator
+  BuddyCacheAllocator allocator(14, SystemAllocator::Instance(), SystemAllocator::Instance());
+  CountingJsonParser parser(allocator);
+  FILE *doc = fopen("doc2.json", "r");
+  ASSERT_TRUE(doc);
+
+  while (true) {
+    size_t result = fread(buffer, 1, sizeof(buffer), doc);
+    if (0 < result) {
+      ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, result));
+    }
+
+    if (result < sizeof(buffer)) {
+      break;
+    }
+  }
+
+  ASSERT_TRUE(feof(doc));
+  ASSERT_EQ(ESB_SUCCESS, parser.end());
+
+  // Assert that all elements were seen
+  ASSERT_EQ(60, parser.onMapStarts());
+  ASSERT_EQ(255, parser.onMapKeys());
+  ASSERT_EQ(parser.onMapEnds(), parser.onMapStarts());
+  ASSERT_EQ(31, parser.onArrayStarts());
+  ASSERT_EQ(parser.onArrayEnds(), parser.onArrayStarts());
+  ASSERT_EQ(15, parser.onNulls());
+  ASSERT_EQ(15, parser.onBooleans());
+  ASSERT_EQ(15, parser.onIntegers());
+  ASSERT_EQ(15, parser.onDoubles());
+  ASSERT_EQ(150, parser.onStrings());
+
+  // Assert that only the buddy allocator cache was used
+  ASSERT_LT(1024, allocator.cacheBytes());
+  ASSERT_EQ(0, allocator.failoverBytes());
+}
+
+TEST(JsonParser, LargeFailover) {
+  unsigned char buffer[128];
+  // 13 is 2^13 or 8192 bytes of memory for the allocator
+  BuddyCacheAllocator allocator(13, SystemAllocator::Instance(), SystemAllocator::Instance());
+  CountingJsonParser parser(allocator);
+  FILE *doc = fopen("doc2.json", "r");
+  ASSERT_TRUE(doc);
+
+  while (true) {
+    size_t result = fread(buffer, 1, sizeof(buffer), doc);
+    if (0 < result) {
+      ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, result));
+    }
+
+    if (result < sizeof(buffer)) {
+      break;
+    }
+  }
+
+  ASSERT_TRUE(feof(doc));
+  ASSERT_EQ(ESB_SUCCESS, parser.end());
+
+  // Assert that all elements were seen
+  ASSERT_EQ(60, parser.onMapStarts());
+  ASSERT_EQ(255, parser.onMapKeys());
+  ASSERT_EQ(parser.onMapEnds(), parser.onMapStarts());
+  ASSERT_EQ(31, parser.onArrayStarts());
+  ASSERT_EQ(parser.onArrayEnds(), parser.onArrayStarts());
+  ASSERT_EQ(15, parser.onNulls());
+  ASSERT_EQ(15, parser.onBooleans());
+  ASSERT_EQ(15, parser.onIntegers());
+  ASSERT_EQ(15, parser.onDoubles());
+  ASSERT_EQ(150, parser.onStrings());
+
+  // Assert that the failover allocator was used
+  ASSERT_LT(1024, allocator.cacheBytes());
+  ASSERT_LT(1024, allocator.failoverBytes());
 }

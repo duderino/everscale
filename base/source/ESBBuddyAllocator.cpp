@@ -95,7 +95,7 @@ BuddyAllocator::BuddyAllocator(UInt32 size, Allocator &source)
   _poolKVal = size;
 }
 
-BuddyAllocator::~BuddyAllocator() { destroy(); }
+BuddyAllocator::~BuddyAllocator() { reset(); }
 
 Error BuddyAllocator::allocate(UWord size, void **block) {
 #ifdef ESB_NO_ALLOC
@@ -322,7 +322,7 @@ Error BuddyAllocator::initialize() {
   return ESB_SUCCESS;
 }
 
-Error BuddyAllocator::destroy() {
+Error BuddyAllocator::reset() {
   if (!_pool) {
     return ESB_INVALID_STATE;
   }
@@ -343,7 +343,7 @@ bool BuddyAllocator::reallocates() { return true; }
 
 Error BuddyAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
 #ifdef ESB_NO_ALLOC
-  return SystemAllocator::Instance().reallocate(oldBlock, size);
+  return SystemAllocator::Instance().reallocate(oldBlock, size, newBlock);
 #else
   if (!oldBlock) {
     return allocate(size, newBlock);
@@ -357,17 +357,14 @@ Error BuddyAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
     return ESB_INVALID_STATE;
   }
 
-  char *trueAddress = ((char *)oldBlock) - sizeof(AvailListElem);
-  if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
+  UWord originalSize = allocationSize(oldBlock);
+  if (0 == originalSize) {
     return ESB_NOT_OWNER;
   }
 
   //
   // This naive implementation always allocates+copies, but at least fails cleanly
   //
-
-  AvailListElem *elem = (AvailListElem *)trueAddress;
-  UWord originalSize = (ESB_UWORD_C(1) << elem->_kVal) - sizeof(AvailListElem);
 
   Error error = allocate(size, newBlock);
   if (ESB_SUCCESS != error) {
@@ -380,6 +377,16 @@ Error BuddyAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
 
   return ESB_SUCCESS;
 #endif
+}
+
+UWord BuddyAllocator::allocationSize(void *block) const {
+  char *trueAddress = ((char *)block) - sizeof(AvailListElem);
+  if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
+    return 0;
+  }
+
+  AvailListElem *elem = (AvailListElem *)trueAddress;
+  return (ESB_UWORD_C(1) << elem->_kVal) - sizeof(AvailListElem);
 }
 
 }  // namespace ESB

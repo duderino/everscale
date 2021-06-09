@@ -8,6 +8,7 @@ set(SOURCE_FILES
         source/ESBAllocator.cpp
         source/ESBAveragingCounter.cpp
         source/ESBBuddyAllocator.cpp
+	source/ESBBuddyCacheAllocator.cpp
         source/ESBBuffer.cpp
         source/ESBBufferPool.cpp
         source/ESBClearSocket.cpp
@@ -134,6 +135,7 @@ add_gtest(smart-pointer-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR
 add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBWildcardIndexTest.cpp)
 add_gtest(tls-context-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSContextIndexTest.cpp)
 add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonParserTest.cpp)
+add_gtest(buddy-cache-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyCacheAllocatorTest.cpp)
 
 # Generate certs and private keys
 

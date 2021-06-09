@@ -38,12 +38,9 @@ class BuddyAllocator : public Allocator {
  public:
   /** Constructor.
    *
-   *    @param size The size of the memory pool that this allocator will
-   *        manage as a power of 2 (e.g., 16 will create a 2^16 byte pool).
-   *        Note that this pool will not be allocated until the initialize
-   *        method is called.
-   *    @param source The allocator to use to allocate the memory pool.
-   *        This is probably the system allocator.
+   *  @param size The size of the memory pool that this allocator will manage as a power of 2 (e.g., 16 will create a
+   * 2^16 byte pool).
+   *  @param source The allocator to use to allocate the memory pool. This is probably the system allocator.
    */
   BuddyAllocator(UInt32 size, Allocator &source);
 
@@ -96,9 +93,33 @@ class BuddyAllocator : public Allocator {
    */
   virtual CleanupHandler &cleanupHandler();
 
+  /**
+   * Determine the size of the allocators per-allocation book keeping.
+   *
+   * @return The per-allocation overhead of the allocator.
+   */
+  static inline Size Overhead() { return sizeof(AvailListElem); }
+
+  /**
+   * Release all memory used by the allocator if none is in use.  Note that the destructor calls this automatically.
+   *
+   * @return ESB_SUCCESS if successful, ESB_IN_USE if any memory previously allocated by this allocator has not been
+   * returned.
+   */
+  Error reset();
+
+ protected:
+  /**
+   * Get the size of the allocation.  This may be a bit larger than originally requested, but it can be assumed that the
+   * block owns this much space.
+   *
+   * @param block The block
+   * @return 0 if the block was not allocated by this allocator, the block's size otherwise.
+   */
+  UWord allocationSize(void *block) const;
+
  private:
   Error initialize();
-  Error destroy();
 
 #ifdef ESB_64BIT
 #define ESB_AVAIL_LIST_LENGTH 64
