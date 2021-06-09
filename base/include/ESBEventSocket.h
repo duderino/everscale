@@ -1,20 +1,12 @@
 #ifndef ESB_EVENT_SOCKET_H
 #define ESB_EVENT_SOCKET_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_SOCKET_TYPE_H
 #include <ESBSocketType.h>
 #endif
 
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ESB {
@@ -56,20 +48,10 @@ class EventSocket {
    */
   inline SOCKET socketDescriptor() const { return _eventFd; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  EventSocket(const EventSocket &);
-  EventSocket &operator=(const EventSocket &);
-
   SOCKET _eventFd;
+
+  ESB_DEFAULT_FUNCS(EventSocket);
 };
 
 }  // namespace ESB

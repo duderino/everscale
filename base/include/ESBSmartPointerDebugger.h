@@ -1,10 +1,6 @@
 #ifndef ESB_SMART_POINTER_DEBUGGER_H
 #define ESB_SMART_POINTER_DEBUGGER_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_MAP_H
 #include <ESBMap.h>
 #endif
@@ -75,13 +71,11 @@ class SmartPointerDebugger {
  private:
   // Singleton
   SmartPointerDebugger();
-  // Disabled
-  SmartPointerDebugger(const SmartPointerDebugger &);
-  SmartPointerDebugger *operator=(const SmartPointerDebugger &);
 
   static SmartPointerDebugger _Instance;
-
   Map _references;
+
+  ESB_DISABLE_AUTO_COPY(SmartPointerDebugger);
 };
 
 }  // namespace ESB

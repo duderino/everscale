@@ -1,12 +1,8 @@
 #ifndef ESB_COMPACT_STRING_MAP_H
 #define ESB_COMPACT_STRING_MAP_H
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ESB {
@@ -144,27 +140,11 @@ class CompactStringMap {
    */
   Error next(const char **key, UInt32 *keySize, void **value, UInt32 *marker) const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new
-   *
-   * @param size The size of the memory block
-   * @param block A valid memory block with which the object can be constructed.
-   * @return The memory block
-   */
-  inline void *operator new(size_t size, unsigned char *block) noexcept { return block; }
-
  private:
   unsigned char *_buffer;
   UInt32 _capacity;
 
-  ESB_DISABLE_AUTO_COPY(CompactStringMap);
+  ESB_DEFAULT_FUNCS(CompactStringMap);
 };
 
 }  // namespace ESB

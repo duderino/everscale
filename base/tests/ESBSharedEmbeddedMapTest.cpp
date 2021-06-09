@@ -45,11 +45,9 @@ class SocketAddressCallbacks : public EmbeddedMapCallbacks {
   }
 
  private:
-  // Disabled
-  SocketAddressCallbacks(const SocketAddressCallbacks &);
-  SocketAddressCallbacks &operator=(const SocketAddressCallbacks &);
-
   Allocator &_allocator;
+
+  ESB_DEFAULT_FUNCS(SocketAddressCallbacks);
 };
 
 class FauxConnection : public EmbeddedMapElement {
@@ -66,6 +64,8 @@ class FauxConnection : public EmbeddedMapElement {
  private:
   CleanupHandler &_cleanupHandler;
   SocketAddress _address;
+
+  ESB_DEFAULT_FUNCS(FauxConnection);
 };
 
 static void randomSocketAddress(SocketAddress *out, Rand &rand) {

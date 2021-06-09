@@ -83,14 +83,6 @@ class SharedEmbeddedMap : public EmbeddedMapBase {
 
   inline void clear() { EmbeddedMapBase::clear(); }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
   /** Validate the map - for tests only.
    *
    * @param chiSquared If not NULL, the chiSquared statistic will be written
@@ -107,7 +99,7 @@ class SharedEmbeddedMap : public EmbeddedMapBase {
   ESB::UInt32 _numBucketLocks;
   ESB::Mutex *_bucketLocks;
 
-  ESB_DISABLE_AUTO_COPY(SharedEmbeddedMap);
+  ESB_DEFAULT_FUNCS(SharedEmbeddedMap);
 };
 
 }  // namespace ESB

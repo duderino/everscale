@@ -1,16 +1,8 @@
 #ifndef ESB_LIST_H
 #define ESB_LIST_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_LOCKABLE_H
@@ -405,19 +397,7 @@ class List : public Lockable {
    */
   virtual Error readRelease();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  List(const List &);
-  List &operator=(const List &);
-
   Error deleteNode(ListNode *node);
 
   UInt32 _size;
@@ -425,6 +405,8 @@ class List : public Lockable {
   ListNode *_tail;
   Allocator &_allocator;
   Lockable &_lockable;
+
+  ESB_DEFAULT_FUNCS(List);
 };
 
 }  // namespace ESB

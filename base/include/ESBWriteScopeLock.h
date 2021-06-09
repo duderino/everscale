@@ -1,10 +1,6 @@
 #ifndef ESB_WRITE_SCOPE_LOCK_H
 #define ESB_WRITE_SCOPE_LOCK_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_LOCKABLE_H
 #include <ESBLockable.h>
 #endif
@@ -28,11 +24,9 @@ class WriteScopeLock {
   virtual ~WriteScopeLock() { _lockable.writeRelease(); }
 
  private:
-  //  Disabled
-  WriteScopeLock(const WriteScopeLock &);
-  WriteScopeLock &operator=(const WriteScopeLock &);
-
   Lockable &_lockable;
+
+  ESB_DISABLE_AUTO_COPY(WriteScopeLock);
 };
 
 }  // namespace ESB

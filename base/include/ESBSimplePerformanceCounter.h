@@ -57,21 +57,7 @@ class SimplePerformanceCounter : public PerformanceCounter {
 
   virtual void log(Logger &logger, Logger::Severity severity) const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  inline void *operator new(size_t size, SimplePerformanceCounter *counter) noexcept { return counter; }
-
  private:
-  // Disabled
-  SimplePerformanceCounter(const SimplePerformanceCounter &counter);
-  SimplePerformanceCounter *operator=(const SimplePerformanceCounter &counter);
-
   double queriesPerSecNoLock() const;
 
   const char *_name;
@@ -79,6 +65,8 @@ class SimplePerformanceCounter : public PerformanceCounter {
   Date _windowStop;
   AveragingCounter _latencyMsec;
   mutable Mutex _lock;
+
+  ESB_DEFAULT_FUNCS(SimplePerformanceCounter);
 };
 
 }  // namespace ESB

@@ -31,12 +31,7 @@ class NullLogger : public Logger {
 
   virtual UInt32 now();
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
- private:
-  // Disabled
-  NullLogger(const NullLogger &);
-  void operator=(const NullLogger &);
+  ESB_DEFAULT_FUNCS(NullLogger);
 };
 
 }  // namespace ESB

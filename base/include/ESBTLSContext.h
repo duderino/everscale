@@ -1,6 +1,10 @@
 #ifndef ESB_TLS_CONTEXT_H
 #define ESB_TLS_CONTEXT_H
 
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
+#endif
+
 #ifndef ESB_REFERENCE_COUNT_H
 #include <ESBReferenceCount.h>
 #endif
@@ -34,29 +38,13 @@ class X509Certificate {
    */
   inline UInt32 numSubjectAltNames() { return _numSubjectAltNames; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, X509Certificate *memory) noexcept { return memory; }
-
  private:
   X509 *_certficate;
   STACK_OF(GENERAL_NAME) * _subjectAltNames;
   UInt32 _numSubjectAltNames;
   bool _freeCertificate;
 
-  ESB_DISABLE_AUTO_COPY(X509Certificate);
+  ESB_DEFAULT_FUNCS(X509Certificate);
 };
 
 class TLSContextPointer;
@@ -118,7 +106,7 @@ class TLSContext : public ReferenceCount {
     int _maxVerifyDepth;
     bool _verifyPeerCertificate;
 
-    ESB_DISABLE_AUTO_COPY(Params);
+    ESB_DEFAULT_FUNCS(Params);
   };
 
   static Error Create(TLSContextPointer &pointer, const Params &params, TLSContext *memory,
@@ -141,22 +129,6 @@ class TLSContext : public ReferenceCount {
 
   inline SSL_CTX *rawContext() { return _context; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, TLSContext *memory) noexcept { return memory; }
-
  private:
   TLSContext(CleanupHandler *handler, SSL_CTX *context, bool verifyPeerCertificate);
 
@@ -165,7 +137,7 @@ class TLSContext : public ReferenceCount {
   X509Certificate _certificate;
   bool _verifyPeerCertificate;
 
-  ESB_DISABLE_AUTO_COPY(TLSContext);
+  ESB_DEFAULT_FUNCS(TLSContext);
 };
 
 ESB_SMART_POINTER(TLSContext, TLSContextPointer, SmartPointer);

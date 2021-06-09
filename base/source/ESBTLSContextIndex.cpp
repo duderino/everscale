@@ -26,9 +26,9 @@ void TLSContextIndex::TLSContextCleanupHandler::destroy(Object *object) {
 Error TLSContextIndex::indexContext(const TLSContext::Params &params, TLSContextPointer *out, bool maskSanConflicts) {
   TLSContext *memory = (TLSContext *)_deadContexts.removeLast();
   if (!memory) {
-    memory = (TLSContext *)_allocator.allocate(sizeof(TLSContext));
-    if (!memory) {
-      return ESB_OUT_OF_MEMORY;
+    Error error = _allocator.allocate(sizeof(TLSContext), (void **)&memory);
+    if (ESB_SUCCESS != error) {
+      return error;
     }
   }
 

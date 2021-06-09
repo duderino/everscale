@@ -60,25 +60,15 @@ class BufferPool {
    */
   void releaseBuffer(Buffer *buffer);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  BufferPool(const BufferPool &);
-  BufferPool &operator=(const BufferPool &);
-
   const UInt32 _maxBuffers;
   const UInt32 _bufferSize;
   UInt32 _listSize;
   Lockable &_lock;
   Allocator &_allocator;
   EmbeddedList _embeddedList;
+
+  ESB_DEFAULT_FUNCS(BufferPool);
 };
 
 }  // namespace ESB

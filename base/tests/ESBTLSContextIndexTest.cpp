@@ -9,18 +9,19 @@ using namespace ESB;
 TEST(ServerTLSContextTest, CommonName) {
   TLSContextPointer context;
   TLSContext::Params params;
+  TLSContext *memory = NULL;
+  ASSERT_EQ(ESB_SUCCESS, SystemAllocator::Instance().allocate(sizeof(TLSContext), (void **)&memory));
   ASSERT_EQ(ESB_SUCCESS, TLSContext::Create(context, params.privateKeyPath("foo.key").certificatePath("foo.crt"),
-                                            (TLSContext *)SystemAllocator::Instance().allocate(sizeof(TLSContext)),
-                                            &SystemAllocator::Instance().cleanupHandler()));
+                                            memory, &SystemAllocator::Instance().cleanupHandler()));
   ASSERT_FALSE(context.isNull());
 
   char commonName[ESB_MAX_HOSTNAME];
   ASSERT_EQ(ESB_SUCCESS, context->certificate().commonName(commonName, sizeof(commonName)));
   ASSERT_EQ(0, strcmp(commonName, "foo.everscale.com"));
 
+  ASSERT_EQ(ESB_SUCCESS, SystemAllocator::Instance().allocate(sizeof(TLSContext), (void **)&memory));
   ASSERT_EQ(ESB_SUCCESS, TLSContext::Create(context, params.privateKeyPath("bar.key").certificatePath("bar.crt"),
-                                            (TLSContext *)SystemAllocator::Instance().allocate(sizeof(TLSContext)),
-                                            &SystemAllocator::Instance().cleanupHandler()));
+                                            memory, &SystemAllocator::Instance().cleanupHandler()));
   ASSERT_FALSE(context.isNull());
 
   ASSERT_EQ(ESB_SUCCESS, context->certificate().commonName(commonName, sizeof(commonName)));
@@ -30,9 +31,10 @@ TEST(ServerTLSContextTest, CommonName) {
 TEST(ServerTLSContextTest, SubjectAltNames) {
   TLSContextPointer context;
   TLSContext::Params params;
+  TLSContext *memory = NULL;
+  ASSERT_EQ(ESB_SUCCESS, SystemAllocator::Instance().allocate(sizeof(TLSContext), (void **)&memory));
   ASSERT_EQ(ESB_SUCCESS, TLSContext::Create(context, params.privateKeyPath("san1.key").certificatePath("san1.crt"),
-                                            (TLSContext *)SystemAllocator::Instance().allocate(sizeof(TLSContext)),
-                                            &SystemAllocator::Instance().cleanupHandler()));
+                                            memory, &SystemAllocator::Instance().cleanupHandler()));
   ASSERT_FALSE(context.isNull());
 
   ASSERT_EQ(3, context->certificate().numSubjectAltNames());
@@ -47,9 +49,9 @@ TEST(ServerTLSContextTest, SubjectAltNames) {
   ASSERT_EQ(0, strcmp(subjectAltName, "*z.everscale.com"));
   ASSERT_EQ(ESB_CANNOT_FIND, context->certificate().subjectAltName(subjectAltName, sizeof(subjectAltName), &position));
 
+  ASSERT_EQ(ESB_SUCCESS, SystemAllocator::Instance().allocate(sizeof(TLSContext), (void **)&memory));
   ASSERT_EQ(ESB_SUCCESS, TLSContext::Create(context, params.privateKeyPath("san2.key").certificatePath("san2.crt"),
-                                            (TLSContext *)SystemAllocator::Instance().allocate(sizeof(TLSContext)),
-                                            &SystemAllocator::Instance().cleanupHandler()));
+                                            memory, &SystemAllocator::Instance().cleanupHandler()));
   ASSERT_FALSE(context.isNull());
 
   ASSERT_EQ(3, context->certificate().numSubjectAltNames());
@@ -67,9 +69,10 @@ TEST(ServerTLSContextTest, SubjectAltNames) {
 TEST(ServerTLSContextTest, NoSubjectAltNames) {
   TLSContextPointer context;
   TLSContext::Params params;
+  TLSContext *memory = NULL;
+  ASSERT_EQ(ESB_SUCCESS, SystemAllocator::Instance().allocate(sizeof(TLSContext), (void **)&memory));
   ASSERT_EQ(ESB_SUCCESS, TLSContext::Create(context, params.privateKeyPath("foo.key").certificatePath("foo.crt"),
-                                            (TLSContext *)SystemAllocator::Instance().allocate(sizeof(TLSContext)),
-                                            &SystemAllocator::Instance().cleanupHandler()));
+                                            memory, &SystemAllocator::Instance().cleanupHandler()));
   ASSERT_FALSE(context.isNull());
 
   ASSERT_EQ(0, context->certificate().numSubjectAltNames());
@@ -202,7 +205,8 @@ TEST_F(ServerTLSContextIndexTest, MostSpecificMatch) {
 TEST(ServerTLSContextTest, KeyCertMismatch) {
   TLSContextPointer context;
   TLSContext::Params params;
-  TLSContext *block = (TLSContext *)SystemAllocator::Instance().allocate(sizeof(TLSContext));
+  TLSContext *block = NULL;
+  ASSERT_EQ(ESB_SUCCESS, SystemAllocator::Instance().allocate(sizeof(TLSContext), (void **)&block));
   ASSERT_EQ(ESB_GENERAL_TLS_ERROR,
             TLSContext::Create(context, params.privateKeyPath("foo.key").certificatePath("bar.crt"), block,
                                &SystemAllocator::Instance().cleanupHandler()));

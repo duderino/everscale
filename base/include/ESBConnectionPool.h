@@ -82,19 +82,7 @@ class ConnectionPool {
 
   inline int misses() const { return _misses.get(); }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  ConnectionPool(const ConnectionPool &);
-  ConnectionPool &operator=(const ConnectionPool &);
-
   // Callbacks for the hash table-based connection pool
   class SocketAddressCallbacks : public ESB::EmbeddedMapCallbacks {
    public:
@@ -105,11 +93,9 @@ class ConnectionPool {
     virtual void cleanup(ESB::EmbeddedMapElement *element);
 
    private:
-    // Disabled
-    SocketAddressCallbacks(const SocketAddressCallbacks &);
-    SocketAddressCallbacks &operator=(const SocketAddressCallbacks &);
-
     Allocator &_allocator;
+
+    ESB_DEFAULT_FUNCS(SocketAddressCallbacks);
   };
 
   const char *_prefix;
@@ -121,6 +107,8 @@ class ConnectionPool {
   SharedEmbeddedMap _activeSockets;
   EmbeddedList _deconstructedClearSockets;
   EmbeddedList _deconstructedTLSSockets;
+
+  ESB_DEFAULT_FUNCS(ConnectionPool);
 };
 
 }  // namespace ESB

@@ -28,9 +28,9 @@ Buffer *Buffer::Create(Allocator &allocator, unsigned int capacity) {
     return NULL;
   }
 
-  unsigned char *block = (unsigned char *)allocator.allocate(capacity * sizeof(unsigned char) + ESB_BUFFER_OVERHEAD);
-
-  if (!block) {
+  unsigned char *block = NULL;
+  Error error = allocator.allocate(capacity * sizeof(unsigned char) + ESB_BUFFER_OVERHEAD, (void **)&block);
+  if (ESB_SUCCESS != error) {
     return NULL;
   }
 
@@ -48,7 +48,6 @@ void Buffer::Destroy(Allocator &allocator, Buffer *buffer) {
 }
 
 unsigned char *Buffer::duplicate(Allocator &allocator, bool trim) const {
-  unsigned char *dup = 0;
   int length = writePosition();
 
   if (trim) {
@@ -62,9 +61,9 @@ unsigned char *Buffer::duplicate(Allocator &allocator, bool trim) const {
     }
   }
 
-  dup = (unsigned char *)allocator.allocate(length * sizeof(unsigned char) + 1);
-
-  if (!dup) {
+  unsigned char *dup = NULL;
+  Error error = allocator.allocate(length * sizeof(unsigned char) + 1, (void **)&dup);
+  if (ESB_SUCCESS != error) {
     return NULL;
   }
 

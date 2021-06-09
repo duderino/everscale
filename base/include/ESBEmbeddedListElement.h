@@ -1,12 +1,8 @@
 #ifndef ESB_EMBEDDED_LIST_ELEMENT_H
 #define ESB_EMBEDDED_LIST_ELEMENT_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_OBJECT_H
@@ -51,14 +47,6 @@ class EmbeddedListElement : public Object {
   inline const EmbeddedListElement *previous() const { return _previous; }
 
   inline void setPrevious(EmbeddedListElement *previous) { _previous = previous; }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
  private:
   EmbeddedListElement *_next;

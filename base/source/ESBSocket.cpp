@@ -36,23 +36,6 @@ Socket::State::State(bool isBlocking, SOCKET sockFd, const SocketAddress &localA
 
 Socket::State::~State() {}
 
-Socket::State::State(const Socket::State &state) {
-  _isBlocking = state._isBlocking;
-  _socketDescriptor = state._socketDescriptor;
-  _localAddress = state._localAddress;
-  _peerAddress = state._peerAddress;
-  // do not copy cleanup handler
-}
-
-Socket::State &Socket::State::operator=(const Socket::State &state) {
-  _isBlocking = state._isBlocking;
-  _socketDescriptor = state._socketDescriptor;
-  _localAddress = state._localAddress;
-  _peerAddress = state._peerAddress;
-  // do not copy cleanup handler
-  return *this;
-}
-
 Socket::Socket(bool isBlocking) : _isBlocking(isBlocking), _sockFd(INVALID_SOCKET) {}
 
 Socket::Socket(const State &acceptState)

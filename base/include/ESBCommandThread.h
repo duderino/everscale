@@ -27,14 +27,6 @@ class CommandThread : public Thread {
    */
   virtual ~CommandThread();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  protected:
   virtual void run();
 
@@ -46,11 +38,9 @@ class CommandThread : public Thread {
   bool stopRequested();
 
  private:
-  //  Disabled
-  CommandThread(const CommandThread &);
-  CommandThread &operator=(const CommandThread &);
-
   Command *_command;
+
+  ESB_DEFAULT_FUNCS(CommandThread);
 };
 
 }  // namespace ESB

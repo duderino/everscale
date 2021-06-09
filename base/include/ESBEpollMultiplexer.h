@@ -112,14 +112,6 @@ class EpollMultiplexer : public SocketMultiplexer {
    */
   virtual bool isRunning() const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   /** Destroy the multiplexer
    *
@@ -157,7 +149,7 @@ class EpollMultiplexer : public SocketMultiplexer {
   FlatTimingWheel _timingWheel;
   char _namePrefix[ESB_NAME_PREFIX_SIZE];
 
-  ESB_DISABLE_AUTO_COPY(EpollMultiplexer);
+  ESB_DEFAULT_FUNCS(EpollMultiplexer);
 };
 
 }  // namespace ESB

@@ -12,8 +12,7 @@
 namespace ESB {
 
 /**
- * An unsynchronized counter that computes the mean and variance of a series of
- * values.
+ * An unsynchronized counter that computes the mean and variance of a series of values.
  */
 class AveragingCounter {
  public:
@@ -35,24 +34,14 @@ class AveragingCounter {
 
   void log(Logger &logger, Logger::Severity severity, const char *description) const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  AveragingCounter(const AveragingCounter &counter);
-  void operator=(const AveragingCounter &counter);
-
   double _mean;
   double _avgDistToMeanSq;
   double _min;
   double _max;
   UInt32 _n;
+
+  ESB_DEFAULT_FUNCS(AveragingCounter);
 };
 
 }  // namespace ESB

@@ -29,10 +29,7 @@ class PerformanceCounter : public EmbeddedListElement {
 
   virtual CleanupHandler *cleanupHandler();
 
- private:
-  // Disabled
-  PerformanceCounter(const PerformanceCounter &counter);
-  PerformanceCounter *operator=(const PerformanceCounter &counter);
+  ESB_DEFAULT_FUNCS(PerformanceCounter);
 };
 
 }  // namespace ESB

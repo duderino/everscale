@@ -1,12 +1,8 @@
 #ifndef ESB_SYSTEM_CONFIG_H
 #define ESB_SYSTEM_CONFIG_H
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ESB {
@@ -32,11 +28,10 @@ class SystemConfig {
  private:
   // Singleton
   SystemConfig();
-  //  Disabled
-  SystemConfig(const SystemConfig &);
-  SystemConfig &operator=(const SystemConfig &);
 
   static SystemConfig _Instance;
+
+  ESB_DISABLE_AUTO_COPY(SystemConfig);
 };
 
 }  // namespace ESB

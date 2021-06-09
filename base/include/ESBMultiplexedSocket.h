@@ -1,8 +1,8 @@
 #ifndef ESB_MULTIPLEXED_SOCKET_H
 #define ESB_MULTIPLEXED_SOCKET_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_EMBEDDED_MAP_ELEMENT_H
@@ -178,18 +178,10 @@ class MultiplexedSocket : public EmbeddedMapElement {
    */
   virtual bool dead() const = 0;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   Timer _timer;
 
-  ESB_DISABLE_AUTO_COPY(MultiplexedSocket);
+  ESB_DEFAULT_FUNCS(MultiplexedSocket);
 };
 
 }  // namespace ESB

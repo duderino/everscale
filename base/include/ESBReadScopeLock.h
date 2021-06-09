@@ -1,10 +1,6 @@
 #ifndef ESB_READ_SCOPE_LOCK_H
 #define ESB_READ_SCOPE_LOCK_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_LOCKABLE_H
 #include <ESBLockable.h>
 #endif
@@ -28,11 +24,9 @@ class ReadScopeLock {
   virtual ~ReadScopeLock() { _lockable.readRelease(); }
 
  private:
-  //  Disabled
-  ReadScopeLock(const ReadScopeLock &);
-  ReadScopeLock &operator=(const ReadScopeLock &);
-
   Lockable &_lockable;
+
+  ESB_DEFAULT_FUNCS(ReadScopeLock);
 };
 
 }  // namespace ESB

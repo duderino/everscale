@@ -25,10 +25,7 @@ class TimeSource {
    */
   virtual Date now() = 0;
 
- private:
-  //  Disabled
-  TimeSource(const TimeSource &);
-  TimeSource &operator=(const TimeSource &);
+  ESB_DISABLE_AUTO_COPY(TimeSource);
 };
 
 class FakeTimeSource : public TimeSource {
@@ -48,11 +45,9 @@ class FakeTimeSource : public TimeSource {
   inline void add(const Date date) { _now += date; }
 
  private:
-  //  Disabled
-  FakeTimeSource(const FakeTimeSource &);
-  FakeTimeSource &operator=(const FakeTimeSource &);
-
   Date _now;
+
+  ESB_DISABLE_AUTO_COPY(FakeTimeSource);
 };
 
 }  // namespace ESB

@@ -16,13 +16,23 @@ SystemAllocator::SystemAllocator() : _cleanupHandler(*this) {}
 
 SystemAllocator::~SystemAllocator() {}
 
-void *SystemAllocator::allocate(UWord size) {
+Error SystemAllocator::allocate(UWord size, void **block) {
   if (0 == size) {
-    return NULL;
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  if (!block) {
+    return ESB_NULL_POINTER;
   }
 
 #ifdef HAVE_MALLOC
-  return malloc(size);
+  void *mem = malloc(size);
+  if (mem) {
+    *block = mem;
+    return ESB_SUCCESS;
+  } else {
+    return ESB_OUT_OF_MEMORY;
+  }
 #else
 #error "Platform requires malloc or equivalent"
 #endif
@@ -46,13 +56,14 @@ CleanupHandler &SystemAllocator::cleanupHandler() { return _cleanupHandler; }
 
 bool SystemAllocator::reallocates() { return true; }
 
-void *SystemAllocator::reallocate(void *block, UWord size) {
-  if (!block && 0 == size) {
-    return NULL;
+Error SystemAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
+  if (!oldBlock && 0 == size) {
+    return ESB_INVALID_ARGUMENT;
   }
 
 #ifdef HAVE_REALLOC
-  return realloc(block, size);
+  *newBlock = realloc(oldBlock, size);
+  return *newBlock ? ESB_SUCCESS : ESB_OUT_OF_MEMORY;
 #else
 #error "Platform requires realloc or equivalent"
 #endif

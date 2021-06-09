@@ -1,12 +1,8 @@
 #ifndef ESB_SHARED_INT_H
 #define ESB_SHARED_INT_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #if !defined HAVE_X86_ASM && !defined HAVE_GCC_ATOMIC_INTRINSICS
@@ -144,14 +140,6 @@ class SharedInt {
 #endif
   }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
 #if defined HAVE_GCC_ATOMIC_INTRINSICS
   volatile UInt32 _counter;
@@ -163,6 +151,8 @@ class SharedInt {
   Mutex _lock;
   volatile UInt32 _counter;
 #endif
+
+  ESB_PLACEMENT_NEW(SharedInt);
 };
 
 }  // namespace ESB

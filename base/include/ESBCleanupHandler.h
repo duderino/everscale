@@ -5,6 +5,14 @@
 #include <ESBConfig.h>
 #endif
 
+#ifndef ESB_TYPES_H
+#include <ESBTypes.h>
+#endif
+
+#ifndef ESB_ERROR_H
+#include <ESBError.h>
+#endif
+
 #ifndef ESB_OBJECT_H
 #include <ESBObject.h>
 #endif
@@ -31,10 +39,7 @@ class CleanupHandler {
    */
   virtual void destroy(Object *object) = 0;
 
- private:
-  // Disabled
-  CleanupHandler(const CleanupHandler &);
-  void operator=(const CleanupHandler &);
+  ESB_DISABLE_AUTO_COPY(CleanupHandler);
 };
 
 }  // namespace ESB

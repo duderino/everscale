@@ -1,12 +1,8 @@
 #ifndef ESB_JSON_PARSER_H
 #define ESB_JSON_PARSER_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -79,7 +75,7 @@ class JsonParser {
   } Opaque;
   Opaque _opaque;
 
-  ESB_DISABLE_AUTO_COPY(JsonParser);
+  ESB_DEFAULT_FUNCS(JsonParser);
 };
 
 }  // namespace ESB

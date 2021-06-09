@@ -1,10 +1,6 @@
 #ifndef ESB_SMART_POINTER_H
 #define ESB_SMART_POINTER_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_REFERENCE_COUNT_H
 #include <ESBReferenceCount.h>
 #endif

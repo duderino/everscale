@@ -51,7 +51,7 @@ class JsonParserCallbacks {
  private:
   yajl_callbacks _callbacks;
 
-  ESB_DISABLE_AUTO_COPY(JsonParserCallbacks);
+  ESB_DEFAULT_FUNCS(JsonParserCallbacks);
 };
 
 static JsonParserCallbacks Callbacks;
@@ -59,7 +59,8 @@ static JsonParserCallbacks Callbacks;
 static void *AllocatorAlloc(void *ctx, size_t sz) {
   Allocator *allocator = (Allocator *)ctx;
   assert(allocator);
-  return allocator->allocate(sz);
+  void *block = NULL;
+  return ESB_SUCCESS == allocator->allocate(sz, (void **)&block) ? block : NULL;
 }
 
 static void AllocatorDealloc(void *ctx, void *ptr) {
@@ -72,7 +73,8 @@ static void *AllocatorRealloc(void *ctx, void *ptr, size_t sz) {
   Allocator *allocator = (Allocator *)ctx;
   assert(allocator);
   assert(allocator->reallocates());
-  return allocator->reallocate(ptr, sz);
+  void *block = NULL;
+  return ESB_SUCCESS == allocator->reallocate(ptr, sz, (void **)&block) ? block : NULL;
 }
 
 JsonParser::JsonParser(Allocator &allocator) : _parser(NULL) {

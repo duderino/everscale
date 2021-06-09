@@ -110,6 +110,8 @@ class ReferenceCountSubclass : public ReferenceCount {
 
  private:
   int _number;
+
+  ESB_DEFAULT_FUNCS(ReferenceCountSubclass);
 };
 
 ESB_SMART_POINTER(ReferenceCountSubclass, ReferenceCountSubclassPointer, SmartPointer);

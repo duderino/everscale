@@ -68,12 +68,13 @@ Error ConnectionPool::acquireClearSocket(const SocketAddress &peerAddress, Conne
 
   _misses.inc();
 
-  EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
-
-  if (memory) {
-    socket = new (memory) ClearSocket(peerAddress, _prefix);
-  } else {
-    socket = new (_allocator) ClearSocket(peerAddress, _prefix);
+  {
+    ClearSocket *memory = (ClearSocket *)_deconstructedClearSockets.removeLast();
+    if (memory) {
+      socket = new (memory) ClearSocket(peerAddress, _prefix);
+    } else {
+      socket = new (_allocator) ClearSocket(peerAddress, _prefix);
+    }
   }
 
   if (!socket) {
@@ -90,7 +91,7 @@ Error ConnectionPool::acquireClearSocket(const SocketAddress &peerAddress, Conne
   if (ESB_SUCCESS != error) {
     ESB_LOG_DEBUG_ERRNO(error, "[%s] cannot connect to peer", socket->name());
     socket->~ClearSocket();
-    _deconstructedTLSSockets.addLast(socket);
+    _deconstructedClearSockets.addLast(socket);
     *connection = NULL;
     return error;
   }
@@ -154,12 +155,13 @@ Error ConnectionPool::acquireTLSSocket(const char *fqdn, const SocketAddress &pe
 
   _misses.inc();
 
-  EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
-
-  if (memory) {
-    socket = new (memory) ClientTLSSocket(fqdn, peerAddress, _prefix, context);
-  } else {
-    socket = new (_allocator) ClientTLSSocket(fqdn, peerAddress, _prefix, context);
+  {
+    ClientTLSSocket *memory = (ClientTLSSocket *)_deconstructedTLSSockets.removeLast();
+    if (memory) {
+      socket = new (memory) ClientTLSSocket(fqdn, peerAddress, _prefix, context);
+    } else {
+      socket = new (_allocator) ClientTLSSocket(fqdn, peerAddress, _prefix, context);
+    }
   }
 
   if (!socket) {
@@ -193,7 +195,7 @@ void ConnectionPool::release(ConnectedSocket *connection) {
 
   if (connection->connected()) {
     if (SocketAddress::TLS == connection->peerAddress().type()) {
-      // do not pool TLS sockets if they haven't completed the handshake.
+      // do not reuse TLS sockets if they haven't completed the handshake.
       ClientTLSSocket *socket = (ClientTLSSocket *)connection;
       X509Certificate *serverCertificate = NULL;
       Error error = socket->peerCertificate(&serverCertificate);

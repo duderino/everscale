@@ -16,8 +16,10 @@ TEST(DiscardAllocator, AllocMultipleChunks) {
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
-      void *block = allocator.allocate(chunkSize / 10);
-      EXPECT_TRUE(block);
+      void *block = NULL;
+      Error error = allocator.allocate(chunkSize / 10, &block);
+      ASSERT_EQ(ESB_SUCCESS, error);
+      ASSERT_TRUE(block);
     }
   }
 }
@@ -28,8 +30,10 @@ TEST(DiscardAllocator, AllocExtraBigChunks) {
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
-      void *block = allocator.allocate(chunkSize * 2);
-      EXPECT_TRUE(block);
+      void *block = NULL;
+      Error error = allocator.allocate(chunkSize * 2, &block);
+      ASSERT_EQ(ESB_SUCCESS, error);
+      ASSERT_TRUE(block);
     }
   }
 }
@@ -40,8 +44,10 @@ TEST(DiscardAllocator, AllocMultipleChunksCacheLineAligned) {
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
-      void *block = allocator.allocate(chunkSize / 10);
-      EXPECT_TRUE(block);
+      void *block = NULL;
+      Error error = allocator.allocate(chunkSize / 10, &block);
+      ASSERT_EQ(ESB_SUCCESS, error);
+      ASSERT_TRUE(block);
     }
   }
 }
@@ -52,19 +58,21 @@ TEST(DiscardAllocator, AllocExtraBigChunksCacheLineAligned) {
 
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
-      void *block = allocator.allocate(chunkSize * 2);
-      EXPECT_TRUE(block);
+      void *block = NULL;
+      Error error = allocator.allocate(chunkSize * 2, &block);
+      ASSERT_EQ(ESB_SUCCESS, error);
+      ASSERT_TRUE(block);
     }
   }
 }
 
 TEST(DiscardAllocator, Alignment) {
-  EXPECT_EQ(0, ESB_ALIGN(0, 64));
-  EXPECT_EQ(64, ESB_ALIGN(1, 64));
-  EXPECT_EQ(64, ESB_ALIGN(63, 64));
-  EXPECT_EQ(64, ESB_ALIGN(64, 64));
-  EXPECT_EQ(128, ESB_ALIGN(65, 64));
-  EXPECT_EQ(0, ESB_WORD_ALIGN(0));
-  EXPECT_EQ(sizeof(ESB::Word), ESB_WORD_ALIGN(1));
-  EXPECT_EQ(64 + sizeof(ESB::Word), ESB_WORD_ALIGN(65));
+  ASSERT_EQ(0, ESB_ALIGN(0, 64));
+  ASSERT_EQ(64, ESB_ALIGN(1, 64));
+  ASSERT_EQ(64, ESB_ALIGN(63, 64));
+  ASSERT_EQ(64, ESB_ALIGN(64, 64));
+  ASSERT_EQ(128, ESB_ALIGN(65, 64));
+  ASSERT_EQ(0, ESB_WORD_ALIGN(0));
+  ASSERT_EQ(sizeof(ESB::Word), ESB_WORD_ALIGN(1));
+  ASSERT_EQ(64 + sizeof(ESB::Word), ESB_WORD_ALIGN(65));
 }

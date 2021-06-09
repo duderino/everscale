@@ -14,9 +14,11 @@ SharedEmbeddedMap::SharedEmbeddedMap(EmbeddedMapCallbacks &callbacks, UInt32 num
       _numBucketLocks(MIN(numBuckets, numLocks)),
       _bucketLocks(NULL) {
   if (0 < _numBucketLocks) {
-    _bucketLocks = (Mutex *)_allocator.allocate(numLocks * sizeof(Mutex));
-    if (!_bucketLocks) {
-      return;  // subsequent interactions with this object will return ESB_OUT_OF_MEMORY
+    Error error = _allocator.allocate(numLocks * sizeof(Mutex), (void **)&_bucketLocks);
+    if (ESB_SUCCESS != error) {
+      // subsequent interactions with this object will return ESB_OUT_OF_MEMORY
+      _bucketLocks = NULL;
+      return;
     }
 
     for (UInt32 i = 0; i < numLocks; ++i) {

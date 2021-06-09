@@ -1,18 +1,6 @@
 #ifndef ESB_SIMPLE_FILE_LOGGER_H
 #define ESB_SIMPLE_FILE_LOGGER_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
 #ifndef ESB_LOGGER_H
 #include <ESBLogger.h>
 #endif
@@ -54,19 +42,7 @@ class SimpleFileLogger : public Logger {
 
   virtual UInt32 now();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  SimpleFileLogger(const SimpleFileLogger &);
-  SimpleFileLogger &operator=(const SimpleFileLogger &);
-
   bool _flushable;
   TimeSource &_timeSource;
   Severity _severity;
@@ -75,6 +51,8 @@ class SimpleFileLogger : public Logger {
 #else
 #error "FILE * or equivalent is required"
 #endif
+
+  ESB_DEFAULT_FUNCS(SimpleFileLogger);
 };
 
 }  // namespace ESB

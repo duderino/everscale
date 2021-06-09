@@ -1,16 +1,8 @@
 #ifndef ESB_REFERENCE_COUNT_H
 #define ESB_REFERENCE_COUNT_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_SHARED_INT_H
 #include <ESBSharedInt.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
 #endif
 
 #ifndef ESB_EMBEDDED_LIST_ELEMENT_H

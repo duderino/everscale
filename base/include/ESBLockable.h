@@ -1,12 +1,8 @@
 #ifndef ESB_LOCKABLE_H
 #define ESB_LOCKABLE_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ESB {
@@ -77,6 +73,8 @@ class Lockable {
    *    @return ESB_SUCCESS if successful, another error code otherwise.
    */
   virtual Error readRelease() = 0;
+
+  ESB_DISABLE_AUTO_COPY(Lockable);
 };
 
 }  // namespace ESB

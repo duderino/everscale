@@ -36,19 +36,11 @@ class Timer : public EmbeddedListElement {
 
   virtual CleanupHandler *cleanupHandler() { return NULL; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   Int32 _tick;
   void *_context;
 
-  ESB_DISABLE_AUTO_COPY(Timer);
+  ESB_DEFAULT_FUNCS(Timer);
 };
 
 }  // namespace ESB

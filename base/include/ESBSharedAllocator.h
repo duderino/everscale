@@ -1,10 +1,6 @@
 #ifndef ESB_SHARED_ALLOCATOR_H
 #define ESB_SHARED_ALLOCATOR_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
 #endif
@@ -36,22 +32,39 @@ class SharedAllocator : public Allocator {
 
   /** Allocate a word-aligned memory block of at least size bytes.
    *
-   *  @param size The minimum number of bytes to allocate.
-   *  @return a word-aligned memory block of at least size bytes if
-   *      successful, NULL otherwise.
+   * @param block will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * @param size The minimum number of bytes to allocate.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted, another error code otherwise.
    */
-  virtual void *allocate(UWord size);
+  virtual Error allocate(UWord size, void **block);
 
-  /** Deallocate a memory block allocated by this allocator or by its
-   *  failover allocators.
+  /** Deallocate a memory block allocated by this allocator.
    *
-   *  @param block The block to deallocate (pointer to a pointer).  If
-   *      freed, the block pointer will be set to NULL.
-   *  @return ESB_SUCCESS if the block was successfully deallocated, another
-   *      error code otherwise.  ESB_NOT_OWNER will be returned if the
-   *      block was not allocated by this allocator.
+   * @param block The block to deallocate
+   * @return ESB_SUCCESS if the block was successfully deallocated, another error code otherwise.  ESB_NOT_OWNER may be
+   * returned if the block was not allocated by this allocator, but not all implementations support this.
    */
   virtual Error deallocate(void *block);
+
+  /**
+   * Determine whether the implementation supports reallocation.
+   *
+   * @return true if the implementation supports reallocation, false otherwise.
+   */
+  virtual bool reallocates();
+
+  /**
+   * Reallocate a block of memory or create a new block of memory if necessary.  The contents of the original block will
+   * be present in the returned block.
+   *
+   * @param oldBlock The block to reallocate
+   * @param size The requested size of the new block
+   * @param newBlock will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise. Any
+   * bytes stored in the oldBlock will be present at the start of the new block.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted (in which case the oldBlock will
+   * be left untouched), another error code otherwise.
+   */
+  virtual Error reallocate(void *oldBlock, UWord size, void **newBlock);
 
   /**
    * Get a cleanup handler to free memory returned by this allocator.  The
@@ -61,22 +74,12 @@ class SharedAllocator : public Allocator {
    */
   virtual CleanupHandler &cleanupHandler();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  SharedAllocator(const SharedAllocator &);
-  SharedAllocator &operator=(const SharedAllocator &);
-
   Allocator &_allocator;
   Mutex _mutex;
   AllocatorCleanupHandler _sharedCleanupHandler;
+
+  ESB_DEFAULT_FUNCS(SharedAllocator);
 };
 
 }  // namespace ESB

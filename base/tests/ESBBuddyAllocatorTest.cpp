@@ -164,13 +164,17 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
                     << " with lifetime: " << allocations[j].lifetime << std::endl;
         }
 
-        allocations[j].data = _allocator.allocate(allocations[j].size);
+        error = _allocator.allocate(allocations[j].size, &(allocations[j].data));
 
         //
         //  We ignore failures due to internal fragmentation after half of the
         //  allocators memory has been allocated.
         //
         if ((bytesAllocated < (1 << 16))) {
+          if (ESB_SUCCESS != error) {
+            DescribeError(error, buffer, sizeof(buffer));
+            ESTF_FAILURE(collector, buffer);
+          }
           ESTF_ASSERT(collector, allocations[j].data);
         }
 
@@ -239,7 +243,11 @@ bool BuddyAllocatorTest::run(ESTF::ResultCollector *collector) {
   // big block, try a really big allocation.
   //
 
-  allocations[0].data = _allocator.allocate(1 << 16);
+  error = _allocator.allocate(1 << 16, &(allocations[0].data));
+  if (ESB_SUCCESS != error) {
+    DescribeError(error, buffer, sizeof(buffer));
+    ESTF_FAILURE(collector, buffer);
+  }
   ESTF_ASSERT(collector, allocations[0].data);
 
   if (allocations[0].data) {

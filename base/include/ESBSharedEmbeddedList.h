@@ -135,22 +135,6 @@ class SharedEmbeddedList {
     return result;
   }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, SharedEmbeddedList *list) noexcept { return list; }
-
   /** Validate the internal invariants of the list
    *
    * @return true if the list is valid, false otherwise
@@ -167,7 +151,7 @@ class SharedEmbeddedList {
   EmbeddedList _list;
   mutable Mutex _lock;
 
-  ESB_DISABLE_AUTO_COPY(SharedEmbeddedList);
+  ESB_DEFAULT_FUNCS(SharedEmbeddedList);
 };
 
 }  // namespace ESB

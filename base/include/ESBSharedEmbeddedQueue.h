@@ -1,18 +1,6 @@
 #ifndef ESB_SHARED_EMBEDDED_QUEUE_H
 #define ESB_SHARED_EMBEDDED_QUEUE_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
 #ifndef ESB_EMBEDDED_LIST_H
 #include <ESBEmbeddedList.h>
 #endif
@@ -72,20 +60,7 @@ class SharedEmbeddedQueue {
    */
   void stop();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The memory for the new object or NULL of the memory allocation
-   * failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  SharedEmbeddedQueue(const SharedEmbeddedQueue &);
-  SharedEmbeddedQueue &operator=(const SharedEmbeddedQueue &);
-
   bool _isStopped;
 
 #if defined HAVE_PTHREAD_MUTEX_T && defined HAVE_PTHREAD_COND_T
@@ -96,6 +71,8 @@ class SharedEmbeddedQueue {
 #endif
 
   EmbeddedList _list;
+
+  ESB_DEFAULT_FUNCS(SharedEmbeddedQueue);
 };
 
 }  // namespace ESB

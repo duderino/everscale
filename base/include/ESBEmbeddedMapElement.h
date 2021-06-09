@@ -27,10 +27,7 @@ class EmbeddedMapElement : public EmbeddedListElement {
    */
   virtual const void *key() const = 0;
 
- private:
-  // Disabled
-  EmbeddedMapElement(const EmbeddedMapElement &);
-  EmbeddedMapElement &operator=(const EmbeddedMapElement &);
+  ESB_DISABLE_AUTO_COPY(EmbeddedMapElement);
 };
 
 }  // namespace ESB

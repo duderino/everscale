@@ -1,8 +1,8 @@
 #ifndef ESB_LISTENING_SOCKET_H
 #define ESB_LISTENING_SOCKET_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_SOCKET_TYPE_H
@@ -19,10 +19,6 @@
 
 #ifndef ESB_CONNECTED_SOCKET_H
 #include <ESBConnectedSocket.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
 #endif
 
 #ifndef ESB_ANY_PORT
@@ -127,19 +123,7 @@ class ListeningSocket : public Socket {
 
   inline SocketState state() const { return _state; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // disabled
-  ListeningSocket(const ListeningSocket &socket);
-  ListeningSocket &operator=(const ListeningSocket &socket);
-
   void formatPrefix(const char *namePrefix);
 
   int _backlog;
@@ -147,6 +131,8 @@ class ListeningSocket : public Socket {
   SocketAddress _listeningAddress;
   // <prefix>:<ip addr>:<port>,<fd>
   mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_MAX_UINT32_STRING_LENGTH];
+
+  ESB_DEFAULT_FUNCS(ListeningSocket);
 };
 
 }  // namespace ESB

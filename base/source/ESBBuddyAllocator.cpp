@@ -97,17 +97,22 @@ BuddyAllocator::BuddyAllocator(UInt32 size, Allocator &source)
 
 BuddyAllocator::~BuddyAllocator() { destroy(); }
 
-void *BuddyAllocator::allocate(UWord size) {
+Error BuddyAllocator::allocate(UWord size, void **block) {
 #ifdef ESB_NO_ALLOC
-  return SystemAllocator::Instance().allocate(size);
+  return SystemAllocator::Instance().allocate(size, block);
 #else
   if (0 == size) {
-    return NULL;
+    return ESB_INVALID_ARGUMENT;
+  }
+
+  if (!block) {
+    return ESB_NULL_POINTER;
   }
 
   if (!_pool) {
-    if (ESB_SUCCESS != initialize()) {
-      return NULL;
+    Error error = initialize();
+    if (ESB_SUCCESS != error) {
+      return error;
     }
   }
 
@@ -130,7 +135,7 @@ void *BuddyAllocator::allocate(UWord size) {
   }
 
   if (!elem) {
-    return NULL;
+    return ESB_OUT_OF_MEMORY;
   }
 
   //
@@ -161,7 +166,8 @@ void *BuddyAllocator::allocate(UWord size) {
 
   assert(right);
 
-  return (void *)(((char *)right) + sizeof(AvailListElem));
+  *block = (void *)(((char *)right) + sizeof(AvailListElem));
+  return ESB_SUCCESS;
 #endif
 }
 
@@ -297,10 +303,9 @@ Error BuddyAllocator::initialize() {
     return ESB_INVALID_STATE;
   }
 
-  _pool = _sourceAllocator.allocate(ESB_UWORD_C(1) << _poolKVal);
-
-  if (0 == _pool) {
-    return ESB_OUT_OF_MEMORY;
+  Error error = _sourceAllocator.allocate(ESB_UWORD_C(1) << _poolKVal, &_pool);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   assert(_pool);
@@ -326,56 +331,54 @@ Error BuddyAllocator::destroy() {
     return ESB_IN_USE;
   }
 
-  _sourceAllocator.deallocate((void *)_pool);
+  _sourceAllocator.deallocate(_pool);
   _pool = NULL;
 
   return ESB_SUCCESS;
 }
+
 CleanupHandler &BuddyAllocator::cleanupHandler() { return _cleanupHandler; }
 
 bool BuddyAllocator::reallocates() { return true; }
 
-void *BuddyAllocator::reallocate(void *oldBlock, UWord size) {
+Error BuddyAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
 #ifdef ESB_NO_ALLOC
   return SystemAllocator::Instance().reallocate(oldBlock, size);
 #else
   if (!oldBlock) {
-    return allocate(size);
+    return allocate(size, newBlock);
   }
 
   if (0 == size) {
-    deallocate(oldBlock);
-    return NULL;
+    return deallocate(oldBlock);
   }
 
   if (!_pool) {
-    assert(!"allocator has not been initialized");
-    return NULL;
+    return ESB_INVALID_STATE;
   }
 
   char *trueAddress = ((char *)oldBlock) - sizeof(AvailListElem);
-
   if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
-    assert(!"allocator does not own block");
-    return NULL;
+    return ESB_NOT_OWNER;
   }
 
   //
-  // This naive implementation always copies, but at least fails cleanly
+  // This naive implementation always allocates+copies, but at least fails cleanly
   //
 
   AvailListElem *elem = (AvailListElem *)trueAddress;
   UWord originalSize = (ESB_UWORD_C(1) << elem->_kVal) - sizeof(AvailListElem);
 
-  void *newBlock = allocate(size);
-  if (!newBlock) {
-    return NULL;
+  Error error = allocate(size, newBlock);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   memcpy(newBlock, oldBlock, MIN(size, originalSize));
-  deallocate(oldBlock);
+  error = deallocate(oldBlock);
+  assert(ESB_SUCCESS == error);
 
-  return newBlock;
+  return ESB_SUCCESS;
 #endif
 }
 

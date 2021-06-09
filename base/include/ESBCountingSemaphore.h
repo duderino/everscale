@@ -1,10 +1,6 @@
 #ifndef ESB_COUNTING_SEMAPHORE_H
 #define ESB_COUNTING_SEMAPHORE_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
 #endif
@@ -90,19 +86,7 @@ class CountingSemaphore : public Lockable {
    */
   virtual Error readRelease();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  CountingSemaphore(const CountingSemaphore &);
-  CountingSemaphore &operator=(const CountingSemaphore &);
-
 #ifdef HAVE_SEM_T
   typedef sem_t semaphore;
 #elif defined HAVE_PTHREAD_MUTEX_T && defined HAVE_PTHREAD_COND_T
@@ -119,6 +103,8 @@ class CountingSemaphore : public Lockable {
 
   semaphore _semaphore;
   UInt8 _magic;
+
+  ESB_DEFAULT_FUNCS(CountingSemaphore);
 };
 
 }  // namespace ESB

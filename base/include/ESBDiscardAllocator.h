@@ -1,16 +1,8 @@
 #ifndef ESB_DISCARD_ALLOCATOR_H
 #define ESB_DISCARD_ALLOCATOR_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
 #endif
 
 #ifndef ESB_SYSTEM_ALLOCATOR_H
@@ -58,13 +50,13 @@ class DiscardAllocator : public Allocator {
   /** Constructor.  The allocator will request memory from the source
    *  allocator in chunkSize + overhead sized chunks.  The overhead reflects
    *  the allocator's own internal state that it needs to manage each chunk.
-   *  Any allocation larger than chunkSize will be passed to the failover
-   *  allocator if one has been configured.
+   *  Any allocation larger than chunkSize will be passed to the source
+   *  allocator.
    *
    *  @param chunkSize The size of the chunks the allocator uses.
    *  @param alignmentSize Returned allocation addresses will be a multiple of
    * this value, which must be a power of two.
-   *    *  @param multipleOf The size of the allocations made against the
+   *  @param multipleOf The size of the allocations made against the
    * underlying allocator must be multiples of this.
    *  @param source The allocator to use to allocate any chunks.
    *        This is probably the system allocator.
@@ -81,24 +73,13 @@ class DiscardAllocator : public Allocator {
 
   /** Allocate a word-aligned memory block of at least size bytes.
    *
-   *  @param size The minimum number of bytes to allocate.  If the size
-   *      exceeds the chunkSize argument passed to the constructor, this
-   *      allocation will be passed to the failover allocator if set or
-   *      rejected if not set.
-   *  @return a word-aligned memory block of at least size bytes if
-   *      successful, NULL otherwise.
+   * @param block will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * @param size The minimum number of bytes to allocate.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted, another error code otherwise.
    */
-  virtual void *allocate(UWord size);
+  virtual Error allocate(UWord size, void **block);
 
-  /** Deallocate a memory block allocated by this allocator.  This is
-   *  a no-op and need not be called unless its possible another
-   *  allocator might one day be used by the same code (using the
-   *  Allocator interface).
-   *
-   *  @param block The block to deallocate
-   *  @return ESB_SUCCESS if the block was successfully deallocated, another
-   *      error code otherwise.  ESB_NOT_OWNER will be returned if the
-   *      block was not allocated by this allocator.
+  /** No-op - memory will not be freed by the allocator until it is reset or destroyed.
    */
   virtual Error deallocate(void *block);
 
@@ -110,14 +91,9 @@ class DiscardAllocator : public Allocator {
   virtual bool reallocates();
 
   /**
-   * Reallocate a block of memory or create a new block of memory if necessary.  Regardless, the contents of the
-   * original block will be present in the returned block.
-   *
-   * @param block The block to reallocate
-   * @param size
-   * @return a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * Unsupported - this allocator does not support reallocation.
    */
-  virtual void *reallocate(void *block, UWord size);
+  virtual Error reallocate(void *oldBlock, UWord size, void **newBlock);
 
   /**
    * Get a cleanup handler to free memory returned by this allocator.  The
@@ -134,14 +110,6 @@ class DiscardAllocator : public Allocator {
    */
   Error reset();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
   static inline ESB::UInt32 SizeofChunk(ESB::UInt32 alignmentSize) { return ESB_ALIGN(sizeof(Chunk), alignmentSize); }
 
  private:
@@ -152,7 +120,7 @@ class DiscardAllocator : public Allocator {
     char *_data;
   } Chunk;
 
-  Chunk *allocateChunk(int chunkSize);
+  Error allocateChunk(int chunkSize, Chunk **chunk);
 
   Chunk *_head;
 #ifdef ESB_NO_ALLOC
@@ -164,7 +132,7 @@ class DiscardAllocator : public Allocator {
   Allocator &_source;
   AllocatorCleanupHandler _cleanupHandler;
 
-  ESB_DISABLE_AUTO_COPY(DiscardAllocator);
+  ESB_DEFAULT_FUNCS(DiscardAllocator);
 };
 
 }  // namespace ESB

@@ -1,12 +1,8 @@
 #ifndef ESB_LOGGER_H
 #define ESB_LOGGER_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ERRNO_H
-#include <ESBError.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_THREAD_H
@@ -120,6 +116,8 @@ class Logger {
 
  private:
   static Logger *_Instance;
+
+  ESB_DISABLE_AUTO_COPY(Logger);
 };
 
 }  // namespace ESB

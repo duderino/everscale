@@ -36,20 +36,16 @@ class TimeSourceCache : public Thread, public TimeSource {
 
   virtual Date now() { return Date(_time.get() + _basis.seconds(), 0); }
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  protected:
   virtual void run();
 
  private:
-  //  Disabled
-  TimeSourceCache(const TimeSourceCache &);
-  TimeSourceCache &operator=(const TimeSourceCache &);
-
   Date _basis;
   SharedInt _time;
   ESB::UInt32 _updateMilliSeconds;
   TimeSource &_source;
+
+  ESB_DEFAULT_FUNCS(TimeSourceCache);
 };
 
 }  // namespace ESB

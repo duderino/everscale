@@ -15,10 +15,7 @@ class DnsClient {
 
   virtual Error resolve(SocketAddress &address, const char *hostname, UInt16 port = 0, bool isSecure = false) = 0;
 
- private:
-  // Disabled
-  DnsClient(const DnsClient &);
-  void operator=(const DnsClient &);
+  ESB_DEFAULT_FUNCS(DnsClient);
 };
 
 }  // namespace ESB

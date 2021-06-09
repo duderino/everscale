@@ -1,13 +1,9 @@
 #ifndef ESB_OBJECT_H
 #define ESB_OBJECT_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 namespace ESB {
 
-/** An object
+/** An object - the best ever!
  *
  *  @ingroup collection
  */

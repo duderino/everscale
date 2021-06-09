@@ -1,16 +1,12 @@
 #ifndef ESB_DATE_H
 #define ESB_DATE_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
 #endif
 
 namespace ESB {
@@ -263,17 +259,11 @@ class Date {
     return _microSeconds != date._microSeconds;
   }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   UInt32 _seconds;
   UInt32 _microSeconds;
+
+  ESB_PLACEMENT_NEW(Date);
 };
 
 }  // namespace ESB

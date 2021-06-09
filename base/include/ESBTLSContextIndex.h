@@ -131,14 +131,6 @@ class TLSContextIndex {
   // TODO support removing and updating contexts.  Need to work out what key to use and how to expose clobbered fqdn to
   // SAN associations when maskSanConflicts == true.
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   class TLSContextCleanupHandler : public CleanupHandler {
    public:
@@ -158,7 +150,7 @@ class TLSContextIndex {
   TLSContextCleanupHandler _cleanupHandler;
   Allocator &_allocator;
 
-  ESB_DISABLE_AUTO_COPY(TLSContextIndex);
+  ESB_DEFAULT_FUNCS(TLSContextIndex);
 };
 
 }  // namespace ESB

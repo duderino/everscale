@@ -1,8 +1,8 @@
 #ifndef ESB_RAND_H
 #define ESB_RAND_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
@@ -46,18 +46,12 @@ class Rand {
    */
   int generate(int lowerBound, int upperBound);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
 #ifdef HAVE_RAND_R
   unsigned int _seed;
 #endif
+
+  ESB_DEFAULT_FUNCS(Rand);
 };
 
 }  // namespace ESB

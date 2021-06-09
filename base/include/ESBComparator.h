@@ -1,12 +1,8 @@
 #ifndef ESB_COMPARATOR_H
 #define ESB_COMPARATOR_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ESB {
@@ -37,6 +33,8 @@ class Comparator {
    * greater than the value.
    */
   virtual int compare(const void *key, const void *value) const = 0;
+
+  ESB_DISABLE_AUTO_COPY(Comparator);
 };
 
 /** HashComparators add hashing to Comparators.
@@ -59,6 +57,8 @@ class HashComparator : public Comparator {
    *  @return the hash code
    */
   virtual UInt64 hash(const void *key) const = 0;
+
+  ESB_DISABLE_AUTO_COPY(HashComparator);
 };
 
 }  // namespace ESB

@@ -125,14 +125,17 @@ DiscardAllocatorTest::~DiscardAllocatorTest() {}
 bool DiscardAllocatorTest::run(ESTF::ResultCollector *collector) {
   Error error;
   char buffer[256];
-  char *data = 0;
+  char *data = NULL;
   int allocSize = 0;
 
   for (int i = 0; i < Iterations; ++i) {
     for (int j = 0; j < AllocationsPerIteration; ++j) {
       allocSize = generateAllocSize();
-      data = (char *)_allocator.allocate(allocSize);
-
+      error = _allocator.allocate(allocSize, (void **)&data);
+      if (ESB_SUCCESS != error) {
+        DescribeError(error, buffer, sizeof(buffer));
+        ESTF_FAILURE(collector, buffer);
+      }
       ESTF_ASSERT(collector, data);
 
       for (int k = 0; k < allocSize; ++k) {
@@ -144,11 +147,8 @@ bool DiscardAllocatorTest::run(ESTF::ResultCollector *collector) {
 
     if (ESB_SUCCESS != error) {
       DescribeError(error, buffer, sizeof(buffer));
-
       ESTF_FAILURE(collector, buffer);
-
       ESTF_ERROR(collector, "Failed to reset allocator");
-
       return false;
     }
   }

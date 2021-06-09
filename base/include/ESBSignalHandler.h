@@ -1,8 +1,8 @@
 #ifndef ESB_SIGNAL_HANDLER_H
 #define ESB_SIGNAL_HANDLER_H
 
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
@@ -42,24 +42,14 @@ class SignalHandler {
    */
   void stop();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  SignalHandler(const SignalHandler &);
-  SignalHandler &operator=(const SignalHandler &);
-
   /** Default constructor.
    */
   SignalHandler();
 
   static SignalHandler _Instance;
+
+  ESB_DEFAULT_FUNCS(SignalHandler);
 };
 
 }  // namespace ESB

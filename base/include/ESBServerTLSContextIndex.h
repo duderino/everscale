@@ -47,18 +47,10 @@ class ServerTLSContextIndex : public TLSContextIndex {
 
   virtual void clear();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   TLSContextPointer _defaultContext;
 
-  ESB_DISABLE_AUTO_COPY(ServerTLSContextIndex);
+  ESB_DEFAULT_FUNCS(ServerTLSContextIndex);
 };
 
 }  // namespace ESB

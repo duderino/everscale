@@ -1,12 +1,8 @@
 #ifndef ESB_MAP_H
 #define ESB_MAP_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_LOCKABLE_H
@@ -36,8 +32,6 @@ class MapNode {
 
   ~MapNode();
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
   MapNode *_parent;
   MapNode *_left;
   MapNode *_right;
@@ -45,10 +39,7 @@ class MapNode {
   const void *_key;
   void *_value;
 
- private:
-  // disabled
-  MapNode(const MapNode &);
-  MapNode &operator=(const MapNode &);
+  ESB_DEFAULT_FUNCS(MapNode);
 };
 
 class MapIterator;
@@ -269,19 +260,7 @@ class Map : public Lockable {
    */
   bool isBalanced() const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return memory for the object, or NULL if it couldn't be allocated.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  Map(const Map &);
-  Map &operator=(const Map &);
-
   static MapNode *findMinimum(MapNode *x);
   static MapNode *findMaximum(MapNode *x);
   static MapNode *findSuccessor(MapNode *x);
@@ -300,6 +279,8 @@ class Map : public Lockable {
   Lockable &_lockable;
   Comparator &_comparator;
   MapNode _sentinel;
+
+  ESB_DEFAULT_FUNCS(Map);
 };
 
 /** MapIterator supports iteration through the Map class.  It's getNext
@@ -475,14 +456,6 @@ class MapIterator {
    */
   inline bool operator==(const MapIterator &iterator) { return _node == iterator._node; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator *allocator) { return allocator->allocate(size); }
-
  private:
   /** Constructor.
    *
@@ -491,6 +464,8 @@ class MapIterator {
   MapIterator(MapNode *node);
 
   MapNode *_node;
+
+  ESB_PLACEMENT_NEW(MapIterator);
 };
 
 }  // namespace ESB

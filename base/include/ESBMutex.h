@@ -1,16 +1,8 @@
 #ifndef ESB_MUTEX_H
 #define ESB_MUTEX_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_LOCKABLE_H
@@ -83,27 +75,7 @@ class Mutex : public Lockable {
    */
   virtual Error readRelease();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param mutex The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Mutex *mutex) noexcept { return mutex; }
-
  private:
-  //  disabled
-  Mutex(const Mutex &);
-  Mutex &operator=(const Mutex &);
-
 #ifdef HAVE_PTHREAD_MUTEX_T
   typedef pthread_mutex_t mutex;
 #elif defined HAVE_HANDLE
@@ -112,6 +84,8 @@ class Mutex : public Lockable {
 
   mutex _mutex;
   UInt8 _magic;
+
+  ESB_DEFAULT_FUNCS(Mutex);
 };
 
 }  // namespace ESB

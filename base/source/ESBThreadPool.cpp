@@ -39,18 +39,16 @@ ThreadPool::~ThreadPool() {}
 Error ThreadPool::start() {
   ESB_LOG_DEBUG("[%s] starting", _name);
 
-  if (false == createWorkerThreads()) {
-    ESB_LOG_CRITICAL("[%s] is out of threads", _name);
-    return ESB_OUT_OF_MEMORY;
+  Error error = createWorkerThreads();
+  if (ESB_SUCCESS != error) {
+    ESB_LOG_CRITICAL_ERRNO(error, "[%s] is out of threads", _name);
+    return error;
   }
-
-  Error error;
 
   for (int i = 0; i < _numThreads; ++i) {
     ESB_LOG_DEBUG("[%s:%d] starting worker", _name, i + 1);
 
     error = _threads[i]->start();
-
     if (ESB_SUCCESS != error) {
       ESB_LOG_CRITICAL_ERRNO(error, "[%s:%d] cannot start worker", _name, i + 1);
       _numThreads = i;
@@ -92,28 +90,26 @@ Error ThreadPool::join() {
   return ESB_SUCCESS;
 }
 
-bool ThreadPool::createWorkerThreads() {
-  _threads = (Thread **)_allocator.allocate(_numThreads * sizeof(Thread *));
-
-  if (!_threads) {
-    return false;
+Error ThreadPool::createWorkerThreads() {
+  Error error = _allocator.allocate(_numThreads * sizeof(Thread *), (void **)_threads);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   for (int i = 0; i < _numThreads; ++i) {
-    _threads[i] = 0;
+    _threads[i] = NULL;
   }
 
   for (int i = 0; i < _numThreads; ++i) {
     _threads[i] = new (_allocator) ThreadPoolWorker(i + 1, _name, &_queue);
 
-    if (0 == _threads[i]) {
+    if (!_threads[i]) {
       destroyWorkerThreads();
-
-      return false;
+      return ESB_OUT_OF_MEMORY;
     }
   }
 
-  return true;
+  return ESB_SUCCESS;
 }
 
 void ThreadPool::destroyWorkerThreads() {

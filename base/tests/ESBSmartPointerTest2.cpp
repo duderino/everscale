@@ -25,7 +25,7 @@ class TestCleanupHandler : public CleanupHandler {
  private:
   int _calls;
 
-  ESB_DISABLE_AUTO_COPY(TestCleanupHandler);
+  ESB_DEFAULT_FUNCS(TestCleanupHandler);
 };
 
 static TestCleanupHandler TestCleanupHandler;
@@ -40,7 +40,7 @@ class TestObject : public ReferenceCount {
 
   virtual CleanupHandler* cleanupHandler() { return &TestCleanupHandler; }
 
-  ESB_DISABLE_AUTO_COPY(TestObject);
+  ESB_DEFAULT_FUNCS(TestObject);
 };
 
 ESB_SMART_POINTER(TestObject, TestObjectPointer, SmartPointer);

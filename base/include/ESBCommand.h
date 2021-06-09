@@ -1,10 +1,6 @@
 #ifndef ESB_COMMAND_H
 #define ESB_COMMAND_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
 #endif
@@ -52,18 +48,7 @@ class Command : public EmbeddedListElement {
    */
   virtual bool run(SharedInt *isRunning) = 0;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
- private:
-  // Disabled
-  Command(const Command &);
-  Command &operator=(const Command &);
+  ESB_DISABLE_AUTO_COPY(Command);
 };
 
 }  // namespace ESB

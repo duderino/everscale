@@ -1,10 +1,6 @@
 #ifndef ESB_WILDCARD_INDEX_H
 #define ESB_WILDCARD_INDEX_H
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
 #endif
@@ -178,22 +174,6 @@ class WildcardIndexNode : public EmbeddedMapElement {
 
   inline bool empty() const { return 0 == _wildcards._data[0] && (!_extra._data || 0 == _extra._data[0]); }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new
-   *
-   * @param size The size of the memory block
-   * @param block A valid memory block with which the object can be constructed.
-   * @return The memory block
-   */
-  inline void *operator new(size_t size, unsigned char *block) noexcept { return block; }
-
  private:
   unsigned char *find(const SizedBuffer &buffer, const char *key, UInt32 keySize, bool *exists) const;
   void clear(const SizedBuffer &buffer);
@@ -206,7 +186,7 @@ class WildcardIndexNode : public EmbeddedMapElement {
   // must use static Create().
   WildcardIndexNode();
 
-  ESB_DISABLE_AUTO_COPY(WildcardIndexNode);
+  ESB_DEFAULT_FUNCS(WildcardIndexNode);
 };
 
 /**
@@ -346,6 +326,8 @@ class WildcardIndex : public EmbeddedMapBase {
 
    private:
     SharedEmbeddedList &_deadNodes;
+
+    ESB_DISABLE_AUTO_COPY(WildcardIndexCallbacks);
   };
 
   inline Lockable &bucketLock(UInt32 bucket) const {
@@ -357,7 +339,7 @@ class WildcardIndex : public EmbeddedMapBase {
   UInt32 _numBucketLocks;
   ReadWriteLock *_bucketLocks;
 
-  ESB_DISABLE_AUTO_COPY(WildcardIndex);
+  ESB_DEFAULT_FUNCS(WildcardIndex);
 };
 
 }  // namespace ESB

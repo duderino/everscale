@@ -94,21 +94,22 @@ EpollMultiplexer::EpollMultiplexer(const char *namePrefix, UInt32 idleTimeoutMse
     return;
   }
 
-  _events = (struct epoll_event *)_allocator.allocate(sizeof(struct epoll_event) * _maxSockets);
-
-  if (!_events) {
+  Error error = _allocator.allocate(sizeof(struct epoll_event) * _maxSockets, (void **)&_events);
+  if (ESB_SUCCESS != error) {
+    // _events will be checked in later functions
+    _events = NULL;
     close(_epollDescriptor);
     _epollDescriptor = INVALID_SOCKET;
     ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot create %d epoll_events", name(), _maxSockets);
     return;
   }
 
-  _eventCache = (struct DescriptorState *)_allocator.allocate(sizeof(struct DescriptorState) * _maxSockets);
-
-  if (!_eventCache) {
+  error = _allocator.allocate(sizeof(struct DescriptorState) * _maxSockets, (void **)&_eventCache);
+  if (ESB_SUCCESS != error) {
     close(_epollDescriptor);
     _epollDescriptor = INVALID_SOCKET;
     _allocator.deallocate(_events);
+    // _events will be checked in later functions
     _events = NULL;
     ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "[%s] cannot create %d DescriptorStates", name(), _maxSockets);
     return;
@@ -137,8 +138,8 @@ EpollMultiplexer::~EpollMultiplexer() {
 CleanupHandler *EpollMultiplexer::cleanupHandler() { return NULL; }
 
 Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
-  if (INVALID_SOCKET == _epollDescriptor) {
-    return ESB_INVALID_STATE;
+  if (!_events) {
+    return ESB_OUT_OF_MEMORY;
   }
 
   if (!socket) {
@@ -213,8 +214,8 @@ Error EpollMultiplexer::addMultiplexedSocket(MultiplexedSocket *socket) {
 }
 
 Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
-  if (INVALID_SOCKET == _epollDescriptor) {
-    return ESB_INVALID_STATE;
+  if (!_events) {
+    return ESB_OUT_OF_MEMORY;
   }
 
   if (!socket) {
@@ -262,8 +263,8 @@ Error EpollMultiplexer::updateMultiplexedSocket(MultiplexedSocket *socket) {
 }
 
 Error EpollMultiplexer::removeMultiplexedSocket(MultiplexedSocket *socket) {
-  if (INVALID_SOCKET == _epollDescriptor) {
-    return ESB_INVALID_STATE;
+  if (!_events) {
+    return ESB_OUT_OF_MEMORY;
   }
 
   if (!socket) {
@@ -336,7 +337,7 @@ void EpollMultiplexer::destroy() {
 }
 
 bool EpollMultiplexer::run(SharedInt *isRunning) {
-  if (INVALID_SOCKET == _epollDescriptor) {
+  if (!_events) {
     return false;
   }
 

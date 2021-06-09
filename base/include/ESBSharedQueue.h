@@ -1,18 +1,6 @@
 #ifndef ESB_SHARED_QUEUE_H
 #define ESB_SHARED_QUEUE_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
 #ifndef ESB_LIST_H
 #include <ESBList.h>
 #endif
@@ -109,19 +97,7 @@ class SharedQueue {
    */
   static Size AllocationSize();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  SharedQueue(const SharedQueue &);
-  SharedQueue &operator=(const SharedQueue &);
-
 #if defined HAVE_PTHREAD_MUTEX_T && defined HAVE_PTHREAD_COND_T
   class Synchronizer {
    public:
@@ -143,6 +119,8 @@ class SharedQueue {
   UInt32 _limit;
   Synchronizer _lock;
   List _list;
+
+  ESB_DEFAULT_FUNCS(SharedQueue);
 };
 
 }  // namespace ESB

@@ -1,24 +1,12 @@
 #ifndef ESB_READ_WRITE_LOCK_H
 #define ESB_READ_WRITE_LOCK_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_LOCKABLE_H
 #include <ESBLockable.h>
 #endif
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
 #endif
 
 namespace ESB {
@@ -79,27 +67,7 @@ class ReadWriteLock : public Lockable {
    */
   virtual Error readRelease();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param lock The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ReadWriteLock *lock) noexcept { return lock; }
-
  private:
-  //  Disabled
-  ReadWriteLock(const ReadWriteLock &);
-  ReadWriteLock &operator=(const ReadWriteLock &);
-
 #ifdef HAVE_PTHREAD_RWLOCK_T
   typedef pthread_rwlock_t lock;
 #elif defined HAVE_PTHREAD_MUTEX_T && defined HAVE_PTHREAD_COND_T
@@ -118,6 +86,8 @@ class ReadWriteLock : public Lockable {
 
   lock _lock;
   UInt8 _magic;
+
+  ESB_DEFAULT_FUNCS(ReadWriteLock);
 };
 
 }  // namespace ESB

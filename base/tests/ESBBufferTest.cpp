@@ -101,76 +101,78 @@ class BufferTest : public ESTF::Component {
 
   unsigned int _capacity;
   ESTF::Rand _rand;
-  Buffer _buffer;
+  Buffer *_buffer;
 };
 
 ESTF_OBJECT_PTR(BufferTest, ESTF::Component)
 
 BufferTest::BufferTest()
-    : _capacity(BufferSize),
-      _rand(),
-      _buffer((unsigned char *)SystemAllocator::Instance().allocate(BufferSize), BufferSize) {}
+    : _capacity(BufferSize), _rand(), _buffer(Buffer::Create(SystemAllocator::Instance(), BufferSize)) {}
 
-BufferTest::~BufferTest() { SystemAllocator::Instance().deallocate(_buffer.buffer()); }
+BufferTest::~BufferTest() {
+  if (_buffer) {
+    Buffer::Destroy(SystemAllocator::Instance(), _buffer);
+  }
+}
 
 void BufferTest::fillTest(ESTF::ResultCollector *collector, unsigned int startPosition, unsigned int endPosition) {
-  _buffer.setWritePosition(startPosition);
+  _buffer->setWritePosition(startPosition);
 
-  ESTF_ASSERT(collector, _capacity == _buffer.capacity());
-  ESTF_ASSERT(collector, _capacity - startPosition == _buffer.writable());
+  ESTF_ASSERT(collector, _capacity == _buffer->capacity());
+  ESTF_ASSERT(collector, _capacity - startPosition == _buffer->writable());
 
   if (0 < _capacity - startPosition) {
-    ESTF_ASSERT(collector, true == _buffer.isWritable());
+    ESTF_ASSERT(collector, true == _buffer->isWritable());
   } else {
-    ESTF_ASSERT(collector, false == _buffer.isWritable());
+    ESTF_ASSERT(collector, false == _buffer->isWritable());
   }
 
   for (unsigned int i = startPosition; i < endPosition; ++i) {
-    ESTF_ASSERT(collector, true == _buffer.isWritable());
+    ESTF_ASSERT(collector, true == _buffer->isWritable());
 
-    _buffer.putNext('a');
+    _buffer->putNext('a');
 
-    ESTF_ASSERT(collector, _capacity == _buffer.capacity());
-    ESTF_ASSERT(collector, _capacity - i - 1 == _buffer.writable());
-    ESTF_ASSERT(collector, i + 1 == _buffer.writePosition());
+    ESTF_ASSERT(collector, _capacity == _buffer->capacity());
+    ESTF_ASSERT(collector, _capacity - i - 1 == _buffer->writable());
+    ESTF_ASSERT(collector, i + 1 == _buffer->writePosition());
   }
 
-  ESTF_ASSERT(collector, _capacity == _buffer.capacity());
-  ESTF_ASSERT(collector, _capacity - endPosition == _buffer.writable());
-  ESTF_ASSERT(collector, endPosition == _buffer.writePosition());
+  ESTF_ASSERT(collector, _capacity == _buffer->capacity());
+  ESTF_ASSERT(collector, _capacity - endPosition == _buffer->writable());
+  ESTF_ASSERT(collector, endPosition == _buffer->writePosition());
 
   if (0 < _capacity - endPosition) {
-    ESTF_ASSERT(collector, true == _buffer.isWritable());
+    ESTF_ASSERT(collector, true == _buffer->isWritable());
   } else {
-    ESTF_ASSERT(collector, false == _buffer.isWritable());
+    ESTF_ASSERT(collector, false == _buffer->isWritable());
   }
 }
 
 void BufferTest::drainTest(ESTF::ResultCollector *collector, unsigned int startPosition, unsigned int endPosition) {
-  _buffer.setReadPosition(startPosition);
+  _buffer->setReadPosition(startPosition);
 
-  ESTF_ASSERT(collector, _capacity == _buffer.capacity());
-  ESTF_ASSERT(collector, endPosition - startPosition == _buffer.readable());
+  ESTF_ASSERT(collector, _capacity == _buffer->capacity());
+  ESTF_ASSERT(collector, endPosition - startPosition == _buffer->readable());
 
   if (0 < endPosition - startPosition) {
-    ESTF_ASSERT(collector, true == _buffer.isReadable());
+    ESTF_ASSERT(collector, true == _buffer->isReadable());
   } else {
-    ESTF_ASSERT(collector, false == _buffer.isReadable());
+    ESTF_ASSERT(collector, false == _buffer->isReadable());
   }
 
   for (unsigned int i = startPosition; i < endPosition; ++i) {
-    ESTF_ASSERT(collector, true == _buffer.isReadable());
+    ESTF_ASSERT(collector, true == _buffer->isReadable());
 
-    ESTF_ASSERT(collector, 'a' == _buffer.next());
+    ESTF_ASSERT(collector, 'a' == _buffer->next());
 
-    ESTF_ASSERT(collector, _capacity == _buffer.capacity());
-    ESTF_ASSERT(collector, endPosition - i - 1 == _buffer.readable());
-    ESTF_ASSERT(collector, i + 1 == _buffer.readPosition());
+    ESTF_ASSERT(collector, _capacity == _buffer->capacity());
+    ESTF_ASSERT(collector, endPosition - i - 1 == _buffer->readable());
+    ESTF_ASSERT(collector, i + 1 == _buffer->readPosition());
   }
 
-  ESTF_ASSERT(collector, _capacity == _buffer.capacity());
-  ESTF_ASSERT(collector, 0 == _buffer.readable());
-  ESTF_ASSERT(collector, false == _buffer.isReadable());
+  ESTF_ASSERT(collector, _capacity == _buffer->capacity());
+  ESTF_ASSERT(collector, 0 == _buffer->readable());
+  ESTF_ASSERT(collector, false == _buffer->isReadable());
 }
 
 bool BufferTest::run(ESTF::ResultCollector *collector) {
@@ -178,7 +180,7 @@ bool BufferTest::run(ESTF::ResultCollector *collector) {
 
   drainTest(collector, 0, _capacity);
 
-  _buffer.clear();
+  _buffer->clear();
 
   int startPosition = 0;
   int endPosition = _capacity;
@@ -191,7 +193,7 @@ bool BufferTest::run(ESTF::ResultCollector *collector) {
 
     drainTest(collector, startPosition, endPosition);
 
-    _buffer.compact();
+    _buffer->compact();
   }
 
   return true;

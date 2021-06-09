@@ -26,17 +26,17 @@ Error List::pushFront(void *element) {
     return ESB_OVERFLOW;
   }
 
-  ListNode *node = (ListNode *)_allocator.allocate(sizeof(ListNode));
-
-  if (!node) {
-    return ESB_OUT_OF_MEMORY;
+  ListNode *node = NULL;
+  Error error = _allocator.allocate(sizeof(ListNode), (void **)&node);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   assert(node);
 
   node->_value = element;
-  node->_prev = 0;
-  node->_next = 0;
+  node->_prev = NULL;
+  node->_next = NULL;
 
   if (!_head) {
     assert(!_tail);
@@ -67,17 +67,17 @@ Error List::pushBack(void *element) {
     return ESB_OVERFLOW;
   }
 
-  ListNode *node = (ListNode *)_allocator.allocate(sizeof(ListNode));
-
-  if (!node) {
-    return ESB_OUT_OF_MEMORY;
+  ListNode *node = NULL;
+  Error error = _allocator.allocate(sizeof(ListNode), (void **)&node);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   assert(node);
 
   node->_value = element;
-  node->_prev = 0;
-  node->_next = 0;
+  node->_prev = NULL;
+  node->_next = NULL;
 
   if (!_tail) {
     assert(!_head);
@@ -101,7 +101,7 @@ Error List::pushBack(void *element) {
 
 void *List::front() {
   if (!_head) {
-    return 0;
+    return NULL;
   }
 
   return _head->_value;
@@ -117,9 +117,9 @@ Error List::popFront() {
   _head = _head->_next;
 
   if (_head) {
-    _head->_prev = 0;
+    _head->_prev = NULL;
   } else {
-    _tail = 0;
+    _tail = NULL;
   }
 
   Error error = _allocator.deallocate((void *)node);
@@ -146,7 +146,7 @@ Error List::popFront() {
 
 void *List::back() {
   if (!_tail) {
-    return 0;
+    return NULL;
   }
 
   return _tail->_value;
@@ -162,16 +162,15 @@ Error List::popBack() {
   _tail = _tail->_prev;
 
   if (_tail) {
-    _tail->_next = 0;
+    _tail->_next = NULL;
   } else {
-    _head = 0;
+    _head = NULL;
   }
 
   Error error = _allocator.deallocate((void *)node);
 
   if (ESB_SUCCESS == error) {
     --_size;
-
     return ESB_SUCCESS;
   }
 
@@ -197,17 +196,13 @@ Error List::clear() {
 
   while (current) {
     next = current->_next;
-
     error = _allocator.deallocate((void *)current);
 
     if (ESB_SUCCESS != error) {
       // failed to delete the node, restore the list to a stable state
-
       assert(current);
-
-      current->_prev = 0;
+      current->_prev = NULL;
       _head = current;
-
       return error;
     }
 
@@ -216,8 +211,8 @@ Error List::clear() {
     current = next;
   }
 
-  _head = 0;
-  _tail = 0;
+  _head = NULL;
+  _tail = NULL;
 
   assert(0 == _size);
 
@@ -226,13 +221,11 @@ Error List::clear() {
 
 ListIterator List::frontIterator() {
   ListIterator iterator(_head);
-
   return iterator;
 }
 
 ListIterator List::backIterator() {
   ListIterator iterator(_tail);
-
   return iterator;
 }
 
@@ -242,10 +235,9 @@ Error List::remove(ListIterator *iterator) {
   }
 
   Error error = deleteNode(iterator->_node);
-
   if (ESB_SUCCESS == error) {
     --_size;
-    iterator->_node = 0;
+    iterator->_node = NULL;
   }
 
   return error;
@@ -258,26 +250,29 @@ Error List::deleteNode(ListNode *node) {
 
   if (node->_prev) {
     node->_prev->_next = node->_next;
-
-    if (!node->_next) _tail = node->_prev;
+    if (!node->_next) {
+      _tail = node->_prev;
+    }
   } else {
     _head = node->_next;
-
-    if (node->_next) node->_next->_prev = 0;
+    if (node->_next) {
+      node->_next->_prev = NULL;
+    }
   }
 
   if (node->_next) {
     node->_next->_prev = node->_prev;
-
-    if (!node->_prev) _head = node->_next;
+    if (!node->_prev) {
+      _head = node->_next;
+    }
   } else {
     _tail = node->_prev;
-
-    if (node->_prev) node->_prev->_next = 0;
+    if (node->_prev) {
+      node->_prev->_next = NULL;
+    }
   }
 
   Error error = _allocator.deallocate((void *)node);
-
   if (ESB_SUCCESS == error) {
     return ESB_SUCCESS;
   }
@@ -313,7 +308,7 @@ void *List::index(int idx) {
     }
   }
 
-  assert(0 == "idx in range should always be found");
+  assert(!"idx in range should always be found");
   return NULL;
 }
 

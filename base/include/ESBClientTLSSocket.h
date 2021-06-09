@@ -5,10 +5,6 @@
 #include <ESBTLSSocket.h>
 #endif
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
 #endif
@@ -63,22 +59,6 @@ class ClientTLSSocket : public TLSSocket {
    */
   Error peerCertificate(X509Certificate **cert);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
-
  protected:
   virtual Error startHandshake();
 
@@ -89,7 +69,7 @@ class ClientTLSSocket : public TLSSocket {
   SocketKey _key;
   char _fqdn[ESB_MAX_HOSTNAME + 1];
 
-  ESB_DISABLE_AUTO_COPY(ClientTLSSocket);
+  ESB_DEFAULT_FUNCS(ClientTLSSocket);
 };
 
 }  // namespace ESB

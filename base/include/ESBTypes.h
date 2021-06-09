@@ -155,14 +155,6 @@ typedef SSIZE_T SSize;
 #define ESB_ALIGN(value, size) (((value) % (size)) ? (((value) & ~((size)-1)) + (size)) : (value))
 #define ESB_WORD_ALIGN(value) ESB_ALIGN(value, sizeof(ESB::Word))
 
-#ifndef MIN
-#define MIN(a, b) ((a) > (b) ? (b) : (a))
-#endif
-
-#ifndef MAX
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif
-
 #define ESB_NAME_PREFIX_SIZE 16
 #define ESB_MAX_UINT16_STRING_LENGTH 5
 #define ESB_MAX_UINT32_STRING_LENGTH 10
@@ -176,11 +168,6 @@ typedef SSIZE_T SSize;
  private:                            \
   CLASS(const CLASS &);              \
   void operator=(const CLASS &);
-
-typedef struct {
-  unsigned char *_data;
-  UInt32 _capacity;
-} SizedBuffer;
 
 }  // namespace ESB
 

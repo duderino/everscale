@@ -43,7 +43,7 @@ class TestObject : public ReferenceCount {
  private:
   int _value;
 
-  ESB_DISABLE_AUTO_COPY(TestObject);
+  ESB_DEFAULT_FUNCS(TestObject);
 };
 
 ESB_SMART_POINTER(TestObject, TestObjectPointer, SmartPointer);

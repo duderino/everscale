@@ -1,16 +1,12 @@
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #define ESB_SYSTEM_ALLOCATOR_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
 #endif
 
 namespace ESB {
@@ -32,38 +28,38 @@ class SystemAllocator : public Allocator {
 
   /** Allocate a word-aligned memory block of at least size bytes.
    *
-   *  @param size The minimum number of bytes to allocate.
-   *  @return a word-aligned memory block of at least size bytes if
-   *      successful, NULL otherwise.
+   * @param block will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * @param size The minimum number of bytes to allocate.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted, another error code otherwise.
    */
-  virtual void *allocate(UWord size);
+  virtual Error allocate(UWord size, void **block);
 
-  /** Deallocate a memory block allocated by this allocator or by its
-   *  failover allocators.
+  /** Deallocate a memory block allocated by this allocator.
    *
-   *  @param block The block to deallocate.
-   *  @return ESB_SUCCESS if the block was successfully deallocated, another
-   *      error code otherwise.  ESB_NOT_OWNER will be returned if the
-   *      block was not allocated by this allocator.
+   * @param block The block to deallocate
+   * @return ESB_SUCCESS if the block was successfully deallocated, another error code otherwise.
    */
   virtual Error deallocate(void *block);
 
   /**
    * Determine whether the implementation supports reallocation.
    *
-   * @return false
+   * @return true
    */
   virtual bool reallocates();
 
   /**
-   * Reallocate a block of memory or create a new block of memory if necessary.  Regardless, the contents of the
-   * original block will be present in the returned block.
+   * Reallocate a block of memory or create a new block of memory if necessary.  The contents of the original block will
+   * be present in the returned block.
    *
-   * @param block The block to reallocate
-   * @param size
-   * @return a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * @param oldBlock The block to reallocate
+   * @param size The requested size of the new block
+   * @param newBlock will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise. Any
+   * bytes stored in the oldBlock will be present at the start of the new block.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted (in which case the oldBlock will
+   * be left untouched), another error code otherwise.
    */
-  virtual void *reallocate(void *block, UWord size);
+  virtual Error reallocate(void *oldBlock, UWord size, void **newBlock);
 
   /**
    * Get a cleanup handler to free memory returned by this allocator.  The
@@ -80,7 +76,7 @@ class SystemAllocator : public Allocator {
   AllocatorCleanupHandler _cleanupHandler;
   static SystemAllocator _Allocator;
 
-  ESB_DISABLE_AUTO_COPY(SystemAllocator);
+  ESB_DEFAULT_FUNCS(SystemAllocator);
 };
 
 }  // namespace ESB

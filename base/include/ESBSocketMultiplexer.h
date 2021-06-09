@@ -1,16 +1,8 @@
 #ifndef ESB_SOCKET_MULTIPLEXER_H
 #define ESB_SOCKET_MULTIPLEXER_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_COMMAND_H
@@ -77,10 +69,7 @@ class SocketMultiplexer : public Command {
    */
   virtual bool isRunning() const = 0;
 
- private:
-  //  Disabled
-  SocketMultiplexer(const SocketMultiplexer &);
-  SocketMultiplexer &operator=(const SocketMultiplexer &);
+  ESB_DISABLE_AUTO_COPY(SocketMultiplexer);
 };
 
 }  // namespace ESB

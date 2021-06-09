@@ -1,20 +1,12 @@
 #ifndef ESB_CONNECTED_SOCKET_H
 #define ESB_CONNECTED_SOCKET_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_SOCKET_TYPE_H
 #include <ESBSocketType.h>
 #endif
 
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
 #endif
 
 #ifndef ESB_SOCKET_H
@@ -192,30 +184,10 @@ class ConnectedSocket : public Socket {
    */
   static int BytesReadable(SOCKET socketDescriptor);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
-
  protected:
   int _flags;
 
  private:
-  // Disabled
-  ConnectedSocket(const ConnectedSocket &);
-  ConnectedSocket &operator=(const ConnectedSocket &);
-
   void formatPrefix(const char *namePrefix, const char *nameSuffix);
   void updateName(const SocketAddress &peerAddress);
   ESB::Error updateLocalAddress();
@@ -225,6 +197,8 @@ class ConnectedSocket : public Socket {
   // <prefix>:<ip addr>:<port>-<ip addr>:<port>,<port>
   mutable char _logAddress[ESB_NAME_PREFIX_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 + ESB_ADDRESS_PORT_SIZE + 1 +
                            ESB_MAX_UINT32_STRING_LENGTH];
+
+  ESB_DEFAULT_FUNCS(ConnectedSocket);
 };
 
 }  // namespace ESB

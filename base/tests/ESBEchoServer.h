@@ -45,14 +45,6 @@ class EchoServer : public Thread {
 
   inline ServerTLSContextIndex &contextIndex() { return _contextIndex; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  protected:
   virtual void run();
 
@@ -87,21 +79,13 @@ class EchoServer : public Thread {
     virtual void markDead();
     virtual bool dead() const;
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
    protected:
     SocketAddress _address;
     ListeningSocket _listener;
     EpollMultiplexer &_multiplexer;
     Allocator &_allocator;
 
-    ESB_DISABLE_AUTO_COPY(ClearListener);
+    ESB_DEFAULT_FUNCS(ClearListener);
   };
 
   class SecureListener : public ClearListener {
@@ -111,18 +95,10 @@ class EchoServer : public Thread {
 
     virtual Error handleAccept();
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
    private:
     ServerTLSContextIndex &_index;
 
-    ESB_DISABLE_AUTO_COPY(SecureListener);
+    ESB_DEFAULT_FUNCS(SecureListener);
   };
 
   class EchoSocket : public MultiplexedSocket {
@@ -150,14 +126,6 @@ class EchoServer : public Thread {
     virtual void markDead();
     virtual bool dead() const;
 
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
    protected:
     virtual ConnectedSocket &subclassSocket() = 0;
 
@@ -169,21 +137,13 @@ class EchoServer : public Thread {
     Buffer _buffer;
     CleanupHandler &_cleanupHandler;
 
-    ESB_DISABLE_AUTO_COPY(EchoSocket);
+    ESB_DEFAULT_FUNCS(EchoSocket);
   };
 
   class ClearEchoSocket : public EchoSocket {
    public:
     ClearEchoSocket(const Socket::State &state, CleanupHandler &cleanupHandler);
     virtual ~ClearEchoSocket();
-
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
    protected:
     virtual ConnectedSocket &subclassSocket();
@@ -193,21 +153,13 @@ class EchoServer : public Thread {
    private:
     ClearSocket _socket;
 
-    ESB_DISABLE_AUTO_COPY(ClearEchoSocket);
+    ESB_DEFAULT_FUNCS(ClearEchoSocket);
   };
 
   class SecureEchoSocket : public EchoSocket {
    public:
     SecureEchoSocket(const Socket::State &state, ServerTLSContextIndex &index, CleanupHandler &cleanupHandler);
     virtual ~SecureEchoSocket();
-
-    /** Placement new.
-     *
-     *  @param size The size of the object.
-     *  @param allocator The source of the object's memory.
-     *  @return The new object or NULL of the memory allocation failed.
-     */
-    inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
 
    protected:
     virtual ConnectedSocket &subclassSocket();
@@ -217,7 +169,7 @@ class EchoServer : public Thread {
    private:
     ServerTLSSocket _socket;
 
-    ESB_DISABLE_AUTO_COPY(SecureEchoSocket);
+    ESB_DEFAULT_FUNCS(SecureEchoSocket);
   };
 
   Allocator &_allocator;
@@ -226,7 +178,7 @@ class EchoServer : public Thread {
   ClearListener _clearListener;
   SecureListener _secureListener;
 
-  ESB_DISABLE_AUTO_COPY(EchoServer);
+  ESB_DEFAULT_FUNCS(EchoServer);
 };
 
 }  // namespace ESB

@@ -34,22 +34,6 @@ class ServerTLSSocket : public TLSSocket {
   virtual const SocketAddress &peerAddress() const;
   virtual const void *key() const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
-
  protected:
   virtual Error startHandshake();
 
@@ -57,7 +41,7 @@ class ServerTLSSocket : public TLSSocket {
   ServerTLSContextIndex &_contextIndex;
   SocketAddress _peerAddress;
 
-  ESB_DISABLE_AUTO_COPY(ServerTLSSocket);
+  ESB_DEFAULT_FUNCS(ServerTLSSocket);
 };
 
 }  // namespace ESB

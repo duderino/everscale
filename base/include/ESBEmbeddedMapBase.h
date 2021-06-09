@@ -36,6 +36,8 @@ class EmbeddedMapCallbacks : public HashComparator {
   virtual ~EmbeddedMapCallbacks();
 
   virtual void cleanup(EmbeddedMapElement *element) = 0;
+
+  ESB_DISABLE_AUTO_COPY(EmbeddedMapCallbacks);
 };
 
 /**

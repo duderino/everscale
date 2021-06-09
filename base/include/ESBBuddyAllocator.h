@@ -1,25 +1,19 @@
 #ifndef ESB_BUDDY_ALLOCATOR_H
 #define ESB_BUDDY_ALLOCATOR_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_ALLOCATOR_H
 #include <ESBAllocator.h>
 #endif
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
 namespace ESB {
 
-/** BuddyAllocator realizes the Allocator interface with an
- *  implementation of the Buddy System algorithm described in Donald
- *  Knuth's The Art of Computer Programming, Volume 1 Fundamental Algorithms
- *  Third Edition.  It's a variable length allocator with a good algorithm
- *  for compacting reclaimed memory.
+/** BuddyAllocator realizes the Allocator interface with an implementation of the Buddy System algorithm described in
+ * Donald Knuth's The Art of Computer Programming, Volume 1 Fundamental Algorithms Third Edition.  It's a variable
+ * length allocator with a good algorithm for compacting reclaimed memory.
  *
  *  The overhead of this allocator breaks down as follows:
  *
@@ -53,46 +47,46 @@ class BuddyAllocator : public Allocator {
    */
   BuddyAllocator(UInt32 size, Allocator &source);
 
-  /** Destructor.  If initialized, the allocator will call the its destroy
-   *  method.  The destroy method may or may not return the allocator's
-   *  managed memory to its source allocator.
+  /** Destructor.  The allocator will leak memory instead of risking a double free if there are any outstanding
+   * allocations.
    */
   virtual ~BuddyAllocator();
 
   /** Allocate a word-aligned memory block of at least size bytes.
    *
-   *  @param size The minimum number of bytes to allocate.
-   *  @return a word-aligned memory block of at least size bytes if
-   *      successful, NULL otherwise.
+   * @param block will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * @param size The minimum number of bytes to allocate.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted, another error code otherwise.
    */
-  virtual void *allocate(UWord size);
+  virtual Error allocate(UWord size, void **block);
 
-  /** Deallocate a memory block allocated by this allocator or by its
-   *  failover allocators.
+  /** Deallocate a memory block allocated by this allocator.
    *
-   *  @param block The block to deallocate
-   *  @return ESB_SUCCESS if the block was successfully deallocated, another
-   *      error code otherwise.  ESB_NOT_OWNER will be returned if the
-   *      block was not allocated by this allocator.
+   * @param block The block to deallocate
+   * @return ESB_SUCCESS if the block was successfully deallocated, another error code otherwise.  ESB_NOT_OWNER will be
+   * returned if the block was not allocated by this allocator.
    */
   virtual Error deallocate(void *block);
 
   /**
    * Determine whether the implementation supports reallocation.
    *
-   * @return true.
+   * @return true
    */
   virtual bool reallocates();
 
   /**
-   * Reallocate a block of memory or create a new block of memory if necessary.  Regardless, the contents of the
-   * original block will be present in the returned block.
+   * Reallocate a block of memory or create a new block of memory if necessary.  The contents of the original block will
+   * be present in the returned block.
    *
-   * @param block The block to reallocate
-   * @param size
-   * @return a word-aligned memory block of at least size bytes if successful, NULL otherwise.
+   * @param oldBlock The block to reallocate
+   * @param size The requested size of the new block
+   * @param newBlock will point to a word-aligned memory block of at least size bytes if successful, NULL otherwise. Any
+   * bytes stored in the oldBlock will be present at the start of the new block.
+   * @return ESB_SUCCESS if successful, ESB_OUT_OF_MEMORY if the allocator is exhausted (in which case the oldBlock will
+   * be left untouched), another error code otherwise.
    */
-  virtual void *reallocate(void *block, UWord size);
+  virtual Error reallocate(void *oldBlock, UWord size, void **newBlock);
 
   /**
    * Get a cleanup handler to free memory returned by this allocator.  The
@@ -102,19 +96,7 @@ class BuddyAllocator : public Allocator {
    */
   virtual CleanupHandler &cleanupHandler();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  BuddyAllocator(const BuddyAllocator &);
-  BuddyAllocator &operator=(const BuddyAllocator &);
-
   Error initialize();
   Error destroy();
 
@@ -147,6 +129,8 @@ class BuddyAllocator : public Allocator {
   void *_pool;
   UWord _poolKVal;
   AllocatorCleanupHandler _cleanupHandler;
+
+  ESB_DEFAULT_FUNCS(BuddyAllocator);
 };
 
 }  // namespace ESB

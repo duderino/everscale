@@ -6,8 +6,10 @@ namespace ESB {
 
 FlatTimingWheel::FlatTimingWheel(UInt32 ticks, UInt32 tickMilliSeconds, const Date &now, Allocator &allocator)
     : _start(now), _tickMilliSeconds(tickMilliSeconds), _maxTicks(ticks), _currentTick(0U), _allocator(allocator) {
-  _timers = (EmbeddedList *)_allocator.allocate(_maxTicks * sizeof(EmbeddedList));
-  if (!_timers) {
+  Error error = _allocator.allocate(_maxTicks * sizeof(EmbeddedList), (void **)&_timers);
+  if (ESB_SUCCESS != error) {
+    // _timers will be checked in later functions
+    _timers = NULL;
     return;
   }
 
@@ -28,6 +30,10 @@ FlatTimingWheel::~FlatTimingWheel() {
 }
 
 void FlatTimingWheel::clear() {
+  if (!_timers) {
+    return;
+  }
+
   for (UInt32 i = 0; i < _maxTicks; ++i) {
     while (true) {
       Timer *timer = (Timer *)_timers[i].removeFirst();
@@ -45,6 +51,10 @@ void FlatTimingWheel::clear() {
 Error FlatTimingWheel::insert(Timer *timer, UInt32 delayMilliSeconds, const Date &now) {
   if (!timer) {
     return ESB_NULL_POINTER;
+  }
+
+  if (!_timers) {
+    return ESB_OUT_OF_MEMORY;
   }
 
   assert(!timer->inTimingWheel());
@@ -77,6 +87,10 @@ Error FlatTimingWheel::remove(Timer *timer) {
     return ESB_INVALID_ARGUMENT;
   }
 
+  if (!_timers) {
+    return ESB_OUT_OF_MEMORY;
+  }
+
   _timers[idx(timer->tick())].remove(timer);
   timer->remove();
   return ESB_SUCCESS;
@@ -85,6 +99,10 @@ Error FlatTimingWheel::remove(Timer *timer) {
 Error FlatTimingWheel::update(Timer *timer, UInt32 delayMilliSeconds, const Date &now) {
   if (!timer) {
     return ESB_NULL_POINTER;
+  }
+
+  if (!_timers) {
+    return ESB_OUT_OF_MEMORY;
   }
 
   if (!timer->inTimingWheel()) {

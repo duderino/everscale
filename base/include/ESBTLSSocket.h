@@ -5,10 +5,6 @@
 #include <ESBConnectedSocket.h>
 #endif
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #include <openssl/ssl.h>
 
 #define ESB_DEFAULT_CA_BUNDLE_PATH "/etc/ssl/certs/ca-certificates.crt"
@@ -43,6 +39,7 @@ class TLSSocket : public ConnectedSocket {
   TLSSocket(const char *namePrefix, bool isBlocking = false);
 
   virtual ~TLSSocket();
+
   //
   // ESB::ConnectedSocket
   //

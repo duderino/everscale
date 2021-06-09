@@ -13,8 +13,10 @@ EmbeddedMapBase::EmbeddedMapBase(EmbeddedMapCallbacks &callbacks, UInt32 numBuck
     return;
   }
 
-  _buckets = (EmbeddedList *)_allocator.allocate(numBuckets * sizeof(EmbeddedList));
-  if (!_buckets) {
+  Error error = _allocator.allocate(numBuckets * sizeof(EmbeddedList), (void **)&_buckets);
+  if (ESB_SUCCESS != error) {
+    // _buckets will be checked in later functions
+    _buckets = NULL;
     return;
   }
 

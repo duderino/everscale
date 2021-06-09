@@ -30,11 +30,11 @@ class Time {
  private:
   //  Disabled
   Time();
-  Time(const Time &);
-  Time &operator=(const Time &);
 
   TimeSource *_source;
   static Time _Instance;
+
+  ESB_DEFAULT_FUNCS(Time);
 };
 
 }  // namespace ESB

@@ -1,10 +1,6 @@
 #ifndef ESB_NULL_LOCK_H
 #define ESB_NULL_LOCK_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_LOCKABLE_H
 #include <ESBLockable.h>
 #endif
@@ -74,11 +70,9 @@ class NullLock : public Lockable {
   virtual Error readRelease();
 
  private:
-  // Disabled
-  NullLock(const NullLock &);
-  NullLock &operator=(const NullLock &);
-
   static NullLock _Instance;
+
+  ESB_DEFAULT_FUNCS(NullLock);
 };
 
 }  // namespace ESB

@@ -56,13 +56,7 @@ class TimeSeries : public PerformanceCounter {
 
   virtual void log(Logger &logger, Logger::Severity severity) const;
 
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  TimeSeries(const TimeSeries &counter);
-  TimeSeries *operator=(const TimeSeries &counter);
-
   UInt16 _currentWindows;
   const UInt16 _maxWindows;
   const UInt16 _windowSizeSec;
@@ -70,6 +64,8 @@ class TimeSeries : public PerformanceCounter {
   mutable Mutex _lock;
   EmbeddedList _list;
   Allocator &_allocator;
+
+  ESB_DEFAULT_FUNCS(TimeSeries);
 };
 
 }  // namespace ESB

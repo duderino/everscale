@@ -65,21 +65,11 @@ class SharedAveragingCounter {
 
   void log(Logger &logger, Logger::Severity severity, const char *description) const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  SharedAveragingCounter(const SharedAveragingCounter &counter);
-  SharedAveragingCounter &operator=(const SharedAveragingCounter &counter);
-
   AveragingCounter _counter;
   mutable Mutex _lock;
+
+  ESB_DEFAULT_FUNCS(SharedAveragingCounter);
 };
 
 }  // namespace ESB

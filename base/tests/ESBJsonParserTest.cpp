@@ -99,7 +99,7 @@ class CountingJsonParser : public JsonParser {
   int _onDoubles;
   int _onStrings;
 
-  ESB_DISABLE_AUTO_COPY(CountingJsonParser);
+  ESB_DEFAULT_FUNCS(CountingJsonParser);
 };
 
 TEST(JsonParser, SmallDocWithSystemAllocator) {

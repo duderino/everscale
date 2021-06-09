@@ -54,9 +54,9 @@ WildcardIndexNode *WildcardIndexNode::Create(const char *key, Allocator &allocat
 
   // Use one block of memory for node, node's key, and node's wildcards.
 
-  unsigned char *block = (unsigned char *)allocator.allocate(DefaultAlloc);
-
-  if (!block) {
+  unsigned char *block = NULL;
+  Error error = allocator.allocate(DefaultAlloc, (void **)&block);
+  if (ESB_SUCCESS != error) {
     return NULL;
   }
 
@@ -468,9 +468,11 @@ WildcardIndex::WildcardIndex(UInt32 numBuckets, UInt32 numLocks, Allocator &allo
       _numBucketLocks(MIN(numBuckets, numLocks)),
       _bucketLocks(NULL) {
   if (0 < _numBucketLocks) {
-    _bucketLocks = (ReadWriteLock *)_allocator.allocate(numLocks * sizeof(ReadWriteLock));
-    if (!_bucketLocks) {
-      return;  // subsequent interactions with this object will return ESB_OUT_OF_MEMORY
+    Error error = _allocator.allocate(numLocks * sizeof(ReadWriteLock), (void **)&_bucketLocks);
+    if (ESB_SUCCESS != error) {
+      // subsequent interactions with this object will return ESB_OUT_OF_MEMORY
+      _bucketLocks = NULL;
+      return;
     }
 
     for (UInt32 i = 0; i < numLocks; ++i) {

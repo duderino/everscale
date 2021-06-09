@@ -38,27 +38,11 @@ class ClearSocket : public ConnectedSocket {
 
   virtual bool secure() const;
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
-
  private:
   SocketAddress _peerAddress;
   SocketKey _key;
 
-  ESB_DISABLE_AUTO_COPY(ClearSocket);
+  ESB_DEFAULT_FUNCS(ClearSocket);
 };
 
 }  // namespace ESB

@@ -9,16 +9,15 @@ SharedAllocator::SharedAllocator(Allocator &allocator)
 
 SharedAllocator::~SharedAllocator() {}
 
-void *SharedAllocator::allocate(UWord size) {
-  if (ESB_SUCCESS != _mutex.writeAcquire()) {
-    return 0;
+Error SharedAllocator::allocate(UWord size, void **block) {
+  Error error = _mutex.writeAcquire();
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
-  void *block = _allocator.allocate(size);
-
+  error = _allocator.allocate(size, block);
   _mutex.writeRelease();
-
-  return block;
+  return error;
 }
 
 Error SharedAllocator::deallocate(void *block) {
@@ -27,18 +26,28 @@ Error SharedAllocator::deallocate(void *block) {
   }
 
   Error error = _mutex.writeAcquire();
-
   if (ESB_SUCCESS != error) {
     return error;
   }
 
   error = _allocator.deallocate(block);
-
   _mutex.writeRelease();
-
   return error;
 }
 
 CleanupHandler &SharedAllocator::cleanupHandler() { return _sharedCleanupHandler; }
+
+bool SharedAllocator::reallocates() { return _allocator.reallocates(); }
+
+Error SharedAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
+  Error error = _mutex.writeAcquire();
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  error = _allocator.reallocate(oldBlock, size, newBlock);
+  _mutex.writeRelease();
+  return error;
+}
 
 }  // namespace ESB

@@ -1,18 +1,6 @@
 #ifndef ESB_THREAD_POOL_H
 #define ESB_THREAD_POOL_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
 #ifndef ESB_THREAD_H
 #include <ESBThread.h>
 #endif
@@ -79,20 +67,8 @@ class ThreadPool {
    */
   inline Error execute(Command *command) { return _queue.push(command); }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  //  Disabled
-  ThreadPool(const ThreadPool &);
-  ThreadPool &operator=(const ThreadPool &);
-
-  bool createWorkerThreads();
+  Error createWorkerThreads();
   void destroyWorkerThreads();
 
   UInt32 _numThreads;
@@ -100,6 +76,8 @@ class ThreadPool {
   Allocator &_allocator;
   SharedEmbeddedQueue _queue;
   char _name[ESB_NAME_PREFIX_SIZE + 5];
+
+  ESB_DEFAULT_FUNCS(ThreadPool);
 };
 
 }  // namespace ESB

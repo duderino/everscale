@@ -1,20 +1,8 @@
 #ifndef ESB_SOCKET_ADDRESS_H
 #define ESB_SOCKET_ADDRESS_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
-#endif
-
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 #ifndef ESB_STRING_H
@@ -185,17 +173,11 @@ class SocketAddress {
    */
   void setType(TransportType transport);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
   Address _address;
   TransportType _transport;
+
+  ESB_PLACEMENT_NEW(SocketAddress);
 };
 
 }  // namespace ESB

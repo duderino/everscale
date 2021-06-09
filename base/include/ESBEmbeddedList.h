@@ -125,22 +125,6 @@ class EmbeddedList {
    */
   EmbeddedListElement *index(int idx);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, EmbeddedList *list) noexcept { return list; }
-
   /** Validate the internal invariants of the list
    *
    * @return true if the list is valid, false otherwise
@@ -151,7 +135,7 @@ class EmbeddedList {
   EmbeddedListElement *_head;
   EmbeddedListElement *_tail;
 
-  ESB_DISABLE_AUTO_COPY(EmbeddedList);
+  ESB_DEFAULT_FUNCS(EmbeddedList);
 };
 
 }  // namespace ESB

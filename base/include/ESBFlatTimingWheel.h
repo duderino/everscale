@@ -82,19 +82,7 @@ class FlatTimingWheel {
 
   inline UInt32 maxDelayMilliSeconds() { return _tickMilliSeconds * _maxTicks; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  FlatTimingWheel(const FlatTimingWheel &);
-  FlatTimingWheel &operator=(const FlatTimingWheel &);
-
   inline UInt32 idx(Int32 value) { return (value % _maxTicks + _maxTicks) % _maxTicks; }
 
   inline UInt32 ticks(Date date) const {
@@ -109,6 +97,8 @@ class FlatTimingWheel {
   UInt32 _currentTick;     // relative to _start, and in ticks
   EmbeddedList *_timers;
   Allocator &_allocator;
+
+  ESB_DEFAULT_FUNCS(FlatTimingWheel);
 };
 
 }  // namespace ESB

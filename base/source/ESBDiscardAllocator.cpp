@@ -30,16 +30,19 @@ DiscardAllocator::~DiscardAllocator() {
   _head = NULL;
 }
 
-void *DiscardAllocator::allocate(UWord size) {
+Error DiscardAllocator::allocate(UWord size, void **block) {
 #ifdef ESB_NO_ALLOC
   if (!_forcePool) {
-    return SystemAllocator::Instance().allocate(size);
+    return SystemAllocator::Instance().allocate(size, block);
   }
 #endif
   assert(0 < size);
+  if (0 == size) {
+    return ESB_INVALID_ARGUMENT;
+  }
 
-  if (1 > size) {
-    return NULL;
+  if (!block) {
+    return ESB_NULL_POINTER;
   }
 
   //
@@ -50,10 +53,10 @@ void *DiscardAllocator::allocate(UWord size) {
   //
 
   if (size > _chunkSize) {
-    Chunk *chunk = allocateChunk(size);
-
-    if (!chunk) {
-      return NULL;
+    Chunk *chunk = NULL;
+    Error error = allocateChunk(size, &chunk);
+    if (ESB_SUCCESS != error) {
+      return error;
     }
 
     chunk->_idx = chunk->_size;
@@ -65,35 +68,32 @@ void *DiscardAllocator::allocate(UWord size) {
       _head = chunk;
     }
 
-    return chunk->_data;
+    *block = chunk->_data;
+    return ESB_SUCCESS;
   }
 
   if (!_head) {
-    _head = allocateChunk(_chunkSize);
-    if (!_head) {
-      return NULL;
+    Error error = allocateChunk(_chunkSize, &_head);
+    if (ESB_SUCCESS != error) {
+      return error;
     }
   }
 
   if (size > (_head->_idx > _head->_size ? 0 : _head->_size - _head->_idx)) {
-    Chunk *oldHead = _head;
-
-    _head = allocateChunk(_chunkSize);
-
-    if (!_head) {
-      _head = oldHead;
-      return NULL;
+    Chunk *newHead = NULL;
+    Error error = allocateChunk(_chunkSize, &newHead);
+    if (ESB_SUCCESS != error) {
+      return error;
     }
 
-    _head->_next = oldHead;
+    newHead->_next = _head;
+    _head = newHead;
   }
 
-  void *block = _head->_data + _head->_idx;
-
+  *block = _head->_data + _head->_idx;
   // Always keep the next available block aligned
   _head->_idx += ESB_ALIGN(size, _alignmentSize);
-
-  return block;
+  return ESB_SUCCESS;
 }
 
 Error DiscardAllocator::deallocate(void *block) {
@@ -125,36 +125,32 @@ Error DiscardAllocator::reset() {
   return ESB_SUCCESS;
 }
 
-DiscardAllocator::Chunk *DiscardAllocator::allocateChunk(int chunkSize) {
+Error DiscardAllocator::allocateChunk(int chunkSize, Chunk **chunk) {
   ESB::UInt32 size = SizeofChunk(_alignmentSize) + chunkSize;
   assert(0 == size % _multipleOf);
   if (0 != size % _multipleOf) {
-    return NULL;
+    return ESB_INVALID_STATE;
   }
 
-  Chunk *chunk = (Chunk *)_source.allocate(size);
-
-  if (!chunk) {
-    return NULL;
+  Error error = _source.allocate(size, (void **)chunk);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
-  chunk->_next = NULL;
-  chunk->_idx = 0;
-  chunk->_size = chunkSize;
+  (*chunk)->_next = NULL;
+  (*chunk)->_idx = 0;
+  (*chunk)->_size = chunkSize;
 
   // Always keep the next available block aligned
-  chunk->_data = ((char *)chunk) + SizeofChunk(_alignmentSize);
+  (*chunk)->_data = ((char *)*chunk) + SizeofChunk(_alignmentSize);
 
-  return chunk;
+  return ESB_SUCCESS;
 }
 
 CleanupHandler &DiscardAllocator::cleanupHandler() { return _cleanupHandler; }
 
 bool DiscardAllocator::reallocates() { return false; }
 
-void *DiscardAllocator::reallocate(void *block, UWord size) {
-  assert(!"DiscardAllocators do not support reallocate");
-  return NULL;
-}
+Error DiscardAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) { return ESB_OPERATION_NOT_SUPPORTED; }
 
 }  // namespace ESB

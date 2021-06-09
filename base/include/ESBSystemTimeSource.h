@@ -24,10 +24,10 @@ class SystemTimeSource : public TimeSource {
  private:
   //  Disabled
   SystemTimeSource();
-  SystemTimeSource(const TimeSource &);
-  SystemTimeSource &operator=(const TimeSource &);
 
   static SystemTimeSource _Instance;
+
+  ESB_DEFAULT_FUNCS(SystemTimeSource);
 };
 
 }  // namespace ESB

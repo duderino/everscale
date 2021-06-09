@@ -1,20 +1,12 @@
 #ifndef ESB_SOCKET_H
 #define ESB_SOCKET_H
 
-#ifndef ESB_CONFIG_H
-#include <ESBConfig.h>
-#endif
-
 #ifndef ESB_SOCKET_TYPE_H
 #include <ESBSocketType.h>
 #endif
 
 #ifndef ESB_SOCKET_ADDRESS_H
 #include <ESBSocketAddress.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
 #endif
 
 #ifndef ESB_EMBEDDED_MAP_ELEMENT_H
@@ -56,14 +48,12 @@ class Socket : public EmbeddedMapElement {
     inline void setPeerAddress(const SocketAddress &peerAddress) { _peerAddress = peerAddress; }
 
    private:
-    // Disabled
-    State(const State &state);
-    State &operator=(const State &state);
-
     bool _isBlocking;
     SOCKET _socketDescriptor;
     SocketAddress _localAddress;
     SocketAddress _peerAddress;
+
+    ESB_DISABLE_AUTO_COPY(State);
   };
 
   /** Construct a server Socket
@@ -144,19 +134,11 @@ class Socket : public EmbeddedMapElement {
    */
   static Error LastSocketError(SOCKET socket);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return The new object or NULL of the memory allocation failed.
-   */
-  inline void *operator new(size_t size, Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  protected:
   bool _isBlocking;
   SOCKET _sockFd;
 
-  ESB_DISABLE_AUTO_COPY(Socket);
+  ESB_DEFAULT_FUNCS(Socket);
 };
 
 /**

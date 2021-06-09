@@ -36,13 +36,6 @@ ListeningSocket::ListeningSocket(const char *namePrefix, const SocketAddress &ad
 
 ListeningSocket::~ListeningSocket() {}
 
-ListeningSocket::ListeningSocket(const ListeningSocket &socket) { duplicate(socket); }
-
-ListeningSocket &ListeningSocket::operator=(const ListeningSocket &socket) {
-  duplicate(socket);
-  return *this;
-}
-
 Error ListeningSocket::duplicate(const ListeningSocket &socket) {
   _isBlocking = socket._isBlocking;
   _backlog = socket._backlog;
