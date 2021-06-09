@@ -85,10 +85,6 @@ class HttpClientSocketFactory {
   void release(HttpClientSocket *socket);
 
  private:
-  // Disabled
-  HttpClientSocketFactory(const HttpClientSocketFactory &);
-  HttpClientSocketFactory &operator=(const HttpClientSocketFactory &);
-
   const char *name() const;
 
   // To cleanup client sockets created by this factory.  The CleanupHandler returns the
@@ -110,11 +106,9 @@ class HttpClientSocketFactory {
     virtual void destroy(ESB::Object *object);
 
    private:
-    // Disabled
-    CleanupHandler(const CleanupHandler &);
-    void operator=(const CleanupHandler &);
-
     HttpClientSocketFactory &_factory;
+
+    ESB_DISABLE_AUTO_COPY(CleanupHandler);
   };
 
   HttpMultiplexerExtended &_multiplexer;
@@ -124,6 +118,8 @@ class HttpClientSocketFactory {
   ESB::ConnectionPool _connectionPool;
   ESB::EmbeddedList _deconstructedHttpSockets;
   CleanupHandler _cleanupHandler;
+
+  ESB_DEFAULT_FUNCS(HttpClientSocketFactory);
 };
 
 }  // namespace ES

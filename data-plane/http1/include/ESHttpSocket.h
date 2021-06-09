@@ -20,10 +20,7 @@ class HttpSocket : public ESB::MultiplexedSocket {
    */
   virtual ~HttpSocket();
 
- private:
-  // Disabled
-  HttpSocket(const HttpSocket &);
-  HttpSocket &operator=(const HttpSocket &);
+  ESB_DISABLE_AUTO_COPY(HttpSocket);
 };
 
 }  // namespace ES

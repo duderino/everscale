@@ -165,10 +165,6 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
   virtual ESB::SocketMultiplexer &multiplexer();
 
  private:
-  // disabled
-  HttpProxyMultiplexer(const HttpProxyMultiplexer &);
-  void operator=(const HttpProxyMultiplexer &);
-
   ESB::DiscardAllocator _ioBufferPoolAllocator;
   ESB::BufferPool _ioBufferPool;
   ESB::DiscardAllocator _factoryAllocator;
@@ -183,6 +179,8 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
   HttpServerHandler &_serverHandler;
   HttpClientCounters &_clientCounters;
   HttpServerCounters &_serverCounters;
+
+  ESB_DEFAULT_FUNCS(HttpProxyMultiplexer);
 };
 
 }  // namespace ES

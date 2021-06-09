@@ -16,10 +16,7 @@ class HttpProxyHandler : public HttpServerHandler, public HttpClientHandler {
   HttpProxyHandler();
   virtual ~HttpProxyHandler();
 
- private:
-  // Disabled
-  HttpProxyHandler(const HttpProxyHandler &serverHandler);
-  void operator=(const HttpProxyHandler &serverHandler);
+  ESB_DISABLE_AUTO_COPY(HttpProxyHandler);
 };
 
 }  // namespace ES

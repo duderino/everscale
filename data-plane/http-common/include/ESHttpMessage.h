@@ -94,13 +94,11 @@ class HttpMessage {
   inline void setFlags(int flags) { _flags = flags; }
 
  private:
-  // Disabled
-  HttpMessage(const HttpMessage &);
-  void operator=(const HttpMessage &);
-
   int _flags;
   int _version;  // 110 is 1.1, 100 is 1.0, etc.
   ESB::EmbeddedList _headers;
+
+  ESB_DISABLE_AUTO_COPY(HttpMessage);
 };
 
 }  // namespace ES

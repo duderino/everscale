@@ -88,10 +88,6 @@ class HttpServerSimpleCounters : public HttpServerCounters {
   virtual const ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() const;
 
  private:
-  // Disabled
-  HttpServerSimpleCounters(const HttpServerSimpleCounters &counters);
-  void operator=(const HttpServerSimpleCounters &counters);
-
   ESB::SimplePerformanceCounter _successfulTransactions;
 
   ESB::SimplePerformanceCounter _requestHeaderErrors;
@@ -109,6 +105,8 @@ class HttpServerSimpleCounters : public HttpServerCounters {
 
   ESB::SharedInt _totalConnections;
   ESB::SharedAveragingCounter _averageTransactionsPerConnection;
+
+  ESB_DEFAULT_FUNCS(HttpServerSimpleCounters);
 };
 
 }  // namespace ES

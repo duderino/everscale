@@ -91,7 +91,7 @@ Error ThreadPool::join() {
 }
 
 Error ThreadPool::createWorkerThreads() {
-  Error error = _allocator.allocate(_numThreads * sizeof(Thread *), (void **)_threads);
+  Error error = _allocator.allocate(_numThreads * sizeof(Thread *), (void **)&_threads);
   if (ESB_SUCCESS != error) {
     return error;
   }

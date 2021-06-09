@@ -83,24 +83,14 @@ class HttpListeningSocket : public ESB::MultiplexedSocket {
 
   ESB::Error initialize(ESB::ListeningSocket &socket);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  HttpListeningSocket(const HttpListeningSocket &);
-  HttpListeningSocket &operator=(const HttpListeningSocket &);
-
   ESB::ListeningSocket _socket;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
   ESB::CleanupHandler &_cleanupHandler;
   bool _dead;
+
+  ESB_DEFAULT_FUNCS(HttpListeningSocket);
 };
 
 }  // namespace ES

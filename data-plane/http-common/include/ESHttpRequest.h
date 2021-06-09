@@ -47,13 +47,10 @@ class HttpRequest : public HttpMessage {
   ESB::Error parsePeerAddress(char *hostname, int size, ESB::UInt16 *port, bool *isSecure) const;
 
  private:
-  // Disabled
-  HttpRequest(const HttpRequest &);
-  void operator=(const HttpRequest &);
-
   unsigned const char *_method;
-  char _pad[16];
   HttpRequestUri _requestUri;
+
+  ESB_DEFAULT_FUNCS(HttpRequest);
 };
 
 }  // namespace ES

@@ -92,15 +92,13 @@ class HttpCommandSocket : public ESB::MultiplexedSocket {
   virtual ESB::Error runCommand(ESB::EmbeddedListElement *command) = 0;
 
  private:
-  // Disabled
-  HttpCommandSocket(const HttpCommandSocket &);
-  HttpCommandSocket &operator=(const HttpCommandSocket &);
-
   ESB::EventSocket _eventSocket;
   ESB::Mutex _lock;
   ESB::EmbeddedList _queue;
   bool _dead;
   char _name[ESB_NAME_PREFIX_SIZE + ESB_COMMAND_SUFFIX_SIZE];
+
+  ESB_DISABLE_AUTO_COPY(HttpCommandSocket);
 };
 
 }  // namespace ES

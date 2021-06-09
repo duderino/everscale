@@ -86,10 +86,7 @@ class HttpServerCounters {
 
   virtual const ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() const = 0;
 
- private:
-  // Disabled
-  HttpServerCounters(const HttpServerCounters &counters);
-  void operator=(const HttpServerCounters &counters);
+  ESB_DISABLE_AUTO_COPY(HttpServerCounters);
 };
 }  // namespace ES
 

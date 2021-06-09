@@ -25,15 +25,13 @@ class HttpLoadgenSeedCommand : public HttpClientCommand {
   virtual ESB::CleanupHandler *cleanupHandler() { return &_cleanupHandler; }
 
  private:
-  // Disabled
-  HttpLoadgenSeedCommand(const HttpLoadgenSeedCommand &);
-  HttpLoadgenSeedCommand &operator=(const HttpLoadgenSeedCommand &);
-
   ESB::Error buildRequest(HttpClientTransaction *transaction);
 
   ESB::SocketAddress _destination;
   const HttpTestParams &_params;
   ESB::CleanupHandler &_cleanupHandler;
+
+  ESB_DEFAULT_FUNCS(HttpLoadgenSeedCommand);
 };
 
 }  // namespace ES

@@ -23,14 +23,6 @@ class HttpServerTransaction : public HttpTransaction {
 
   virtual void reset();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
   inline HttpRequestParser *getParser() { return &_parser; }
 
   inline const HttpRequestParser *getParser() const { return &_parser; }
@@ -40,12 +32,10 @@ class HttpServerTransaction : public HttpTransaction {
   inline const HttpResponseFormatter *getFormatter() const { return &_formatter; }
 
  private:
-  // Disabled
-  HttpServerTransaction(const HttpServerTransaction &transaction);
-  void operator=(const HttpServerTransaction &transaction);
-
   HttpRequestParser _parser;
   HttpResponseFormatter _formatter;
+
+  ESB_DEFAULT_FUNCS(HttpServerTransaction);
 };
 
 }  // namespace ES

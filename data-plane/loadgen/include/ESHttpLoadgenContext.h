@@ -27,14 +27,6 @@ class HttpLoadgenContext : public ESB::Object {
 
   inline ESB::CleanupHandler &cleanupHandler() const { return _cleanupHandler; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
   /**
    * Atomically decrement the remaining and return the value pre-decrement.
    *
@@ -61,16 +53,14 @@ class HttpLoadgenContext : public ESB::Object {
   }
 
  private:
-  // Disabled
-  HttpLoadgenContext(const HttpLoadgenContext &);
-  void operator=(const HttpLoadgenContext &);
-
   ESB::UInt64 _bytesSent;
   ESB::UInt64 _bytesReceived;
   ESB::CleanupHandler &_cleanupHandler;
   static volatile int _TotalIterations;
   static ESB::SharedInt _RemainingIterations;
   static ESB::SharedInt _CompletedIterations;
+
+  ESB_DEFAULT_FUNCS(HttpLoadgenContext);
 };
 
 }  // namespace ES

@@ -60,30 +60,11 @@ class HttpHeader : public ESB::EmbeddedListElement {
    */
   virtual ESB::CleanupHandler *cleanupHandler();
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param block The object's memory.
-   *  @return the block
-   */
-  inline void *operator new(size_t size, char *block) noexcept { return block; }
-
  private:
-  // Disabled
-  HttpHeader(const HttpHeader &);
-  void operator=(const HttpHeader &);
-
   const unsigned char *_fieldName;
   const unsigned char *_fieldValue;
-  char _pad[24];
+
+  ESB_DEFAULT_FUNCS(HttpHeader);
 };
 
 }  // namespace ES

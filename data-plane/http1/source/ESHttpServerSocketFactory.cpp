@@ -54,7 +54,7 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
 
   switch (state.peerAddress().type()) {
     case ESB::SocketAddress::TLS: {
-      ESB::EmbeddedListElement *memory = _deconstructedTLSSockets.removeLast();
+      ESB::ServerTLSSocket *memory = (ESB::ServerTLSSocket *)_deconstructedTLSSockets.removeLast();
       socket = memory ? new (memory) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name(), _contextIndex)
                       : new (_allocator) ESB::ServerTLSSocket(state, _multiplexer.multiplexer().name(), _contextIndex);
       if (!socket) {
@@ -62,7 +62,7 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
       }
     } break;
     case ESB::SocketAddress::TCP: {
-      ESB::EmbeddedListElement *memory = _deconstructedClearSockets.removeLast();
+      ESB::ClearSocket *memory = (ESB::ClearSocket *)_deconstructedClearSockets.removeLast();
       socket = memory ? new (memory) ESB::ClearSocket(state, _multiplexer.multiplexer().name())
                       : new (_allocator) ESB::ClearSocket(state, _multiplexer.multiplexer().name());
       if (!socket) {
@@ -83,10 +83,15 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
     return NULL;
   }
 
-  ESB::EmbeddedListElement *memory = _deconstructedHTTPSockets.removeFirst();
-  HttpServerSocket *serverSocket =
-      memory ? new (memory) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler)
-             : new (_allocator) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler);
+  HttpServerSocket *serverSocket = NULL;
+  {
+    HttpServerSocket *memory = (HttpServerSocket *)_deconstructedHTTPSockets.removeFirst();
+    if (memory) {
+      serverSocket = new (memory) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler);
+    } else {
+      serverSocket = new (_allocator) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler);
+    }
+  }
 
   if (!serverSocket) {
     if (ESB_ERROR_LOGGABLE) {

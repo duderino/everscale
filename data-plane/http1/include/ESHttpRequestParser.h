@@ -43,10 +43,6 @@ class HttpRequestParser : public HttpMessageParser {
   virtual bool isBodyNotAllowed(HttpMessage &message);
 
  private:
-  // Disabled
-  HttpRequestParser(const HttpRequestParser &parser);
-  void operator=(const HttpRequestParser &parser);
-
   // Method                = "OPTIONS"                ; Section 9.2
   //                       | "GET"                    ; Section 9.3
   //                       | "HEAD"                   ; Section 9.4
@@ -61,6 +57,8 @@ class HttpRequestParser : public HttpMessageParser {
 
   int _requestState;
   HttpRequestUriParser _requestUriParser;
+
+  ESB_DEFAULT_FUNCS(HttpRequestParser);
 };
 
 }  // namespace ES

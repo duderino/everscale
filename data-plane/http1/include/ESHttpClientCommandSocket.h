@@ -37,23 +37,13 @@ class HttpClientCommandSocket : public HttpCommandSocket {
    */
   ESB::Error push(HttpClientCommand *command);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  protected:
   virtual ESB::Error runCommand(ESB::EmbeddedListElement *command);
 
  private:
-  // Disabled
-  HttpClientCommandSocket(const HttpClientCommandSocket &);
-  HttpClientCommandSocket &operator=(const HttpClientCommandSocket &);
-
   HttpMultiplexerExtended &_stack;
+
+  ESB_DEFAULT_FUNCS(HttpClientCommandSocket);
 };
 
 }  // namespace ES

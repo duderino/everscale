@@ -40,10 +40,6 @@ class HttpRequestFormatter : public HttpMessageFormatter {
   virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer, const HttpMessage &message);
 
  private:
-  // Disabled
-  HttpRequestFormatter(const HttpRequestFormatter &formatter);
-  void operator=(const HttpRequestFormatter &formatter);
-
   // Method                = "OPTIONS"                ; Section 9.2
   //                       | "GET"                    ; Section 9.3
   //                       | "HEAD"                   ; Section 9.4
@@ -58,6 +54,8 @@ class HttpRequestFormatter : public HttpMessageFormatter {
 
   int _requestState;
   HttpRequestUriFormatter _requestUriFormatter;
+
+  ESB_DEFAULT_FUNCS(HttpRequestFormatter);
 };
 
 }  // namespace ES

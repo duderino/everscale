@@ -101,10 +101,6 @@ class HttpMessageParser {
   ESB::UInt64 _bodyBytesRemaining;
 
  private:
-  // Disabled
-  HttpMessageParser(const HttpMessageParser &parser);
-  void operator=(const HttpMessageParser &parser);
-
   // field-name     = token
   ESB::Error parseFieldName(ESB::Buffer *inputBuffer, HttpMessage &message);
 
@@ -140,6 +136,8 @@ class HttpMessageParser {
   ESB::Error parseUnencodedBody(ESB::Buffer *inputBuffer, ESB::UInt64 *startingPosition, ESB::UInt64 *chunkSize);
 
   ESB::Error postParse(HttpMessage &message);
+
+  ESB_DISABLE_AUTO_COPY(HttpMessageParser);
 };
 
 }  // namespace ES

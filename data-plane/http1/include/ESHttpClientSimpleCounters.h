@@ -28,12 +28,10 @@ class HttpClientSimpleCounters : public HttpClientCounters {
   virtual const ESB::PerformanceCounter *getFailures() const;
 
  private:
-  // Disabled
-  HttpClientSimpleCounters(const HttpClientSimpleCounters &counters);
-  void operator=(const HttpClientSimpleCounters &counters);
-
   ESB::SimplePerformanceCounter _successes;
   ESB::SimplePerformanceCounter _failures;
+
+  ESB_DEFAULT_FUNCS(HttpClientSimpleCounters);
 };
 
 }  // namespace ES

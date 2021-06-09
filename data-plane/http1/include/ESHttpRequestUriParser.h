@@ -61,10 +61,6 @@ class HttpRequestUriParser {
   ESB::Error parse(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
  private:
-  // Disabled
-  HttpRequestUriParser(const HttpRequestUriParser &);
-  void operator=(const HttpRequestUriParser &);
-
   // "*"
   ESB::Error parseAsterisk(ESB::Buffer *inputBuffer, HttpRequestUri &requestUri);
 
@@ -108,6 +104,8 @@ class HttpRequestUriParser {
   int _state;
   ESB::Buffer *_workingBuffer;
   ESB::DiscardAllocator &_allocator;
+
+  ESB_DEFAULT_FUNCS(HttpRequestUriParser);
 };
 
 }  // namespace ES

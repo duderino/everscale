@@ -277,7 +277,7 @@ class HttpTestParams {
   ESB::UInt32 _maxVerifyDepth;
   DisruptTransaction _disruptTransaction;
 
-  ESB_DISABLE_AUTO_COPY(HttpTestParams);
+  ESB_DEFAULT_FUNCS(HttpTestParams);
 };
 
 }  // namespace ES

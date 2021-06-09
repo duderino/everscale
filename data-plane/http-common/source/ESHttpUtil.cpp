@@ -68,15 +68,15 @@ ESB::UInt16 HttpUtil::_Bitmasks[] = {
 
 unsigned char *HttpUtil::Duplicate(ESB::Allocator *allocator, const unsigned char *value) {
   if (!value || !allocator) {
-    return 0;
+    return NULL;
   }
 
   int length = strlen((const char *)value);
 
-  unsigned char *duplicate = (unsigned char *)allocator->allocate(length + 1);
-
-  if (!duplicate) {
-    return 0;
+  unsigned char *duplicate = NULL;
+  ESB::Error error = allocator->allocate(length + 1, (void **)&duplicate);
+  if (ESB_SUCCESS != error) {
+    return NULL;
   }
 
   memcpy(duplicate, value, length);

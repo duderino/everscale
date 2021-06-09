@@ -69,10 +69,7 @@ class HttpMultiplexerExtended : public HttpMultiplexer {
 
   virtual ESB::SocketMultiplexer &multiplexer() = 0;
 
- private:
-  // Disabled
-  HttpMultiplexerExtended(const HttpMultiplexerExtended &);
-  HttpMultiplexerExtended &operator=(const HttpMultiplexerExtended &);
+  ESB_DISABLE_AUTO_COPY(HttpMultiplexerExtended);
 };
 
 }  // namespace ES

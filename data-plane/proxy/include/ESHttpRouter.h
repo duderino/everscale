@@ -36,10 +36,7 @@ class HttpRouter {
   virtual ESB::Error route(const HttpServerStream &serverStream, HttpClientTransaction &clientTransaction,
                            ESB::SocketAddress &destination) = 0;
 
- private:
-  // Disabled
-  HttpRouter(const HttpRouter &);
-  void operator=(const HttpRouter &);
+  ESB_DISABLE_AUTO_COPY(HttpRouter);
 };
 
 }  // namespace ES

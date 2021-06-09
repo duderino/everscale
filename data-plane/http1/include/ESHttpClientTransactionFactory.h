@@ -43,19 +43,7 @@ class HttpClientTransactionFactory {
 
   void release(HttpClientTransaction *transaction);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  HttpClientTransactionFactory(const HttpClientTransactionFactory &);
-  HttpClientTransactionFactory &operator=(const HttpClientTransactionFactory &);
-
   class CleanupHandler : public ESB::CleanupHandler {
    public:
     /** Constructor
@@ -73,16 +61,16 @@ class HttpClientTransactionFactory {
     virtual void destroy(ESB::Object *object);
 
    private:
-    // Disabled
-    CleanupHandler(const CleanupHandler &);
-    void operator=(const CleanupHandler &);
-
     HttpClientTransactionFactory &_factory;
+
+    ESB_DISABLE_AUTO_COPY(CleanupHandler);
   };
 
   ESB::Allocator &_allocator;
   ESB::EmbeddedList _embeddedList;
   CleanupHandler _cleanupHandler;
+
+  ESB_DEFAULT_FUNCS(HttpClientTransactionFactory);
 };
 
 }  // namespace ES

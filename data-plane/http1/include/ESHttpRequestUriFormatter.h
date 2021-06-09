@@ -46,10 +46,6 @@ class HttpRequestUriFormatter {
   ESB::Error format(ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri);
 
  private:
-  // Disabled
-  HttpRequestUriFormatter(const HttpRequestUriFormatter &);
-  void operator=(const HttpRequestUriFormatter *);
-
   // "*"
   ESB::Error formatAsterisk(ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri);
 
@@ -90,6 +86,8 @@ class HttpRequestUriFormatter {
   ESB::Error formatNonHttpUri(ESB::Buffer *outputBuffer, const HttpRequestUri &requestUri);
 
   int _state;
+
+  ESB_DEFAULT_FUNCS(HttpRequestUriFormatter);
 };
 
 }  // namespace ES

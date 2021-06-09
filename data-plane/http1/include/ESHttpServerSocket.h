@@ -48,22 +48,6 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
 
   inline ESB::ConnectedSocket *socket() { return _socket; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
-
   //
   // ESB::MultiplexedSocket
   //
@@ -263,7 +247,7 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   ESB::Buffer *_sendBuffer;
   ESB::ConnectedSocket *_socket;
 
-  ESB_DISABLE_AUTO_COPY(HttpServerSocket);
+  ESB_DEFAULT_FUNCS(HttpServerSocket);
 };
 
 }  // namespace ES

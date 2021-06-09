@@ -27,10 +27,7 @@ class HttpClientCounters {
 
   virtual const ESB::PerformanceCounter *getFailures() const = 0;
 
- private:
-  // Disabled
-  HttpClientCounters(const HttpClientCounters &counters);
-  void operator=(const HttpClientCounters &counters);
+  ESB_DISABLE_AUTO_COPY(HttpClientCounters);
 };
 
 }  // namespace ES

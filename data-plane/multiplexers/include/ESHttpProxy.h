@@ -59,7 +59,7 @@ class HttpProxy : public HttpServer {
   ESB::ClientTLSContextIndex _clientContextIndex;
   HttpClientHistoricalCounters _clientCounters;
 
-  ESB_DISABLE_AUTO_COPY(HttpProxy);
+  ESB_DEFAULT_FUNCS(HttpProxy);
 };
 
 }  // namespace ES

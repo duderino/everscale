@@ -47,10 +47,7 @@ class HttpConnectionPool {
    */
   virtual void destroyClientTransaction(HttpClientTransaction *transaction) = 0;
 
- private:
-  // disabled
-  HttpConnectionPool(const HttpConnectionPool &);
-  void operator=(const HttpConnectionPool &);
+  ESB_DISABLE_AUTO_COPY(HttpConnectionPool);
 };
 
 }  // namespace ES

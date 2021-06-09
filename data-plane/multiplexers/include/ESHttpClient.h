@@ -96,7 +96,7 @@ class HttpClient {
   HttpClientHistoricalCounters _clientCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
 
-  ESB_DISABLE_AUTO_COPY(HttpClient);
+  ESB_DEFAULT_FUNCS(HttpClient);
 };
 
 }  // namespace ES

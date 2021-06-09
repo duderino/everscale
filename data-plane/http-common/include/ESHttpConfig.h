@@ -1,8 +1,8 @@
 #ifndef ES_HTTP_CONFIG_H
 #define ES_HTTP_CONFIG_H
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ES {
@@ -34,7 +34,7 @@ class HttpConfig {
   ESB::UInt32 _idleTimeoutSeconds;
   static HttpConfig _Instance;
 
-  ESB_DISABLE_AUTO_COPY(HttpConfig);
+  ESB_DEFAULT_FUNCS(HttpConfig);
 };
 
 }  // namespace ES

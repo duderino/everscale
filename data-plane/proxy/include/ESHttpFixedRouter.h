@@ -19,11 +19,9 @@ class HttpFixedRouter : public HttpRouter {
                            ESB::SocketAddress &destination);
 
  private:
-  // Disabled
-  HttpFixedRouter(const HttpFixedRouter &);
-  void operator=(const HttpFixedRouter &);
-
   ESB::SocketAddress _destination;
+
+  ESB_DEFAULT_FUNCS(HttpFixedRouter);
 };
 
 }  // namespace ES

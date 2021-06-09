@@ -27,10 +27,7 @@ class HttpServerCommand : public ESB::EmbeddedListElement {
 
   virtual const char *name() = 0;
 
- private:
-  // Disabled
-  HttpServerCommand(const HttpServerCommand &serverCommand);
-  void operator=(const HttpServerCommand &serverCommand);
+  ESB_DISABLE_AUTO_COPY(HttpServerCommand);
 };
 
 }  // namespace ES

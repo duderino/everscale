@@ -33,11 +33,9 @@ class SynchronousDnsHttpRouter : public HttpRouter {
                            ESB::SocketAddress &destination);
 
  private:
-  // Disabled
-  SynchronousDnsHttpRouter(const SynchronousDnsHttpRouter &);
-  void operator=(const SynchronousDnsHttpRouter &);
-
   ESB::SystemDnsClient _dnsClient;
+
+  ESB_DEFAULT_FUNCS(SynchronousDnsHttpRouter);
 };
 
 }  // namespace ES

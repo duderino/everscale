@@ -38,10 +38,6 @@ class HttpResponseParser : public HttpMessageParser {
   virtual bool isBodyNotAllowed(HttpMessage &message);
 
  private:
-  // Disabled
-  HttpResponseParser(const HttpResponseParser &parser);
-  void operator=(const HttpResponseParser &parser);
-
   // Status-Code    = 3DIGIT
   ESB::Error parseStatusCode(ESB::Buffer *inputBuffer, HttpResponse &response);
 
@@ -49,6 +45,8 @@ class HttpResponseParser : public HttpMessageParser {
   ESB::Error parseReasonPhrase(ESB::Buffer *inputBuffer, HttpResponse &response);
 
   int _responseState;
+
+  ESB_DEFAULT_FUNCS(HttpResponseParser);
 };
 
 }  // namespace ES

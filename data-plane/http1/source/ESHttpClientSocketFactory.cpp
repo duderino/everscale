@@ -73,13 +73,18 @@ ESB::Error HttpClientSocketFactory::create(HttpClientTransaction *transaction, H
     return error;
   }
 
-  ESB::EmbeddedListElement *memory = _deconstructedHttpSockets.removeLast();
-  HttpClientSocket *httpSocket =
-      memory
-          ? new (memory)
-                HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler)
-          : new (_allocator)
-                HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler);
+  HttpClientSocket *httpSocket = NULL;
+
+  {
+    HttpClientSocket *memory = (HttpClientSocket *)_deconstructedHttpSockets.removeLast();
+    if (memory) {
+      httpSocket = new (memory)
+          HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler);
+    } else {
+      httpSocket = new (_allocator)
+          HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler);
+    }
+  }
 
   if (!httpSocket) {
     if (ESB_ERROR_LOGGABLE) {

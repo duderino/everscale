@@ -36,10 +36,6 @@ class HttpResponseFormatter : public HttpMessageFormatter {
   virtual ESB::Error formatStartLine(ESB::Buffer *outputBuffer, const HttpMessage &message);
 
  private:
-  // Disabled
-  HttpResponseFormatter(const HttpResponseFormatter &formatter);
-  void operator=(const HttpResponseFormatter &formatter);
-
   // Status-Code    = 3DIGIT
   ESB::Error formatStatusCode(ESB::Buffer *outputBuffer, const HttpResponse &response);
 
@@ -47,6 +43,8 @@ class HttpResponseFormatter : public HttpMessageFormatter {
   ESB::Error formatReasonPhrase(ESB::Buffer *outputBuffer, const HttpResponse &response);
 
   int _responseState;
+
+  ESB_DEFAULT_FUNCS(HttpResponseFormatter);
 };
 
 }  // namespace ES

@@ -31,13 +31,10 @@ class HttpResponse : public HttpMessage {
   inline const unsigned char *reasonPhrase() const { return _reasonPhrase; }
 
  private:
-  // Disabled
-  HttpResponse(const HttpResponse &);
-  void operator=(const HttpResponse &);
-
   int _statusCode;
   unsigned const char *_reasonPhrase;
-  char _pad[8];
+
+  ESB_DEFAULT_FUNCS(HttpResponse);
 };
 
 }  // namespace ES

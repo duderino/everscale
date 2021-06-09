@@ -104,12 +104,10 @@ class HttpServer {
     virtual const char *name() { return "add listening socket"; }
 
    private:
-    // Disabled
-    AddListeningSocketCommand(const AddListeningSocketCommand &);
-    AddListeningSocketCommand &operator=(const AddListeningSocketCommand &);
-
     ESB::ListeningSocket &_socket;
     ESB::CleanupHandler &_cleanupHandler;
+
+    ESB_DEFAULT_FUNCS(AddListeningSocketCommand);
   };
 
  protected:
@@ -137,7 +135,7 @@ class HttpServer {
   HttpServerSimpleCounters _serverCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
 
-  ESB_DISABLE_AUTO_COPY(HttpServer);
+  ESB_DEFAULT_FUNCS(HttpServer);
 };
 
 }  // namespace ES

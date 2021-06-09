@@ -15,10 +15,7 @@ class EphemeralListener : public ESB::ListeningSocket {
 
   ESB::SocketAddress localDestination();
 
- private:
-  // disabled
-  EphemeralListener(const EphemeralListener &socket);
-  EphemeralListener &operator=(const EphemeralListener &socket);
+  ESB_DEFAULT_FUNCS(EphemeralListener);
 };
 
 }  // namespace ES

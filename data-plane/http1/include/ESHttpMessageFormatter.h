@@ -100,10 +100,6 @@ class HttpMessageFormatter {
   ESB::Error formatVersion(ESB::Buffer *outputBuffer, const HttpMessage &message, bool clientMode);
 
  private:
-  // Disabled
-  HttpMessageFormatter(const HttpMessageFormatter &formatter);
-  void operator=(const HttpMessageFormatter &formatter);
-
   // field-name     = token
   inline ESB::Error formatFieldName(ESB::Buffer *outputBuffer, const char *fieldName) {
     return formatFieldName(outputBuffer, (const unsigned char *)fieldName);
@@ -134,6 +130,8 @@ class HttpMessageFormatter {
 
   int _state;
   const HttpHeader *_currentHeader;
+
+  ESB_DISABLE_AUTO_COPY(HttpMessageFormatter);
 };
 
 }  // namespace ES

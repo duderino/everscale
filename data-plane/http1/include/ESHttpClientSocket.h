@@ -57,22 +57,6 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
 
   inline void clearTransaction() { _transaction = NULL; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param memory The object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::EmbeddedListElement *memory) noexcept { return memory; }
-
   static inline void SetReuseConnections(bool reuseConnections) { _ReuseConnections = reuseConnections; }
 
   static inline bool GetReuseConnections() { return _ReuseConnections; }
@@ -260,7 +244,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   ESB::ConnectedSocket *_socket;
   static bool _ReuseConnections;
 
-  ESB_DISABLE_AUTO_COPY(HttpClientSocket);
+  ESB_DEFAULT_FUNCS(HttpClientSocket);
 };
 
 }  // namespace ES

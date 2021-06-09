@@ -51,12 +51,10 @@ class HttpLoadgenHandler : public HttpClientHandler {
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state);
 
  private:
-  // Disabled
-  HttpLoadgenHandler(const HttpLoadgenHandler &);
-  void operator=(const HttpLoadgenHandler &);
-
   const HttpTestParams &_params;
   ESB::SharedInt _completedTransactions;
+
+  ESB_DEFAULT_FUNCS(HttpLoadgenHandler);
 };
 
 }  // namespace ES

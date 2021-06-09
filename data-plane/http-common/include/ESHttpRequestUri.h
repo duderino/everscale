@@ -1,16 +1,8 @@
 #ifndef ES_HTTP_REQUEST_URI_H
 #define ES_HTTP_REQUEST_URI_H
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
-#endif
-
-#ifndef ESB_ERROR_H
-#include <ESBError.h>
-#endif
-
-#ifndef ESB_ALLOCATOR_H
-#include <ESBAllocator.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ES {
@@ -223,10 +215,6 @@ class HttpRequestUri {
   static int Compare(const HttpRequestUri *r1, const HttpRequestUri *r2);
 
  private:
-  // Disabled
-  HttpRequestUri(const HttpRequestUri &);
-  void operator=(const HttpRequestUri &);
-
   UriType _type;
   ESB::Int32 _port;
   const unsigned char *_host;
@@ -234,7 +222,8 @@ class HttpRequestUri {
   const unsigned char *_query;
   const unsigned char *_fragment;
   const unsigned char *_other;
-  char _pad[8];
+
+  ESB_DEFAULT_FUNCS(HttpRequestUri);
 };
 
 }  // namespace ES

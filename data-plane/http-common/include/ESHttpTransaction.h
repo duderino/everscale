@@ -94,10 +94,6 @@ class HttpTransaction : public ESB::EmbeddedListElement {
   ESB::DiscardAllocator _allocator;
 
  private:
-  // Disabled
-  HttpTransaction(const HttpTransaction &transaction);
-  void operator=(const HttpTransaction &transaction);
-
   void *_context;
   ESB::CleanupHandler &_cleanupHandler;
   ESB::Date _start;
@@ -106,6 +102,8 @@ class HttpTransaction : public ESB::EmbeddedListElement {
   HttpResponse _response;
   ESB::Buffer _parseBuffer;
   unsigned char _parseBufferStorage[ES_HTTP_PARSE_BUFFER_SIZE];
+
+  ESB_DEFAULT_FUNCS(HttpTransaction);
 };
 
 }  // namespace ES

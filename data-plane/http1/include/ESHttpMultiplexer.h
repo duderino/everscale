@@ -37,10 +37,7 @@ class HttpMultiplexer {
 
   virtual void destroyClientTransaction(HttpClientTransaction *transaction) = 0;
 
- private:
-  // Disabled
-  HttpMultiplexer(const HttpMultiplexer &);
-  HttpMultiplexer &operator=(const HttpMultiplexer &);
+  ESB_DISABLE_AUTO_COPY(HttpMultiplexer);
 };
 
 }  // namespace ES

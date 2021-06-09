@@ -59,10 +59,7 @@ class HttpClientStream : public HttpStream {
    */
   virtual ESB::Error readResponseBody(unsigned char *body, ESB::UInt64 bytesRequested, ESB::UInt64 *bytesRead) = 0;
 
- private:
-  // Disabled
-  HttpClientStream(const HttpClientStream &);
-  void operator=(const HttpClientStream &);
+  ESB_DISABLE_AUTO_COPY(HttpClientStream);
 };
 
 }  // namespace ES

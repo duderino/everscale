@@ -35,7 +35,7 @@ class HttpOriginHandler : public HttpServerHandler {
  private:
   const HttpTestParams &_params;
 
-  ESB_DISABLE_AUTO_COPY(HttpOriginHandler);
+  ESB_DEFAULT_FUNCS(HttpOriginHandler);
 };
 
 }  // namespace ES

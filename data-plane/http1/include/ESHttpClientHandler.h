@@ -121,10 +121,7 @@ class HttpClientHandler {
    */
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream, State state) = 0;
 
- private:
-  // Disabled
-  HttpClientHandler(const HttpClientHandler &clientHandler);
-  void operator=(const HttpClientHandler &clientHandler);
+  ESB_DISABLE_AUTO_COPY(HttpClientHandler);
 };
 
 }  // namespace ES

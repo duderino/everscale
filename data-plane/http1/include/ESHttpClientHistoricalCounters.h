@@ -36,12 +36,10 @@ class HttpClientHistoricalCounters : public HttpClientCounters {
   virtual const ESB::PerformanceCounter *getFailures() const;
 
  private:
-  // Disabled
-  HttpClientHistoricalCounters(const HttpClientHistoricalCounters &counters);
-  void operator=(const HttpClientHistoricalCounters &counters);
-
   ESB::TimeSeries _successes;
   ESB::TimeSeries _failures;
+
+  ESB_DEFAULT_FUNCS(HttpClientHistoricalCounters);
 };
 
 }  // namespace ES

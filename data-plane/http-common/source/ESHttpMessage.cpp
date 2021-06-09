@@ -39,10 +39,10 @@ ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue,
   int fieldNameLength = strlen((const char *)fieldName);
   int fieldValueLength = strlen((const char *)fieldValue);
 
-  char *block = (char *)allocator.allocate(sizeof(HttpHeader) + fieldNameLength + fieldValueLength + 2);
-
-  if (!block) {
-    return ESB_OUT_OF_MEMORY;
+  unsigned char *block = NULL;
+  ESB::Error error = allocator.allocate(sizeof(HttpHeader) + fieldNameLength + fieldValueLength + 2, (void **)&block);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   memcpy(block + sizeof(HttpHeader), fieldName, fieldNameLength);
@@ -53,7 +53,6 @@ ESB::Error HttpMessage::addHeader(const char *fieldName, const char *fieldValue,
 
   HttpHeader *header =
       new (block) HttpHeader(block + sizeof(HttpHeader), block + sizeof(HttpHeader) + fieldNameLength + 1);
-
   _headers.addLast(header);
 
   return ESB_SUCCESS;

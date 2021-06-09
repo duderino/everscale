@@ -5,6 +5,10 @@
 #include <ESBAllocator.h>
 #endif
 
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
+#endif
+
 namespace ES {
 
 class HttpOriginContext {
@@ -21,21 +25,11 @@ class HttpOriginContext {
 
   inline void setBytesReceived(ESB::UInt64 bytesReceived) { _bytesReceived = bytesReceived; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  HttpOriginContext(const HttpOriginContext &);
-  void operator=(const HttpOriginContext &);
-
   ESB::UInt64 _bytesSent;
   ESB::UInt64 _bytesReceived;
+
+  ESB_DEFAULT_FUNCS(HttpOriginContext);
 };
 
 }  // namespace ES

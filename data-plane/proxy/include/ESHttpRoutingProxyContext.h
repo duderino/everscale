@@ -44,24 +44,14 @@ class HttpRoutingProxyContext {
     _responseBodyBytesForwarded += responseBodyBytesSent;
   }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  HttpRoutingProxyContext(const HttpRoutingProxyContext &);
-  void operator=(const HttpRoutingProxyContext &);
-
   HttpServerStream *_serverStream;
   HttpClientStream *_clientStream;
   int _flags;
   ESB::UInt64 _requestBodyBytesForwarded;
   ESB::UInt64 _responseBodyBytesForwarded;
+
+  ESB_DEFAULT_FUNCS(HttpRoutingProxyContext);
 };
 
 }  // namespace ES

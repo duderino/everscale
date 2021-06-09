@@ -45,19 +45,7 @@ class HttpServerSocketFactory {
 
   void release(HttpServerSocket *socket);
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator *allocator) { return allocator->allocate(size); }
-
  private:
-  // Disabled
-  HttpServerSocketFactory(const HttpServerSocketFactory &);
-  HttpServerSocketFactory &operator=(const HttpServerSocketFactory &);
-
   void releaseSocket(ESB::ConnectedSocket *socket);
 
   class CleanupHandler : public ESB::CleanupHandler {
@@ -77,11 +65,9 @@ class HttpServerSocketFactory {
     virtual void destroy(ESB::Object *object);
 
    private:
-    // Disabled
-    CleanupHandler(const CleanupHandler &);
-    void operator=(const CleanupHandler &);
-
     HttpServerSocketFactory &_factory;
+
+    ESB_DISABLE_AUTO_COPY(CleanupHandler);
   };
 
   ESB::ServerTLSContextIndex &_contextIndex;
@@ -93,6 +79,8 @@ class HttpServerSocketFactory {
   ESB::EmbeddedList _deconstructedClearSockets;
   ESB::EmbeddedList _deconstructedTLSSockets;
   CleanupHandler _cleanupHandler;
+
+  ESB_DEFAULT_FUNCS(HttpServerSocketFactory);
 };
 
 }  // namespace ES

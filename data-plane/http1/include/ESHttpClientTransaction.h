@@ -33,21 +33,11 @@ class HttpClientTransaction : public HttpTransaction {
 
   inline const HttpRequestFormatter *getFormatter() const { return &_formatter; }
 
-  /** Placement new.
-   *
-   *  @param size The size of the object.
-   *  @param allocator The source of the object's memory.
-   *  @return Memory for the new object or NULL if the memory allocation failed.
-   */
-  inline void *operator new(size_t size, ESB::Allocator &allocator) noexcept { return allocator.allocate(size); }
-
  private:
-  // Disabled
-  HttpClientTransaction(const HttpClientTransaction &transaction);
-  void operator=(const HttpClientTransaction &transaction);
-
   HttpResponseParser _parser;
   HttpRequestFormatter _formatter;
+
+  ESB_DEFAULT_FUNCS(HttpClientTransaction);
 };
 
 }  // namespace ES
