@@ -14,7 +14,7 @@ BuddyAllocator::KVal BuddyAllocator::GetKVal(UWord requestedSize) {
   UWord adjustedSize = requestedSize + sizeof(AvailListElem);
 
   KVal min = 0;
-  KVal kVal = ESB_AVAIL_LIST_LENGTH / 2;
+  KVal kVal = 8;  // best guess starting point of 2^8 = 256 adjusted sizes
   KVal max = ESB_AVAIL_LIST_LENGTH;
 
   while (true) {
