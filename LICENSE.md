@@ -43,6 +43,10 @@ Example code from https://github.com/grpc/grpc/blob/master/examples/cpp/hellowor
 
 yajl is used for parsing JSON.  It is fetched at buildtime from a mirror of https://github.com/lloyd/yajl and statically linked in.
 
+8) Static Block.  Apache 2 License
+
+Java-style static initialization blocks for C++.  The https://github.com/eyalroz/cpp-static-block/blob/master/static_block.hpp header file was copied into base/include/ESBStaticBlock.h
+
 n) Textbooks and academic papers.
 
 Some algorithms and data structures in this project were derived from the following textbooks and other academic sources:

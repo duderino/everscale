@@ -9,11 +9,27 @@
 namespace ESB {
 
 BuddyAllocator::KVal BuddyAllocator::GetKVal(UWord requestedSize) {
-  UWord adjustedSize = requestedSize + sizeof(AvailListElem);
-  KVal kVal = 1;
+  // This is a non-recursive binary search for the closest kVal
 
-  while (adjustedSize > (ESB_UWORD_C(1) << kVal)) {
-    ++kVal;
+  UWord adjustedSize = requestedSize + sizeof(AvailListElem);
+
+  KVal min = 0;
+  KVal kVal = ESB_AVAIL_LIST_LENGTH / 2;
+  KVal max = ESB_AVAIL_LIST_LENGTH;
+
+  while (true) {
+    if (adjustedSize > (ESB_UWORD_C(1) << kVal)) {
+      // kVal too small, move it halfway to max
+      min = kVal;
+      kVal = kVal + (max - kVal) / 2;
+    } else {
+      if (adjustedSize > (ESB_UWORD_C(1) << (kVal - 1))) {
+        break;
+      }
+      // kVal too large, move it halfway to min
+      max = kVal;
+      kVal = kVal - (kVal - min) / 2;
+    }
   }
 
   return kVal;

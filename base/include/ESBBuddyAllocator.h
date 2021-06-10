@@ -111,7 +111,7 @@ class BuddyAllocator : public Allocator {
  protected:
   /**
    * Get the size of the allocation.  This may be a bit larger than originally requested, but it can be assumed that the
-   * block owns this much space.
+   * block owns this much space until it is deallocated.
    *
    * @param block The block
    * @return 0 if the block was not allocated by this allocator, the block's size otherwise.

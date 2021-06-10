@@ -17,6 +17,10 @@
 #include <ESBError.h>
 #endif
 
+#ifndef STATIC_BLOCK_HPP_
+#include <ESBStaticBlock.h>
+#endif
+
 namespace ESB {
 
 #ifndef MIN
