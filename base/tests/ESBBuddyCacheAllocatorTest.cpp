@@ -25,15 +25,20 @@ TEST(BuddyCacheAllocator, FailoverAndReset) {
     ASSERT_TRUE(allocations[i]);
   }
 
+#ifndef ESB_NO_ALLOC
   ASSERT_EQ(numAllocations * allocationSize, allocator.cacheBytes());
   ASSERT_EQ(0, allocator.failoverBytes());
+#endif
 
   // Additional allocations use failover cache
   void *failoverAllocation = NULL;
   ASSERT_EQ(ESB_SUCCESS, allocator.allocate(allocationSize, &failoverAllocation));
+  ASSERT_TRUE(failoverAllocation);
+
+#ifndef ESB_NO_ALLOC
   ASSERT_EQ(numAllocations * allocationSize, allocator.cacheBytes());
   ASSERT_EQ(allocationSize, allocator.failoverBytes());
-  ASSERT_TRUE(failoverAllocation);
+#endif
 
   // Return 1 block to the cache, 4 smaller blocks can now be allocated from the free cache
 
@@ -50,9 +55,11 @@ TEST(BuddyCacheAllocator, FailoverAndReset) {
     ASSERT_TRUE(supplementalAllocations[i]);
   }
 
+#ifndef ESB_NO_ALLOC
   ASSERT_EQ(numAllocations * allocationSize + numSupplementalAllocations * supplementalAllocationSize,
             allocator.cacheBytes());
   ASSERT_EQ(allocationSize, allocator.failoverBytes());
+#endif
 
   // Cleanup
   ASSERT_EQ(ESB_SUCCESS, allocator.deallocate(failoverAllocation));
@@ -62,8 +69,10 @@ TEST(BuddyCacheAllocator, FailoverAndReset) {
     }
   }
 
+#ifndef ESB_NO_ALLOC
   // Allocator will refuse to be destroyed since there are still outstanding allocations
   ASSERT_EQ(ESB_IN_USE, allocator.reset());
+#endif
 
   for (int i = 0; i < numSupplementalAllocations; ++i) {
     if (supplementalAllocations[i]) {

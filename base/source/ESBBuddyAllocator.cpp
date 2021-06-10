@@ -324,6 +324,9 @@ Error BuddyAllocator::initialize() {
 }
 
 Error BuddyAllocator::reset() {
+#ifdef ESB_NO_ALLOC
+  return ESB_SUCCESS;
+#else
   if (!_pool) {
     return ESB_INVALID_STATE;
   }
@@ -336,6 +339,7 @@ Error BuddyAllocator::reset() {
   _pool = NULL;
 
   return ESB_SUCCESS;
+#endif
 }
 
 CleanupHandler &BuddyAllocator::cleanupHandler() { return _cleanupHandler; }

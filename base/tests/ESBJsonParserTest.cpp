@@ -139,9 +139,11 @@ TEST(JsonParser, SmallDoc) {
     ASSERT_EQ(10, parser.onStrings());
   }
 
+#ifndef ESB_NO_ALLOC
   // Assert that only the buddy allocator cache was used
   ASSERT_LT(1024, allocator.cacheBytes());
   ASSERT_EQ(0, allocator.failoverBytes());
+#endif
 }
 
 TEST(JsonParser, Large) {
@@ -181,9 +183,11 @@ TEST(JsonParser, Large) {
     ASSERT_EQ(150, parser.onStrings());
   }
 
+#ifndef ESB_NO_ALLOC
   // Assert that only the buddy allocator cache was used
   ASSERT_LT(1024, allocator.cacheBytes());
   ASSERT_EQ(0, allocator.failoverBytes());
+#endif
 }
 
 TEST(JsonParser, LargeFailover) {
@@ -223,7 +227,9 @@ TEST(JsonParser, LargeFailover) {
     ASSERT_EQ(150, parser.onStrings());
   }
 
+#ifndef ESB_NO_ALLOC
   // Assert that the failover allocator was used
   ASSERT_LT(1024, allocator.cacheBytes());
   ASSERT_LT(1024, allocator.failoverBytes());
+#endif
 }
