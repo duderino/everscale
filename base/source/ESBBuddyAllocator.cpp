@@ -183,9 +183,10 @@ Error BuddyAllocator::deallocate(void *block) {
     return ESB_INVALID_STATE;
   }
 
-  char *trueAddress = ((char *)block) - sizeof(AvailListElem);
+  char *lowerBound = (char *)_pool;
+  char *upperBound = ((char *)_pool) + (ESB_UWORD_C(1) << _poolKVal);
 
-  if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
+  if (block < lowerBound || block >= upperBound) {
     return ESB_NOT_OWNER;
   }
 
@@ -195,7 +196,7 @@ Error BuddyAllocator::deallocate(void *block) {
   //    Knuth S1
   //
 
-  AvailListElem *elem = (AvailListElem *)trueAddress;
+  AvailListElem *elem = (AvailListElem *)(((char *)block) - sizeof(AvailListElem));
   AvailListElem *buddy = NULL;
 
   assert(!elem->_linkB);
@@ -380,12 +381,14 @@ Error BuddyAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
 }
 
 UWord BuddyAllocator::allocationSize(void *block) const {
-  char *trueAddress = ((char *)block) - sizeof(AvailListElem);
-  if (trueAddress < (char *)_pool || trueAddress >= (char *)_pool + (ESB_UWORD_C(1) << _poolKVal)) {
+  char *lowerBound = (char *)_pool;
+  char *upperBound = ((char *)_pool) + (ESB_UWORD_C(1) << _poolKVal);
+
+  if (block < lowerBound || block >= upperBound) {
     return 0;
   }
 
-  AvailListElem *elem = (AvailListElem *)trueAddress;
+  AvailListElem *elem = (AvailListElem *)(((char *)block) - sizeof(AvailListElem));
   return (ESB_UWORD_C(1) << elem->_kVal) - sizeof(AvailListElem);
 }
 
