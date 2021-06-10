@@ -97,7 +97,7 @@ class BuddyAllocatorTest : public ESTF::Component {
 
 ESTF_OBJECT_PTR(BuddyAllocatorTest, ESTF::Component)
 
-BuddyAllocatorTest::BuddyAllocatorTest() : _rand(), _allocator(17, SystemAllocator::Instance()) {}
+BuddyAllocatorTest::BuddyAllocatorTest() : _rand(), _allocator(131072, SystemAllocator::Instance()) {}
 
 BuddyAllocatorTest::~BuddyAllocatorTest() {}
 

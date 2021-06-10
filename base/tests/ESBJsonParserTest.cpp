@@ -104,8 +104,7 @@ class CountingJsonParser : public JsonParser {
 
 TEST(JsonParser, SmallDoc) {
   unsigned char buffer[128];
-  // 14 is 2^14 or 16384 bytes of memory for the allocator
-  BuddyCacheAllocator allocator(14, SystemAllocator::Instance(), SystemAllocator::Instance());
+  BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
     CountingJsonParser parser(allocator);
@@ -148,8 +147,8 @@ TEST(JsonParser, SmallDoc) {
 
 TEST(JsonParser, Large) {
   unsigned char buffer[128];
-  // 14 is 2^14 or 16384 bytes of memory for the allocator
-  BuddyCacheAllocator allocator(14, SystemAllocator::Instance(), SystemAllocator::Instance());
+  // Note that the cache is the same size as the small test case but still does not spillover to the failover allocator
+  BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
     CountingJsonParser parser(allocator);
@@ -192,8 +191,8 @@ TEST(JsonParser, Large) {
 
 TEST(JsonParser, LargeFailover) {
   unsigned char buffer[128];
-  // 13 is 2^13 or 8192 bytes of memory for the allocator
-  BuddyCacheAllocator allocator(13, SystemAllocator::Instance(), SystemAllocator::Instance());
+  // Note that the cache is smaller for this test case, which forces failover.
+  BuddyCacheAllocator allocator(8192, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
     CountingJsonParser parser(allocator);

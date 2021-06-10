@@ -3,11 +3,6 @@ project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
         source/ESConfig.cpp
-        source/ESServiceEntry.cpp
-        source/ESDestinationRule.cpp
-        source/ESVirtualService.cpp
-        source/ESGateway.cpp
-        source/ESSidecar.cpp
         )
 
 add_library(config STATIC ${SOURCE_FILES})

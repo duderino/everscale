@@ -11,8 +11,7 @@
 using namespace ESB;
 
 TEST(BuddyCacheAllocator, FailoverAndReset) {
-  // Cache is 2^14 or 16384 bytes
-  BuddyCacheAllocator allocator(14, SystemAllocator::Instance(), SystemAllocator::Instance());
+  BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   // Completely fill the cache, without fragmentation and accounting for overhead.
   void *allocations[16];

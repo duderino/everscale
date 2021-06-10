@@ -12,25 +12,8 @@
 namespace ESB {
 
 /** BuddyAllocator realizes the Allocator interface with an implementation of the Buddy System algorithm described in
- * Donald Knuth's The Art of Computer Programming, Volume 1 Fundamental Algorithms Third Edition.  It's a variable
- * length allocator with a good algorithm for compacting reclaimed memory.
- *
- *  The overhead of this allocator breaks down as follows:
- *
- *  MaxPoolSize = 32 for 32-bit architectures, 64 for 64-bit.
- *  MaxPoolSizeInBytes = 2^MaxPoolSize
- *  WordSize = 4 bytes for 32-bit architectures, 8 for 64-bit.
- *
- *  AdjustedSize = RequestedSize + ( 3 * WordSize )
- *  AllocatedSize = Smallest power of 2 sufficient to hold AdjustedSize
- *
- *  Fixed Overhead:
- *
- *    ( MaxPoolSize * WordSize ) + ( WordSize * 4 )
- *
- *  Overhead Per Allocation:
- *
- *    AllocatedSize - RequestedSize.
+ *  Donald Knuth's The Art of Computer Programming, Volume 1 Fundamental Algorithms Third Edition.  It's a variable
+ *  length allocator with a good algorithm for compacting reclaimed memory.
  *
  *  @ingroup allocator
  */
@@ -38,14 +21,13 @@ class BuddyAllocator : public Allocator {
  public:
   /** Constructor.
    *
-   *  @param size The size of the memory pool that this allocator will manage as a power of 2 (e.g., 16 will create a
-   * 2^16 byte pool).
+   *  @param size The size of the memory pool that the cache will manage (will be rounded up to a power of 2).
    *  @param source The allocator to use to allocate the memory pool. This is probably the system allocator.
    */
   BuddyAllocator(UInt32 size, Allocator &source);
 
   /** Destructor.  The allocator will leak memory instead of risking a double free if there are any outstanding
-   * allocations.
+   *  allocations.
    */
   virtual ~BuddyAllocator();
 
@@ -140,7 +122,18 @@ class BuddyAllocator : public Allocator {
     Tag _tag;              /**< 1 if available, 0 if in use. */
   } AvailListElem;
 
-  static KVal GetKVal(UWord requestedSize);
+  /**
+   * Round an unsigned word up to the nearest power of 2.
+   *
+   * @param uWord The unsigned word to round up
+   * @return the nearest power of 2
+   */
+  static KVal UWordToKVal(UWord uWord);
+
+  static inline UWord KValToUWord(KVal kVal) { return (ESB_UWORD_C(1) << kVal); }
+
+  static inline KVal AdjustedKVal(UWord requestedSize) { return UWordToKVal(requestedSize + sizeof(AvailListElem)); }
+
   AvailListElem *popAvailList(KVal kVal);
   void pushAvailList(AvailListElem *elem);
   void removeFromAvailList(AvailListElem *elem);

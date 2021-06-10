@@ -1,8 +1,8 @@
 #ifndef ES_CONFIG_H
 #define ES_CONFIG_H
 
-#ifndef ESB_TYPES_H
-#include <ESBTypes.h>
+#ifndef ESB_BUDDY_CACHE_ALLOCATOR_H
+#include <ESBBuddyCacheAllocator.h>
 #endif
 
 namespace ES {
@@ -13,7 +13,7 @@ class Config {
 
   virtual ~Config();
 
-  ESB_DISABLE_AUTO_COPY(Config);
+  ESB_DEFAULT_FUNCS(Config);
 };
 
 }  // namespace ES

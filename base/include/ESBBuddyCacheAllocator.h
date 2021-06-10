@@ -20,8 +20,7 @@ class BuddyCacheAllocator : public BuddyAllocator {
  public:
   /** Constructor.
    *
-   *  @param size The size of the memory pool that the cache will manage as a power of 2 (e.g., 16 will create a 2^16
-   * byte pool).
+   *  @param size The size of the memory pool that the cache will manage (will be rounded up to a power of 2).
    *  @param source The allocator to use to allocate the memory pool. This is probably the system allocator
    *  @param failover The allocator that will be used when the cache is exhausted.
    */

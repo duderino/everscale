@@ -8,22 +8,20 @@
 
 namespace ESB {
 
-BuddyAllocator::KVal BuddyAllocator::GetKVal(UWord requestedSize) {
-  // This is a non-recursive binary search for the closest kVal
-
-  UWord adjustedSize = requestedSize + sizeof(AvailListElem);
+BuddyAllocator::KVal BuddyAllocator::UWordToKVal(UWord uWord) {
+  // This is a non-recursive binary search that rounds up to the nearest power of 2
 
   KVal min = 0;
   KVal kVal = 8;  // best guess starting point of 2^8 = 256 adjusted sizes
   KVal max = ESB_AVAIL_LIST_LENGTH;
 
   while (true) {
-    if (adjustedSize > (ESB_UWORD_C(1) << kVal)) {
+    if (uWord > (ESB_UWORD_C(1) << kVal)) {
       // kVal too small, move it halfway to max
       min = kVal;
       kVal = kVal + (max - kVal) / 2;
     } else {
-      if (adjustedSize > (ESB_UWORD_C(1) << (kVal - 1))) {
+      if (uWord > (ESB_UWORD_C(1) << (kVal - 1))) {
         break;
       }
       // kVal too large, move it halfway to min
@@ -102,13 +100,12 @@ void BuddyAllocator::pushAvailList(AvailListElem *elem) {
 
 BuddyAllocator::BuddyAllocator(UInt32 size, Allocator &source)
     : _sourceAllocator(source), _pool(0), _poolKVal(0), _cleanupHandler(*this) {
-  if (1 > size || ESB_AVAIL_LIST_LENGTH < size) return;
-
   for (int i = 0; i < ESB_AVAIL_LIST_LENGTH; ++i) {
     _availList[i] = NULL;
   }
 
-  _poolKVal = size;
+  // Round size up to the nearest power of 2
+  _poolKVal = UWordToKVal(size);
 }
 
 BuddyAllocator::~BuddyAllocator() { reset(); }
@@ -139,7 +136,7 @@ Error BuddyAllocator::allocate(UWord size, void **block) {
   //    Knuth R1 and R2
   //
 
-  KVal minimumKVal = GetKVal(size);
+  KVal minimumKVal = AdjustedKVal(size);
   KVal actualKVal = minimumKVal;
   char *elem = NULL;
 
