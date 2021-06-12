@@ -105,21 +105,25 @@ class BuddyAllocator : public Allocator {
 
 #ifdef ESB_64BIT
 #define ESB_AVAIL_LIST_LENGTH 64
-  typedef UInt32 KVal;
-  typedef UInt32 Tag;
 #elif defined ESB_32BIT
 #define ESB_AVAIL_LIST_LENGTH 32
-  typedef UInt16 KVal;
-  typedef UInt16 Tag;
 #else
 #error "Cannot determine architecture type"
 #endif
+
+  typedef UInt8 KVal;
+  typedef UInt8 Tag;
 
   typedef struct AvailListElem {
     AvailListElem *_linkB; /**< Backward link */
     AvailListElem *_linkF; /**< Forward link */
     KVal _kVal;            /**< k where 2^k is the size of this element. */
     Tag _tag;              /**< 1 if available, 0 if in use. */
+    KVal _dryRunKVal;      /**< used for dry run operations */
+    Tag _dryRunTag;        /**< used for dry run operations */
+#ifdef ESB_64BIT
+    UInt8 _pad[4]; /**< keep the following data offset word aligned */
+#endif
   } AvailListElem;
 
   /**
@@ -133,6 +137,18 @@ class BuddyAllocator : public Allocator {
   static inline UWord KValToUWord(KVal kVal) { return (ESB_UWORD_C(1) << kVal); }
 
   static inline KVal AdjustedKVal(UWord requestedSize) { return UWordToKVal(requestedSize + sizeof(AvailListElem)); }
+
+  inline bool owns(void *block) const {
+    char *lowerBound = (char *)_pool;
+    char *upperBound = ((char *)_pool) + (ESB_UWORD_C(1) << _poolKVal);
+    return (block < lowerBound || block >= upperBound) ? false : true;
+  }
+
+  Error reallocateInternal(void *oldBlock, void **newBlock, KVal maxKVal, bool dryRun);
+
+  //  inline bool buddyIsToRight(UWord address, KVal kVal) const {
+  //    return 0 == address % (ESB_UWORD_C(1) << (kVal + 1))
+  //  }
 
   AvailListElem *popAvailList(KVal kVal);
   void pushAvailList(AvailListElem *elem);
