@@ -117,7 +117,17 @@ check_include_file("stdio.h" HAVE_STDIO_H)
 check_symbol_exists(vfprintf "stdio.h" HAVE_VFPRINTF)
 check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
 check_symbol_exists(fflush "stdio.h" HAVE_FFLUSH)
-set(HAVE_FILE_T 1) # TODO detect with a test program
+check_symbol_exists(fopen "stdio.h" HAVE_FOPEN)
+check_symbol_exists(fread "stdio.h" HAVE_FREAD)
+check_symbol_exists(feof "stdio.h" HAVE_FEOF)
+check_symbol_exists(ferror "stdio.h" HAVE_FERROR)
+check_symbol_exists(fclose "stdio.h" HAVE_FCLOSE)
+check_cxx_source_compiles("
+#include <stdio.h>
+int main () {
+        FILE *f = NULL;
+        return f ? 0: 1;
+}" HAVE_FILE_T)
 
 check_include_file("execinfo.h" HAVE_EXECINFO_H)
 check_symbol_exists(backtrace "execinfo.h" HAVE_BACKTRACE)

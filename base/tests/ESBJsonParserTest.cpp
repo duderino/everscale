@@ -6,6 +6,10 @@
 #include <ESBBuddyCacheAllocator.h>
 #endif
 
+#ifndef ESB_BUFFERED_FILE_H
+#include <ESBBufferedFile.h>
+#endif
+
 #include <gtest/gtest.h>
 
 using namespace ESB;
@@ -103,27 +107,31 @@ class CountingJsonParser : public JsonParser {
 };
 
 TEST(JsonParser, SmallDoc) {
-  unsigned char buffer[128];
   BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
     CountingJsonParser parser(allocator);
-    FILE *doc = fopen("doc1.json", "r");
-    ASSERT_TRUE(doc);
+    BufferedFile file("doc1.json", BufferedFile::READ_ONLY);
+    unsigned char buffer[128];
 
     while (true) {
-      size_t result = fread(buffer, 1, sizeof(buffer), doc);
-      if (0 < result) {
-        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, result));
+      Size bytesRead = 0;
+      Error error = file.read(buffer, sizeof(buffer), &bytesRead);
+
+      if (ESB_SUCCESS == error) {
+        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, bytesRead));
+        continue;
       }
 
-      if (result < sizeof(buffer)) {
+      if (ESB_BREAK == error) {
+        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, bytesRead));
+        ASSERT_EQ(ESB_SUCCESS, parser.end());
         break;
       }
-    }
 
-    ASSERT_TRUE(feof(doc));
-    ASSERT_EQ(ESB_SUCCESS, parser.end());
+      // Intentionally fail
+      ASSERT_EQ(ESB_SUCCESS, error);
+    }
 
     // Assert that all elements were seen
     ASSERT_EQ(4, parser.onMapStarts());
@@ -146,28 +154,32 @@ TEST(JsonParser, SmallDoc) {
 }
 
 TEST(JsonParser, Large) {
-  unsigned char buffer[128];
   // Note that the cache is the same size as the small test case but still does not spillover to the failover allocator
   BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
     CountingJsonParser parser(allocator);
-    FILE *doc = fopen("doc2.json", "r");
-    ASSERT_TRUE(doc);
+    BufferedFile file("doc2.json", BufferedFile::READ_ONLY);
+    unsigned char buffer[128];
 
     while (true) {
-      size_t result = fread(buffer, 1, sizeof(buffer), doc);
-      if (0 < result) {
-        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, result));
+      Size bytesRead = 0;
+      Error error = file.read(buffer, sizeof(buffer), &bytesRead);
+
+      if (ESB_SUCCESS == error) {
+        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, bytesRead));
+        continue;
       }
 
-      if (result < sizeof(buffer)) {
+      if (ESB_BREAK == error) {
+        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, bytesRead));
+        ASSERT_EQ(ESB_SUCCESS, parser.end());
         break;
       }
-    }
 
-    ASSERT_TRUE(feof(doc));
-    ASSERT_EQ(ESB_SUCCESS, parser.end());
+      // Intentionally fail
+      ASSERT_EQ(ESB_SUCCESS, error);
+    }
 
     // Assert that all elements were seen
     ASSERT_EQ(60, parser.onMapStarts());
@@ -190,28 +202,32 @@ TEST(JsonParser, Large) {
 }
 
 TEST(JsonParser, LargeFailover) {
-  unsigned char buffer[128];
   // Note that the cache is smaller for this test case, which forces failover.
   BuddyCacheAllocator allocator(8192, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
     CountingJsonParser parser(allocator);
-    FILE *doc = fopen("doc2.json", "r");
-    ASSERT_TRUE(doc);
+    BufferedFile file("doc2.json", BufferedFile::READ_ONLY);
+    unsigned char buffer[128];
 
     while (true) {
-      size_t result = fread(buffer, 1, sizeof(buffer), doc);
-      if (0 < result) {
-        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, result));
+      Size bytesRead = 0;
+      Error error = file.read(buffer, sizeof(buffer), &bytesRead);
+
+      if (ESB_SUCCESS == error) {
+        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, bytesRead));
+        continue;
       }
 
-      if (result < sizeof(buffer)) {
+      if (ESB_BREAK == error) {
+        ASSERT_EQ(ESB_SUCCESS, parser.parse(buffer, bytesRead));
+        ASSERT_EQ(ESB_SUCCESS, parser.end());
         break;
       }
-    }
 
-    ASSERT_TRUE(feof(doc));
-    ASSERT_EQ(ESB_SUCCESS, parser.end());
+      // Intentionally fail
+      ASSERT_EQ(ESB_SUCCESS, error);
+    }
 
     // Assert that all elements were seen
     ASSERT_EQ(60, parser.onMapStarts());

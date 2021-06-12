@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-        source/ESConfig.cpp
+	source/ESConfigIngest.cpp
+	source/ESRootConfigParser.cpp
         )
 
 add_library(config STATIC ${SOURCE_FILES})
@@ -33,4 +34,5 @@ SET(TEST_LIBS
         base
         )
 
+add_gtest(config-ingest-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESConfigIngestTest.cpp)
 

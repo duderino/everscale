@@ -8,8 +8,9 @@ set(SOURCE_FILES
         source/ESBAllocator.cpp
         source/ESBAveragingCounter.cpp
         source/ESBBuddyAllocator.cpp
-	source/ESBBuddyCacheAllocator.cpp
+        source/ESBBuddyCacheAllocator.cpp
         source/ESBBuffer.cpp
+        source/ESBBufferedFile.cpp
         source/ESBBufferPool.cpp
         source/ESBClearSocket.cpp
         source/ESBClientTLSContextIndex.cpp

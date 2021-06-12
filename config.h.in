@@ -105,6 +105,11 @@
 #cmakedefine HAVE_VFPRINTF @HAVE_VFPRINTF@
 #cmakedefine HAVE_SNPRINTF @HAVE_SNPRINTF@
 #cmakedefine HAVE_FFLUSH @HAVE_FFLUSH@
+#cmakedefine HAVE_FOPEN @HAVE_FOPEN@
+#cmakedefine HAVE_FREAD @HAVE_FREAD@
+#cmakedefine HAVE_FEOF @HAVE_FEOF@
+#cmakedefine HAVE_FERROR @HAVE_FERROR@
+#cmakedefine HAVE_FCLOSE @HAVE_FCLOSE@
 #cmakedefine HAVE_FILE_T @HAVE_FILE_T@
 
 #cmakedefine HAVE_EXECINFO_H @HAVE_EXECINFO_H@
