@@ -361,154 +361,22 @@ Error BuddyAllocator::reallocate(void *oldBlock, UWord size, void **newBlock) {
     return ESB_NOT_OWNER;
   }
 
-  if (size <= originalSize) {
-    // TODO return memory if possible
-    *newBlock = oldBlock;
-    return ESB_SUCCESS;
-  }
+  //
+  // This naive implementation always allocates+copies, but at least fails cleanly.  A much more complicated version
+  // that sometimes saved a copy can be found in 1be500ad3d9c05ccfb4d80217dee363360dee2e6
+  //
 
-  KVal maxKVal = AdjustedKVal(size);
-  void *block = NULL;
-  Error error = reallocateInternal(oldBlock, &block, maxKVal, true);
-
-  // First try to grow the current block by coalescing buddies
-
-  if (ESB_SUCCESS == error) {
-    error = reallocateInternal(oldBlock, &block, maxKVal, false);
-    assert(ESB_SUCCESS == error);
-    if (ESB_SUCCESS != error) {
-      return error;
-    }
-    if (oldBlock != block) {
-      memmove(block, oldBlock, MIN(originalSize, size));
-    }
-    *newBlock = block;
-    return ESB_SUCCESS;
-  }
-
-  // Failing that, try to allocate a new block of sufficient size
-
-  error = allocate(size, &block);
+  Error error = allocate(size, newBlock);
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  // Copy data from the old block, then free the old block
+  memcpy(*newBlock, oldBlock, MIN(size, originalSize));
+  error = deallocate(oldBlock);
+  assert(ESB_SUCCESS == error);
 
-  memcpy(block, oldBlock, MIN(originalSize, size));
-  deallocate(oldBlock);
-  *newBlock = block;
   return ESB_SUCCESS;
 #endif
-}
-
-Error BuddyAllocator::reallocateInternal(void *oldBlock, void **newBlock, BuddyAllocator::KVal maxKVal, bool dryRun) {
-  //
-  //    Find this block's buddy and check its availability.
-  //
-  //    Knuth S1
-  //
-
-  AvailListElem *elem = (AvailListElem *)(((char *)oldBlock) - sizeof(AvailListElem));
-  AvailListElem *buddy = NULL;
-
-  assert(!elem->_linkB);
-  assert(!elem->_linkF);
-  assert(!elem->_tag);
-
-  elem->_dryRunKVal = elem->_kVal;
-
-  //
-  //  For as long as we can, start coalescing buddies.  Two buddies can be
-  //  coalesced iff both are available and both are the same size (kVal).
-  //  If they have different kVals, one of the buddies has been broken up
-  //  into smaller nodes and cannot be coalesced until it is whole again.
-  //
-  //  Knuth S2 and S3
-  //
-
-  while (true) {
-    //
-    //    Base Case:  We've coalesced everything back into the original block.
-    //
-    if (dryRun) {
-      if (elem->_dryRunKVal == maxKVal) {
-        return ESB_SUCCESS;
-      }
-    } else {
-      if (elem->_kVal == maxKVal) {
-        elem->_tag = 0;
-        *newBlock = (void *)(((char *)elem) + sizeof(AvailListElem));
-        return ESB_SUCCESS;
-      }
-    }
-
-    UWord elemAddress = (UWord)(((char *)elem) - (char *)_pool);
-    KVal currentKVal = dryRun ? elem->_dryRunKVal : elem->_kVal;
-
-    if (0 == elemAddress % (ESB_UWORD_C(1) << (elem->_kVal + 1))) {
-      //
-      // The buddy is to the right of this node.
-      //
-
-      buddy = (AvailListElem *)(((char *)elem) + (ESB_UWORD_C(1) << elem->_kVal));
-      assert(buddy->_kVal <= currentKVal);
-
-      if (buddy->_tag && buddy->_kVal == currentKVal) {
-        //
-        //  Coalesce two buddies.  When coalescing two buddies, the
-        //  address of the left buddy becomes the address of the new
-        //  buddy (a no-op in this case).  Also, the size of the new buddy
-        //  doubles.
-        //
-
-        if (dryRun) {
-          ++elem->_dryRunKVal;
-        } else {
-          removeFromAvailList(buddy);
-          ++elem->_kVal;
-        }
-        continue;
-      }
-
-      //
-      // The buddy node isn't available so the allocated chunk cannot grow.
-      //
-
-      return ESB_OUT_OF_MEMORY;
-    }
-
-    //
-    // The buddy is to the left of this node.
-    //
-
-    buddy = (AvailListElem *)(((char *)elem) - (ESB_UWORD_C(1) << elem->_kVal));
-    assert(buddy->_kVal <= currentKVal);
-
-    if (buddy->_tag && buddy->_kVal == currentKVal) {
-      //
-      //    Coalesce two buddies.  When coalescing two buddies, the
-      //    address of the left buddy becomes the address of the new
-      //    buddy.  Also, the size of the new buddy doubles.
-      //
-
-      buddy->_dryRunKVal = currentKVal;
-      elem = buddy;
-      if (dryRun) {
-        ++elem->_dryRunKVal;
-      } else {
-        removeFromAvailList(buddy);
-        ++elem->_kVal;
-      }
-      continue;
-    }
-
-    //
-    // The buddy node isn't available so the allocated chunk cannot grow.
-    //
-
-    return ESB_OUT_OF_MEMORY;
-  }
 }
 
 UWord BuddyAllocator::allocationSize(void *block) const {

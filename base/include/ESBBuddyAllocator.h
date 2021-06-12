@@ -119,10 +119,10 @@ class BuddyAllocator : public Allocator {
     AvailListElem *_linkF; /**< Forward link */
     KVal _kVal;            /**< k where 2^k is the size of this element. */
     Tag _tag;              /**< 1 if available, 0 if in use. */
-    KVal _dryRunKVal;      /**< used for dry run operations */
-    Tag _dryRunTag;        /**< used for dry run operations */
 #ifdef ESB_64BIT
-    UInt8 _pad[4]; /**< keep the following data offset word aligned */
+    UInt8 _pad[6]; /**< keep the following data offset word aligned */
+#else
+    UInt8 _pad[2]; /**< keep the following data offset word aligned */
 #endif
   } AvailListElem;
 
@@ -143,12 +143,6 @@ class BuddyAllocator : public Allocator {
     char *upperBound = ((char *)_pool) + (ESB_UWORD_C(1) << _poolKVal);
     return (block < lowerBound || block >= upperBound) ? false : true;
   }
-
-  Error reallocateInternal(void *oldBlock, void **newBlock, KVal maxKVal, bool dryRun);
-
-  //  inline bool buddyIsToRight(UWord address, KVal kVal) const {
-  //    return 0 == address % (ESB_UWORD_C(1) << (kVal + 1))
-  //  }
 
   AvailListElem *popAvailList(KVal kVal);
   void pushAvailList(AvailListElem *elem);
