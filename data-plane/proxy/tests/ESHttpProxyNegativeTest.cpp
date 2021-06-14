@@ -116,9 +116,6 @@ TEST_P(HttpProxyNegativeTest, FailCleanly) {
             test.client().clientCounters().getFailures()->queries());
 }
 
-// TODO - Start 223: IdleOrigin/HttpProxyNegativeTest.FailCleanly/(1373526,false,true,3,1000,10) - timeout? deadlock?
-// after STALL_SERVER_SEND_HEADERS, chunked transfer encoding, TLS
-
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
 INSTANTIATE_TEST_SUITE_P(BadOrigin, HttpProxyNegativeTest,

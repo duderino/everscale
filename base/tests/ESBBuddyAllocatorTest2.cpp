@@ -23,8 +23,12 @@ TEST(BuddyAllocator, Allocate) {
     ASSERT_TRUE(&allocations[i]);
   }
 
-  void *block = NULL;
-  ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(1, &block));
+#ifndef ESB_NO_ALLOC
+  {
+    void *block = NULL;
+      ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(1, &block));
+  }
+#endif
 
   for (int i = 0; i < numAllocations; ++i) {
     ASSERT_EQ(ESB_SUCCESS, allocator.deallocate(allocations[i]));
@@ -44,10 +48,14 @@ TEST(BuddyAllocator, Reset) {
     ASSERT_TRUE(&allocations[i]);
   }
 
-  void *block = NULL;
-  ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(1, &block));
+#ifndef ESB_NO_ALLOC
+  {
+    void *block = NULL;
+    ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(1, &block));
+  }
 
   ASSERT_EQ(ESB_IN_USE, allocator.reset());
+#endif
 
   for (int i = 0; i < numAllocations; ++i) {
     ASSERT_EQ(ESB_SUCCESS, allocator.deallocate(allocations[i]));
@@ -82,8 +90,12 @@ TEST(BuddyAllocator, ReallocGrow) {
     ASSERT_TRUE(&allocations[i]);
   }
 
-  void *block = NULL;
-  ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(2048, &block));
+#ifndef ESB_NO_ALLOC
+  {
+    void *block = NULL;
+    ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(2048, &block));
+  }
+#endif
 
   for (int i = 0; i < numAllocations; ++i) {
     ASSERT_EQ(ESB_SUCCESS, allocator.deallocate(allocations[i]));

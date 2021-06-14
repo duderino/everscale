@@ -26,11 +26,15 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
     && apt-get -qq update \
     && apt-get -qq install \
         clang-${CLANG_VERSION} \
+        llvm-${CLANG_VERSION} \
         libc++-dev \
         libc++abi-dev \
     && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${CLANG_VERSION} 100 \
     && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_VERSION} 100 \
-    && clang++ --version
+    && update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-${CLANG_VERSION} 100 \
+    && update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-${CLANG_VERSION} 100 \
+    && clang++ --version \
+    && llvm-profdata -help
 
 RUN cd /usr/local/src \ 
     && wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
