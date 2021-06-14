@@ -36,3 +36,7 @@ SET(TEST_LIBS
 
 add_gtest(config-ingest-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESConfigIngestTest.cpp)
 
+# For global code coverage report
+
+set(ALL_TESTS ${ALL_TESTS} ${TESTS} PARENT_SCOPE)
+set(PROFRAW_FILES "${PROFRAW_FILES}" "${PROJECT_SOURCE_DIR}/tests/*.profraw" PARENT_SCOPE)

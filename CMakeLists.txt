@@ -30,3 +30,8 @@ if (CLANG_FORMAT)
             COMMAND ${CLANG_FORMAT} -i --style=\"{BasedOnStyle: Google, ColumnLimit: 120}\" ${FORMAT_FILES}
             )
 endif ()
+
+string(REPLACE ";" "," ALL_TESTS "${ALL_TESTS}")
+string(REPLACE ";" " " PROFRAW_FILES "${PROFRAW_FILES}")
+
+configure_file(CTestCustom.cmake.in CTestCustom.cmake)

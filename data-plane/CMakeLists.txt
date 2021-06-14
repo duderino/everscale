@@ -11,3 +11,6 @@ add_subdirectory(multiplexers)
 add_subdirectory(loadgen)
 add_subdirectory(origin)
 add_subdirectory(proxy)
+
+set(ALL_TESTS ${ALL_TESTS} PARENT_SCOPE)
+set(PROFRAW_FILES "${PROFRAW_FILES}" PARENT_SCOPE)

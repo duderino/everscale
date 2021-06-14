@@ -5,6 +5,7 @@
 *.tcl
 *.profraw
 *.profdata
+*.swp
 CTestTestfile.cmake
 CMakeCache.txt
 CTestCustom.cmake

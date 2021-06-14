@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.5)
 #
 
 macro(add_gtest NAME INCS LIBS CWD TIMEOUT)
-    list(APPEND TEST_EXES "${NAME}")
+    list(APPEND TESTS "${PROJECT_SOURCE_DIR}/${NAME}")
     add_executable(${NAME} ${ARGN})
     target_link_libraries(${NAME} gtest gmock gtest_main ${LIBS})
     gtest_discover_tests(${NAME}
@@ -16,7 +16,7 @@ macro(add_gtest NAME INCS LIBS CWD TIMEOUT)
 endmacro()
 
 macro(add_unit_test NAME INCS LIBS CWD TIMEOUT)
-    list(APPEND TEST_EXES "${NAME}")
+    list(APPEND TESTS "${PROJECT_SOURCE_DIR}/${NAME}")
     add_executable(${NAME} ${ARGN})
     target_compile_options(${NAME} PUBLIC ${CPP_FLAGS} -DESTF_USE_RESULT_COLLECTOR -DUSE_SMART_POINTER_DEBUGGER)
     target_link_libraries(${NAME} ${LIBS})

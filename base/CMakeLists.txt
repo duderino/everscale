@@ -109,7 +109,6 @@ set(TEST_INCS
         )
 
 set(TEST_LIBS -pthread -ldl unit-tf base bssl_ssl bssl_crypto yajl)
-set(TEST_EXES "")
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
@@ -146,6 +145,14 @@ add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/t
 add_gtest(buddy-cache-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyCacheAllocatorTest.cpp)
 add_gtest(buddy-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest2.cpp)
 
-# Code coverage is implemented in the CTestCustom.cmake.in file
-string(REPLACE ";" "," TEST_EXES "${TEST_EXES}")
+# For global code coverage report
+
+set(ALL_TESTS ${ALL_TESTS} ${TESTS} PARENT_SCOPE)
+set(PROFRAW_FILES "${PROFRAW_FILES}" "${PROJECT_SOURCE_DIR}/tests/*.profraw" PARENT_SCOPE)
+
+# For base-scoped code coverage report
+
+string(REPLACE ";" "," BASE_TESTS "${TESTS}")
+set(BASE_PROFRAW_FILES "${PROJECT_SOURCE_DIR}/tests/*.profraw")
+
 configure_file(CTestCustom.cmake.in CTestCustom.cmake)

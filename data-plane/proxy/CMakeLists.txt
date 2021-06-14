@@ -64,3 +64,8 @@ set(TEST_FILES tests/ESHttpIntegrationTest.cpp)
 add_unit_test(http-proxy-test-main "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESHttpProxyTestMain.cpp ${TEST_FILES})
 add_gtest(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 550 tests/ESHttpProxyTest.cpp ${TEST_FILES})
 add_gtest(http-proxy-negative-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 550 tests/ESHttpProxyNegativeTest.cpp ${TEST_FILES})
+
+# For global code coverage report
+
+set(ALL_TESTS ${ALL_TESTS} ${TESTS} PARENT_SCOPE)
+set(PROFRAW_FILES "${PROFRAW_FILES}" "${PROJECT_SOURCE_DIR}/tests/*.profraw" PARENT_SCOPE)
