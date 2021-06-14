@@ -26,7 +26,7 @@ TEST(BuddyAllocator, Allocate) {
 #ifndef ESB_NO_ALLOC
   {
     void *block = NULL;
-      ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(1, &block));
+    ASSERT_EQ(ESB_OUT_OF_MEMORY, allocator.allocate(1, &block));
   }
 #endif
 

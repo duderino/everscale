@@ -84,19 +84,53 @@ class HttpProxyNegativeTest
 };
 
 TEST_P(HttpProxyNegativeTest, FailCleanly) {
+  HttpTestParams::DisruptTransaction disruption = std::get<3>(GetParam());
+  ESB::UInt64 requestSize = 0;
+  ESB::UInt64 responseSize = 0;
+  ESB::UInt64 messageSize = std::get<0>(GetParam());
+
+  switch (disruption) {
+    case HttpTestParams::HAPPY_PATH:
+      requestSize = messageSize;
+      responseSize = messageSize;
+      break;
+    case HttpTestParams::STALL_SERVER_RECV_HEADERS:
+    case HttpTestParams::STALL_SERVER_RECV_BODY:
+    case HttpTestParams::CLOSE_SERVER_RECV_HEADERS:
+    case HttpTestParams::CLOSE_SERVER_RECV_BODY:
+    case HttpTestParams::STALL_CLIENT_SEND_HEADERS:
+    case HttpTestParams::STALL_CLIENT_SEND_BODY:
+    case HttpTestParams::CLOSE_CLIENT_SEND_HEADERS:
+    case HttpTestParams::CLOSE_CLIENT_SEND_BODY:
+      requestSize = messageSize;
+      responseSize = MIN(messageSize, 1024);
+      break;
+    case HttpTestParams::STALL_SERVER_SEND_HEADERS:
+    case HttpTestParams::STALL_SERVER_SEND_BODY:
+    case HttpTestParams::CLOSE_SERVER_SEND_HEADERS:
+    case HttpTestParams::CLOSE_SERVER_SEND_BODY:
+    case HttpTestParams::STALL_CLIENT_RECV_HEADERS:
+    case HttpTestParams::STALL_CLIENT_RECV_BODY:
+    case HttpTestParams::CLOSE_CLIENT_RECV_HEADERS:
+    case HttpTestParams::CLOSE_CLIENT_RECV_BODY:
+      requestSize = MIN(messageSize, 1024);
+      responseSize = messageSize;
+      break;
+  }
+
   HttpTestParams params;
   params.connections(50)
       .requestsPerConnection(50)
       .clientThreads(2)
       .proxyThreads(2)
       .originThreads(2)
-      .requestSize(std::get<0>(GetParam()))
-      .responseSize(std::get<0>(GetParam()))
+      .requestSize(requestSize)
+      .responseSize(responseSize)
       .useContentLengthHeader(std::get<1>(GetParam()))
       .hostHeader("test.server.everscale.com")
       .secure(std::get<2>(GetParam()))
       .logLevel(ESB::Logger::Notice)
-      .disruptTransaction(std::get<3>(GetParam()))
+      .disruptTransaction(disruption)
       .proxyTimeoutMsec(std::get<5>(GetParam()))
       .originTimeoutMsec(1000)
       .clientTimeoutMsec(std::get<4>(GetParam()));
@@ -119,7 +153,7 @@ TEST_P(HttpProxyNegativeTest, FailCleanly) {
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
 INSTANTIATE_TEST_SUITE_P(BadOrigin, HttpProxyNegativeTest,
-                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
+                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 2),
                                             ::testing::Values(false, true), ::testing::Values(false, true),
                                             ::testing::Values(HttpTestParams::CLOSE_SERVER_RECV_HEADERS,
                                                               HttpTestParams::CLOSE_SERVER_RECV_BODY,
@@ -130,7 +164,7 @@ INSTANTIATE_TEST_SUITE_P(BadOrigin, HttpProxyNegativeTest,
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
 INSTANTIATE_TEST_SUITE_P(BadClient, HttpProxyNegativeTest,
-                         ::testing::Combine(::testing::Values(1024, HttpConfig::Instance().ioBufferSize() * 42),
+                         ::testing::Combine(::testing::Values(1024, HttpConfig::Instance().ioBufferSize() * 2),
                                             ::testing::Values(false, true), ::testing::Values(false, true),
                                             ::testing::Values(HttpTestParams::CLOSE_CLIENT_SEND_BODY,
                                                               HttpTestParams::CLOSE_CLIENT_RECV_HEADERS,
@@ -149,7 +183,7 @@ INSTANTIATE_TEST_SUITE_P(BadClient2, HttpProxyNegativeTest,
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
 INSTANTIATE_TEST_SUITE_P(IdleOrigin, HttpProxyNegativeTest,
-                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
+                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 2),
                                             ::testing::Values(false, true), ::testing::Values(false, true),
                                             ::testing::Values(HttpTestParams::STALL_SERVER_RECV_HEADERS,
                                                               HttpTestParams::STALL_SERVER_RECV_BODY,
@@ -160,7 +194,7 @@ INSTANTIATE_TEST_SUITE_P(IdleOrigin, HttpProxyNegativeTest,
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
 INSTANTIATE_TEST_SUITE_P(IdleClient, HttpProxyNegativeTest,
-                         ::testing::Combine(::testing::Values(1024, HttpConfig::Instance().ioBufferSize() * 42),
+                         ::testing::Combine(::testing::Values(1024, HttpConfig::Instance().ioBufferSize() * 2),
                                             ::testing::Values(false, true), ::testing::Values(false, true),
                                             ::testing::Values(HttpTestParams::STALL_CLIENT_SEND_BODY,
                                                               HttpTestParams::STALL_CLIENT_RECV_HEADERS,

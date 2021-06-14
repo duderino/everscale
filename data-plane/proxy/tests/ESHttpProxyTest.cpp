@@ -307,7 +307,7 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
 
 // body-size variations X use content-length header if true X use secure if
 INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
-                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 42),
+                         ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 2),
                                             ::testing::Values(false, true), ::testing::Values(false, true)));
 
 TEST_P(HttpProxyTestMessageBody, BodySizes) {
