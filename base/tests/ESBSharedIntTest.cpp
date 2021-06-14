@@ -132,7 +132,7 @@ SharedIntTest::~SharedIntTest() {}
 bool SharedIntTest::run(ESTF::ResultCollector *collector) {
   int value = 0;
 
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < 10000; ++i) {
     _Int.add(1);
     AddUnprotectedInt(1);
 
@@ -142,7 +142,7 @@ bool SharedIntTest::run(ESTF::ResultCollector *collector) {
 
   fprintf(stderr, "Value: %d, Shared counter: %d, unprotected counter %d\n", value, _Int.get(), _UnprotectedInt);
 
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < 10000; ++i) {
     _Int.sub(1);
     SubtractUnprotectedInt(1);
 

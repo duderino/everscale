@@ -3,8 +3,11 @@
 *.cbp
 *.exe
 *.tcl
+*.profraw
+*.profdata
 CTestTestfile.cmake
 CMakeCache.txt
+CTestCustom.cmake
 CMakeFiles
 Makefile
 Testing

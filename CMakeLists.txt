@@ -9,7 +9,7 @@ include(profiles.cmake) # To select profile: cmake -DCMAKE_BUILD_TYPE=DEBUG .
 include(config.cmake)
 include(dependencies.cmake)
 include(macros.cmake)
-enable_testing()
+include(CTest)
 
 #
 # subdirs

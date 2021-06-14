@@ -114,7 +114,7 @@ ESTF_OBJECT_PTR(DiscardAllocatorTest, ESTF::Component)
 
 static const int ChunkSize = 1024;
 static const int Iterations = 10;
-static const int AllocationsPerIteration = 10000;
+static const int AllocationsPerIteration = 1000;
 
 DiscardAllocatorTest::DiscardAllocatorTest()
     : _rand(Time::Instance().now().microSeconds() + Thread::CurrentThreadId()),

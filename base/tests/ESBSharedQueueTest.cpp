@@ -108,13 +108,13 @@ bool SharedQueueTest::run(ESTF::ResultCollector *collector) {
   ESTF::ConcurrencyComposite composite;
 
   for (int i = 0; i < 9; ++i) {
-    component = new SharedQueueProducer(i, queue, ESB_UINT32_C(10000));
+    component = new SharedQueueProducer(i, queue, ESB_UINT32_C(1000));
 
     composite.add(component);
   }
 
   for (int i = 0; i < 3; ++i) {
-    component = new SharedQueueConsumer(queue, ESB_UINT32_C(30000));
+    component = new SharedQueueConsumer(queue, ESB_UINT32_C(3000));
 
     composite.add(component);
   }

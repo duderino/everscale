@@ -93,6 +93,12 @@ target_include_directories(base PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
         )
 
+# Generate certs and private keys for unit tests
+
+add_custom_command(TARGET base POST_BUILD
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/create-certs.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+
 # Unit tests
 
 set(TEST_INCS
@@ -103,6 +109,7 @@ set(TEST_INCS
         )
 
 set(TEST_LIBS -pthread -ldl unit-tf base bssl_ssl bssl_crypto yajl)
+set(TEST_EXES "")
 
 add_unit_test(buddy-allocator-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest.cpp)
 add_unit_test(buffer-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBufferTest.cpp)
@@ -139,8 +146,6 @@ add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/t
 add_gtest(buddy-cache-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyCacheAllocatorTest.cpp)
 add_gtest(buddy-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest2.cpp)
 
-# Generate certs and private keys
-
-add_custom_command(TARGET tls-socket-gtest POST_BUILD
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/create-certs.sh
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+# Code coverage is implemented in the CTestCustom.cmake.in file
+string(REPLACE ";" "," TEST_EXES "${TEST_EXES}")
+configure_file(CTestCustom.cmake.in CTestCustom.cmake)

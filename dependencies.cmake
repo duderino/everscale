@@ -120,7 +120,7 @@ else ()
             BUILD_IN_SOURCE 1
             GIT_REPOSITORY https://github.com/duderino/yajl.git
             GIT_TAG 5e3a7856e643b4d6410ddc3f84bc2f38174f2872
-	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+            CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
             INSTALL_COMMAND mkdir -p lib && cp yajl-2.1.1/lib/libyajl_s.a lib/libyajl.a && mkdir -p include/yajl && cp src/api/yajl_common.h src/api/yajl_gen.h src/api/yajl_parse.h src/api/yajl_tree.h include/yajl
             UPDATE_COMMAND ""
             )

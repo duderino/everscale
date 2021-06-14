@@ -126,7 +126,7 @@ class ListTest : public ESTF::Component {
 
 ESTF_OBJECT_PTR(ListTest, ESTF::Component)
 
-const int ListTest::_Iterations = 500;
+const int ListTest::_Iterations = 10;
 const int ListTest::_Records = 1000;
 static const bool Debug = false;
 

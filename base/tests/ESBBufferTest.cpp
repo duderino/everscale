@@ -45,7 +45,7 @@
 namespace ESB {
 
 static const int BufferSize = 4096;
-static const int Iterations = 10000;
+static const int Iterations = 100;
 
 /** BufferTest is the unit test for Buffer.
  *

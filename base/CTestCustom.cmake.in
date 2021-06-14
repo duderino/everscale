@@ -1,0 +1,2 @@
+set(CTEST_CUSTOM_PRE_TEST "find ${PROJECT_SOURCE_DIR} \( -name \"*.profraw\" -o -name \"*.profdata\" \) -delete")
+set(CTEST_CUSTOM_POST_TEST "${CMAKE_SOURCE_DIR}/report.sh ${TEST_EXES}")
