@@ -28,14 +28,10 @@ class SharedEmbeddedList {
   virtual ~SharedEmbeddedList();
 
   /** Remove all elements from the list.
-   *
-   *  @param cleanup If true, all elements that have cleanup handlers are
-   *      destroyed with their cleanup handlers.  Otherwise the elements
-   *      are removed from the list but not destroyed.
    */
-  inline void clear(bool cleanup = true) {
+  inline void clear() {
     _lock.writeAcquire();
-    _list.clear(cleanup);
+    _list.clear();
     _lock.writeRelease();
   }
 

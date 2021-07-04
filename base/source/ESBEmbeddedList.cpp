@@ -8,7 +8,7 @@ EmbeddedList::EmbeddedList() : _head(0), _tail(0) {}
 
 EmbeddedList::~EmbeddedList() {}
 
-void EmbeddedList::clear(bool cleanup) {
+void EmbeddedList::clear() {
   for (EmbeddedListElement *element = removeFirst(); element; element = removeFirst()) {
     CleanupHandler *cleanupHandler = element->cleanupHandler();
 

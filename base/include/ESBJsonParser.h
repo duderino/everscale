@@ -9,17 +9,20 @@
 #include <ESBSystemAllocator.h>
 #endif
 
+#ifndef ESB_JSON_CALLBACKS_H
+#include <ESBJsonCallbacks.h>
+#endif
+
 namespace ESB {
 
 /**
  *  A SAX-style streaming JSON parser.
  *
- *  @defgroup json
  *  @ingroup json
  */
 class JsonParser {
  public:
-  JsonParser(Allocator &allocator = SystemAllocator::Instance());
+  JsonParser(JsonCallbacks &callbacks, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor. */
   virtual ~JsonParser();
@@ -35,45 +38,24 @@ class JsonParser {
   virtual Error parse(const unsigned char *buffer, UInt64 size);
 
   /**
-   * Tell the parser to treat any buffered data as the end of the document.
+   * Finishing parsing the document, finalizing the parse of any buffered data.
    *
    * @return ESB_SUCCESS if successful, ESB_BREAK if any on* functions returned BREAK, ESB_CANNOT_PARSE if invalid JSON
    * was encountered, another error code otherwise.
    */
   virtual Error end();
 
-  typedef enum { BREAK = 0, CONTINUE = 1 } ParseControl;
-
-  virtual ParseControl onMapStart() = 0;
-
-  virtual ParseControl onMapKey(const unsigned char *key, UInt32 length) = 0;
-
-  virtual ParseControl onMapEnd() = 0;
-
-  virtual ParseControl onArrayStart() = 0;
-
-  virtual ParseControl onArrayEnd() = 0;
-
-  virtual ParseControl onNull() = 0;
-
-  virtual ParseControl onBoolean(bool value) = 0;
-
-  virtual ParseControl onInteger(Int64 value) = 0;
-
-  virtual ParseControl onDouble(double value) = 0;
-
-  virtual ParseControl onString(const unsigned char *value, UInt32 length) = 0;
-
  private:
-  void *_parser;
-
   typedef struct {
     void *ptr1;
     void *ptr2;
     void *ptr3;
     void *ptr4;
   } Opaque;
+
+  void *_parser;
   Opaque _opaque;
+  JsonCallbacks &_callbacks;
 
   ESB_DEFAULT_FUNCS(JsonParser);
 };

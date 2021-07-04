@@ -9,3 +9,5 @@ fi
 llvm-profdata merge -output=merged.profdata ${@:2}
 
 llvm-cov report -instr-profile=merged.profdata -ignore-filename-regex=\(third_party\|tests\|unit-tf\) -object=$1
+
+find . \( -name "*.profraw" -o -name "*.profdata" \) -delete

@@ -6,33 +6,33 @@
 
 namespace ESB {
 
-static int OnMapStart(void *ctx) { return ((JsonParser *)ctx)->onMapStart(); }
+static int OnMapStart(void *ctx) { return ((JsonCallbacks *)ctx)->onMapStart(); }
 
 static int OnMapKey(void *ctx, const unsigned char *key, size_t stringLen) {
-  return ((JsonParser *)ctx)->onMapKey(key, stringLen);
+  return ((JsonCallbacks *)ctx)->onMapKey(key, stringLen);
 }
 
-static int OnMapEnd(void *ctx) { return ((JsonParser *)ctx)->onMapEnd(); }
+static int OnMapEnd(void *ctx) { return ((JsonCallbacks *)ctx)->onMapEnd(); }
 
-static int OnArrayStart(void *ctx) { return ((JsonParser *)ctx)->onArrayStart(); }
+static int OnListStart(void *ctx) { return ((JsonCallbacks *)ctx)->onListStart(); }
 
-static int OnArrayEnd(void *ctx) { return ((JsonParser *)ctx)->onArrayEnd(); }
+static int OnListEnd(void *ctx) { return ((JsonCallbacks *)ctx)->onListEnd(); }
 
-static int OnNull(void *ctx) { return ((JsonParser *)ctx)->onNull(); }
+static int OnNull(void *ctx) { return ((JsonCallbacks *)ctx)->onNull(); }
 
-static int OnBoolean(void *ctx, int boolVal) { return ((JsonParser *)ctx)->onBoolean(boolVal); }
+static int OnBoolean(void *ctx, int boolVal) { return ((JsonCallbacks *)ctx)->onBoolean(boolVal); }
 
-static int OnInteger(void *ctx, long long int integerVal) { return ((JsonParser *)ctx)->onInteger(integerVal); }
+static int OnInteger(void *ctx, long long int integerVal) { return ((JsonCallbacks *)ctx)->onInteger(integerVal); }
 
-static int OnDouble(void *ctx, double doubleVal) { return ((JsonParser *)ctx)->onDouble(doubleVal); }
+static int OnDouble(void *ctx, double doubleVal) { return ((JsonCallbacks *)ctx)->onDouble(doubleVal); }
 
 static int OnString(void *ctx, const unsigned char *stringVal, size_t stringLen) {
-  return ((JsonParser *)ctx)->onString(stringVal, stringLen);
+  return ((JsonCallbacks *)ctx)->onString(stringVal, stringLen);
 }
 
-class JsonParserCallbacks {
+class StaticState {
  public:
-  JsonParserCallbacks() {
+  StaticState() {
     memset(&_callbacks, 0, sizeof(_callbacks));
     _callbacks.yajl_null = OnNull;
     _callbacks.yajl_boolean = OnBoolean;
@@ -42,8 +42,8 @@ class JsonParserCallbacks {
     _callbacks.yajl_start_map = OnMapStart;
     _callbacks.yajl_map_key = OnMapKey;
     _callbacks.yajl_end_map = OnMapEnd;
-    _callbacks.yajl_start_array = OnArrayStart;
-    _callbacks.yajl_end_array = OnArrayEnd;
+    _callbacks.yajl_start_array = OnListStart;
+    _callbacks.yajl_end_array = OnListEnd;
   }
 
   inline yajl_callbacks &callbacks() { return _callbacks; }
@@ -51,10 +51,10 @@ class JsonParserCallbacks {
  private:
   yajl_callbacks _callbacks;
 
-  ESB_DEFAULT_FUNCS(JsonParserCallbacks);
+  ESB_DEFAULT_FUNCS(StaticState);
 };
 
-static JsonParserCallbacks Callbacks;
+static StaticState StaticState;
 
 static void *AllocatorAlloc(void *ctx, size_t sz) {
   Allocator *allocator = (Allocator *)ctx;
@@ -77,7 +77,7 @@ static void *AllocatorRealloc(void *ctx, void *ptr, size_t sz) {
   return ESB_SUCCESS == allocator->reallocate(ptr, sz, (void **)&block) ? block : NULL;
 }
 
-JsonParser::JsonParser(Allocator &allocator) : _parser(NULL) {
+JsonParser::JsonParser(JsonCallbacks &callbacks, Allocator &allocator) : _parser(NULL), _callbacks(callbacks) {
   assert(sizeof(yajl_alloc_funcs) == sizeof(_opaque));
   yajl_alloc_funcs *alloc = (yajl_alloc_funcs *)&_opaque;
   alloc->malloc = AllocatorAlloc;
@@ -96,7 +96,7 @@ JsonParser::~JsonParser() {
 Error JsonParser::parse(const unsigned char *buffer, UInt64 size) {
   if (!_parser) {
     yajl_alloc_funcs *alloc = (yajl_alloc_funcs *)&_opaque;
-    _parser = yajl_alloc(&Callbacks.callbacks(), alloc, this);
+    _parser = yajl_alloc(&StaticState.callbacks(), alloc, &_callbacks);
     if (!_parser) {
       return ESB_OUT_OF_MEMORY;
     }

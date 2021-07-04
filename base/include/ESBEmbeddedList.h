@@ -24,12 +24,8 @@ class EmbeddedList {
   virtual ~EmbeddedList();
 
   /** Remove all elements from the list.
-   *
-   *  @param cleanup If true, all elements that have cleanup handlers are
-   *      destroyed with their cleanup handlers.  Otherwise the elements
-   *      are removed from the list but not destroyed.
    */
-  void clear(bool cleanup = true);
+  void clear();
 
   /** Determine whether the list is empty.  This is O(1)
    *

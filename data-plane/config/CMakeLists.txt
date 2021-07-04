@@ -3,7 +3,6 @@ project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
 	source/ESConfigIngest.cpp
-	source/ESRootConfigParser.cpp
         )
 
 add_library(config STATIC ${SOURCE_FILES})

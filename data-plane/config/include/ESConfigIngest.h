@@ -1,8 +1,8 @@
 #ifndef ES_CONFIG_INGEST_H
 #define ES_CONFIG_INGEST_H
 
-#ifndef ESB_ROOT_CONFIG_PARSER_H
-#include <ESRootConfigParser.h>
+#ifndef ESB_COMMON_H
+#include <ESBCommon.h>
 #endif
 
 namespace ES {
@@ -21,7 +21,6 @@ class ConfigIngest {
   ESB::Error parse(const char *path);
 
  private:
-  ES::RootConfigParser _parser;
   ESB::Allocator &_allocator;
 
   ESB_DEFAULT_FUNCS(ConfigIngest);

@@ -110,7 +110,7 @@ void SharedEmbeddedQueue::stop() {
   pthread_mutex_lock(&_mutex);
 
   _isStopped = true;
-  _list.clear(true);
+  _list.clear();
 
   pthread_mutex_unlock(&_mutex);
   pthread_cond_broadcast(&_signal);

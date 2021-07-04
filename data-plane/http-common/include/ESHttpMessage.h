@@ -55,7 +55,7 @@ class HttpMessage {
 
   inline void reset() {
     _version = 110;
-    _headers.clear(false);  // don't call cleanup handlers
+    _headers.clear();
   }
 
   inline void setHasBody(bool hasBody) {

@@ -5,6 +5,10 @@
 #include <ESBTypes.h>
 #endif
 
+#ifndef ESB_ALLOCATOR_H
+#include <ESBAllocator.h>
+#endif
+
 namespace ESB {
 
 /**
@@ -69,6 +73,29 @@ extern void WritePointer(unsigned char *buffer, void *pointer);
  * NULL-terminated.
  */
 extern void SplitFqdn(const char *fqdn, const char **hostname, UInt32 *hostnameSize, const char **domain);
+
+/**
+ * Duplicate a size-delimited string using an Allocator
+ *
+ * @param buffer The string to duplicate
+ * @param size The size of the string to duplicate
+ * @param allocator The allocator to use for the duplicated memory
+ * @param out The duplicated string will be stored here if successful
+ * @return ESB_SUCCESS if successful, another error code otherwise.
+ */
+extern Error Duplicate(const char *buffer, UWord size, Allocator &allocator, char **out);
+
+/**
+ * Duplicate a NULL-terminated string using an Allocator
+ *
+ * @param str The string to duplicate
+ * @param allocator The allocator to use for the duplicated memory
+ * @param out The duplicated string will be stored here if successful
+ * @return ESB_SUCCESS if successful, another error code otherwise.
+ */
+inline Error Duplicate(const char *str, Allocator &allocator, char **out) {
+  return Duplicate(str, sizeof(str), allocator, out);
+}
 
 }  // namespace ESB
 

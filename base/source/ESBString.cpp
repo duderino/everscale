@@ -206,4 +206,20 @@ void SplitFqdn(const char *fqdn, const char **hostname, UInt32 *hostnameSize, co
   }
 }
 
+Error Duplicate(const char *buffer, UWord size, Allocator &allocator, char **out) {
+  if (!buffer || !out) {
+    return ESB_NULL_POINTER;
+  }
+
+  Error error = allocator.allocate(size + 1, (void **)out);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  memcpy(*out, buffer, size);
+  (*out)[size] = 0;
+
+  return ESB_SUCCESS;
+}
+
 }  // namespace ESB

@@ -6,9 +6,17 @@
 #include <ESBBufferedFile.h>
 #endif
 
+#ifndef ESB_JSON_PARSER_H
+#include <ESBJsonParser.h>
+#endif
+
+#ifndef ESB_JSON_TREE_BUILDER_H
+#include <ESBJsonTreeBuilder.h>
+#endif
+
 namespace ES {
 
-ConfigIngest::ConfigIngest(ESB::Allocator &allocator) : _parser(allocator), _allocator(allocator) {}
+ConfigIngest::ConfigIngest(ESB::Allocator &allocator) : _allocator(allocator) {}
 
 ConfigIngest::~ConfigIngest() {}
 
@@ -19,24 +27,26 @@ ESB::Error ConfigIngest::parse(const char *path) {
 
   ESB::BufferedFile file(path, ESB::BufferedFile::READ_ONLY);
   unsigned char buffer[1024];
+  ESB::JsonTreeBuilder tree(_allocator);
+  ESB::JsonParser parser(tree, _allocator);
 
   while (true) {
     ESB::Size bytesRead = 0;
     switch (ESB::Error error = file.read(buffer, sizeof(buffer), &bytesRead)) {
       case ESB_SUCCESS:
-        error = _parser.parse(buffer, bytesRead);
+        error = parser.parse(buffer, bytesRead);
         if (ESB_SUCCESS != error) {
           return error;
         }
         break;
       case ESB_BREAK:
         if (0 < bytesRead) {
-          error = _parser.parse(buffer, bytesRead);
+          error = parser.parse(buffer, bytesRead);
           if (ESB_SUCCESS != error) {
             return error;
           }
         }
-        return _parser.end();
+        return parser.end();
       default:
         return error;
     }

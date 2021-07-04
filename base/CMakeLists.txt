@@ -34,7 +34,18 @@ set(SOURCE_FILES
         source/ESBError.cpp
         source/ESBEventSocket.cpp
         source/ESBFlatTimingWheel.cpp
+        source/ESBJsonBoolean.cpp
+        source/ESBJsonCallbacks.cpp
+        source/ESBJsonDecimal.cpp
+        source/ESBJsonElement.cpp
+        source/ESBJsonInteger.cpp
+        source/ESBJsonList.cpp
+        source/ESBJsonMap.cpp
+        source/ESBJsonNull.cpp
         source/ESBJsonParser.cpp
+        source/ESBJsonScalar.cpp
+        source/ESBJsonString.cpp
+        source/ESBJsonTreeBuilder.cpp
         source/ESBList.cpp
         source/ESBListeningSocket.cpp
         source/ESBLockable.cpp
@@ -141,9 +152,10 @@ add_gtest(string-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests
 add_gtest(smart-pointer-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBSmartPointerTest2.cpp)
 add_gtest(wildcard-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBWildcardIndexTest.cpp)
 add_gtest(tls-context-index-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBTLSContextIndexTest.cpp)
-add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonParserTest.cpp)
 add_gtest(buddy-cache-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyCacheAllocatorTest.cpp)
 add_gtest(buddy-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest2.cpp)
+add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonParserTest.cpp)
+add_gtest(json-tree-builder-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonTreeBuilderTest.cpp)
 
 # For global code coverage report
 
