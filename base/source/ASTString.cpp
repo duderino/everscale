@@ -1,5 +1,5 @@
-#ifndef ESB_JSON_STRING_H
-#include <ESBJsonString.h>
+#ifndef ESB_AST_STRING_H
+#include <ASTString.h>
 #endif
 
 #ifndef ESB_STRING_H
@@ -7,17 +7,18 @@
 #endif
 
 namespace ESB {
+namespace AST {
 
-JsonString::JsonString(Allocator &allocator) : JsonScalar(allocator), _value(NULL) {}
+String::String(Allocator &allocator) : Scalar(allocator), _value(NULL) {}
 
-JsonString::~JsonString() {
+String::~String() {
   if (_value) {
     _allocator.deallocate(_value);
     _value = NULL;
   }
 }
 
-Error JsonString::setValue(const char *buffer, UWord size) {
+Error String::setValue(const char *buffer, UWord size) {
   char *value = NULL;
   Error error = Duplicate(buffer, size, _allocator, &value);
   if (ESB_SUCCESS != error) {
@@ -32,7 +33,7 @@ Error JsonString::setValue(const char *buffer, UWord size) {
   return ESB_SUCCESS;
 }
 
-int JsonString::compare(const JsonString &other) const {
+int String::compare(const String &other) const {
   if (_value == other._value) {
     return 0;
   }
@@ -48,6 +49,7 @@ int JsonString::compare(const JsonString &other) const {
   return strcmp(_value, other._value);
 }
 
-JsonElement::Type JsonString::type() const { return STRING; }
+Element::Type String::type() const { return STRING; }
 
+}  // namespace AST
 }  // namespace ESB

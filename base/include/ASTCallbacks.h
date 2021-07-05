@@ -1,22 +1,23 @@
-#ifndef ESB_JSON_CALLBACKS_H
-#define ESB_JSON_CALLBACKS_H
+#ifndef ESB_AST_CALLBACKS_H
+#define ESB_AST_CALLBACKS_H
 
 #ifndef ESB_COMMON_H
 #include <ESBCommon.h>
 #endif
 
 namespace ESB {
+namespace AST {
 
 /**
- *  Callbacks for parsing JSON documents
+ *  Parser callbacks for building abstract symbol trees
  *
- *  @ingroup json
+ *  @ingroup ast
  */
-class JsonCallbacks {
+class Callbacks {
  public:
-  JsonCallbacks();
+  Callbacks();
 
-  virtual ~JsonCallbacks();
+  virtual ~Callbacks();
 
   typedef enum { BREAK = 0, CONTINUE = 1 } ParseControl;
 
@@ -31,9 +32,10 @@ class JsonCallbacks {
   virtual ParseControl onDouble(double value) = 0;
   virtual ParseControl onString(const unsigned char *value, UInt32 length) = 0;
 
-  ESB_DISABLE_AUTO_COPY(JsonCallbacks);
+  ESB_DISABLE_AUTO_COPY(Callbacks);
 };
 
+}  // namespace AST
 }  // namespace ESB
 
 #endif

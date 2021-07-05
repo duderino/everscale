@@ -10,8 +10,8 @@
 #include <ESBJsonParser.h>
 #endif
 
-#ifndef ESB_JSON_TREE_BUILDER_H
-#include <ESBJsonTreeBuilder.h>
+#ifndef ESB_AST_TREE_H
+#include <ASTTree.h>
 #endif
 
 namespace ES {
@@ -27,7 +27,7 @@ ESB::Error ConfigIngest::parse(const char *path) {
 
   ESB::BufferedFile file(path, ESB::BufferedFile::READ_ONLY);
   unsigned char buffer[1024];
-  ESB::JsonTreeBuilder tree(_allocator);
+  ESB::AST::Tree tree(_allocator);
   ESB::JsonParser parser(tree, _allocator);
 
   while (true) {

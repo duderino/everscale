@@ -1,19 +1,19 @@
-#ifndef ESB_JSON_TREE_BUILDER_H
-#include <ESBJsonTreeBuilder.h>
+#ifndef ESB_AST_TREE_H
+#include <ASTTree.h>
 #endif
 
 namespace ESB {
+namespace AST {
 
-JsonTreeBuilder::JsonTreeBuilder(Allocator &allocator)
-    : _stack(), _error(ESB_SUCCESS), _root(NULL), _allocator(allocator) {}
+Tree::Tree(Allocator &allocator) : _stack(), _error(ESB_SUCCESS), _root(NULL), _allocator(allocator) {}
 
-JsonTreeBuilder::~JsonTreeBuilder() {
+Tree::~Tree() {
   if (_root && _root->cleanupHandler()) {
     _root->cleanupHandler()->destroy(_root);
   }
 
   while (true) {
-    JsonElement *e = (JsonElement *)_stack.removeLast();
+    Element *e = (Element *)_stack.removeLast();
     if (!e) {
       break;
     }
@@ -23,8 +23,8 @@ JsonTreeBuilder::~JsonTreeBuilder() {
   }
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onMapStart() {
-  JsonMap *map = new (_allocator) JsonMap(_allocator);
+Callbacks::ParseControl Tree::onMapStart() {
+  Map *map = new (_allocator) Map(_allocator);
 
   if (!map) {
     _error = ESB_OUT_OF_MEMORY;
@@ -35,8 +35,8 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onMapStart() {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onMapKey(const unsigned char *key, UInt32 length) {
-  JsonString *newString = new (_allocator) JsonString(_allocator);
+Callbacks::ParseControl Tree::onMapKey(const unsigned char *key, UInt32 length) {
+  String *newString = new (_allocator) String(_allocator);
 
   if (!newString) {
     _error = ESB_OUT_OF_MEMORY;
@@ -46,7 +46,7 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onMapKey(const unsigned char *key, 
   Error error = newString->setValue((const char *)key, length);
   if (ESB_SUCCESS != error) {
     _error = error;
-    newString->~JsonString();
+    newString->~String();
     _allocator.deallocate(newString);
     return BREAK;
   }
@@ -55,16 +55,16 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onMapKey(const unsigned char *key, 
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onMapEnd() {
-  JsonElement *newMap = (JsonElement *)_stack.removeLast();
+Callbacks::ParseControl Tree::onMapEnd() {
+  Element *newMap = (Element *)_stack.removeLast();
 
-  assert(JsonElement::MAP == newMap->type());
-  if (JsonElement::MAP != newMap->type()) {
+  assert(Element::MAP == newMap->type());
+  if (Element::MAP != newMap->type()) {
     _error = ESB_CANNOT_PARSE;
     return BREAK;
   }
 
-  JsonElement *top = (JsonElement *)_stack.last();
+  Element *top = (Element *)_stack.last();
 
   if (!top) {
     assert(!_root);
@@ -72,8 +72,8 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onMapEnd() {
     return CONTINUE;
   }
 
-  if (JsonElement::LIST == top->type()) {
-    JsonList *list = (JsonList *)top;
+  if (Element::LIST == top->type()) {
+    List *list = (List *)top;
     list->addLast(newMap);
     return CONTINUE;
   }
@@ -86,8 +86,8 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onMapEnd() {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onListStart() {
-  JsonList *list = new (_allocator) JsonList(_allocator);
+Callbacks::ParseControl Tree::onListStart() {
+  List *list = new (_allocator) List(_allocator);
 
   if (!list) {
     _error = ESB_OUT_OF_MEMORY;
@@ -97,16 +97,17 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onListStart() {
   _stack.addLast(list);
   return CONTINUE;
 }
-JsonCallbacks::ParseControl JsonTreeBuilder::onListEnd() {
-  JsonElement *newList = (JsonElement *)_stack.removeLast();
 
-  assert(JsonElement::LIST == newList->type());
-  if (JsonElement::LIST != newList->type()) {
+Callbacks::ParseControl Tree::onListEnd() {
+  Element *newList = (Element *)_stack.removeLast();
+
+  assert(Element::LIST == newList->type());
+  if (Element::LIST != newList->type()) {
     _error = ESB_CANNOT_PARSE;
     return BREAK;
   }
 
-  JsonElement *top = (JsonElement *)_stack.last();
+  Element *top = (Element *)_stack.last();
 
   if (!top) {
     assert(!_root);
@@ -114,8 +115,8 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onListEnd() {
     return CONTINUE;
   }
 
-  if (JsonElement::LIST == top->type()) {
-    JsonList *list = (JsonList *)top;
+  if (Element::LIST == top->type()) {
+    List *list = (List *)top;
     list->addLast(newList);
     return CONTINUE;
   }
@@ -128,8 +129,8 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onListEnd() {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onNull() {
-  JsonElement *top = (JsonElement *)_stack.last();
+Callbacks::ParseControl Tree::onNull() {
+  Element *top = (Element *)_stack.last();
   assert(top);
   if (!top) {
     _error = ESB_CANNOT_PARSE;
@@ -137,31 +138,31 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onNull() {
   }
 
   switch (top->type()) {
-    case JsonElement::LIST:
-    case JsonElement::BOOLEAN:
-    case JsonElement::STRING:
-    case JsonElement::INTEGER:
-    case JsonElement::DECIMAL:
+    case Element::LIST:
+    case Element::BOOLEAN:
+    case Element::STRING:
+    case Element::INTEGER:
+    case Element::DECIMAL:
       break;
     default:
       _error = ESB_CANNOT_PARSE;
       return BREAK;
   }
 
-  JsonNull *newNull = new (_allocator) JsonNull(_allocator);
+  Null *newNull = new (_allocator) Null(_allocator);
   if (!newNull) {
     _error = ESB_OUT_OF_MEMORY;
     return BREAK;
   }
 
-  if (JsonElement::LIST == top->type()) {
-    JsonList *list = (JsonList *)top;
+  if (Element::LIST == top->type()) {
+    List *list = (List *)top;
     list->addLast(newNull);
     return CONTINUE;
   }
 
   if (BREAK == insertKeyPair(newNull)) {
-    newNull->~JsonNull();
+    newNull->~Null();
     _allocator.deallocate(newNull);
     return BREAK;
   }
@@ -169,19 +170,19 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onNull() {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onBoolean(bool value) {
+Callbacks::ParseControl Tree::onBoolean(bool value) {
   if (BREAK == validateKeyType()) {
     return BREAK;
   }
 
-  JsonBoolean *newBoolean = new (_allocator) JsonBoolean(value, _allocator);
+  Boolean *newBoolean = new (_allocator) Boolean(value, _allocator);
   if (!newBoolean) {
     _error = ESB_OUT_OF_MEMORY;
     return BREAK;
   }
 
   if (BREAK == insertKeyOrValue(newBoolean)) {
-    newBoolean->~JsonBoolean();
+    newBoolean->~Boolean();
     _allocator.deallocate(newBoolean);
     return BREAK;
   }
@@ -189,19 +190,19 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onBoolean(bool value) {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onInteger(Int64 value) {
+Callbacks::ParseControl Tree::onInteger(Int64 value) {
   if (BREAK == validateKeyType()) {
     return BREAK;
   }
 
-  JsonInteger *newInteger = new (_allocator) JsonInteger(value, _allocator);
+  Integer *newInteger = new (_allocator) Integer(value, _allocator);
   if (!newInteger) {
     _error = ESB_OUT_OF_MEMORY;
     return BREAK;
   }
 
   if (BREAK == insertKeyOrValue(newInteger)) {
-    newInteger->~JsonInteger();
+    newInteger->~Integer();
     _allocator.deallocate(newInteger);
     return BREAK;
   }
@@ -209,19 +210,19 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onInteger(Int64 value) {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onDouble(double value) {
+Callbacks::ParseControl Tree::onDouble(double value) {
   if (BREAK == validateKeyType()) {
     return BREAK;
   }
 
-  JsonDecimal *newDecimal = new (_allocator) JsonDecimal(value, _allocator);
+  Decimal *newDecimal = new (_allocator) Decimal(value, _allocator);
   if (!newDecimal) {
     _error = ESB_OUT_OF_MEMORY;
     return BREAK;
   }
 
   if (BREAK == insertKeyOrValue(newDecimal)) {
-    newDecimal->~JsonDecimal();
+    newDecimal->~Decimal();
     _allocator.deallocate(newDecimal);
     return BREAK;
   }
@@ -229,12 +230,12 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onDouble(double value) {
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::onString(const unsigned char *value, UInt32 length) {
+Callbacks::ParseControl Tree::onString(const unsigned char *value, UInt32 length) {
   if (BREAK == validateKeyType()) {
     return BREAK;
   }
 
-  JsonString *newString = new (_allocator) JsonString(_allocator);
+  String *newString = new (_allocator) String(_allocator);
   if (!newString) {
     _error = ESB_OUT_OF_MEMORY;
     return BREAK;
@@ -243,13 +244,13 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onString(const unsigned char *value
   Error error = newString->setValue((const char *)value, length);
   if (ESB_SUCCESS != error) {
     _error = error;
-    newString->~JsonString();
+    newString->~String();
     _allocator.deallocate(newString);
     return BREAK;
   }
 
   if (BREAK == insertKeyOrValue(newString)) {
-    newString->~JsonString();
+    newString->~String();
     _allocator.deallocate(newString);
     return BREAK;
   }
@@ -257,8 +258,8 @@ JsonCallbacks::ParseControl JsonTreeBuilder::onString(const unsigned char *value
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::validateKeyType() {
-  JsonElement *top = (JsonElement *)_stack.last();
+Callbacks::ParseControl Tree::validateKeyType() {
+  Element *top = (Element *)_stack.last();
   assert(top);
   if (!top) {
     _error = ESB_CANNOT_PARSE;
@@ -266,12 +267,12 @@ JsonCallbacks::ParseControl JsonTreeBuilder::validateKeyType() {
   }
 
   switch (top->type()) {
-    case JsonElement::LIST:
-    case JsonElement::BOOLEAN:
-    case JsonElement::STRING:
-    case JsonElement::INTEGER:
-    case JsonElement::DECIMAL:
-    case JsonElement::MAP:
+    case Element::LIST:
+    case Element::BOOLEAN:
+    case Element::STRING:
+    case Element::INTEGER:
+    case Element::DECIMAL:
+    case Element::MAP:
       return CONTINUE;
     default:
       _error = ESB_CANNOT_PARSE;
@@ -279,16 +280,16 @@ JsonCallbacks::ParseControl JsonTreeBuilder::validateKeyType() {
   }
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::insertKeyOrValue(JsonElement *element) {
-  JsonElement *top = (JsonElement *)_stack.last();
+Callbacks::ParseControl Tree::insertKeyOrValue(Element *element) {
+  Element *top = (Element *)_stack.last();
 
-  if (JsonElement::LIST == top->type()) {
-    JsonList *list = (JsonList *)top;
+  if (Element::LIST == top->type()) {
+    List *list = (List *)top;
     list->addLast(element);
     return CONTINUE;
   }
 
-  if (JsonElement::MAP == top->type()) {
+  if (Element::MAP == top->type()) {
     _stack.addLast(element);
     return CONTINUE;
   }
@@ -296,24 +297,24 @@ JsonCallbacks::ParseControl JsonTreeBuilder::insertKeyOrValue(JsonElement *eleme
   return insertKeyPair(element);
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::insertKeyPair(JsonElement *element) {
-  JsonElement *top = (JsonElement *)_stack.last();
+Callbacks::ParseControl Tree::insertKeyPair(Element *element) {
+  Element *top = (Element *)_stack.last();
 
   switch (top->type()) {
-    case JsonElement::BOOLEAN:
-    case JsonElement::STRING:
-    case JsonElement::INTEGER:
-    case JsonElement::DECIMAL: {
-      JsonScalar *key = (JsonScalar *)_stack.removeLast();
-      top = (JsonElement *)_stack.last();
+    case Element::BOOLEAN:
+    case Element::STRING:
+    case Element::INTEGER:
+    case Element::DECIMAL: {
+      Scalar *key = (Scalar *)_stack.removeLast();
+      top = (Element *)_stack.last();
 
-      assert(JsonElement::MAP == top->type());
-      if (JsonElement::MAP != top->type()) {
+      assert(Element::MAP == top->type());
+      if (Element::MAP != top->type()) {
         _error = ESB_CANNOT_PARSE;
         return BREAK;
       }
 
-      JsonMap *map = (JsonMap *)_stack.last();
+      Map *map = (Map *)_stack.last();
       Error error = map->insert(key, element);
       if (ESB_SUCCESS != error) {
         _error = error;
@@ -329,21 +330,21 @@ JsonCallbacks::ParseControl JsonTreeBuilder::insertKeyPair(JsonElement *element)
   }
 }
 
-void JsonTreeBuilder::traverse(JsonCallbacks &callbacks) const {
+void Tree::traverse(Callbacks &callbacks) const {
   if (_root) {
     traverseElement(callbacks, _root);
   }
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::traverseMap(JsonCallbacks &callbacks, JsonMap *map) const {
+Callbacks::ParseControl Tree::traverseMap(Callbacks &callbacks, Map *map) const {
   if (BREAK == callbacks.onMapStart()) {
     return BREAK;
   }
 
-  for (JsonMapIterator it = map->iterator(); !it.isNull(); ++it) {
+  for (MapIterator it = map->iterator(); !it.isNull(); ++it) {
     // yajl only supports string keys
-    assert(JsonElement::STRING == it.key()->type());
-    JsonString *key = (JsonString *)it.key();
+    assert(Element::STRING == it.key()->type());
+    String *key = (String *)it.key();
     if (BREAK == callbacks.onMapKey((const unsigned char *)key->value(), strlen(key->value()))) {
       return BREAK;
     }
@@ -359,12 +360,12 @@ JsonCallbacks::ParseControl JsonTreeBuilder::traverseMap(JsonCallbacks &callback
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::traverseList(JsonCallbacks &callbacks, JsonList *list) const {
+Callbacks::ParseControl Tree::traverseList(Callbacks &callbacks, List *list) const {
   if (BREAK == callbacks.onListStart()) {
     return BREAK;
   }
 
-  for (JsonElement *element = list->first(); element; element = (JsonElement *)element->next()) {
+  for (Element *element = list->first(); element; element = (Element *)element->next()) {
     if (BREAK == traverseElement(callbacks, element)) {
       return BREAK;
     }
@@ -377,46 +378,46 @@ JsonCallbacks::ParseControl JsonTreeBuilder::traverseList(JsonCallbacks &callbac
   return CONTINUE;
 }
 
-JsonCallbacks::ParseControl JsonTreeBuilder::traverseElement(JsonCallbacks &callbacks, JsonElement *element) const {
+Callbacks::ParseControl Tree::traverseElement(Callbacks &callbacks, Element *element) const {
   switch (element->type()) {
-    case JsonElement::MAP:
-      if (BREAK == traverseMap(callbacks, (JsonMap *)element)) {
+    case Element::MAP:
+      if (BREAK == traverseMap(callbacks, (Map *)element)) {
         return BREAK;
       }
       break;
-    case JsonElement::LIST:
-      if (BREAK == traverseList(callbacks, (JsonList *)element)) {
+    case Element::LIST:
+      if (BREAK == traverseList(callbacks, (List *)element)) {
         return BREAK;
       }
       break;
-    case JsonElement::NIL:
+    case Element::NIL:
       if (BREAK == callbacks.onNull()) {
         return BREAK;
       }
       break;
-    case JsonElement::STRING: {
-      JsonString *value = (JsonString *)element;
+    case Element::STRING: {
+      String *value = (String *)element;
       if (BREAK == callbacks.onString((const unsigned char *)value->value(), strlen(value->value()))) {
         return BREAK;
       }
       break;
     }
-    case JsonElement::INTEGER: {
-      JsonInteger *value = (JsonInteger *)element;
+    case Element::INTEGER: {
+      Integer *value = (Integer *)element;
       if (BREAK == callbacks.onInteger(value->value())) {
         return BREAK;
       }
       break;
     }
-    case JsonElement::DECIMAL: {
-      JsonDecimal *value = (JsonDecimal *)element;
+    case Element::DECIMAL: {
+      Decimal *value = (Decimal *)element;
       if (BREAK == callbacks.onDouble(value->value())) {
         return BREAK;
       }
       break;
     }
-    case JsonElement::BOOLEAN: {
-      JsonBoolean *value = (JsonBoolean *)element;
+    case Element::BOOLEAN: {
+      Boolean *value = (Boolean *)element;
       if (BREAK == callbacks.onBoolean(value->value())) {
         return BREAK;
       }
@@ -427,4 +428,5 @@ JsonCallbacks::ParseControl JsonTreeBuilder::traverseElement(JsonCallbacks &call
   return CONTINUE;
 }
 
+}  // namespace AST
 }  // namespace ESB

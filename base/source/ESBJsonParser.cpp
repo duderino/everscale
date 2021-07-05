@@ -6,28 +6,28 @@
 
 namespace ESB {
 
-static int OnMapStart(void *ctx) { return ((JsonCallbacks *)ctx)->onMapStart(); }
+static int OnMapStart(void *ctx) { return ((AST::Callbacks *)ctx)->onMapStart(); }
 
 static int OnMapKey(void *ctx, const unsigned char *key, size_t stringLen) {
-  return ((JsonCallbacks *)ctx)->onMapKey(key, stringLen);
+  return ((AST::Callbacks *)ctx)->onMapKey(key, stringLen);
 }
 
-static int OnMapEnd(void *ctx) { return ((JsonCallbacks *)ctx)->onMapEnd(); }
+static int OnMapEnd(void *ctx) { return ((AST::Callbacks *)ctx)->onMapEnd(); }
 
-static int OnListStart(void *ctx) { return ((JsonCallbacks *)ctx)->onListStart(); }
+static int OnListStart(void *ctx) { return ((AST::Callbacks *)ctx)->onListStart(); }
 
-static int OnListEnd(void *ctx) { return ((JsonCallbacks *)ctx)->onListEnd(); }
+static int OnListEnd(void *ctx) { return ((AST::Callbacks *)ctx)->onListEnd(); }
 
-static int OnNull(void *ctx) { return ((JsonCallbacks *)ctx)->onNull(); }
+static int OnNull(void *ctx) { return ((AST::Callbacks *)ctx)->onNull(); }
 
-static int OnBoolean(void *ctx, int boolVal) { return ((JsonCallbacks *)ctx)->onBoolean(boolVal); }
+static int OnBoolean(void *ctx, int boolVal) { return ((AST::Callbacks *)ctx)->onBoolean(boolVal); }
 
-static int OnInteger(void *ctx, long long int integerVal) { return ((JsonCallbacks *)ctx)->onInteger(integerVal); }
+static int OnInteger(void *ctx, long long int integerVal) { return ((AST::Callbacks *)ctx)->onInteger(integerVal); }
 
-static int OnDouble(void *ctx, double doubleVal) { return ((JsonCallbacks *)ctx)->onDouble(doubleVal); }
+static int OnDouble(void *ctx, double doubleVal) { return ((AST::Callbacks *)ctx)->onDouble(doubleVal); }
 
 static int OnString(void *ctx, const unsigned char *stringVal, size_t stringLen) {
-  return ((JsonCallbacks *)ctx)->onString(stringVal, stringLen);
+  return ((AST::Callbacks *)ctx)->onString(stringVal, stringLen);
 }
 
 class StaticState {
@@ -77,7 +77,7 @@ static void *AllocatorRealloc(void *ctx, void *ptr, size_t sz) {
   return ESB_SUCCESS == allocator->reallocate(ptr, sz, (void **)&block) ? block : NULL;
 }
 
-JsonParser::JsonParser(JsonCallbacks &callbacks, Allocator &allocator) : _parser(NULL), _callbacks(callbacks) {
+JsonParser::JsonParser(AST::Callbacks &callbacks, Allocator &allocator) : _parser(NULL), _callbacks(callbacks) {
   assert(sizeof(yajl_alloc_funcs) == sizeof(_opaque));
   yajl_alloc_funcs *alloc = (yajl_alloc_funcs *)&_opaque;
   alloc->malloc = AllocatorAlloc;

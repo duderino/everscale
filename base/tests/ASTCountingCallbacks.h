@@ -1,15 +1,16 @@
 #ifndef ESB_SOCKET_TEST_H
 #define ESB_SOCKET_TEST_H
 
-#ifndef ESB_JSON_CALLBACKS_H
-#include <ESBJsonCallbacks.h>
+#ifndef ESB_AST_CALLBACKS_H
+#include <ASTCallbacks.h>
 #endif
 
 namespace ESB {
+namespace AST {
 
-class JsonCountingCallbacks : public JsonCallbacks {
+class CountingCallbacks : public Callbacks {
  public:
-  JsonCountingCallbacks()
+  CountingCallbacks()
       : _onMapStarts(0),
         _onMapKeys(0),
         _onMapEnds(0),
@@ -20,7 +21,7 @@ class JsonCountingCallbacks : public JsonCallbacks {
         _onIntegers(0),
         _onDoubles(0),
         _onStrings(0) {}
-  virtual ~JsonCountingCallbacks() {}
+  virtual ~CountingCallbacks() {}
 
   virtual ParseControl onMapStart() {
     ++_onMapStarts;
@@ -95,9 +96,10 @@ class JsonCountingCallbacks : public JsonCallbacks {
   int _onDoubles;
   int _onStrings;
 
-  ESB_DEFAULT_FUNCS(JsonCountingCallbacks);
+  ESB_DEFAULT_FUNCS(CountingCallbacks);
 };
 
+}  // namespace AST
 }  // namespace ESB
 
 #endif

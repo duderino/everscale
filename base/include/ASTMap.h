@@ -1,8 +1,8 @@
-#ifndef ESB_JSON_MAP_H
-#define ESB_JSON_MAP_H
+#ifndef ESB_AST_MAP_H
+#define ESB_AST_MAP_H
 
-#ifndef ESB_JSON_SCALAR_H
-#include <ESBJsonScalar.h>
+#ifndef ESB_AST_SCALAR_H
+#include <ASTScalar.h>
 #endif
 
 #ifndef ESB_MAP_H
@@ -10,22 +10,23 @@
 #endif
 
 namespace ESB {
+namespace AST {
 
-class JsonMapIterator;
+class MapIterator;
 
-/** A JSON Map.
+/** An AST Map.
  *
- *  @ingroup json
+ *  @ingroup ast
  */
-class JsonMap : public JsonElement {
+class Map : public Element {
  public:
   /** Constructor.
    */
-  JsonMap(Allocator &allocator = SystemAllocator::Instance());
+  Map(Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
-  virtual ~JsonMap();
+  virtual ~Map();
 
   virtual Type type() const;
 
@@ -36,7 +37,7 @@ class JsonMap : public JsonElement {
    *  @return ESB_SUCCESS if successful, another error code otherwise.  ESB_UNIQUENESS_VIOLATION will be returned if the
    * key already exists
    */
-  inline Error insert(const JsonScalar *key, JsonElement *value) { return _map.insert(key, value); }
+  inline Error insert(const Scalar *key, Element *value) { return _map.insert(key, value); }
 
   /** Erase a key/value pair from the map given its key.  O(lg n).
    *  <p>
@@ -47,14 +48,14 @@ class JsonMap : public JsonElement {
    *  @return ESB_SUCCESS if successful, another error code otherwise.  ESB_CANNOT_FIND will be returned if the key
    * cannot be found.
    */
-  inline Error remove(const JsonScalar *key) { return _map.remove(key); }
+  inline Error remove(const Scalar *key) { return _map.remove(key); }
 
   /** Find a value in the map given its key.  O(lg n).
    *
    *  @param key The key of the key/value pair to find.
    *  @return The value or NULL if the value cannot be found.
    */
-  inline JsonElement *find(const JsonScalar *key) { return (JsonElement *)_map.find(key); }
+  inline Element *find(const Scalar *key) { return (Element *)_map.find(key); }
 
   /** Update key/value pair in the map given its key.  O(lg n).
    *
@@ -64,7 +65,7 @@ class JsonMap : public JsonElement {
    *  @param old If non-NULL, the old value will be assigned to this.
    *  @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the key cannot be found, another error code otherwise.
    */
-  inline Error update(const JsonScalar *key, JsonElement *value, JsonElement **old) {
+  inline Error update(const Scalar *key, Element *value, Element **old) {
     return _map.update(key, value, (void **)old);
   }
 
@@ -80,7 +81,7 @@ class JsonMap : public JsonElement {
    *
    *  @return An iterator pointing to the first element in the map.
    */
-  JsonMapIterator iterator();
+  MapIterator iterator();
 
   /** Get the current size of the map.  O(1).
    *
@@ -95,32 +96,32 @@ class JsonMap : public JsonElement {
   };
 
   static JsonMapComparator _Comparator;
-  Map _map;
+  ESB::Map _map;
 
-  ESB_DEFAULT_FUNCS(JsonMap);
+  ESB_DEFAULT_FUNCS(Map);
 };
 
-class JsonMapIterator {
-  friend class JsonMap;  // So JsomMap can call the private ctor
+class MapIterator {
+  friend class Map;  // So JsomMap can call the private ctor
 
  public:
   /** Default Constructor. */
-  JsonMapIterator();
+  MapIterator();
 
   /** Copy constructor.
    *
    *  @param iterator the iterator to copy.
    */
-  JsonMapIterator(const JsonMapIterator &it);
+  MapIterator(const MapIterator &it);
 
   /** Destructor. */
-  ~JsonMapIterator();
+  ~MapIterator();
 
   /** Assignment operator.
    *
    *  @param iterator the iterator to copy.
    */
-  inline JsonMapIterator &operator=(const JsonMapIterator &it) {
+  inline MapIterator &operator=(const MapIterator &it) {
     _it = it._it;
     return *this;
   }
@@ -139,7 +140,7 @@ class JsonMapIterator {
    *
    *  @return The iterator itself
    */
-  inline JsonMapIterator &operator++() {
+  inline MapIterator &operator++() {
     _it++;
     return *this;
   }
@@ -152,8 +153,8 @@ class JsonMapIterator {
    *  @return A new iterator pointing to the key/value pair before the
    *      increment operation.
    */
-  inline JsonMapIterator operator++(int) {
-    JsonMapIterator it(_it);
+  inline MapIterator operator++(int) {
+    MapIterator it(_it);
     _it++;
     return it;
   }
@@ -165,8 +166,8 @@ class JsonMapIterator {
    *
    *  @return The next iterator.
    */
-  inline JsonMapIterator next() {
-    JsonMapIterator it(_it.next());
+  inline MapIterator next() {
+    MapIterator it(_it.next());
     return it;
   }
 
@@ -177,7 +178,7 @@ class JsonMapIterator {
    *
    *  @return The iterator itself
    */
-  inline JsonMapIterator &operator--() {
+  inline MapIterator &operator--() {
     _it--;
     return *this;
   }
@@ -190,8 +191,8 @@ class JsonMapIterator {
    *  @return A new iterator pointing to the key/value pair before the
    *      increment operation.
    */
-  inline JsonMapIterator operator--(int) {
-    JsonMapIterator it(_it);
+  inline MapIterator operator--(int) {
+    MapIterator it(_it);
     _it--;
     return it;
   }
@@ -210,8 +211,8 @@ class JsonMapIterator {
    *
    *  @return The previous iterator.
    */
-  inline JsonMapIterator previous() {
-    JsonMapIterator it(_it.previous());
+  inline MapIterator previous() {
+    MapIterator it(_it.previous());
     return it;
   }
 
@@ -220,14 +221,14 @@ class JsonMapIterator {
    *  @return The key or NULL if the iterator does not point to a key/value
    *      pair.
    */
-  inline const JsonScalar *key() { return (JsonScalar *)_it.key(); }
+  inline const Scalar *key() { return (Scalar *)_it.key(); }
 
   /** Get the value of the key/value pair that this iterator points to.  O(1).
    *
    *  @return The value or NULL if the iterator does not point to a key/value
    *      pair.
    */
-  inline JsonElement *value() { return (JsonElement *)_it.value(); }
+  inline Element *value() { return (Element *)_it.value(); }
 
   /** Set the value of the key/value pair that this iterator points to.  O(1).
    *  <p>
@@ -236,7 +237,7 @@ class JsonMapIterator {
    *
    *  @param value The new value of the element.
    */
-  inline void setValue(JsonElement *value) { _it.setValue(value); }
+  inline void setValue(Element *value) { _it.setValue(value); }
 
   /** Determine whether the iterator is null.  Null iterators are iterators
    *  that do not point to a key/value pair.  Iterators are typically null
@@ -256,20 +257,21 @@ class JsonMapIterator {
    *  @return true if both iterators point to the same key/value pair or if
    *      both iterators are null (do not point to any key/value pair).
    */
-  inline bool operator==(const JsonMapIterator &it) { return _it == it._it; }
+  inline bool operator==(const MapIterator &it) { return _it == it._it; }
 
  private:
   /** Constructor.
    *
    *  @param node The key/value pair that this iterator initially points to.
    */
-  JsonMapIterator(const MapIterator &it);
+  MapIterator(const ESB::MapIterator &it);
 
-  MapIterator _it;
+  ESB::MapIterator _it;
 
-  ESB_PLACEMENT_NEW(JsonMapIterator);
+  ESB_PLACEMENT_NEW(MapIterator);
 };
 
+}  // namespace AST
 }  // namespace ESB
 
 #endif

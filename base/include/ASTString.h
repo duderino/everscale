@@ -1,25 +1,26 @@
-#ifndef ESB_JSON_STRING_H
-#define ESB_JSON_STRING_H
+#ifndef ESB_AST_STRING_H
+#define ESB_AST_STRING_H
 
-#ifndef ESB_JSON_SCALAR_H
-#include <ESBJsonScalar.h>
+#ifndef ESB_AST_SCALAR_H
+#include <ASTScalar.h>
 #endif
 
 namespace ESB {
+namespace AST {
 
-/** A single-value JSON String
+/** A single-value AST String
  *
- *  @ingroup json
+ *  @ingroup ast
  */
-class JsonString : public JsonScalar {
+class String : public Scalar {
  public:
   /** Constructor.
    */
-  JsonString(Allocator &allocator = SystemAllocator::Instance());
+  String(Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor.
    */
-  virtual ~JsonString();
+  virtual ~String();
 
   virtual Type type() const;
 
@@ -27,16 +28,17 @@ class JsonString : public JsonScalar {
 
   inline Error setValue(const char *str) { return setValue(str, strlen(str)); }
 
-  int compare(const JsonString &other) const;
+  int compare(const String &other) const;
 
   inline const char *value() const { return _value; }
 
  private:
   char *_value;
 
-  ESB_DEFAULT_FUNCS(JsonString);
+  ESB_DEFAULT_FUNCS(String);
 };
 
+}  // namespace AST
 }  // namespace ESB
 
 #endif

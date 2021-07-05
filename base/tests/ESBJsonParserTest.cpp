@@ -10,8 +10,8 @@
 #include <ESBBufferedFile.h>
 #endif
 
-#ifndef ESB_JSON_COUNTING_CALLBACKS_H
-#include "ESBJsonCountingCallbacks.h"
+#ifndef ESB_AST_COUNTING_CALLBACKS_H
+#include "ASTCountingCallbacks.h"
 #endif
 
 #include <gtest/gtest.h>
@@ -22,7 +22,7 @@ TEST(JsonParser, SmallDoc) {
   BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
-    JsonCountingCallbacks callbacks;
+    AST::CountingCallbacks callbacks;
     JsonParser parser(callbacks, allocator);
     BufferedFile file("doc1.json", BufferedFile::READ_ONLY);
     unsigned char buffer[128];
@@ -71,7 +71,7 @@ TEST(JsonParser, Large) {
   BuddyCacheAllocator allocator(16384, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
-    JsonCountingCallbacks callbacks;
+    AST::CountingCallbacks callbacks;
     JsonParser parser(callbacks, allocator);
     BufferedFile file("doc2.json", BufferedFile::READ_ONLY);
     unsigned char buffer[128];
@@ -120,7 +120,7 @@ TEST(JsonParser, LargeFailover) {
   BuddyCacheAllocator allocator(8192, SystemAllocator::Instance(), SystemAllocator::Instance());
 
   {
-    JsonCountingCallbacks callbacks;
+    AST::CountingCallbacks callbacks;
     JsonParser parser(callbacks, allocator);
     BufferedFile file("doc2.json", BufferedFile::READ_ONLY);
     unsigned char buffer[128];

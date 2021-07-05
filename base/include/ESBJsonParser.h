@@ -9,8 +9,8 @@
 #include <ESBSystemAllocator.h>
 #endif
 
-#ifndef ESB_JSON_CALLBACKS_H
-#include <ESBJsonCallbacks.h>
+#ifndef ESB_AST_CALLBACKS_H
+#include <ASTCallbacks.h>
 #endif
 
 namespace ESB {
@@ -18,11 +18,12 @@ namespace ESB {
 /**
  *  A SAX-style streaming JSON parser.
  *
+ *  @defgroup json
  *  @ingroup json
  */
 class JsonParser {
  public:
-  JsonParser(JsonCallbacks &callbacks, Allocator &allocator = SystemAllocator::Instance());
+  JsonParser(AST::Callbacks &callbacks, Allocator &allocator = SystemAllocator::Instance());
 
   /** Destructor. */
   virtual ~JsonParser();
@@ -55,7 +56,7 @@ class JsonParser {
 
   void *_parser;
   Opaque _opaque;
-  JsonCallbacks &_callbacks;
+  AST::Callbacks &_callbacks;
 
   ESB_DEFAULT_FUNCS(JsonParser);
 };

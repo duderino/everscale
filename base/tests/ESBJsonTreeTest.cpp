@@ -10,21 +10,21 @@
 #include <ESBBufferedFile.h>
 #endif
 
-#ifndef ESB_JSON_TREE_BUILDER_H
-#include <ESBJsonTreeBuilder.h>
+#ifndef ESB_AST_TREE_H
+#include <ASTTree.h>
 #endif
 
-#ifndef ESB_JSON_COUNTING_CALLBACKS_H
-#include "ESBJsonCountingCallbacks.h"
+#ifndef ESB_AST_COUNTING_CALLBACKS_H
+#include "ASTCountingCallbacks.h"
 #endif
 
 #include <gtest/gtest.h>
 
 using namespace ESB;
 
-TEST(JsonTreeBuilder, SmallDoc) {
-  JsonTreeBuilder treeBuilder;
-  JsonParser parser(treeBuilder);
+TEST(Tree, SmallDoc) {
+  AST::Tree tree;
+  JsonParser parser(tree);
   BufferedFile file("doc1.json", BufferedFile::READ_ONLY);
   unsigned char buffer[128];
 
@@ -47,10 +47,10 @@ TEST(JsonTreeBuilder, SmallDoc) {
     ASSERT_EQ(ESB_SUCCESS, error);
   }
 
-  ASSERT_EQ(ESB_SUCCESS, treeBuilder.result());
+  ASSERT_EQ(ESB_SUCCESS, tree.result());
 
-  JsonCountingCallbacks callbacks;
-  treeBuilder.traverse(callbacks);
+  AST::CountingCallbacks callbacks;
+  tree.traverse(callbacks);
 
   // Assert that all elements were seen
   ASSERT_EQ(4, callbacks.onMapStarts());
@@ -65,9 +65,9 @@ TEST(JsonTreeBuilder, SmallDoc) {
   ASSERT_EQ(10, callbacks.onStrings());
 }
 
-TEST(JsonTreeBuilder, Large) {
-  JsonTreeBuilder treeBuilder;
-  JsonParser parser(treeBuilder);
+TEST(Tree, Large) {
+  AST::Tree tree;
+  JsonParser parser(tree);
   BufferedFile file("doc2.json", BufferedFile::READ_ONLY);
   unsigned char buffer[128];
 
@@ -90,10 +90,10 @@ TEST(JsonTreeBuilder, Large) {
     ASSERT_EQ(ESB_SUCCESS, error);
   }
 
-  ASSERT_EQ(ESB_SUCCESS, treeBuilder.result());
+  ASSERT_EQ(ESB_SUCCESS, tree.result());
 
-  JsonCountingCallbacks callbacks;
-  treeBuilder.traverse(callbacks);
+  AST::CountingCallbacks callbacks;
+  tree.traverse(callbacks);
 
   // Assert that all elements were seen
   ASSERT_EQ(60, callbacks.onMapStarts());
