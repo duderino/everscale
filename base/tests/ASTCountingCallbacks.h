@@ -12,7 +12,6 @@ class CountingCallbacks : public Callbacks {
  public:
   CountingCallbacks()
       : _onMapStarts(0),
-        _onMapKeys(0),
         _onMapEnds(0),
         _onArrayStarts(0),
         _onArrayEnds(0),
@@ -25,11 +24,6 @@ class CountingCallbacks : public Callbacks {
 
   virtual ParseControl onMapStart() {
     ++_onMapStarts;
-    return CONTINUE;
-  }
-
-  virtual ParseControl onMapKey(const unsigned char *key, UInt32 length) {
-    ++_onMapKeys;
     return CONTINUE;
   }
 
@@ -63,7 +57,7 @@ class CountingCallbacks : public Callbacks {
     return CONTINUE;
   }
 
-  virtual ParseControl onDouble(double value) {
+  virtual ParseControl onDecimal(double value) {
     ++_onDoubles;
     return CONTINUE;
   }
@@ -74,7 +68,6 @@ class CountingCallbacks : public Callbacks {
   }
 
   inline int onMapStarts() const { return _onMapStarts; }
-  inline int onMapKeys() const { return _onMapKeys; }
   inline int onMapEnds() const { return _onMapEnds; }
   inline int onArrayStarts() const { return _onArrayStarts; }
   inline int onArrayEnds() const { return _onArrayEnds; }
@@ -86,7 +79,6 @@ class CountingCallbacks : public Callbacks {
 
  private:
   int _onMapStarts;
-  int _onMapKeys;
   int _onMapEnds;
   int _onArrayStarts;
   int _onArrayEnds;

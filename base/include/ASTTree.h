@@ -53,14 +53,13 @@ class Tree : public Callbacks {
   virtual ~Tree();
 
   virtual ParseControl onMapStart();
-  virtual ParseControl onMapKey(const unsigned char *key, UInt32 length);
   virtual ParseControl onMapEnd();
   virtual ParseControl onListStart();
   virtual ParseControl onListEnd();
   virtual ParseControl onNull();
   virtual ParseControl onBoolean(bool value);
   virtual ParseControl onInteger(Int64 value);
-  virtual ParseControl onDouble(double value);
+  virtual ParseControl onDecimal(double value);
   virtual ParseControl onString(const unsigned char *value, UInt32 length);
 
   inline Error result() const { return _error; }

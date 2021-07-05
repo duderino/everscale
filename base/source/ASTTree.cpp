@@ -35,26 +35,6 @@ Callbacks::ParseControl Tree::onMapStart() {
   return CONTINUE;
 }
 
-Callbacks::ParseControl Tree::onMapKey(const unsigned char *key, UInt32 length) {
-  String *newString = new (_allocator) String(_allocator);
-
-  if (!newString) {
-    _error = ESB_OUT_OF_MEMORY;
-    return BREAK;
-  }
-
-  Error error = newString->setValue((const char *)key, length);
-  if (ESB_SUCCESS != error) {
-    _error = error;
-    newString->~String();
-    _allocator.deallocate(newString);
-    return BREAK;
-  }
-
-  _stack.addLast(newString);
-  return CONTINUE;
-}
-
 Callbacks::ParseControl Tree::onMapEnd() {
   Element *newMap = (Element *)_stack.removeLast();
 
@@ -210,7 +190,7 @@ Callbacks::ParseControl Tree::onInteger(Int64 value) {
   return CONTINUE;
 }
 
-Callbacks::ParseControl Tree::onDouble(double value) {
+Callbacks::ParseControl Tree::onDecimal(double value) {
   if (BREAK == validateKeyType()) {
     return BREAK;
   }
@@ -342,12 +322,34 @@ Callbacks::ParseControl Tree::traverseMap(Callbacks &callbacks, Map *map) const 
   }
 
   for (MapIterator it = map->iterator(); !it.isNull(); ++it) {
-    // yajl only supports string keys
-    assert(Element::STRING == it.key()->type());
-    String *key = (String *)it.key();
-    if (BREAK == callbacks.onMapKey((const unsigned char *)key->value(), strlen(key->value()))) {
-      return BREAK;
+    switch (it.key()->type()) {
+      case Element::STRING: {
+        String *key = (String *)it.key();
+        if (BREAK == callbacks.onString((const unsigned char *)key->value(), strlen(key->value()))) {
+          return BREAK;
+        }
+        break;
+      }
+      case Element::BOOLEAN:
+        if (BREAK == callbacks.onBoolean(((Boolean *)it.key())->value())) {
+          return BREAK;
+        }
+        break;
+      case Element::INTEGER:
+        if (BREAK == callbacks.onInteger(((Integer *)it.key())->value())) {
+          return BREAK;
+        }
+        break;
+      case Element::DECIMAL:
+        if (BREAK == callbacks.onDecimal(((Decimal *)it.key())->value())) {
+          return BREAK;
+        }
+        break;
+      default:
+        assert(!"Not a scalar type");
+        return BREAK;
     }
+
     if (BREAK == traverseElement(callbacks, it.value())) {
       return BREAK;
     }
@@ -411,7 +413,7 @@ Callbacks::ParseControl Tree::traverseElement(Callbacks &callbacks, Element *ele
     }
     case Element::DECIMAL: {
       Decimal *value = (Decimal *)element;
-      if (BREAK == callbacks.onDouble(value->value())) {
+      if (BREAK == callbacks.onDecimal(value->value())) {
         return BREAK;
       }
       break;

@@ -48,7 +48,6 @@ TEST(JsonParser, SmallDoc) {
 
     // Assert that all elements were seen
     ASSERT_EQ(4, callbacks.onMapStarts());
-    ASSERT_EQ(17, callbacks.onMapKeys());
     ASSERT_EQ(callbacks.onMapEnds(), callbacks.onMapStarts());
     ASSERT_EQ(2, callbacks.onArrayStarts());
     ASSERT_EQ(callbacks.onArrayEnds(), callbacks.onArrayStarts());
@@ -56,7 +55,7 @@ TEST(JsonParser, SmallDoc) {
     ASSERT_EQ(1, callbacks.onBooleans());
     ASSERT_EQ(1, callbacks.onIntegers());
     ASSERT_EQ(1, callbacks.onDoubles());
-    ASSERT_EQ(10, callbacks.onStrings());
+    ASSERT_EQ(27, callbacks.onStrings());
   }
 
 #ifndef ESB_NO_ALLOC
@@ -97,7 +96,6 @@ TEST(JsonParser, Large) {
 
     // Assert that all elements were seen
     ASSERT_EQ(60, callbacks.onMapStarts());
-    ASSERT_EQ(255, callbacks.onMapKeys());
     ASSERT_EQ(callbacks.onMapEnds(), callbacks.onMapStarts());
     ASSERT_EQ(31, callbacks.onArrayStarts());
     ASSERT_EQ(callbacks.onArrayEnds(), callbacks.onArrayStarts());
@@ -105,7 +103,7 @@ TEST(JsonParser, Large) {
     ASSERT_EQ(15, callbacks.onBooleans());
     ASSERT_EQ(15, callbacks.onIntegers());
     ASSERT_EQ(15, callbacks.onDoubles());
-    ASSERT_EQ(150, callbacks.onStrings());
+    ASSERT_EQ(255 + 150, callbacks.onStrings());
   }
 
 #ifndef ESB_NO_ALLOC
@@ -146,7 +144,6 @@ TEST(JsonParser, LargeFailover) {
 
     // Assert that all elements were seen
     ASSERT_EQ(60, callbacks.onMapStarts());
-    ASSERT_EQ(255, callbacks.onMapKeys());
     ASSERT_EQ(callbacks.onMapEnds(), callbacks.onMapStarts());
     ASSERT_EQ(31, callbacks.onArrayStarts());
     ASSERT_EQ(callbacks.onArrayEnds(), callbacks.onArrayStarts());
@@ -154,7 +151,7 @@ TEST(JsonParser, LargeFailover) {
     ASSERT_EQ(15, callbacks.onBooleans());
     ASSERT_EQ(15, callbacks.onIntegers());
     ASSERT_EQ(15, callbacks.onDoubles());
-    ASSERT_EQ(150, callbacks.onStrings());
+    ASSERT_EQ(255 + 150, callbacks.onStrings());
   }
 
 #ifndef ESB_NO_ALLOC

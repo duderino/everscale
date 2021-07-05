@@ -9,7 +9,7 @@ namespace ESB {
 static int OnMapStart(void *ctx) { return ((AST::Callbacks *)ctx)->onMapStart(); }
 
 static int OnMapKey(void *ctx, const unsigned char *key, size_t stringLen) {
-  return ((AST::Callbacks *)ctx)->onMapKey(key, stringLen);
+  return ((AST::Callbacks *)ctx)->onString(key, stringLen);
 }
 
 static int OnMapEnd(void *ctx) { return ((AST::Callbacks *)ctx)->onMapEnd(); }
@@ -24,7 +24,7 @@ static int OnBoolean(void *ctx, int boolVal) { return ((AST::Callbacks *)ctx)->o
 
 static int OnInteger(void *ctx, long long int integerVal) { return ((AST::Callbacks *)ctx)->onInteger(integerVal); }
 
-static int OnDouble(void *ctx, double doubleVal) { return ((AST::Callbacks *)ctx)->onDouble(doubleVal); }
+static int OnDouble(void *ctx, double doubleVal) { return ((AST::Callbacks *)ctx)->onDecimal(doubleVal); }
 
 static int OnString(void *ctx, const unsigned char *stringVal, size_t stringLen) {
   return ((AST::Callbacks *)ctx)->onString(stringVal, stringLen);
