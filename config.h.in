@@ -53,6 +53,7 @@
 #cmakedefine HAVE_OFF_T @HAVE_OFF_T@
 #cmakedefine HAVE_SIZE_T @HAVE_SIZE_T@
 #cmakedefine HAVE_SSIZE_T @HAVE_SSIZE_T@
+#cmakedefine HAVE___INT128 @HAVE___INT128@
 
 #cmakedefine HAVE_PTHREAD_H @HAVE_PTHREAD_H@
 #define ESB_THREAD_ID_FORMAT PRId@SIZEOF_PTHREAD_T@

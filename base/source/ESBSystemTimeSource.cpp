@@ -17,7 +17,9 @@ SystemTimeSource SystemTimeSource::_Instance;
 SystemTimeSource::SystemTimeSource() {}
 SystemTimeSource::~SystemTimeSource() {}
 
-Date SystemTimeSource::now() {
+Date SystemTimeSource::now() { return SystemTimeSource::Now(); }
+
+Date SystemTimeSource::Now() {
 #if defined HAVE_GETTIMEOFDAY && defined HAVE_STRUCT_TIMEVAL
   struct timeval tv;
   gettimeofday(&tv, 0);

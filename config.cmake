@@ -53,6 +53,7 @@ check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_type_size("off_t" HAVE_OFF_T)
 check_type_size("size_t" HAVE_SIZE_T)
 check_type_size("ssize_t" HAVE_SSIZE_T)
+check_type_size("__int128" HAVE___INT128)
 
 check_include_file("pthread.h" HAVE_PTHREAD_H)
 set(CMAKE_REQUIRED_LIBRARIES pthread)

@@ -1,5 +1,5 @@
-#ifndef ESB_AST_TREE_BUILDER_H
-#define ESB_AST_TREE_BUILDER_H
+#ifndef ESB_AST_TREE_H
+#define ESB_AST_TREE_H
 
 #ifndef ESB_AST_MAP_H
 #include <ASTMap.h>

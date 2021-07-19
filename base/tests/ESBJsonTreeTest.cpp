@@ -2,10 +2,6 @@
 #include <ESBJsonParser.h>
 #endif
 
-#ifndef ESB_BUDDY_CACHE_ALLOCATOR_H
-#include <ESBBuddyCacheAllocator.h>
-#endif
-
 #ifndef ESB_BUFFERED_FILE_H
 #include <ESBBufferedFile.h>
 #endif

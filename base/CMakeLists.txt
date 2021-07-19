@@ -90,6 +90,7 @@ set(SOURCE_FILES
         source/ESBTLSContext.cpp
         source/ESBTLSContextIndex.cpp
         source/ESBTLSSocket.cpp
+        source/ESBUniqueId.cpp
         source/ESBWildcardIndex.cpp
         )
 
@@ -156,6 +157,8 @@ add_gtest(buddy-cache-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SO
 add_gtest(buddy-allocator-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBBuddyAllocatorTest2.cpp)
 add_gtest(json-parser-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonParserTest.cpp)
 add_gtest(json-tree-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBJsonTreeTest.cpp)
+add_gtest(unique-id-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBUniqueIdTest.cpp)
+add_gtest(rand-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESBRandTest.cpp)
 
 # For global code coverage report
 

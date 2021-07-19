@@ -111,6 +111,13 @@ typedef unsigned __int64 UInt64;
 #error "64 bit unsigned integer required"
 #endif
 
+#if HAVE___INT128
+typedef __int128 Int128;
+typedef unsigned __int128 UInt128;
+#else
+#error "128 bit  integer required"
+#endif
+
 #ifdef ESB_32BIT
 typedef Int32 Word;
 #define ESB_WORD_C ESB_INT32_C

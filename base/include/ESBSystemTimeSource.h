@@ -21,6 +21,8 @@ class SystemTimeSource : public TimeSource {
 
   virtual Date now();
 
+  static Date Now();
+
  private:
   //  Disabled
   SystemTimeSource();

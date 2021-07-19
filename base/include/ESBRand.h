@@ -44,7 +44,21 @@ class Rand {
    *    @param upperBound The upperbound of the range.  Inclusive.
    *    @return A random number within the given range.
    */
-  int generate(int lowerBound, int upperBound);
+  inline Int32 generate(Int32 lowerBound, Int32 upperBound) {
+    assert(lowerBound < upperBound);
+    return lowerBound + ((Int64)upperBound - lowerBound + 1.0) * generate();
+  }
+
+  /** Generate a random integer within a given range.
+   *
+   *    @param lowerBound The lowerbound of the range.  Inclusive.
+   *    @param upperBound The upperbound of the range.  Inclusive.
+   *    @return A random number within the given range.
+   */
+  inline UInt32 generate(UInt32 lowerBound, UInt32 upperBound) {
+    assert(lowerBound < upperBound);
+    return lowerBound + ((UInt64)upperBound - lowerBound + 1.0) * generate();
+  }
 
  private:
 #ifdef HAVE_RAND_R
