@@ -45,6 +45,9 @@ class Rand {
    *    @return A random number within the given range.
    */
   inline Int32 generate(Int32 lowerBound, Int32 upperBound) {
+    if (lowerBound == upperBound) {
+      return lowerBound;
+    }
     assert(lowerBound < upperBound);
     return lowerBound + ((Int64)upperBound - lowerBound + 1.0) * generate();
   }
@@ -56,6 +59,9 @@ class Rand {
    *    @return A random number within the given range.
    */
   inline UInt32 generate(UInt32 lowerBound, UInt32 upperBound) {
+    if (lowerBound == upperBound) {
+      return lowerBound;
+    }
     assert(lowerBound < upperBound);
     return lowerBound + ((UInt64)upperBound - lowerBound + 1.0) * generate();
   }

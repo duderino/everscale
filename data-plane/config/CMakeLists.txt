@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
-	source/ESConfigIngest.cpp
+		source/ESConfigIngest.cpp
+		source/ESConfigUtil.cpp
+		source/ESEntity.cpp
+		source/ESAction.cpp
+		source/ESCondition.cpp
+		source/ESRule.cpp
         )
 
 add_library(config STATIC ${SOURCE_FILES})

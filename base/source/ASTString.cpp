@@ -9,16 +9,21 @@
 namespace ESB {
 namespace AST {
 
-String::String(Allocator &allocator) : Scalar(allocator), _value(NULL) {}
+String::String(Allocator &allocator, bool duplicate) : Scalar(allocator), _value(NULL), _duplicate(duplicate) {}
 
 String::~String() {
-  if (_value) {
-    _allocator.deallocate(_value);
+  if (_value && _duplicate) {
+    _allocator.deallocate((char *)_value);
     _value = NULL;
   }
 }
 
 Error String::setValue(const char *buffer, UWord size) {
+  if (!_duplicate) {
+    _value = buffer;
+    return ESB_SUCCESS;
+  }
+
   char *value = NULL;
   Error error = Duplicate(buffer, size, _allocator, &value);
   if (ESB_SUCCESS != error) {
@@ -26,7 +31,7 @@ Error String::setValue(const char *buffer, UWord size) {
   }
 
   if (_value) {
-    _allocator.deallocate(_value);
+    _allocator.deallocate((char *)_value);
   }
 
   _value = value;

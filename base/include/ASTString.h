@@ -16,7 +16,7 @@ class String : public Scalar {
  public:
   /** Constructor.
    */
-  String(Allocator &allocator = SystemAllocator::Instance());
+  String(Allocator &allocator = SystemAllocator::Instance(), bool duplicate = true);
 
   /** Destructor.
    */
@@ -33,7 +33,8 @@ class String : public Scalar {
   inline const char *value() const { return _value; }
 
  private:
-  char *_value;
+  const char *_value;
+  const bool _duplicate;
 
   ESB_DEFAULT_FUNCS(String);
 };

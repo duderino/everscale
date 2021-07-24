@@ -76,6 +76,20 @@ void *Map::find(const void *key) {
   return node->_value;
 }
 
+const void *Map::find(const void *key) const {
+  if (!key) {
+    return NULL;
+  }
+
+  const MapNode *node = findNode(_root, key);
+
+  if (!node->_key) {
+    return NULL;
+  }
+
+  return node->_value;
+}
+
 Error Map::update(const void *key, void *value, void **old) {
   if (!key) {
     return ESB_NULL_POINTER;
@@ -228,6 +242,29 @@ Error Map::writeRelease() { return _lockable.writeRelease(); }
 Error Map::readRelease() { return _lockable.readRelease(); }
 
 MapNode *Map::findNode(MapNode *x, const void *k) {
+  //
+  //  See Iterative-Tree-Search in "Introduction to Algorithms", Cormen,
+  //  Leiserson, Rivest, p.248.
+  //
+
+  int result = 0;
+
+  while (x->_key) {
+    result = _comparator.compare(k, x->_key);
+
+    if (0 == result) {
+      return x;
+    } else if (0 < result) {
+      x = x->_right;
+    } else {
+      x = x->_left;
+    }
+  }
+
+  return &_sentinel;
+}
+
+const MapNode *Map::findNode(const MapNode *x, const void *k) const {
   //
   //  See Iterative-Tree-Search in "Introduction to Algorithms", Cormen,
   //  Leiserson, Rivest, p.248.

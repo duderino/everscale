@@ -725,7 +725,7 @@ ESB::Error ParserFormatterTest::parseHeaders(const char *filename, int fd, HttpM
       }
 
       ESB::SSize result =
-          read(fd, _inputBuffer.buffer() + _inputBuffer.writePosition(), _random.generate(1, _inputBuffer.writable()));
+          read(fd, _inputBuffer.buffer() + _inputBuffer.writePosition(), _random.generate(1U, _inputBuffer.writable()));
 
       if (0 > result) {
         error = ESB::LastError();
@@ -772,7 +772,7 @@ ESB::Error ParserFormatterTest::parseBody(const char *filename, int fd, HttpMess
       }
 
       ESB::Size result =
-          read(fd, _inputBuffer.buffer() + _inputBuffer.writePosition(), _random.generate(1, _inputBuffer.writable()));
+          read(fd, _inputBuffer.buffer() + _inputBuffer.writePosition(), _random.generate(1U, _inputBuffer.writable()));
 
       if (0 > result) {
         error = ESB::LastError();
@@ -871,7 +871,7 @@ ESB::Error ParserFormatterTest::formatHeaders(const char *filename, int fd, Http
 ESB::Error ParserFormatterTest::formatBody(const char *filename, int fd, HttpMessageFormatter &formatter,
                                            ESB::Buffer &body) {
   while (body.isReadable()) {
-    ESB::UInt64 chunkSize = _random.generate(1, body.readable());
+    ESB::UInt64 chunkSize = _random.generate(1U, body.readable());
     ESB::UInt64 availableSize = 0U;
 
     // Begin chunk

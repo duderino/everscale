@@ -101,7 +101,9 @@ static const char *ErrorDescriptions[] = {"Success",
                                           "TLS session error",
                                           "TLS general error",
                                           "Underflow",
-                                          "Cannot parse"};
+                                          "Cannot parse",
+                                          "Missing field",
+                                          "Invalid field"};
 
 #include <stdio.h>
 void DescribeError(Error error, char *buffer, int size) {

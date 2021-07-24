@@ -100,6 +100,13 @@ class Map : public Lockable {
    */
   void *find(const void *key);
 
+  /** Find a value in the map given its key.  O(lg n).
+   *
+   *  @param key The key of the key/value pair to find.
+   *  @return The value or NULL if the value cannot be found.
+   */
+  const void *find(const void *key) const;
+
   /** Update key/value pair in the map given its key.  O(lg n).
    *
    *  @param key The key of the key/value pair.
@@ -266,6 +273,7 @@ class Map : public Lockable {
   static MapNode *findSuccessor(MapNode *x);
   static MapNode *findPredecessor(MapNode *x);
   MapNode *findNode(MapNode *x, const void *k);
+  const MapNode *findNode(const MapNode *x, const void *k) const;
   bool insertNode(MapNode *z);
   void deleteNode(MapNode *z);
   void rightRotate(MapNode *x);

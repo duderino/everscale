@@ -439,7 +439,7 @@ entities:
     # If no wildcard patterns match the host header, transition to a filter tha sends a 404 Not Found
     default_rules: [ { actions: [ { transition: 0f05cd43-7861-4373-903c-8822d83dad5c } ] } ]
   - id: 71d899e5-e339-4549-b9cd-d63f2eeadf50
-    type: LOAD_BALANCER
+    type: INBOUND_REQUEST_LOAD_BALANCER
     entity: INBOUND_REQUEST
     clusters:
       # Requests are distributed across clusters in a weighted round robin fashion such that the probability that a
@@ -565,7 +565,7 @@ entities:
     outbound_request_dag: 31fce833-b6e8-4c9c-8900-189304354b5f
     cleanup: e4559690-ca02-4eab-9934-66b9d207e24e
   - id: e4559690-ca02-4eab-9934-66b9d207e24e
-    type: CLEANUP
+    type: OUTBOUND_CONNECTION_CLEANUP
     rules: [ ]
   #
   # Outbound HTTP Request Filters
@@ -575,7 +575,7 @@ entities:
     outbound_response_dag: 7703231d-0f36-4577-a6f3-71d0ae14bba9
     cleanup: 2081bf5e-991b-47fe-af47-92c6d6e71764
   - id: 2081bf5e-991b-47fe-af47-92c6d6e71764
-    type: CLEANUP
+    type: OUTBOUND_REQUEST_CLEANUP
     entity: OUTBOUND_REQUEST
     rules: [ ]
   #

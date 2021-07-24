@@ -47,6 +47,18 @@ Error Map::clear() {
   return _map.clear();
 }
 
+Element *Map::find(const char *key) {
+  String str(_allocator, false);
+  str.setValue(key);
+  return find(&str);
+}
+
+const Element *Map::find(const char *key) const {
+  String str(_allocator, false);
+  str.setValue(key);
+  return find(&str);
+}
+
 int Map::JsonMapComparator::compare(const void *l, const void *r) const {
   const Scalar *left = (const Scalar *)l;
   const Scalar *right = (const Scalar *)r;

@@ -273,6 +273,18 @@ extern void DescribeError(Error error, char *buffer, int size);
  */
 #define ESB_CANNOT_PARSE (-36)
 
+/** Document is missing a mandatory field.
+ *
+ *  @ingroup error
+ */
+#define ESB_MISSING_FIELD (-37)
+
+/** Document has a field with an invalid value.
+ *
+ *  @ingroup error
+ */
+#define ESB_INVALID_FIELD (-38)
+
 }  // namespace ESB
 
 #endif

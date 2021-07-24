@@ -46,7 +46,7 @@ ESB::Error HttpClient::push(HttpClientCommand *command, int idx) {
 
   if (0 > idx) {
     // both endpoints of the range are inclusive.
-    idx = _rand.generate(0, _threads - 1);
+    idx = _rand.generate(0U, _threads - 1);
   }
 
   HttpProxyMultiplexer *multiplexer = (HttpProxyMultiplexer *)_multiplexers.index(idx);

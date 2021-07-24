@@ -9,6 +9,10 @@
 #include <ESBMap.h>
 #endif
 
+#ifndef ESB_AST_STRING_H
+#include <ASTString.h>
+#endif
+
 namespace ESB {
 namespace AST {
 
@@ -56,6 +60,27 @@ class Map : public Element {
    *  @return The value or NULL if the value cannot be found.
    */
   inline Element *find(const Scalar *key) { return (Element *)_map.find(key); }
+
+  /** Find a value in the map given its key.  O(lg n).
+   *
+   *  @param key The key of the key/value pair to find.
+   *  @return The value or NULL if the value cannot be found.
+   */
+  inline const Element *find(const Scalar *key) const { return (const Element *)_map.find(key); }
+
+  /** Find a value in the map given its key.  O(lg n).
+   *
+   *  @param key The key of the key/value pair to find.
+   *  @return The value or NULL if the value cannot be found.
+   */
+  Element *find(const char *key);
+
+  /** Find a value in the map given its key.  O(lg n).
+   *
+   *  @param key The key of the key/value pair to find.
+   *  @return The value or NULL if the value cannot be found.
+   */
+  const Element *find(const char *key) const;
 
   /** Update key/value pair in the map given its key.  O(lg n).
    *
