@@ -24,9 +24,9 @@ else ()
     set(EXTRA_CXXFLAGS "" CACHE STRING "build type" FORCE)
 endif ()
 
-set(VALID_BUILD_TYPES DEFAULT ASAN TSAN DEBUG RELEASE RELWITHDEBINFO MINSIZEREL DEBUGNOPOOL RELEASENOPOOL)
+set(VALID_BUILD_TYPES DEFAULT ASAN TSAN DEBUG RELEASE RELWITHDEBINFO MINSIZEREL DEBUGNOPOOL RELEASENOPOOL COVERAGE)
 if (NOT CMAKE_BUILD_TYPE IN_LIST VALID_BUILD_TYPES)
-    message(FATAL_ERROR "ENV{BUILD_TYPE} '${CMAKE_BUILD_TYPE}' not in (DEFAULT|ASAN|TSAN|DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL|DEBUGNOPOOL|RELEASENOPOOL)")
+    message(FATAL_ERROR "ENV{BUILD_TYPE} '${CMAKE_BUILD_TYPE}' not in (DEFAULT|ASAN|TSAN|DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL|DEBUGNOPOOL|RELEASENOPOOL|COVERAGE)")
 else ()
     message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 endif ()
@@ -46,9 +46,9 @@ set(CMAKE_CXX_FLAGS_TSAN "-O0 -ggdb ${COMMON_CXX_FLAGS} -fno-omit-frame-pointer 
 set(CMAKE_EXE_LINKER_FLAGS_TSAN "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS_TSAN CMAKE_C_FLAGS_TSAN CMAKE_EXE_LINKER_FLAGS_TSAN CMAKE_SHARED_LINKER_FLAGS_TSAN)
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb ${COMMON_C_FLAGS} -fno-omit-frame-pointer -fsanitize=leak -fprofile-instr-generate -fcoverage-mapping ${EXTRA_CFLAGS}" CACHE STRING "debug C flags" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb ${COMMON_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=leak -fprofile-instr-generate -fcoverage-mapping ${EXTRA_CXXFLAGS}" CACHE STRING "debug C++ flags" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-Wl,-export-dynamic -fprofile-instr-generate" CACHE STRING "default linker flags" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb ${COMMON_C_FLAGS} -fno-omit-frame-pointer -fsanitize=leak ${EXTRA_CFLAGS}" CACHE STRING "debug C flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb ${COMMON_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=leak ${EXTRA_CXXFLAGS}" CACHE STRING "debug C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
 
 set(CMAKE_C_FLAGS_RELEASE "-O3 ${COMMON_C_FLAGS} -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "release C flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${COMMON_CXX_FLAGS} -DNDEBUG ${EXTRA_CXXFLAGS}" CACHE STRING "release C++ flags" FORCE)
@@ -69,3 +69,7 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUGNOPOOL "-Wl,-export-dynamic" CACHE STRING "defau
 set(CMAKE_C_FLAGS_RELEASENOPOOL "-O3 ${COMMON_C_FLAGS} -DESB_NO_ALLOC -DNDEBUG ${EXTRA_CFLAGS}" CACHE STRING "release no pool C flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASENOPOOL "-O3 ${COMMON_CXX_FLAGS} -DESB_NO_ALLOC -DNDEBUG ${EXTRA_CXXFLAGS}" CACHE STRING "release no pool C++ flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELEASENOPOOL "-Wl,-export-dynamic" CACHE STRING "default linker flags" FORCE)
+
+set(CMAKE_C_FLAGS_COVERAGE "-O0 -ggdb ${COMMON_C_FLAGS} -fno-omit-frame-pointer -fsanitize=leak -fprofile-instr-generate -fcoverage-mapping ${EXTRA_CFLAGS}" CACHE STRING "coverage C flags" FORCE)
+set(CMAKE_CXX_FLAGS_COVERAGE "-O0 -ggdb ${COMMON_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=leak -fprofile-instr-generate -fcoverage-mapping ${EXTRA_CXXFLAGS}" CACHE STRING "coverage C++ flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_COVERAGE "-Wl,-export-dynamic -fprofile-instr-generate" CACHE STRING "coverage linker flags" FORCE)

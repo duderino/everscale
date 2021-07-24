@@ -80,7 +80,22 @@ jobs:
               export EXTRA_CFLAGS=-DESB_CI_BUILD
               export EXTRA_CXXFLAGS=-DESB_CI_BUILD
               BUILD_TYPE=DEBUGNOPOOL cmake . && make && make test
-
+  coverage:
+    docker:
+      - image: jtblatt/everscale-build:06-14-21
+    steps:
+      - checkout
+      - run:
+          command: |
+              set +e
+              export CC=clang
+              export CXX=clang++
+              export CLANG_FORMAT=clang-format
+              export CTEST_OUTPUT_ON_FAILURE=1
+              export VERBOSE=1
+              export EXTRA_CFLAGS=-DESB_CI_BUILD
+              export EXTRA_CXXFLAGS=-DESB_CI_BUILD
+              BUILD_TYPE=COVERAGE cmake . && make && make test
 workflows:
   version: 2
   build:
@@ -90,3 +105,4 @@ workflows:
       - asan
       - release
       - "allocators disabled"
+      - coverage
