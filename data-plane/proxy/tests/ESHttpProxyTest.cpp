@@ -78,11 +78,17 @@ class HttpProxyTest : public ::testing::TestWithParam<std::tuple<bool>> {
   // Run after all HttpProxyTest test cases
   static void TearDownTestSuite() { ESB::Logger::SetInstance(NULL); }
 
+  static std::string TestName(const testing::TestParamInfo<HttpProxyTest::ParamType> &info) {
+    std::string name(std::get<0>(info.param) ? "TLS" : "Clear");
+    return name;
+  }
+
   ESB_DISABLE_AUTO_COPY(HttpProxyTest);
 };
 
 // use secure if true
-INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)));
+INSTANTIATE_TEST_SUITE_P(HappyPath, HttpProxyTest, ::testing::Combine(::testing::Values(false, true)),
+                         HttpProxyTest::TestName);
 
 TEST_P(HttpProxyTest, ClientToServer) {
   HttpTestParams params;
@@ -302,13 +308,23 @@ class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB:
   // Run after all HttpProxyTestMessageBody test cases
   static void TearDownTestSuite() { ESB::Logger::SetInstance(NULL); }
 
+  static std::string TestName(const testing::TestParamInfo<HttpProxyTestMessageBody::ParamType> &info) {
+    std::ostringstream stream;
+    stream << (std::get<2>(info.param) ? "TLS" : "Clear");
+    stream << "_BodySize_";
+    stream << std::get<0>(info.param);
+    stream << (std::get<1>(info.param) ? "_ContentLength" : "_Chunked");
+    return stream.str();
+  }
+
   ESB_DISABLE_AUTO_COPY(HttpProxyTestMessageBody);
 };
 
 // body-size variations X use content-length header if true X use secure if
-INSTANTIATE_TEST_SUITE_P(Variants, HttpProxyTestMessageBody,
+INSTANTIATE_TEST_SUITE_P(HappyPath, HttpProxyTestMessageBody,
                          ::testing::Combine(::testing::Values(0, 1024, HttpConfig::Instance().ioBufferSize() * 2),
-                                            ::testing::Values(false, true), ::testing::Values(false, true)));
+                                            ::testing::Values(false, true), ::testing::Values(false, true)),
+                         HttpProxyTestMessageBody::TestName);
 
 TEST_P(HttpProxyTestMessageBody, BodySizes) {
   HttpTestParams params;

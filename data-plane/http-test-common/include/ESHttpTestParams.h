@@ -218,6 +218,8 @@ class HttpTestParams {
     CLOSE_CLIENT_SEND_BODY = 16,
   };
 
+  static const char *DescribeDisruptTransaction(DisruptTransaction code);
+
   inline DisruptTransaction disruptTransaction() const { return _disruptTransaction; }
 
   inline HttpTestParams &disruptTransaction(DisruptTransaction distruptTransaction) {

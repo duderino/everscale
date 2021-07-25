@@ -248,4 +248,46 @@ void HttpTestParams::dump() {
       _serverKeyPath, _serverCertPath, _proxyPort, _originPort);
 }
 
+const char *HttpTestParams::DescribeDisruptTransaction(HttpTestParams::DisruptTransaction code) {
+  switch (code) {
+    case HAPPY_PATH:
+      return "HAPPY_PATH";
+    case STALL_SERVER_RECV_HEADERS:
+      return "STALL_SERVER_RECV_HEADERS";
+    case STALL_SERVER_RECV_BODY:
+      return "STALL_SERVER_RECV_BODY";
+    case STALL_SERVER_SEND_HEADERS:
+      return "STALL_SERVER_SEND_HEADERS";
+    case STALL_SERVER_SEND_BODY:
+      return "STALL_SERVER_SEND_BODY";
+    case CLOSE_SERVER_RECV_HEADERS:
+      return "CLOSE_SERVER_RECV_HEADERS";
+    case CLOSE_SERVER_RECV_BODY:
+      return "CLOSE_SERVER_RECV_BODY";
+    case CLOSE_SERVER_SEND_HEADERS:
+      return "CLOSE_SERVER_SEND_HEADERS";
+    case CLOSE_SERVER_SEND_BODY:
+      return "CLOSE_SERVER_SEND_BODY";
+    case STALL_CLIENT_RECV_HEADERS:
+      return "STALL_CLIENT_RECV_HEADERS";
+    case STALL_CLIENT_RECV_BODY:
+      return "STALL_CLIENT_RECV_BODY";
+    case STALL_CLIENT_SEND_HEADERS:
+      return "STALL_CLIENT_SEND_HEADERS";
+    case STALL_CLIENT_SEND_BODY:
+      return "STALL_CLIENT_SEND_BODY";
+    case CLOSE_CLIENT_RECV_HEADERS:
+      return "CLOSE_CLIENT_RECV_HEADERS";
+    case CLOSE_CLIENT_RECV_BODY:
+      return "CLOSE_CLIENT_RECV_BODY";
+    case CLOSE_CLIENT_SEND_HEADERS:
+      return "CLOSE_CLIENT_SEND_HEADERS";
+    case CLOSE_CLIENT_SEND_BODY:
+      return "CLOSE_CLIENT_SEND_BODY";
+    default:
+      assert(!"Unknown transaction disruption type");
+      return "UNKNOWN";
+  }
+}
+
 }  // namespace ES

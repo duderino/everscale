@@ -11,6 +11,8 @@ macro(add_gtest NAME INCS LIBS CWD TIMEOUT)
     gtest_discover_tests(${NAME}
             WORKING_DIRECTORY ${CWD}
             PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CWD}" TIMEOUT ${TIMEOUT} ENVIRONMENT "LLVM_PROFILE_FILE=%m-%p.profraw"
+            NO_PRETTY_TYPES
+            NO_PRETTY_VALUES
             )
     set_target_properties(${NAME} PROPERTIES FOLDER tests)
 endmacro()

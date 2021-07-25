@@ -80,6 +80,20 @@ class HttpProxyNegativeTest
   // Run after all HttpProxyTestMessageBody test cases
   static void TearDownTestSuite() { ESB::Logger::SetInstance(NULL); }
 
+  static std::string TestName(const testing::TestParamInfo<HttpProxyNegativeTest::ParamType> &info) {
+    std::ostringstream stream;
+    stream << (std::get<2>(info.param) ? "TLS" : "Clear");
+    stream << "_BodySize_";
+    stream << std::get<0>(info.param);
+    stream << (std::get<1>(info.param) ? "_ContentLength_" : "_Chunked_");
+    stream << HttpTestParams::DescribeDisruptTransaction(std::get<3>(info.param));
+    stream << "_ClientTimeoutMSec_";
+    stream << std::get<4>(info.param);
+    stream << "_ServerTimeoutMSec_";
+    stream << std::get<5>(info.param);
+    return stream.str();
+  }
+
   ESB_DISABLE_AUTO_COPY(HttpProxyNegativeTest);
 };
 
@@ -159,7 +173,8 @@ INSTANTIATE_TEST_SUITE_P(BadOrigin, HttpProxyNegativeTest,
                                                               HttpTestParams::CLOSE_SERVER_RECV_BODY,
                                                               HttpTestParams::CLOSE_SERVER_SEND_HEADERS,
                                                               HttpTestParams::CLOSE_SERVER_SEND_BODY),
-                                            ::testing::Values(10 * 1000), ::testing::Values(10 * 1000)));
+                                            ::testing::Values(10 * 1000), ::testing::Values(10 * 1000)),
+                         HttpProxyNegativeTest::TestName);
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
@@ -169,7 +184,8 @@ INSTANTIATE_TEST_SUITE_P(BadClient, HttpProxyNegativeTest,
                                             ::testing::Values(HttpTestParams::CLOSE_CLIENT_SEND_BODY,
                                                               HttpTestParams::CLOSE_CLIENT_RECV_HEADERS,
                                                               HttpTestParams::CLOSE_CLIENT_RECV_BODY),
-                                            ::testing::Values(10 * 1000), ::testing::Values(10 * 1000)));
+                                            ::testing::Values(10 * 1000), ::testing::Values(10 * 1000)),
+                         HttpProxyNegativeTest::TestName);
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
@@ -178,7 +194,8 @@ INSTANTIATE_TEST_SUITE_P(BadClient2, HttpProxyNegativeTest,
                                             ::testing::Values(false, true),
                                             ::testing::Values(HttpTestParams::CLOSE_CLIENT_SEND_BODY,
                                                               HttpTestParams::CLOSE_CLIENT_RECV_HEADERS),
-                                            ::testing::Values(10 * 1000), ::testing::Values(10 * 1000)));
+                                            ::testing::Values(10 * 1000), ::testing::Values(10 * 1000)),
+                         HttpProxyNegativeTest::TestName);
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
@@ -189,7 +206,8 @@ INSTANTIATE_TEST_SUITE_P(IdleOrigin, HttpProxyNegativeTest,
                                                               HttpTestParams::STALL_SERVER_RECV_BODY,
                                                               HttpTestParams::STALL_SERVER_SEND_HEADERS,
                                                               HttpTestParams::STALL_SERVER_SEND_BODY),
-                                            ::testing::Values(10 * 1000), ::testing::Values(10)));
+                                            ::testing::Values(10 * 1000), ::testing::Values(10)),
+                         HttpProxyNegativeTest::TestName);
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
@@ -199,7 +217,8 @@ INSTANTIATE_TEST_SUITE_P(IdleClient, HttpProxyNegativeTest,
                                             ::testing::Values(HttpTestParams::STALL_CLIENT_SEND_BODY,
                                                               HttpTestParams::STALL_CLIENT_RECV_HEADERS,
                                                               HttpTestParams::STALL_CLIENT_RECV_BODY),
-                                            ::testing::Values(20), ::testing::Values(10)));
+                                            ::testing::Values(20), ::testing::Values(10)),
+                         HttpProxyNegativeTest::TestName);
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X
 // proxy timeout msec
@@ -208,4 +227,5 @@ INSTANTIATE_TEST_SUITE_P(IdleClient2, HttpProxyNegativeTest,
                                             ::testing::Values(false, true),
                                             ::testing::Values(HttpTestParams::STALL_CLIENT_SEND_BODY,
                                                               HttpTestParams::STALL_CLIENT_RECV_HEADERS),
-                                            ::testing::Values(20), ::testing::Values(10)));
+                                            ::testing::Values(20), ::testing::Values(10)),
+                         HttpProxyNegativeTest::TestName);
