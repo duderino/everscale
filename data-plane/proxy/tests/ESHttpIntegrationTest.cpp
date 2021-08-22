@@ -123,7 +123,8 @@ static ESB::ListeningSocket NullListener("null-listener");
 
 HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningSocket &originListener,
                                          ESB::ListeningSocket &_proxyListener, HttpClientHandler &clientHandler,
-                                         HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler)
+                                         HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler,
+                                         ESB::UInt32 timeoutSec)
     : _params(testParams),
       _proxyListener(_proxyListener),
       _originListener(originListener),
@@ -132,13 +133,16 @@ HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::
       _originHandler(serverHandler),
       _client("load", _params.clientThreads(), _params.clientTimeoutMsec(), _clientHandler),
       _proxy("prox", _params.proxyThreads(), _params.proxyTimeoutMsec(), _proxyHandler),
-      _origin("orig", _params.originThreads(), _params.originTimeoutMsec(), _originHandler) {
+      _origin("orig", _params.originThreads(), _params.originTimeoutMsec(), _originHandler),
+      _timeout(ESB::Time::Instance().now() + timeoutSec) {
   HttpClientSocket::SetReuseConnections(_params.reuseConnections());
 }
 
 HttpIntegrationTest::HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningSocket &originListener,
-                                         HttpClientHandler &clientHandler, HttpServerHandler &serverHandler)
-    : HttpIntegrationTest(testParams, originListener, NullListener, clientHandler, NullProxyHandler, serverHandler) {
+                                         HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
+                                         ESB::UInt32 timeoutSec)
+    : HttpIntegrationTest(testParams, originListener, NullListener, clientHandler, NullProxyHandler, serverHandler,
+                          timeoutSec) {
   assert(0 == _params.proxyThreads());
 }
 
@@ -257,6 +261,12 @@ ESB::Error HttpIntegrationTest::run() {
 
   while (ESB::SignalHandler::Instance().running() && !HttpLoadgenContext::IsFinished()) {
     usleep(100);
+
+    ESB::Date now = ESB::Time::Instance().now();
+    if (now > _timeout) {
+      ESB_LOG_ERROR("[test] timeout");
+      break;
+    }
   }
 
   ESB_LOG_NOTICE("[test] finished");

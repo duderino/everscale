@@ -155,7 +155,7 @@ TEST_P(HttpProxyNegativeTest, FailCleanly) {
   HttpLoadgenHandler loadgenHandler(params);
   HttpRoutingProxyHandler proxyHandler(router);
   HttpOriginHandler originHandler(params);
-  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler);
+  HttpIntegrationTest test(params, originListener, proxyListener, loadgenHandler, proxyHandler, originHandler, 550);
 
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());

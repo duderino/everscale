@@ -35,9 +35,11 @@ class HttpIntegrationTest {
  public:
   HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningSocket &originListener,
                       ESB::ListeningSocket &_proxyListener, HttpClientHandler &clientHandler,
-                      HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler);
+                      HttpProxyHandler &proxyHandler, HttpServerHandler &serverHandler,
+                      ESB::UInt32 timeoutSec = 60 * 5);
   HttpIntegrationTest(const HttpTestParams &testParams, ESB::ListeningSocket &originListener,
-                      HttpClientHandler &clientHandler, HttpServerHandler &serverHandler);
+                      HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
+                      ESB::UInt32 timeoutSec = 60 * 5);
   virtual ~HttpIntegrationTest();
 
   ESB::Error loadDefaultTLSContexts();
@@ -62,6 +64,7 @@ class HttpIntegrationTest {
   HttpClient _client;
   HttpProxy _proxy;
   HttpServer _origin;
+  ESB::Date _timeout;
 
   ESB_DISABLE_AUTO_COPY(HttpIntegrationTest);
 };

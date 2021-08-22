@@ -61,9 +61,12 @@ set(TEST_LIBS
 
 set(TEST_FILES tests/ESHttpIntegrationTest.cpp)
 
-add_unit_test(http-proxy-test-main "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESHttpProxyTestMain.cpp ${TEST_FILES})
-add_gtest(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 550 tests/ESHttpProxyTest.cpp ${TEST_FILES})
-add_gtest(http-proxy-negative-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 550 tests/ESHttpProxyNegativeTest.cpp ${TEST_FILES})
+# Timeout values should be greater than those in ESHttpIntegrationTest.h.  The tests handle
+# their own timeout so cmake will dump their output when timeout is hit.  When cmake handles
+# the timeout the test output is lost.
+add_unit_test(http-proxy-test-main "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 900 tests/ESHttpProxyTestMain.cpp ${TEST_FILES})
+add_gtest(http-proxy-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 900 tests/ESHttpProxyTest.cpp ${TEST_FILES})
+add_gtest(http-proxy-negative-test "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 900 tests/ESHttpProxyNegativeTest.cpp ${TEST_FILES})
 
 # For global code coverage report
 
