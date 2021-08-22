@@ -14,8 +14,10 @@ using namespace ES;
 
 class ActionTest : public EntityTest {
  public:
-  ActionTest() { assert(ESB_SUCCESS == ESB::UniqueId::Parse(UUID, _uuid)); }
+  ActionTest() {}
   virtual ~ActionTest() {}
+
+  virtual void SetUp() { ASSERT_EQ(ESB_SUCCESS, ESB::UniqueId::Parse(UUID, _uuid)); }
 
  protected:
   ESB::UniqueId _uuid;
