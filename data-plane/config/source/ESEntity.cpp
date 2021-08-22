@@ -77,7 +77,7 @@ ESB::Error Entity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, En
 
   {
     const ESB::AST::String *str = NULL;
-    ESB::Error error = ConfigUtil::StringValue(map, "id", &str);
+    ESB::Error error = ConfigUtil::FindString(map, "id", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }
@@ -92,7 +92,7 @@ ESB::Error Entity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, En
 
   {
     const ESB::AST::String *str = NULL;
-    ESB::Error error = ConfigUtil::StringValue(map, "type", &str);
+    ESB::Error error = ConfigUtil::FindString(map, "type", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }

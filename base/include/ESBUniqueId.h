@@ -16,8 +16,10 @@ namespace ESB {
 class UniqueId {
  public:
   static Error Parse(const char *buffer, UInt128 *uuid);
+  static Error Parse(const char *buffer, UniqueId &uuid);
   static Error Format(char *buffer, Size size, UInt128 uuid);
   static Error Generate(UInt128 *uuid);
+  static Error Generate(UniqueId &uuid);
 
   UniqueId() : _uuid(0) {}
   UniqueId(UInt128 uuid) : _uuid(uuid) {}

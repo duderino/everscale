@@ -12,6 +12,8 @@ namespace ES {
  */
 class HttpResponse : public HttpMessage {
  public:
+  const char *DefaultReasonPhrase(int statusCode);
+
   HttpResponse();
 
   virtual ~HttpResponse();

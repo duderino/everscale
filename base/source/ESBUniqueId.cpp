@@ -73,6 +73,17 @@ Error UniqueId::Parse(const char *buffer, UInt128 *uuid) {
   return ESB_SUCCESS;
 }
 
+Error UniqueId::Parse(const char *buffer, UniqueId &uuid) {
+  UInt128 id = 0;
+  Error error = Parse(buffer, &id);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  uuid.set(id);
+  return ESB_SUCCESS;
+}
+
 inline static char IntToHex(UInt8 integer) {
   if (0 <= integer && 9 >= integer) {
     return '0' + integer;
@@ -124,6 +135,18 @@ Error UniqueId::Generate(UInt128 *uuid) {
   Lock.writeRelease();
 
   *uuid = (((UInt128)one) << 96) + (((UInt128)two) << 64) + (((UInt128)three) << 32) + ((UInt128)four);
+
+  return ESB_SUCCESS;
+}
+
+Error UniqueId::Generate(UniqueId &uuid) {
+  UInt128 id = 0;
+  Error error = Generate(&id);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  uuid.set(id);
 
   return ESB_SUCCESS;
 }

@@ -16,8 +16,27 @@
 
 namespace ES {
 
-ESB::Error ConfigUtil::StringValue(const ESB::AST::Map &map, const char *key, const ESB::AST::String **str) {
-  if (!key || !str) {
+ESB::Error ConfigUtil::FindUniqueId(const ESB::AST::Map &map, const char *key, ESB::UniqueId &uuid) {
+  const ESB::AST::String *str = NULL;
+  ESB::Error error = ConfigUtil::FindString(map, key, &str);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+  assert(str);
+
+  ESB::UInt128 id = 0;
+  error = ESB::UniqueId::Parse(str->value(), &id);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  uuid.set(id);
+  return ESB_SUCCESS;
+}
+
+ESB::Error ConfigUtil::FindValue(const ESB::AST::Map &map, const char *key, const ESB::AST::Element **scalar,
+                                 ESB::AST::Element::Type type) {
+  if (!key || !scalar) {
     return ESB_NULL_POINTER;
   }
 
@@ -27,11 +46,11 @@ ESB::Error ConfigUtil::StringValue(const ESB::AST::Map &map, const char *key, co
     return ESB_MISSING_FIELD;
   }
 
-  if (ESB::AST::Element::STRING != e->type()) {
+  if (type != e->type()) {
     return ESB_INVALID_FIELD;
   }
 
-  *str = (const ESB::AST::String *)e;
+  *scalar = e;
   return ESB_SUCCESS;
 }
 

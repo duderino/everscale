@@ -94,7 +94,7 @@ extern Error Duplicate(const char *buffer, UWord size, Allocator &allocator, cha
  * @return ESB_SUCCESS if successful, another error code otherwise.
  */
 inline Error Duplicate(const char *str, Allocator &allocator, char **out) {
-  return Duplicate(str, sizeof(str), allocator, out);
+  return Duplicate(str, strlen(str), allocator, out);
 }
 
 }  // namespace ESB

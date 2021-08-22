@@ -36,9 +36,10 @@ SET(TEST_LIBS
         config
         unit-tf
         base
+		yajl
         )
 
-add_gtest(config-ingest-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESConfigIngestTest.cpp)
+add_gtest(action-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESActionTest.cpp tests/ESEntityTest.cpp)
 
 # For global code coverage report
 
