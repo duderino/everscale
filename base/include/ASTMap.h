@@ -13,6 +13,18 @@
 #include <ASTString.h>
 #endif
 
+#ifndef ESB_UNIQUE_ID_H
+#include <ESBUniqueId.h>
+#endif
+
+#ifndef ESB_AST_LIST_H
+#include <ASTList.h>
+#endif
+
+#ifndef ESB_AST_INTEGER_H
+#include <ASTInteger.h>
+#endif
+
 namespace ESB {
 namespace AST {
 
@@ -114,7 +126,151 @@ class Map : public Element {
    */
   inline UInt32 size() const { return _map.size(); }
 
+  //
+  // Type-safe convenience lookup functions
+  //
+
+  /**
+   * Find a string value in an AST Map
+   *
+   * @param key The key to find
+   * @param value The value associated with the key.
+   * @param optional If true and the key cannot be found, str will be set to NULL and ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found, ESB_MISSING_FIELD if not found, ESB_INVALID_FIELD if the key exists but is the wrong
+   * type, another error code otherwise.
+   */
+  Error find(const char *key, const char **value, bool optional = false) const;
+
+  /**
+   * Find a string value in an AST Map and make a copy of it.
+   *
+   * @param allocator The allocator to be used for the string copy
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, str will be set to NULL and ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if a copy successfully made or key not found and optional is true, ESB_MISSING_FIELD if not
+   * found and optional is false, ESB_INVALID_FIELD if the key exists but is the wrong type, ESB_OUT_OF_MEMORY if the
+   * allocator cannot produce enough memory to support the copy, another error code otherwise.
+   */
+  Error findAndDuplicate(Allocator &allocator, const char *key, char **value, bool optional = false) const;
+
+  /**
+   * Find a 16 bit unsigned integer value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type or has a value that exceeds the type's valid range.
+   */
+  Error find(const char *key, UInt16 *value, bool optional = false) const;
+
+  /**
+   * Find a 16 bit signed integer value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type or has a value that exceeds the type's valid range.
+   */
+  Error find(const char *key, Int16 *value, bool optional = false) const;
+
+  /**
+   * Find a 32 bit unsigned integer value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type or has a value that exceeds the type's valid range.
+   */
+  Error find(const char *key, UInt32 *value, bool optional = false) const;
+
+  /**
+   * Find a 32 bit signed integer value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type or has a value that exceeds the type's valid range.
+   */
+  Error find(const char *key, Int32 *value, bool optional = false) const;
+
+  /**
+   * Find a 64 bit signed integer value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type or has a value that exceeds the type's valid range.
+   */
+  Error find(const char *key, Int64 *value, bool optional = false) const;
+
+  /**
+   * Find a double value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type or has a value that exceeds the type's valid range.
+   */
+  Error find(const char *key, double *value, bool optional = false) const;
+
+  /**
+   * Find a boolean value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field is the incorrect type.
+   */
+  Error find(const char *key, bool *value, bool optional = false) const;
+
+  /**
+   * Find an AST Map in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @return ESB_SUCCESS if found and correct type, ESB_MISSING_FIELD if not found, ESB_INVALID_FIELD if found but
+   * incorrect type.
+   */
+  inline Error find(const char *key, const ESB::AST::Map **value) const {
+    return find(key, (const ESB::AST::Element **)value, ESB::AST::Element::MAP);
+  }
+
+  /**
+   * Find an AST List in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @return ESB_SUCCESS if found and correct type, ESB_MISSING_FIELD if not found, ESB_INVALID_FIELD if found but
+   * incorrect type.
+   */
+  inline Error find(const char *key, const ESB::AST::List **value) const {
+    return find(key, (const ESB::AST::Element **)value, ESB::AST::Element::LIST);
+  }
+
+  /**
+   * Find a UUID value in an AST Map.
+   *
+   * @param key The key to find
+   * @param value The value associated with the key
+   * @param optional If true and the key cannot be found, ESB_SUCCESS will be returned
+   * @return ESB_SUCCESS if found and valid, ESB_MISSING_FIELD if optional is false and key cannot be found,
+   * ESB_INVALID_FIELD if the field exists but is not a valid UUID.
+   */
+  Error find(const char *key, UniqueId &uuid) const;
+
  private:
+  Error find(const char *key, const AST::Element **scalar, AST::Element::Type type) const;
+
+  Error find(const char *key, const AST::Integer **integer, Int64 min, Int64 max) const;
+
   class JsonMapComparator : public Comparator {
    public:
     virtual int compare(const void *left, const void *right) const;

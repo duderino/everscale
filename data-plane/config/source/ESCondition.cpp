@@ -2,10 +2,6 @@
 #include <ESCondition.h>
 #endif
 
-#ifndef ES_CONFIG_UTIL_H
-#include <ESConfigUtil.h>
-#endif
-
 namespace ES {
 
 // Must be in same order as ConditionType
@@ -40,13 +36,13 @@ ESB::Error Condition::Build(const ESB::AST::Map &map, ESB::Allocator &allocator,
   Type type = UNKNOWN;
 
   {
-    const ESB::AST::String *str = NULL;
-    ESB::Error error = ConfigUtil::FindString(map, "type", &str);
+    const char *str = NULL;
+    ESB::Error error = map.find("type", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }
 
-    type = ParseConditionType(str->value());
+    type = ParseConditionType(str);
     if (UNKNOWN == type) {
       return ESB_INVALID_FIELD;
     }

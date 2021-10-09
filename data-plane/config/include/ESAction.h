@@ -45,24 +45,26 @@ class Action : public ESB::EmbeddedListElement {
 
   ESB::Allocator &_allocator;
 
-  ESB_DEFAULT_FUNCS(Action);
+  ESB_DISABLE_AUTO_COPY(Action);
 };
 
-class TransitionAction : public Action {
+class ModifyRequestAction : public Action {
  public:
+  enum ActionType { CREATE = 0, UPDATE = 1, DELETE = 2, SANITIZE = 3, CANONICALIZE = 4 };
+
+  enum TargetType { PROTOCOL = 0, HEADER = 1, PATH = 2, ATTRIBUTE = 3 };
+
   static ESB::Error Build(const ESB::AST::Map &map, ESB::Allocator &allocator, Action **action);
 
-  virtual ~TransitionAction();
+  virtual ~ModifyRequestAction();
 
   virtual Type type() const;
 
-  inline const ESB::UniqueId &destination() const { return _destination; }
-
  private:
   // Use Build()
-  TransitionAction(ESB::Allocator &allocator, const ESB::UniqueId &destination);
+  ModifyRequestAction(ESB::Allocator &allocator);
 
-  ESB::UniqueId _destination;
+  ESB_DEFAULT_FUNCS(ModifyRequestAction);
 };
 
 class SendResponseAction : public Action {
@@ -93,6 +95,27 @@ class SendResponseAction : public Action {
 
   ESB::UInt16 _statusCode;
   char *_reasonPhrase;
+
+  ESB_DEFAULT_FUNCS(SendResponseAction);
+};
+
+class TransitionAction : public Action {
+ public:
+  static ESB::Error Build(const ESB::AST::Map &map, ESB::Allocator &allocator, Action **action);
+
+  virtual ~TransitionAction();
+
+  virtual Type type() const;
+
+  inline const ESB::UniqueId &destination() const { return _destination; }
+
+ private:
+  // Use Build()
+  TransitionAction(ESB::Allocator &allocator, const ESB::UniqueId &destination);
+
+  ESB::UniqueId _destination;
+
+  ESB_DEFAULT_FUNCS(TransitionAction);
 };
 
 }  // namespace ES

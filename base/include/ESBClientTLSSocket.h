@@ -54,7 +54,7 @@ class ClientTLSSocket : public TLSSocket {
    * Get the peer/server's certificate
    *
    * @param cert will point to the peer certificate on success
-   * @return ESB_SUCCESS if succesful, ESB_CANNOT_FIND if the peer has not (yet) sent its certificate, another error
+   * @return ESB_SUCCESS if successful, ESB_CANNOT_FIND if the peer has not (yet) sent its certificate, another error
    * code otherwise.
    */
   Error peerCertificate(X509Certificate **cert);

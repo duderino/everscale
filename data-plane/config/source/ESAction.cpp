@@ -2,10 +2,6 @@
 #include <ESAction.h>
 #endif
 
-#ifndef ES_CONFIG_UTIL_H
-#include <ESConfigUtil.h>
-#endif
-
 #ifndef ESB_STRING_H
 #include <ESBString.h>
 #endif
@@ -53,13 +49,13 @@ ESB::Error Action::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, Ac
   Type type = UNKNOWN;
 
   {
-    const ESB::AST::String *str = NULL;
-    ESB::Error error = ConfigUtil::FindString(map, "type", &str);
+    const char *str = NULL;
+    ESB::Error error = map.find("type", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }
 
-    type = ParseActionType(str->value());
+    type = ParseActionType(str);
     if (UNKNOWN == type) {
       return ESB_INVALID_FIELD;
     }
@@ -82,7 +78,7 @@ Action::Type TransitionAction::type() const { return Action::TRANSITION; }
 
 ESB::Error TransitionAction::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, Action **action) {
   ESB::UniqueId destination;
-  ESB::Error error = ConfigUtil::FindUniqueId(map, "destination", destination);
+  ESB::Error error = map.find("destination", destination);
   if (ESB_SUCCESS != error) {
     return error;
   }
@@ -108,35 +104,19 @@ SendResponseAction::~SendResponseAction() {
 Action::Type SendResponseAction::type() const { return Action::SEND_RESPONSE; }
 
 ESB::Error SendResponseAction::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, Action **action) {
-  const ESB::AST::Integer *integer = NULL;
-  ESB::Error error = ConfigUtil::FindInteger(map, "status_code", &integer);
+  ESB::UInt16 statusCode = 500;
+  ESB::Error error = map.find("status_code", &statusCode);
   if (ESB_SUCCESS != error) {
     return error;
   }
 
-  if (0 > integer->value() || ESB_UINT16_MAX < integer->value()) {
-    return ESB_INVALID_FIELD;
-  }
-
-  const ESB::AST::String *str = NULL;
-  error = ConfigUtil::FindString(map, "reason_phrase", &str);
   char *reasonPhrase = NULL;
-
-  switch (error) {
-    case ESB_SUCCESS:
-      error = ESB::Duplicate(str->value(), allocator, &reasonPhrase);
-      if (ESB_SUCCESS != error) {
-        return error;
-      }
-      break;
-    case ESB_MISSING_FIELD:
-      reasonPhrase = NULL;  // it's optional
-      break;
-    default:
-      return error;
+  error = map.findAndDuplicate(allocator, "reason_phrase", &reasonPhrase, true);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
-  Action *newAction = new (allocator) SendResponseAction(allocator, integer->value(), reasonPhrase);
+  Action *newAction = new (allocator) SendResponseAction(allocator, statusCode, reasonPhrase);
   if (!newAction) {
     if (reasonPhrase) {
       allocator.deallocate(reasonPhrase);

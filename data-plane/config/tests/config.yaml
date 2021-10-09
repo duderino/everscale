@@ -22,38 +22,25 @@ entities:
   # Example TLS server context
   - id: ec23c29b-605e-4b0b-8bae-a4c4692e6164
     type: TLS_CTX
-    materials:
-      key:
-        path: "/foo/bar/baz.key"
-      certificate:
-        path: "/foo/bar/baz.crt"
-      ca:
-        paths: [ "/foo/bar/ca.crt" ]
-    options:
-      # Valid peer_verification values are VERIFY_NONE, VERIFY_ALWAYS, VERIFY_IF_CERT.  VERIFY_IF_CERT can be used to give lesser privileges to anonymous clients
-      peer_verification: VERIFY_NONE
+    key_path: "/foo/bar/baz.key"
+    cert_path: "/foo/bar/baz.crt"
+    ca_path: "/foo/bar/ca.crt"
+    # Valid peer_verification values are VERIFY_NONE, VERIFY_ALWAYS, VERIFY_IF_CERT.  VERIFY_IF_CERT can be used to give lesser privileges to anonymous clients
+    peer_verification: VERIFY_NONE
   # Example TLS client context
   - id: 518aa91c-1b06-4364-a0bd-850a04563fa9
     type: TLS_CTX
-    materials:
-      ca:
-        path: "/foo/bar/ca.key"
-    options:
-      peer_verification: VERIFY_ALWAYS
-      certificate_chain_depth: 42
+    ca_path: "/foo/bar/ca.key"
+    peer_verification: VERIFY_ALWAYS
+    certificate_chain_depth: 42
   # Example mTLS client or server context
   - id: cdad51ab-9f54-4b9a-bbb5-38568f978019
     type: TLS_CTX
-    materials:
-      key:
-        path: "/foo/bar/baz.key"
-      certificate:
-        path: "/foo/bar/baz.crt"
-      ca:
-        path: "/foo/bar/ca.crt"
-    options:
-      peer_verification: VERIFY_ALWAYS
-      certificate_chain_depth: 42
+    key_path: "/foo/bar/baz.key"
+    cert_path: "/foo/bar/baz.crt"
+    ca_path: "/foo/bar/ca.crt"
+    peer_verification: VERIFY_ALWAYS
+    certificate_chain_depth: 42
   #
   # TLS Indices
   #

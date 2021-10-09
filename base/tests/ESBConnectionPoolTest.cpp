@@ -20,14 +20,16 @@ class ConnectionPoolTest : public SocketTest {
   virtual void SetUp() {
     TLSContext::Params params;
 
-    Error error = _server.contextIndex().indexDefaultContext(
-        params.privateKeyPath("server.key").certificatePath("server.crt").verifyPeerCertificate(false));
+    Error error = _server.contextIndex().indexDefaultContext(params.privateKeyPath("server.key")
+                                                                 .certificatePath("server.crt")
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_NONE));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default server TLS context");
       exit(error);
     }
 
-    error = _clientContexts.indexDefaultContext(params.reset().caCertificatePath("ca.crt").verifyPeerCertificate(true));
+    error = _clientContexts.indexDefaultContext(
+        params.reset().caCertificatePath("ca.crt").verifyPeerCertificate(TLSContext::VERIFY_ALWAYS));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default client TLS context");
       exit(error);
@@ -37,7 +39,7 @@ class ConnectionPoolTest : public SocketTest {
                                              .privateKeyPath("client.key")
                                              .certificatePath("client.crt")
                                              .caCertificatePath("ca.crt")
-                                             .verifyPeerCertificate(true));
+                                             .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client mTLS context");
       exit(error);
@@ -385,7 +387,7 @@ TEST_F(ConnectionPoolTest, MostSpecificClientCertificate) {
                                                             .privateKeyPath("san3.key")
                                                             .certificatePath("san3.crt")
                                                             .caCertificatePath("ca.crt")
-                                                            .verifyPeerCertificate(true),
+                                                            .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS),
                                                         &san3Context));
     ASSERT_FALSE(san3Context.isNull());
 
@@ -400,7 +402,7 @@ TEST_F(ConnectionPoolTest, MostSpecificClientCertificate) {
                                                             .privateKeyPath("san4.key")
                                                             .certificatePath("san4.crt")
                                                             .caCertificatePath("ca.crt")
-                                                            .verifyPeerCertificate(true),
+                                                            .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS),
                                                         &san4Context));
     ASSERT_FALSE(san4Context.isNull());
   }
@@ -544,7 +546,7 @@ TEST_F(ConnectionPoolTest, CompatibleServerCertificate) {
                                                             .privateKeyPath("san3.key")
                                                             .certificatePath("san3.crt")
                                                             .caCertificatePath("ca.crt")
-                                                            .verifyPeerCertificate(true),
+                                                            .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS),
                                                         &san3Context));
     ASSERT_FALSE(san3Context.isNull());
 
@@ -559,7 +561,7 @@ TEST_F(ConnectionPoolTest, CompatibleServerCertificate) {
                                                             .privateKeyPath("san4.key")
                                                             .certificatePath("san4.crt")
                                                             .caCertificatePath("ca.crt")
-                                                            .verifyPeerCertificate(true),
+                                                            .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS),
                                                         &san4Context));
     ASSERT_FALSE(san4Context.isNull());
   }
@@ -579,11 +581,12 @@ TEST_F(ConnectionPoolTest, CompatibleServerCertificate) {
     //
     _server.contextIndex().clear();
     TLSContext::Params params;
-    ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexDefaultContext(params.reset()
-                                                                          .privateKeyPath("san5.key")
-                                                                          .certificatePath("san5.crt")
-                                                                          .caCertificatePath("ca.crt")
-                                                                          .verifyPeerCertificate(true)));
+    ASSERT_EQ(ESB_SUCCESS,
+              _server.contextIndex().indexDefaultContext(params.reset()
+                                                             .privateKeyPath("san5.key")
+                                                             .certificatePath("san5.crt")
+                                                             .caCertificatePath("ca.crt")
+                                                             .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS)));
     ASSERT_FALSE(_server.contextIndex().defaultContext().isNull());
   }
 
@@ -707,7 +710,7 @@ TEST_F(ConnectionPoolTest, CompatibleServerCertificate) {
                                                                  .privateKeyPath("san6.key")
                                                                  .certificatePath("san6.crt")
                                                                  .caCertificatePath("ca.crt")
-                                                                 .verifyPeerCertificate(true)));
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS)));
 
   // corge.server.everscale.com matches san4 client cert's c*.server.everscale.com and is now compatible with the san6
   // server cert's c*.server.everscale.com

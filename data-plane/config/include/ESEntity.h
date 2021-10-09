@@ -74,7 +74,6 @@ class Entity : public ESB::EmbeddedMapElement {
   // Use Build()
   Entity(ESB::Allocator &allocator, ESB::UniqueId &uuid);
 
- private:
   ESB::UniqueId _uuid;
   ESB::Allocator &_allocator;
 

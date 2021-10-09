@@ -22,14 +22,16 @@ class TLSSocketTest : public SocketTest {
   virtual void SetUp() {
     TLSContext::Params params;
 
-    Error error = _server.contextIndex().indexDefaultContext(
-        params.privateKeyPath("server.key").certificatePath("server.crt").verifyPeerCertificate(false));
+    Error error = _server.contextIndex().indexDefaultContext(params.privateKeyPath("server.key")
+                                                                 .certificatePath("server.crt")
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_NONE));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default server TLS context");
       exit(error);
     }
 
-    error = _clientContexts.indexDefaultContext(params.reset().caCertificatePath("ca.crt").verifyPeerCertificate(true));
+    error = _clientContexts.indexDefaultContext(
+        params.reset().caCertificatePath("ca.crt").verifyPeerCertificate(TLSContext::VERIFY_ALWAYS));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize default client TLS context");
       exit(error);
@@ -39,7 +41,7 @@ class TLSSocketTest : public SocketTest {
                                              .privateKeyPath("client.key")
                                              .certificatePath("client.crt")
                                              .caCertificatePath("ca.crt")
-                                             .verifyPeerCertificate(true),
+                                             .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS),
                                          &_clientMutualContext);
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client mTLS context");
@@ -152,9 +154,9 @@ TEST_F(TLSSocketTest, ServerSNI) {
   // Once it's loaded the foo.everscale.com should match f*.everscale.com
 
   TLSContext::Params params;
-  ASSERT_EQ(ESB_SUCCESS,
-            _server.contextIndex().indexContext(
-                params.privateKeyPath("san1.key").certificatePath("san1.crt").verifyPeerCertificate(false)));
+  ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexContext(params.privateKeyPath("san1.key")
+                                                                 .certificatePath("san1.crt")
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_NONE)));
 
   ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(), true);
 
@@ -190,7 +192,7 @@ TEST_F(TLSSocketTest, MutualTLSHappyPath) {
   ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexContext(params.privateKeyPath("san1.key")
                                                                  .certificatePath("san1.crt")
                                                                  .caCertificatePath("ca.crt")
-                                                                 .verifyPeerCertificate(true)));
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS)));
 
   ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientMutualContext, true);
 
@@ -226,7 +228,7 @@ TEST_F(TLSSocketTest, MutualTLSNoClientCert) {
   ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexContext(params.privateKeyPath("san1.key")
                                                                  .certificatePath("san1.crt")
                                                                  .caCertificatePath("ca.crt")
-                                                                 .verifyPeerCertificate(true)));
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS)));
 
   ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientContexts.defaultContext(), true);
 
@@ -254,9 +256,9 @@ TEST_F(TLSSocketTest, MutualTLSNoServerCA) {
   // Once it's loaded the foo.everscale.com should match f*.everscale.com
 
   TLSContext::Params params;
-  ASSERT_EQ(ESB_SUCCESS,
-            _server.contextIndex().indexContext(
-                params.privateKeyPath("san1.key").certificatePath("san1.crt").verifyPeerCertificate(true)));
+  ASSERT_EQ(ESB_SUCCESS, _server.contextIndex().indexContext(params.privateKeyPath("san1.key")
+                                                                 .certificatePath("san1.crt")
+                                                                 .verifyPeerCertificate(TLSContext::VERIFY_ALWAYS)));
 
   ClientTLSSocket client("foo.everscale.com", _server.secureAddress(), "test", _clientMutualContext, true);
 

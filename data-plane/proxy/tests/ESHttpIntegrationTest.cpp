@@ -318,7 +318,7 @@ ESB::Error HttpIntegrationTest::loadDefaultTLSContexts() {
 
   ESB::Error error = _origin.serverTlsContextIndex().indexDefaultContext(params.privateKeyPath(_params.serverKeyPath())
                                                                              .certificatePath(_params.serverCertPath())
-                                                                             .verifyPeerCertificate(false));
+                                                                             .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize origin's default TLS server context");
     return error;
@@ -327,21 +327,21 @@ ESB::Error HttpIntegrationTest::loadDefaultTLSContexts() {
   error = _proxy.serverTlsContextIndex().indexDefaultContext(params.reset()
                                                                  .privateKeyPath(_params.serverKeyPath())
                                                                  .certificatePath(_params.serverCertPath())
-                                                                 .verifyPeerCertificate(false));
+                                                                 .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize proxy's default TLS server context");
     return error;
   }
 
   error = _proxy.clientTlsContextIndex().indexDefaultContext(
-      params.reset().caCertificatePath(_params.caPath()).verifyPeerCertificate(true));
+      params.reset().caCertificatePath(_params.caPath()).verifyPeerCertificate(ESB::TLSContext::VERIFY_ALWAYS));
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize proxy's default TLS client context");
     return error;
   }
 
   error = _client.clientTlsContextIndex().indexDefaultContext(
-      params.reset().caCertificatePath(_params.caPath()).verifyPeerCertificate(true));
+      params.reset().caCertificatePath(_params.caPath()).verifyPeerCertificate(ESB::TLSContext::VERIFY_ALWAYS));
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize client's default TLS client context");
     return error;

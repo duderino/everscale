@@ -3,7 +3,8 @@ project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
 		source/ESConfigIngest.cpp
-		source/ESConfigUtil.cpp
+		source/ESTLSContextConfig.cpp
+		source/ESTLSContextIndexConfig.cpp
 		source/ESEntity.cpp
 		source/ESAction.cpp
 		source/ESCondition.cpp

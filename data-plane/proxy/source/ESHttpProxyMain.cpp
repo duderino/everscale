@@ -124,14 +124,14 @@ int main(int argc, char **argv) {
     ESB::TLSContext::Params tlsParams;
     error = proxy.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
                                                                   .certificatePath(params.serverCertPath())
-                                                                  .verifyPeerCertificate(false));
+                                                                  .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize proxy's default TLS server context");
       return error;
     }
 
     error = proxy.clientTlsContextIndex().indexDefaultContext(
-        tlsParams.reset().caCertificatePath(params.caPath()).verifyPeerCertificate(true));
+        tlsParams.reset().caCertificatePath(params.caPath()).verifyPeerCertificate(ESB::TLSContext::VERIFY_ALWAYS));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize proxy's default TLS client context");
       return error;

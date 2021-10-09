@@ -2,10 +2,6 @@
 #include <ESEntity.h>
 #endif
 
-#ifndef ES_CONFIG_UTIL_H
-#include <ESConfigUtil.h>
-#endif
-
 namespace ES {
 
 // Must be in same order as Entity::Type
@@ -76,13 +72,13 @@ ESB::Error Entity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, En
   ESB::UInt128 id = 0;
 
   {
-    const ESB::AST::String *str = NULL;
-    ESB::Error error = ConfigUtil::FindString(map, "id", &str);
+    const char *str = NULL;
+    ESB::Error error = map.find("id", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }
 
-    error = ESB::UniqueId::Parse(str->value(), &id);
+    error = ESB::UniqueId::Parse(str, &id);
     if (ESB_SUCCESS != error) {
       return ESB_INVALID_FIELD;
     }
@@ -91,13 +87,13 @@ ESB::Error Entity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, En
   Type type = UNKNOWN;
 
   {
-    const ESB::AST::String *str = NULL;
-    ESB::Error error = ConfigUtil::FindString(map, "type", &str);
+    const char *str = NULL;
+    ESB::Error error = map.find("type", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }
 
-    type = ParseEntityType(str->value());
+    type = ParseEntityType(str);
     if (UNKNOWN == type) {
       return ESB_INVALID_FIELD;
     }

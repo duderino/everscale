@@ -36,10 +36,21 @@ Error ServerTLSSocket::startHandshake() {
     }
     SSL_set_bio(_ssl, _bio, _bio);
 
-    if (_contextIndex.defaultContext()->verifyPeerCertificate()) {
-      SSL_set_verify(_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
-    } else {
-      SSL_set_verify(_ssl, SSL_VERIFY_NONE, NULL);
+    TLSContext::PeerVerification verification = _contextIndex.defaultContext()->verifyPeerCertificate();
+    switch (verification) {
+      case TLSContext::VERIFY_NONE:
+        SSL_set_verify(_ssl, SSL_VERIFY_NONE, NULL);
+        break;
+      case TLSContext::VERIFY_ALWAYS:
+        SSL_set_verify(_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+        break;
+      case TLSContext::VERIFY_IF_CERT:
+        SSL_set_verify(_ssl, SSL_VERIFY_PEER, NULL);
+        break;
+      default:
+        ESB_LOG_ERROR("[%s] cannot enable cert verification due to invalid peer verify choice %d", name(),
+                      verification);
+        return ESB_GENERAL_TLS_ERROR;
     }
   }
 

@@ -51,6 +51,8 @@ class TLSContextPointer;
 
 class TLSContext : public ReferenceCount {
  public:
+  enum PeerVerification { VERIFY_NONE = 0, VERIFY_ALWAYS = 1, VERIFY_IF_CERT = 2 };
+
   class Params {
    public:
     Params()
@@ -58,7 +60,7 @@ class TLSContext : public ReferenceCount {
           _certificatePath(NULL),
           _caCertificatePath(NULL),
           _maxVerifyDepth(5),
-          _verifyPeerCertificate(true) {}
+          _verifyPeerCertificate(VERIFY_ALWAYS) {}
 
     virtual ~Params() {}
 
@@ -92,9 +94,9 @@ class TLSContext : public ReferenceCount {
       return *this;
     }
 
-    inline bool verifyPeerCertificate() const { return _verifyPeerCertificate; }
+    inline PeerVerification verifyPeerCertificate() const { return _verifyPeerCertificate; }
 
-    inline Params &verifyPeerCertificate(bool verifyPeerCertificate) {
+    inline Params &verifyPeerCertificate(PeerVerification verifyPeerCertificate) {
       _verifyPeerCertificate = verifyPeerCertificate;
       return *this;
     }
@@ -103,8 +105,8 @@ class TLSContext : public ReferenceCount {
     const char *_privateKeyPath;
     const char *_certificatePath;
     const char *_caCertificatePath;
-    int _maxVerifyDepth;
-    bool _verifyPeerCertificate;
+    UInt32 _maxVerifyDepth;
+    PeerVerification _verifyPeerCertificate;
 
     ESB_DEFAULT_FUNCS(Params);
   };
@@ -125,17 +127,17 @@ class TLSContext : public ReferenceCount {
    */
   inline X509Certificate &certificate() { return _certificate; }
 
-  inline bool verifyPeerCertificate() { return _verifyPeerCertificate; }
+  inline PeerVerification verifyPeerCertificate() { return _verifyPeerCertificate; }
 
   inline SSL_CTX *rawContext() { return _context; }
 
  private:
-  TLSContext(CleanupHandler *handler, SSL_CTX *context, bool verifyPeerCertificate);
+  TLSContext(CleanupHandler *handler, SSL_CTX *context, PeerVerification verifyPeerCertificate);
 
   CleanupHandler *_cleanupHandler;
   SSL_CTX *_context;
   X509Certificate _certificate;
-  bool _verifyPeerCertificate;
+  PeerVerification _verifyPeerCertificate;
 
   ESB_DEFAULT_FUNCS(TLSContext);
 };

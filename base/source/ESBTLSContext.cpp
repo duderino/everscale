@@ -205,7 +205,7 @@ Error TLSContext::Create(TLSContextPointer &pointer, const Params &params, TLSCo
   return ESB_SUCCESS;
 }
 
-TLSContext::TLSContext(CleanupHandler *handler, SSL_CTX *contex, bool verifyPeerCertificate)
+TLSContext::TLSContext(CleanupHandler *handler, SSL_CTX *contex, PeerVerification verifyPeerCertificate)
     : _cleanupHandler(handler), _context(contex), _certificate(), _verifyPeerCertificate(verifyPeerCertificate) {}
 
 TLSContext::~TLSContext() {
@@ -220,7 +220,7 @@ TLSContext::Params &TLSContext::Params::reset() {
   _certificatePath = NULL;
   _caCertificatePath = NULL;
   _maxVerifyDepth = 5;
-  _verifyPeerCertificate = true;
+  _verifyPeerCertificate = PeerVerification::VERIFY_NONE;
   return *this;
 }
 }  // namespace ESB

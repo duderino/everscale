@@ -60,8 +60,21 @@ static int tlsext_servername_callback(SSL *ssl, int *ad, void *arg) {
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
-  if (match->verifyPeerCertificate()) {
-    SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+  switch (match->verifyPeerCertificate()) {
+    case TLSContext::VERIFY_NONE:
+      SSL_set_verify(ssl, SSL_VERIFY_NONE, NULL);
+      break;
+    case TLSContext::VERIFY_ALWAYS:
+      SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+      break;
+    case TLSContext::VERIFY_IF_CERT:
+      SSL_set_verify(ssl, SSL_VERIFY_PEER, NULL);
+      break;
+    default:
+      ESB_LOG_ERROR("Context for SNI %s has invalid peer verify choice: %d", servername,
+                    match->verifyPeerCertificate());
+      *ad = SSL_AD_INTERNAL_ERROR;
+      return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
   return SSL_TLSEXT_ERR_OK;
