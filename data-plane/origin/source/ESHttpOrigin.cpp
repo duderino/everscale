@@ -104,9 +104,10 @@ int main(int argc, char **argv) {
 
   if (params.secure()) {
     ESB::TLSContext::Params tlsParams;
-    error = server.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
-                                                                   .certificatePath(params.serverCertPath())
-                                                                   .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
+    error =
+        server.serverTlsContextIndex().indexDefaultContext(tlsParams.privateKeyPath(params.serverKeyPath())
+                                                               .certificatePath(params.serverCertPath())
+                                                               .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
     if (ESB_SUCCESS != error) {
       ESB_LOG_ERROR_ERRNO(error, "Cannot initialize server's default TLS server context");
       return error;

@@ -52,6 +52,8 @@ class TLSContextPointer;
 class TLSContext : public ReferenceCount {
  public:
   enum PeerVerification { VERIFY_NONE = 0, VERIFY_ALWAYS = 1, VERIFY_IF_CERT = 2 };
+  static const UInt32 DefaultCertificateChainDepth = 5;
+  static const PeerVerification DefaultPeerVerification = VERIFY_NONE;
 
   class Params {
    public:
@@ -59,8 +61,8 @@ class TLSContext : public ReferenceCount {
         : _privateKeyPath(NULL),
           _certificatePath(NULL),
           _caCertificatePath(NULL),
-          _maxVerifyDepth(5),
-          _verifyPeerCertificate(VERIFY_ALWAYS) {}
+          _maxVerifyDepth(DefaultCertificateChainDepth),
+          _verifyPeerCertificate(DefaultPeerVerification) {}
 
     virtual ~Params() {}
 
@@ -89,7 +91,7 @@ class TLSContext : public ReferenceCount {
 
     inline int maxVerifyDepth() const { return _maxVerifyDepth; }
 
-    inline Params &maxVerifyDepth(int maxVerifyDepth) {
+    inline Params &maxVerifyDepth(UInt32 maxVerifyDepth) {
       _maxVerifyDepth = maxVerifyDepth;
       return *this;
     }

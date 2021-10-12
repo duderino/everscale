@@ -9,10 +9,10 @@
 
 namespace ES {
 
-class EntityTest : public ::testing::Test {
+class ConfigTest : public ::testing::Test {
  public:
-  EntityTest(ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
-  virtual ~EntityTest();
+  ConfigTest(ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
+  virtual ~ConfigTest();
 
  protected:
   ESB::Error parseFile(const char *path, ESB::AST::Tree &tree);
@@ -21,7 +21,7 @@ class EntityTest : public ::testing::Test {
 
   ESB::Allocator &_allocator;
 
-  ESB_DISABLE_AUTO_COPY(EntityTest);
+  ESB_DISABLE_AUTO_COPY(ConfigTest);
 };
 
 }  // namespace ES

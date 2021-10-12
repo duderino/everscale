@@ -3,8 +3,6 @@ project(config VERSION ${VERSION} LANGUAGES CXX)
 
 set(SOURCE_FILES
 		source/ESConfigIngest.cpp
-		source/ESTLSContextConfig.cpp
-		source/ESTLSContextIndexConfig.cpp
 		source/ESEntity.cpp
 		source/ESAction.cpp
 		source/ESCondition.cpp
@@ -40,7 +38,8 @@ SET(TEST_LIBS
 		yajl
         )
 
-add_gtest(action-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESActionTest.cpp tests/ESEntityTest.cpp)
+add_gtest(action-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESActionTest.cpp tests/ESConfigTest.cpp)
+add_gtest(entity-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESEntityTest.cpp tests/ESConfigTest.cpp)
 
 # For global code coverage report
 

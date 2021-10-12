@@ -2,8 +2,8 @@
 #include <ESAction.h>
 #endif
 
-#ifndef ES_ENTITY_TEST_H
-#include "ESEntityTest.h"
+#ifndef ES_CONFIG_TEST_H
+#include "ESConfigTest.h"
 #endif
 
 #include <gtest/gtest.h>
@@ -12,7 +12,7 @@
 
 using namespace ES;
 
-class ActionTest : public EntityTest {
+class ActionTest : public ConfigTest {
  public:
   ActionTest() {}
   virtual ~ActionTest() {}

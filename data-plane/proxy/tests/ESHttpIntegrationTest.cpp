@@ -316,9 +316,10 @@ ESB::Error HttpIntegrationTest::run() {
 ESB::Error HttpIntegrationTest::loadDefaultTLSContexts() {
   ESB::TLSContext::Params params;
 
-  ESB::Error error = _origin.serverTlsContextIndex().indexDefaultContext(params.privateKeyPath(_params.serverKeyPath())
-                                                                             .certificatePath(_params.serverCertPath())
-                                                                             .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
+  ESB::Error error =
+      _origin.serverTlsContextIndex().indexDefaultContext(params.privateKeyPath(_params.serverKeyPath())
+                                                              .certificatePath(_params.serverCertPath())
+                                                              .verifyPeerCertificate(ESB::TLSContext::VERIFY_NONE));
   if (ESB_SUCCESS != error) {
     ESB_LOG_ERROR_ERRNO(error, "Cannot initialize origin's default TLS server context");
     return error;

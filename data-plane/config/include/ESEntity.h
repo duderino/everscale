@@ -13,6 +13,10 @@
 #include <ASTMap.h>
 #endif
 
+#ifndef ESB_TLS_CONTEXT_H
+#include <ESBTLSContext.h>
+#endif
+
 namespace ES {
 
 class Entity : public ESB::EmbeddedMapElement {
@@ -65,10 +69,7 @@ class Entity : public ESB::EmbeddedMapElement {
 
   virtual Type type() const = 0;
 
-  virtual ESB::Error initialize() { return ESB_SUCCESS; }
-  virtual ESB::Error start() { return ESB_SUCCESS; }
-  virtual ESB::Error stop() { return ESB_SUCCESS; }
-  virtual ESB::Error join() { return ESB_SUCCESS; }
+  inline const ESB::UniqueId &id() const { return _uuid; }
 
  protected:
   // Use Build()
@@ -78,6 +79,38 @@ class Entity : public ESB::EmbeddedMapElement {
   ESB::Allocator &_allocator;
 
   ESB_DEFAULT_FUNCS(Entity);
+};
+
+class TLSContextEntity : public Entity {
+ public:
+  static ESB::Error Build(const ESB::AST::Map &map, ESB::Allocator &allocator, ESB::UniqueId &uuid, Entity **entity);
+
+  virtual ~TLSContextEntity();
+
+  virtual Type type() const;
+
+  inline const char *keyPath() const { return _keyPath; }
+
+  inline const char *certPath() const { return _certPath; }
+
+  inline const char *caPath() const { return _caPath; }
+
+  inline ESB::UInt32 certificateChainDepth() const { return _certificateChainDepth; }
+
+  inline ESB::TLSContext::PeerVerification peerVerification() const { return _peerVerification; }
+
+ private:
+  // Use Build()
+  TLSContextEntity(ESB::Allocator &allocator, ESB::UniqueId &uuid, char *keyPath, char *certPath, char *caPath,
+                   ESB::UInt32 certificateChainDepth, ESB::TLSContext::PeerVerification peerVerification);
+
+  char *_keyPath;
+  char *_certPath;
+  char *_caPath;
+  ESB::UInt32 _certificateChainDepth;
+  ESB::TLSContext::PeerVerification _peerVerification;
+
+  ESB_DEFAULT_FUNCS(TLSContextEntity);
 };
 
 }  // namespace ES

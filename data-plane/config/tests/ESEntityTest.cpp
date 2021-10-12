@@ -1,57 +1,61 @@
-#ifndef ES_ENTITY_TEST_H
-#include "ESEntityTest.h"
+#ifndef ES_ENTITY_H
+#include <ESEntity.h>
 #endif
 
-#ifndef ESB_BUFFERED_FILE_H
-#include <ESBBufferedFile.h>
+#ifndef ES_CONFIG_TEST_H
+#include "ESConfigTest.h"
 #endif
 
-#ifndef ESB_JSON_PARSER_H
-#include <ESBJsonParser.h>
-#endif
+#include <gtest/gtest.h>
 
-namespace ES {
+#define UUID "ec23c29b-605e-4b0b-8bae-a4c4692e6164"
 
-EntityTest::EntityTest(ESB::Allocator &allocator) : _allocator(allocator) {}
+using namespace ES;
 
-EntityTest::~EntityTest() {}
+class EntityTest : public ConfigTest {
+ public:
+  EntityTest() {}
+  virtual ~EntityTest() {}
 
-ESB::Error EntityTest::parseFile(const char *path, ESB::AST::Tree &tree) {
-  if (!path) {
-    return ESB_NULL_POINTER;
-  }
+  virtual void SetUp() { ASSERT_EQ(ESB_SUCCESS, ESB::UniqueId::Parse(UUID, _uuid)); }
 
-  ESB::BufferedFile file(path, ESB::BufferedFile::READ_ONLY);
-  unsigned char buffer[1024];
-  ESB::JsonParser parser(tree, _allocator);
+ protected:
+  ESB::UniqueId _uuid;
 
-  while (true) {
-    ESB::Size bytesRead = 0;
-    switch (ESB::Error error = file.read(buffer, sizeof(buffer), &bytesRead)) {
-      case ESB_SUCCESS:
-        error = parser.parse(buffer, bytesRead);
-        if (ESB_SUCCESS != error) {
-          return error;
-        }
-        break;
-      case ESB_BREAK:
-        if (0 < bytesRead) {
-          error = parser.parse(buffer, bytesRead);
-          if (ESB_SUCCESS != error) {
-            return error;
-          }
-        }
-        return parser.end();
-      default:
-        return error;
-    }
-  }
+  ESB_DISABLE_AUTO_COPY(EntityTest);
+};
+
+TEST_F(EntityTest, ParseTLSContext) {
+  const char *conf =
+      "            {"
+      "              \"id\": \"" UUID
+      "\","
+      "              \"type\": \"TLS_CTX\","
+      "              \"key_path\": \"/foo.key\","
+      "              \"cert_path\": \"/bar.crt\","
+      "              \"ca_path\": \"/baz.crt\","
+      "              \"peer_verification\": \"VERIFY_ALWAYS\","
+      "              \"certificate_chain_depth\": 42"
+      "            }";
+  ESB::AST::Tree tree;
+  ASSERT_EQ(ESB_SUCCESS, parseString(conf, tree));
+  ASSERT_TRUE(tree.root());
+  ASSERT_EQ(tree.root()->type(), ESB::AST::Element::MAP);
+  ESB::AST::Map &map = *(ESB::AST::Map *)tree.root();
+
+  Entity *entity = NULL;
+  ASSERT_EQ(ESB_SUCCESS, Entity::Build(map, ESB::SystemAllocator::Instance(), &entity));
+  ASSERT_TRUE(entity);
+  ASSERT_TRUE(entity->cleanupHandler());
+  ASSERT_EQ(_uuid, entity->id());
+  ASSERT_EQ(Entity::TLS_CTX, entity->type());
+
+  TLSContextEntity *tlsContext = (TLSContextEntity *)entity;
+  ASSERT_TRUE(0 == strcmp(tlsContext->keyPath(), "/foo.key"));
+  ASSERT_TRUE(0 == strcmp(tlsContext->certPath(), "/bar.crt"));
+  ASSERT_TRUE(0 == strcmp(tlsContext->caPath(), "/baz.crt"));
+  ASSERT_EQ(tlsContext->peerVerification(), ESB::TLSContext::VERIFY_ALWAYS);
+  ASSERT_EQ(tlsContext->certificateChainDepth(), 42);
+
+  entity->cleanupHandler()->destroy(entity);
 }
-
-ESB::Error EntityTest::parseString(const char *str, ESB::AST::Tree &tree) {
-  ESB::JsonParser parser(tree, _allocator);
-  ESB::Error error = parser.parse((const unsigned char *)str, strlen(str));
-  return ESB_SUCCESS == error ? parser.end() : error;
-}
-
-}  // namespace ES
