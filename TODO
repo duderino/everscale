@@ -342,3 +342,80 @@ metrics:
  - granular metrics for client and server sockets - break down failures by state and type (idle, error type)
  - metrics for TLS client and server errors
  - connection pool hit rate (averaging counter, add 1 for hit, 0 for miss)
+
+
+managed:
+  ManagedProxy:
+     dag_store:
+         define dag element interface.
+
+
+TODO write this logic:
+
+     ProxyTransaction:  Put in ProxyHandler
+            returns SUCCESS, AGAIN, ERROR.  ESF::Error
+            inbound_connection_state takes inbound_connection object
+            inbound_request_state takes inbound_request and inbound_connection objects
+            outbound_connection_state takes inbound_connection, outbound_connection, inbound_request objects
+            outbound_request_state takes inbound_connection, outbound_connection, inbound_request objects
+            ...
+            ProxyTransaction has a UUID value for (inbound,outbound) X (connection, request, response).  At init time,
+              only inbound_connection and inbound_request dags are set?
+            State objects must request state transitions, ProxyTransaction must enact....
+              struct with:  return code (SUCCESS, AGAIN, TRANSITION, ERROR/BREAK), if transition: dag type + UUID
+
+            inbound_response_state takes inbound_request, inbound_response, and inbound_connection objects
+
+
+
+
+         inbound_connection_dags transitions to:
+            inbound_request_dag + UUID
+         inbound_request_dag transitions to:
+            outbound_request_dag + UUID
+            inbound_response_dag (to send response without waiting for origin)
+            inbound_connection_dag (to close connection)
+         inbound_response_dag transitions to:
+            inbound_connection_dag
+         outbound_connection_dag transitions to:
+            inbound_request_dag + UUID
+         outbound_request_dag transitions to:
+            inbound_response_dag
+            inbound_connection_dag
+            outbound_connection_dag
+
+         inbound_connection_dag_elements
+         inbound_response_dag_elements - some of these can be routers that map to clusters
+         inbound_respond_dag_elements
+         outbound_connection_dag_elements
+         outbound_request_dag_elements
+         outbound_response_dag_elements
+     clusters:
+         clear_cluster:
+           address list
+           load balancing policy
+           outbound_connection_dag ref
+           outbound_request_dag ref
+           outbound_response_dag ref
+         tls_cluster subclass of clear_cluster:
+           tls_client_index ref
+         composite_cluter:
+           list of cluster refs
+           load balancing policy (for load balancing - surface absolute and % loaded calculations)
+     1+ Ports:
+         1+ ClearPort:
+           listening_addresses
+           listen_backlog
+           inbound_connection_dag ref
+           inbound_request_dag ref
+           inbound_response_dag ref
+         1+ TLSPort:  public ClearPort
+           tls_server_index ref
+
+
+
+ - Split TLS_IDX into TLS_SERVER_IDX and TLS_CLIENT_IDX
+ - Merge TLX_CTX into TLS_SERVER_IDX and TLX_CLIENT_IDX
+ - ES::ConfigStore with RCU semantics
+
+

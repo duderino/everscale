@@ -83,7 +83,21 @@ class Entity : public ESB::EmbeddedMapElement {
 
 class TLSContextEntity : public Entity {
  public:
-  static ESB::Error Build(const ESB::AST::Map &map, ESB::Allocator &allocator, ESB::UniqueId &uuid, Entity **entity);
+  /**
+   * Build a new TLSContextEntity. Validation logic:
+   *
+   *   1. If keyPath or certPath is set, the other is mandatory
+   *   2. Either keyPath+certPath or caPath must be set (or both)
+   *
+   * Everything else is optional
+   *
+   * @param map A map of config options
+   * @param allocator The allocator to be used for copies, etc.
+   * @param id The id of the entity to create
+   * @param entity Will be set to a pointer to the created entity
+   * @return ESB_SUCCESS if successful, another error code otherwise.
+   */
+  static ESB::Error Build(const ESB::AST::Map &map, ESB::Allocator &allocator, ESB::UniqueId &id, Entity **entity);
 
   virtual ~TLSContextEntity();
 
@@ -111,6 +125,32 @@ class TLSContextEntity : public Entity {
   ESB::TLSContext::PeerVerification _peerVerification;
 
   ESB_DEFAULT_FUNCS(TLSContextEntity);
+};
+
+class TLSContextIndexEntity : public Entity {
+ public:
+  static ESB::Error Build(const ESB::AST::Map &map, ESB::Allocator &allocator, ESB::UniqueId &uuid, Entity **entity);
+
+  virtual ~TLSContextIndexEntity();
+
+  virtual Type type() const;
+
+  const ESB::UniqueId &defaultContext() const { return _defaultContext; }
+
+  const ESB::UniqueId *contexts() const { return _contexts; }
+
+  ESB::UInt32 numContexts() const { return _numContexts; }
+
+ private:
+  // Use Build()
+  TLSContextIndexEntity(ESB::Allocator &allocator, ESB::UniqueId &id, ESB::UniqueId &defaultContext,
+                        ESB::UniqueId *contexts, ESB::UInt32 numContexts);
+
+  ESB::UniqueId _defaultContext;
+  ESB::UniqueId *_contexts;
+  ESB::UInt32 _numContexts;
+
+  ESB_DEFAULT_FUNCS(TLSContextIndexEntity);
 };
 
 }  // namespace ES

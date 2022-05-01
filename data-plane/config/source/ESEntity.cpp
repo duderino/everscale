@@ -69,26 +69,17 @@ ESB::Error Entity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, En
     return ESB_NULL_POINTER;
   }
 
-  ESB::UniqueId uuid = 0;
-
-  {
-    const char *str = NULL;
-    ESB::Error error = map.find("id", &str);
-    if (ESB_SUCCESS != error) {
-      return error;
-    }
-
-    error = ESB::UniqueId::Parse(str, uuid);
-    if (ESB_SUCCESS != error) {
-      return ESB_INVALID_FIELD;
-    }
+  ESB::UniqueId id = 0;
+  ESB::Error error = map.find("id", id);
+  if (ESB_SUCCESS != error) {
+    return error;
   }
 
   Type type = UNKNOWN;
 
   {
     const char *str = NULL;
-    ESB::Error error = map.find("type", &str);
+    error = map.find("type", &str);
     if (ESB_SUCCESS != error) {
       return error;
     }
@@ -101,7 +92,9 @@ ESB::Error Entity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, En
 
   switch (type) {
     case TLS_CTX:
-      return TLSContextEntity::Build(map, allocator, uuid, entity);
+      return TLSContextEntity::Build(map, allocator, id, entity);
+    case TLS_IDX:
+      return TLSContextIndexEntity::Build(map, allocator, id, entity);
     default:
       return ESB_NOT_IMPLEMENTED;
   }
@@ -138,15 +131,6 @@ Entity::Type TLSContextEntity::type() const { return Entity::TLS_CTX; }
 
 ESB::Error TLSContextEntity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, ESB::UniqueId &uuid,
                                    Entity **entity) {
-  //
-  // Validation logic:
-  //
-  //  1. If keyPath or certPath is set, the other is mandatory
-  //  2. Either keyPath+certPath or caPath must be set (or both)
-  //
-  // Everything else is optional
-  //
-
   char *keyPath = NULL, *certPath = NULL, *caPath = NULL;
   ESB::UInt32 certificateChainDepth = ESB::TLSContext::DefaultCertificateChainDepth;
 
@@ -215,5 +199,80 @@ ESB::Error TLSContextEntity::Build(const ESB::AST::Map &map, ESB::Allocator &all
   *entity = config;
   return ESB_SUCCESS;
 }
+
+TLSContextIndexEntity::TLSContextIndexEntity(ESB::Allocator &allocator, ESB::UniqueId &id,
+                                             ESB::UniqueId &defaultContext, ESB::UniqueId *contexts,
+                                             ESB::UInt32 numContexts)
+    : Entity(allocator, id), _defaultContext(defaultContext), _contexts(contexts), _numContexts(numContexts) {}
+
+TLSContextIndexEntity::~TLSContextIndexEntity() {
+  if (_contexts) {
+    _allocator.deallocate(_contexts);
+    _contexts = NULL;
+  }
+}
+
+ESB::Error TLSContextIndexEntity::Build(const ESB::AST::Map &map, ESB::Allocator &allocator, ESB::UniqueId &id,
+                                        Entity **entity) {
+  const ESB::AST::List *contexts = NULL;
+  ESB::Error error = map.find("contexts", &contexts);
+  switch (error) {
+    case ESB_SUCCESS:
+    case ESB_MISSING_FIELD:
+      break;
+    default:
+      return error;
+  }
+
+  ESB::UInt32 numContexts = 0;
+  if (contexts) {
+    numContexts = contexts->size();
+  }
+
+  ESB::UniqueId defaultContext;
+  error = map.find("default_context", defaultContext);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  ESB::UniqueId *contextsCopy = NULL;
+  if (0 < numContexts) {
+    error = allocator.allocate(sizeof(ESB::UniqueId *) * numContexts, (void **)&contextsCopy);
+    if (ESB_SUCCESS != error) {
+      return error;
+    }
+
+    const ESB::AST::Element *current = contexts->first();
+    for (ESB::UInt32 i = 0; i < numContexts; ++i) {
+      if (ESB::AST::Element::STRING != current->type()) {
+        return ESB_INVALID_FIELD;
+      }
+      ESB::AST::String *str = (ESB::AST::String *)current;
+
+      ESB::UniqueId contextId;
+      error = ESB::UniqueId::Parse(str->value(), contextId);
+      if (ESB_SUCCESS != error) {
+        return ESB_INVALID_FIELD;
+      }
+      contextsCopy[i] = contextId;
+
+      current = (ESB::AST::Element *)current->next();
+    }
+  }
+
+  TLSContextIndexEntity *idx =
+      new (allocator) TLSContextIndexEntity(allocator, id, defaultContext, contextsCopy, numContexts);
+  if (ESB_SUCCESS != error) {
+    if (contextsCopy) {
+      allocator.deallocate(contextsCopy);
+    }
+    return error;
+  }
+
+  *entity = idx;
+  return ESB_SUCCESS;
+}
+
+Entity::Type TLSContextIndexEntity::type() const { return Entity::TLS_IDX; }
 
 }  // namespace ES
