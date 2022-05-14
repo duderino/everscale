@@ -237,7 +237,7 @@ ESB::Error TLSContextIndexEntity::Build(const ESB::AST::Map &map, ESB::Allocator
 
   ESB::UniqueId *contextsCopy = NULL;
   if (0 < numContexts) {
-    error = allocator.allocate(sizeof(ESB::UniqueId *) * numContexts, (void **)&contextsCopy);
+    error = allocator.allocate(sizeof(ESB::UniqueId) * numContexts, (void **)&contextsCopy);
     if (ESB_SUCCESS != error) {
       return error;
     }

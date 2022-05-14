@@ -36,8 +36,8 @@ TEST(HttpPlugin, ReadHeader) {
 }
 
 TEST(HttpPlugin, RequestHeadersForwardIterate) {
-  ESB::DiscardAllocator a(1024);
   HttpRequest r;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
 
   {
     es_http_request_t request = (es_http_request_t)&r;
@@ -70,8 +70,8 @@ TEST(HttpPlugin, RequestHeadersForwardIterate) {
 }
 
 TEST(HttpPlugin, RequestHeadersReverseIterate) {
-  ESB::DiscardAllocator a(1024);
   HttpRequest r;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
 
   {
     es_http_request_t request = (es_http_request_t)&r;
@@ -129,7 +129,7 @@ TEST(HttpPlugin, RequestUriType) {
 
 TEST(HttpPlugin, RequestUriPath) {
   HttpRequest r;
-  ESB::DiscardAllocator a(1024);
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
 
   {
     es_http_request_t request = (es_http_request_t)&r;
@@ -143,7 +143,7 @@ TEST(HttpPlugin, RequestUriPath) {
 
 TEST(HttpPlugin, RequestUriQuery) {
   HttpRequest r;
-  ESB::DiscardAllocator a(1024);
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
 
   {
     es_http_request_t request = (es_http_request_t)&r;
@@ -157,7 +157,7 @@ TEST(HttpPlugin, RequestUriQuery) {
 
 TEST(HttpPlugin, RequestUriFragment) {
   HttpRequest r;
-  ESB::DiscardAllocator a(1024);
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
 
   {
     es_http_request_t request = (es_http_request_t)&r;
@@ -171,7 +171,7 @@ TEST(HttpPlugin, RequestUriFragment) {
 
 TEST(HttpPlugin, RequestUriHost) {
   HttpRequest r;
-  ESB::DiscardAllocator a(1024);
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
 
   {
     es_http_request_t request = (es_http_request_t)&r;
@@ -203,7 +203,7 @@ TEST(HttpPlugin, RequestUriPort) {
 
 TEST(HttpPlugin, RequestUriOther) {
   HttpRequest r;
-  ESB::DiscardAllocator a(1024);
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
   const char *other = "sip:1-999-123-4567@voip-provider.example.net";
 
   {
