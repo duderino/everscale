@@ -14,6 +14,10 @@
 #include <ESHttpResponse.h>
 #endif
 
+#ifndef ESB_STRING_H
+#include <ESBString.h>
+#endif
+
 using namespace ES;
 
 const char *es_http_header_name(const es_http_header_t h) {
@@ -86,4 +90,138 @@ es_http_error_t es_http_request_set_uri_type(es_http_request_t r, es_http_reques
 es_http_request_uri_t es_http_request_uri_type(const es_http_request_t r) {
   const HttpRequest *request = (const HttpRequest *)r;
   return request ? (const es_http_request_uri_t)request->requestUri().type() : ES_HTTP_REQUEST_URI_OTHER;
+}
+
+es_http_error_t es_http_request_set_uri_path(es_http_request_t r, es_allocator_t a, const char *path) {
+  if (!r || !a || !path) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRequest *request = (HttpRequest *)r;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  char *copy = NULL;
+  ESB::Error error = ESB::Duplicate(path, *allocator, &copy);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  request->requestUri().setAbsPath(copy);
+  return ESB_SUCCESS;
+}
+
+const char *es_http_request_uri_path(const es_http_request_t r) {
+  const HttpRequest *request = (const HttpRequest *)r;
+  return request ? (const char *)request->requestUri().absPath() : NULL;
+}
+
+es_http_error_t es_http_request_set_uri_query(es_http_request_t r, es_allocator_t a, const char *query) {
+  if (!r || !a || !query) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRequest *request = (HttpRequest *)r;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  char *copy = NULL;
+  ESB::Error error = ESB::Duplicate(query, *allocator, &copy);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  request->requestUri().setQuery(copy);
+  return ESB_SUCCESS;
+}
+
+const char *es_http_request_uri_query(const es_http_request_t r) {
+  const HttpRequest *request = (const HttpRequest *)r;
+  return request ? (const char *)request->requestUri().query() : NULL;
+}
+
+es_http_error_t es_http_request_set_uri_fragment(es_http_request_t r, es_allocator_t a, const char *fragment) {
+  if (!r || !a || !fragment) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRequest *request = (HttpRequest *)r;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  char *copy = NULL;
+  ESB::Error error = ESB::Duplicate(fragment, *allocator, &copy);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  request->requestUri().setFragment(copy);
+  return ESB_SUCCESS;
+}
+
+const char *es_http_request_uri_fragment(const es_http_request_t r) {
+  const HttpRequest *request = (const HttpRequest *)r;
+  return request ? (const char *)request->requestUri().fragment() : NULL;
+}
+
+es_http_error_t es_http_request_set_uri_host(es_http_request_t r, es_allocator_t a, const char *host) {
+  if (!r || !a || !host) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRequest *request = (HttpRequest *)r;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  char *copy = NULL;
+  ESB::Error error = ESB::Duplicate(host, *allocator, &copy);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  request->requestUri().setHost(copy);
+  return ESB_SUCCESS;
+}
+
+const char *es_http_request_uri_host(const es_http_request_t r) {
+  const HttpRequest *request = (const HttpRequest *)r;
+  return request ? (const char *)request->requestUri().host() : NULL;
+}
+
+es_http_error_t es_http_request_set_uri_port(es_http_request_t r, int32_t port) {
+  HttpRequest *request = (HttpRequest *)r;
+  if (0 > port || 65535 < port) {
+    return ESB_INVALID_ARGUMENT;
+  }
+  request->requestUri().setPort(port);
+  return ESB_SUCCESS;
+}
+
+int32_t es_http_request_uri_port(const es_http_request_t r) {
+  const HttpRequest *request = (const HttpRequest *)r;
+  return request ? (int16_t)request->requestUri().port() : -1;
+}
+
+es_http_error_t es_http_request_set_uri_other(es_http_request_t r, es_allocator_t a, const char *other) {
+  if (!r || !a || !other) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpRequest *request = (HttpRequest *)r;
+
+  if (HttpRequestUri::ES_URI_OTHER != request->requestUri().type()) {
+    return ESB_INVALID_STATE;
+  }
+
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  char *copy = NULL;
+  ESB::Error error = ESB::Duplicate(other, *allocator, &copy);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  request->requestUri().setOther(copy);
+  return ESB_SUCCESS;
+}
+
+const char *es_http_request_uri_other(const es_http_request_t r) {
+  const HttpRequest *request = (const HttpRequest *)r;
+  return request ? (const char *)request->requestUri().other() : NULL;
 }

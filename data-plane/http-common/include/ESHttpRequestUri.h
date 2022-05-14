@@ -181,6 +181,13 @@ class HttpRequestUri {
   inline void setOther(const unsigned char *other) { _other = other; }
 
   /**
+   * Set the raw form of a non-http, non-https uri.
+   *
+   * @param other The raw Request-URI
+   */
+  inline void setOther(const char *other) { _other = (const unsigned char *)other; }
+
+  /**
    * Compare two Request-URIs for equality according to RFC 2616.
    * The fragment does not influence the comparison.
    * <p/>

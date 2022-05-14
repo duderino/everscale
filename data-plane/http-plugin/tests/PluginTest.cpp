@@ -126,3 +126,94 @@ TEST(HttpPlugin, RequestUriType) {
     ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_request_set_uri_type(request, (es_http_request_uri_t)42));
   }
 }
+
+TEST(HttpPlugin, RequestUriPath) {
+  HttpRequest r;
+  ESB::DiscardAllocator a(1024);
+
+  {
+    es_http_request_t request = (es_http_request_t)&r;
+    es_allocator_t allocator = (es_allocator_t)&a;
+
+    ASSERT_FALSE(es_http_request_uri_path(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_path(request, allocator, "/foo/bar/baz"));
+    ASSERT_EQ(0, strcmp(es_http_request_uri_path(request), "/foo/bar/baz"));
+  }
+}
+
+TEST(HttpPlugin, RequestUriQuery) {
+  HttpRequest r;
+  ESB::DiscardAllocator a(1024);
+
+  {
+    es_http_request_t request = (es_http_request_t)&r;
+    es_allocator_t allocator = (es_allocator_t)&a;
+
+    ASSERT_FALSE(es_http_request_uri_query(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_query(request, allocator, "a=1&b=2&c=3"));
+    ASSERT_EQ(0, strcmp(es_http_request_uri_query(request), "a=1&b=2&c=3"));
+  }
+}
+
+TEST(HttpPlugin, RequestUriFragment) {
+  HttpRequest r;
+  ESB::DiscardAllocator a(1024);
+
+  {
+    es_http_request_t request = (es_http_request_t)&r;
+    es_allocator_t allocator = (es_allocator_t)&a;
+
+    ASSERT_FALSE(es_http_request_uri_fragment(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_fragment(request, allocator, "anchor"));
+    ASSERT_EQ(0, strcmp(es_http_request_uri_fragment(request), "anchor"));
+  }
+}
+
+TEST(HttpPlugin, RequestUriHost) {
+  HttpRequest r;
+  ESB::DiscardAllocator a(1024);
+
+  {
+    es_http_request_t request = (es_http_request_t)&r;
+    es_allocator_t allocator = (es_allocator_t)&a;
+
+    ASSERT_FALSE(es_http_request_uri_host(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_host(request, allocator, "example.com"));
+    ASSERT_EQ(0, strcmp(es_http_request_uri_host(request), "example.com"));
+  }
+}
+
+TEST(HttpPlugin, RequestUriPort) {
+  HttpRequest r;
+
+  {
+    es_http_request_t request = (es_http_request_t)&r;
+
+    ASSERT_EQ(-1, es_http_request_uri_port(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_port(request, 123));
+    ASSERT_EQ(123, es_http_request_uri_port(request));
+
+    ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_request_set_uri_port(request, -1));
+    ASSERT_EQ(123, es_http_request_uri_port(request));
+
+    ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_request_set_uri_port(request, 65536));
+    ASSERT_EQ(123, es_http_request_uri_port(request));
+  }
+}
+
+TEST(HttpPlugin, RequestUriOther) {
+  HttpRequest r;
+  ESB::DiscardAllocator a(1024);
+  const char *other = "sip:1-999-123-4567@voip-provider.example.net";
+
+  {
+    es_http_request_t request = (es_http_request_t)&r;
+    es_allocator_t allocator = (es_allocator_t)&a;
+
+    ASSERT_FALSE(es_http_request_uri_other(request));
+    ASSERT_EQ(ESB_INVALID_STATE, es_http_request_set_uri_other(request, allocator, other));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_REQUEST_URI_OTHER));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_other(request, allocator, other));
+    ASSERT_EQ(0, strcmp(es_http_request_uri_other(request), other));
+  }
+}
