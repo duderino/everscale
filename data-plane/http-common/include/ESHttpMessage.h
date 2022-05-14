@@ -47,8 +47,9 @@ class HttpMessage {
     ES_HTTP_HEADER_ERROR = 4          /**< Send a 400 bad response */
   } HeaderCopyResult;
 
-  typedef HeaderCopyResult (*HeaderCopyFilter)(const unsigned char *fieldName, const unsigned char *fieldValue);
-  static HeaderCopyResult HeaderCopyAll(const unsigned char *fieldName, const unsigned char *fieldValue);
+  typedef HeaderCopyResult (*HeaderCopyFilter)(const unsigned char *fieldName, const unsigned char *fieldValue,
+                                               void *context);
+  static HeaderCopyResult HeaderCopyAll(const unsigned char *fieldName, const unsigned char *fieldValue, void *context);
 
   /**
    * Copy headers from another message into this one, potentially filtering out unwanted headers.
@@ -60,7 +61,7 @@ class HttpMessage {
    * another error code otherwise.
    */
   ESB::Error copyHeaders(const ESB::EmbeddedList &headers, ESB::Allocator &allocator,
-                         HeaderCopyFilter filter = HeaderCopyAll);
+                         HeaderCopyFilter filter = HeaderCopyAll, void *context = NULL);
 
   /**
    * Get the HTTP version.

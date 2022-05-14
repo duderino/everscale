@@ -70,15 +70,15 @@ ESB::Error HttpMessage::addHeader(ESB::Allocator &allocator, const char *fieldNa
 }
 
 HttpMessage::HeaderCopyResult HttpMessage::HeaderCopyAll(const unsigned char *fieldName,
-                                                         const unsigned char *fieldValue) {
+                                                         const unsigned char *fieldValue, void *context) {
   return HttpMessage::ES_HTTP_HEADER_COPY;
 }
 
 ESB::Error HttpMessage::copyHeaders(const ESB::EmbeddedList &headers, ESB::Allocator &allocator,
-                                    HttpMessage::HeaderCopyFilter filter) {
+                                    HttpMessage::HeaderCopyFilter filter, void *context) {
   for (HttpHeader *header = (HttpHeader *)headers.first(); header; header = (HttpHeader *)header->next()) {
     ESB::Error error = ESB_SUCCESS;
-    switch (filter(header->fieldName(), header->fieldValue())) {
+    switch (filter(header->fieldName(), header->fieldValue(), context)) {
       case ES_HTTP_HEADER_COPY:
         error = addHeader(header, allocator);
         if (ESB_SUCCESS != error) {

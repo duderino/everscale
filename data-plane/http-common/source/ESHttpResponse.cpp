@@ -14,7 +14,8 @@ void HttpResponse::reset() {
   _reasonPhrase = 0;
 }
 
-ESB::Error HttpResponse::copy(const HttpResponse *other, ESB::Allocator &allocator, HeaderCopyFilter filter) {
+ESB::Error HttpResponse::copy(const HttpResponse *other, ESB::Allocator &allocator, HeaderCopyFilter filter,
+                              void *context) {
   if (!other) {
     return ESB_NULL_POINTER;
   }
@@ -24,7 +25,7 @@ ESB::Error HttpResponse::copy(const HttpResponse *other, ESB::Allocator &allocat
   setStatusCode(other->statusCode());
   setReasonPhrase(other->reasonPhrase());
 
-  return copyHeaders(other->headers(), allocator, filter);
+  return copyHeaders(other->headers(), allocator, filter, context);
 }
 
 // https://datatracker.ietf.org/doc/html/rfc7231#section-6.2
