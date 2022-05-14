@@ -32,11 +32,13 @@ class HttpServerStream : public HttpStream {
   /**
    * Send a response
    *
-   * @param response The response headers to send (a copy will be made of this)
-   * @return ESB_SUCCESS if successful, ESB_AGAIN if send buffer full and
-   * underlying socket send buffer is full, another error code otherwise.
+   * @param response The response headers to send.  A copy will be made of this
+   * @param filter A filter that can exclude unwanted headers from the copy
+   * @return ESB_SUCCESS if successful, ESB_AGAIN if send buffer full and underlying socket send buffer is full, another
+   * error code otherwise.
    */
-  virtual ESB::Error sendResponse(const HttpResponse &response) = 0;
+  virtual ESB::Error sendResponse(const HttpResponse &response,
+                                  HttpMessage::HeaderCopyFilter filter = HttpMessage::HeaderCopyAll) = 0;
 
   /**
    * Buffer and occasionally flush a request body chunk to the underlying

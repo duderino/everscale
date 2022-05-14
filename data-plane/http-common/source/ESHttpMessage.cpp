@@ -69,4 +69,33 @@ ESB::Error HttpMessage::addHeader(ESB::Allocator &allocator, const char *fieldNa
   return addHeader(fieldName, buffer, allocator);
 }
 
+HttpMessage::HeaderCopyResult HttpMessage::HeaderCopyAll(const unsigned char *fieldName,
+                                                         const unsigned char *fieldValue) {
+  return HttpMessage::ES_HTTP_HEADER_COPY;
+}
+
+ESB::Error HttpMessage::copyHeaders(const ESB::EmbeddedList &headers, ESB::Allocator &allocator,
+                                    HttpMessage::HeaderCopyFilter filter) {
+  for (HttpHeader *header = (HttpHeader *)headers.first(); header; header = (HttpHeader *)header->next()) {
+    ESB::Error error = ESB_SUCCESS;
+    switch (filter(header->fieldName(), header->fieldValue())) {
+      case ES_HTTP_HEADER_COPY:
+        error = addHeader(header, allocator);
+        if (ESB_SUCCESS != error) {
+          return error;
+        }
+        break;
+      case ES_HTTP_HEADER_SKIP:
+        continue;
+      case ES_HTTP_HEADER_COPY_AND_STOP:
+        return addHeader(header, allocator);
+      case ES_HTTP_HEADER_SKIP_AND_STOP:
+        return ESB_SUCCESS;
+      case ES_HTTP_HEADER_ERROR:
+        return ESB_INVALID_FIELD;
+    }
+  }
+  return ESB_SUCCESS;
+}
+
 }  // namespace ES

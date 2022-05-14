@@ -42,8 +42,6 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
     return ESB_INVALID_STATE;
   }
 
-  // TODO validate headers
-
   HttpClientTransaction *clientTransaction = multiplexer.createClientTransaction();
 
   if (!clientTransaction) {
@@ -51,8 +49,24 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
     return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
+  // TODO filter out unwanted headers from the server request using HttpMessage::HeaderCopyFilter filter
+  ESB::Error error = clientTransaction->request().copy(&serverStream.request(), clientTransaction->allocator());
+  switch (error) {
+    case ESB_SUCCESS:
+      break;
+    case ESB_INVALID_FIELD:
+      multiplexer.destroyClientTransaction(clientTransaction);
+      ESB_LOG_WARNING_ERRNO(error, "[%s] Aborting client transaction due to bad server request",
+                            serverStream.logAddress());
+      return serverStream.sendEmptyResponse(400, "Bad Request");
+    default:
+      multiplexer.destroyClientTransaction(clientTransaction);
+      ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot populate client transaction", serverStream.logAddress());
+      return serverStream.sendEmptyResponse(500, "Internal Server Error");
+  }
+
   ESB::SocketAddress destination;
-  ESB::Error error = _router.route(serverStream, *clientTransaction, destination);
+  error = _router.route(serverStream, *clientTransaction, destination);
 
   if (ESB_SUCCESS != error) {
     switch (error) {
@@ -66,14 +80,6 @@ ESB::Error HttpRoutingProxyHandler::receiveRequestHeaders(HttpMultiplexer &multi
         ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot route request", serverStream.logAddress());
         return serverStream.sendEmptyResponse(500, "Internal Server Error");
     }
-  }
-
-  error = clientTransaction->request().copy(&serverStream.request(), clientTransaction->allocator());
-
-  if (ESB_SUCCESS != error) {
-    multiplexer.destroyClientTransaction(clientTransaction);
-    ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot populate client transaction", serverStream.logAddress());
-    return serverStream.sendEmptyResponse(500, "Internal Server Error");
   }
 
   // Pause the server transaction until we get the response from the client transaction
@@ -141,6 +147,7 @@ ESB::Error HttpRoutingProxyHandler::receiveResponseHeaders(HttpMultiplexer &mult
   ESB_LOG_DEBUG("[%s] received response, status=%d", clientStream.logAddress(), clientResponse.statusCode());
   ESB_LOG_DEBUG("[%s] server stream resumed", serverStream.logAddress());
 
+  // TODO filter out unwanted response headers from the origin using HttpMessage::HeaderCopyFilter
   switch (error = serverStream.sendResponse(clientResponse)) {
     case ESB_SUCCESS:
       // response has been fully sent, so prepare server stream for reuse

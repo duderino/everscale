@@ -20,6 +20,8 @@
 
 using namespace ES;
 
+void es_describe_error(es_http_error_t error, char *buffer, int size) { ESB::DescribeError(error, buffer, size); }
+
 const char *es_http_header_name(const es_http_header_t h) {
   const HttpHeader *header = (const HttpHeader *)h;
   return header ? (const char *)header->fieldName() : NULL;

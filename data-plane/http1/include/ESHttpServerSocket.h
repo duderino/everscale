@@ -129,7 +129,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   virtual bool secure() const;
 
   virtual ESB::Error sendEmptyResponse(int statusCode, const char *reasonPhrase);
-  virtual ESB::Error sendResponse(const HttpResponse &response);
+  virtual ESB::Error sendResponse(const HttpResponse &response,
+                                  HttpMessage::HeaderCopyFilter filter = HttpMessage::HeaderCopyAll);
 
   virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt64 bytesOffered, ESB::UInt64 *bytesConsumed);
   virtual ESB::Error requestBodyAvailable(ESB::UInt64 *bytesAvailable);

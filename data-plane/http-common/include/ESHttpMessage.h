@@ -39,6 +39,29 @@ class HttpMessage {
   ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName, const char *fieldValueFormat, ...)
       __attribute__((format(printf, 4, 5)));
 
+  typedef enum {
+    ES_HTTP_HEADER_COPY = 0,          /**< Copy the header */
+    ES_HTTP_HEADER_SKIP = 1,          /**< Skip the header */
+    ES_HTTP_HEADER_COPY_AND_STOP = 2, /**< Copy the header and stop processing more headers */
+    ES_HTTP_HEADER_SKIP_AND_STOP = 3, /**< Skip the header and stop processing more headers */
+    ES_HTTP_HEADER_ERROR = 4          /**< Send a 400 bad response */
+  } HeaderCopyResult;
+
+  typedef HeaderCopyResult (*HeaderCopyFilter)(const unsigned char *fieldName, const unsigned char *fieldValue);
+  static HeaderCopyResult HeaderCopyAll(const unsigned char *fieldName, const unsigned char *fieldValue);
+
+  /**
+   * Copy headers from another message into this one, potentially filtering out unwanted headers.
+   *
+   * @param headers The headers to copy
+   * @param allocator The allocator to use for memory for the copies
+   * @param filter An optional callback to filter out unwanted headers
+   * @return ESB_SUCCESS if successful, ESB_INVALID_FIELD if the header filter callback returns ES_HTTP_HEADER_ERROR,
+   * another error code otherwise.
+   */
+  ESB::Error copyHeaders(const ESB::EmbeddedList &headers, ESB::Allocator &allocator,
+                         HeaderCopyFilter filter = HeaderCopyAll);
+
   /**
    * Get the HTTP version.
    *

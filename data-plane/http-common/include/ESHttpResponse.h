@@ -20,7 +20,16 @@ class HttpResponse : public HttpMessage {
 
   void reset();
 
-  ESB::Error copy(const HttpResponse *other, ESB::Allocator &allocator);
+  /**
+   * Copy another response into this one, potentially filtering out unwanted headers.
+   *
+   * @param other The other response
+   * @param allocator The allocator to use for memory for the copies
+   * @param filter An optional callback to filter out unwanted headers
+   * @return ESB_SUCCESS if successful, ESB_INVALID_FIELD if the header filter callback returns ES_HTTP_HEADER_ERROR,
+   * another error code otherwise.
+   */
+  ESB::Error copy(const HttpResponse *other, ESB::Allocator &allocator, HeaderCopyFilter filter = HeaderCopyAll);
 
   inline void setStatusCode(int statusCode) { _statusCode = statusCode; }
 

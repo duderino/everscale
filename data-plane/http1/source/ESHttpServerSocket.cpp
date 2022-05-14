@@ -308,10 +308,10 @@ ESB::Error HttpServerSocket::sendEmptyResponse(int statusCode, const char *reaso
   return advanceStateMachine(_handler, SERVER_ADVANCE_SEND);
 }
 
-ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response) {
+ESB::Error HttpServerSocket::sendResponse(const HttpResponse &response, HttpMessage::HeaderCopyFilter filter) {
   ESB_LOG_DEBUG("[%s] sending response %d %s", _socket->name(), response.statusCode(), response.reasonPhrase());
 
-  ESB::Error error = _transaction->response().copy(&response, _transaction->allocator());
+  ESB::Error error = _transaction->response().copy(&response, _transaction->allocator(), filter);
   if (ESB_SUCCESS != error) {
     return error;
   }

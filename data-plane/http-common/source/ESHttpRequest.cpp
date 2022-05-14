@@ -18,7 +18,7 @@ void HttpRequest::reset() {
   _requestUri.reset();
 }
 
-ESB::Error HttpRequest::copy(const ES::HttpRequest *other, ESB::Allocator &allocator) {
+ESB::Error HttpRequest::copy(const ES::HttpRequest *other, ESB::Allocator &allocator, HeaderCopyFilter filter) {
   if (!other) {
     return ESB_NULL_POINTER;
   }
@@ -33,14 +33,7 @@ ESB::Error HttpRequest::copy(const ES::HttpRequest *other, ESB::Allocator &alloc
     return error;
   }
 
-  for (HttpHeader *header = (HttpHeader *)other->headers().first(); header; header = (HttpHeader *)header->next()) {
-    error = addHeader(header, allocator);
-    if (ESB_SUCCESS != error) {
-      return error;
-    }
-  }
-
-  return ESB_SUCCESS;
+  return copyHeaders(other->headers(), allocator, filter);
 }
 
 ESB::Error HttpRequest::parsePeerAddress(char *hostname, int size, ESB::UInt16 *port, bool *isSecure) const {

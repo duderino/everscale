@@ -5,9 +5,13 @@
 
 extern "C" {
 
-// TODO expose ESBError.h
+// Error
 
 typedef int es_http_error_t;
+void es_describe_error(es_http_error_t error, char *buffer, int size);
+
+// Allocator
+
 typedef struct es_allocator *es_allocator_t;
 
 // Header
