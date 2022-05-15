@@ -19,6 +19,7 @@ target_include_directories(origin PRIVATE
 
 target_include_directories(origin PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/../http-plugin/include"
         )
 
 add_executable(http-origin source/ESHttpOrigin.cpp)
@@ -27,6 +28,7 @@ target_include_directories(http-origin PRIVATE
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http-plugin/include"
         "${PROJECT_SOURCE_DIR}/../http-test-common/include"
         "${PROJECT_SOURCE_DIR}/../http1/include"
         "${PROJECT_SOURCE_DIR}/../multiplexers/include"

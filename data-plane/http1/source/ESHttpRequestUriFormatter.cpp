@@ -41,14 +41,14 @@ ESB::Error HttpRequestUriFormatter::format(ESB::Buffer *outputBuffer, const Http
     }
 
     switch (requestUri.type()) {
-      case HttpRequestUri::ES_URI_ASTERISK:
+      case HttpRequestUri::UriType::ES_URI_ASTERISK:
 
         HttpUtil::Start(&_state, outputBuffer, ES_URI_FORMATTING_ASTERISK);
 
         break;
 
-      case HttpRequestUri::ES_URI_HTTP:
-      case HttpRequestUri::ES_URI_HTTPS:
+      case HttpRequestUri::UriType::ES_URI_HTTP:
+      case HttpRequestUri::UriType::ES_URI_HTTPS:
 
         if (requestUri.host() && 0 != requestUri.host()[0]) {
           HttpUtil::Start(&_state, outputBuffer, ES_URI_FORMATTING_SCHEME);
@@ -58,7 +58,7 @@ ESB::Error HttpRequestUriFormatter::format(ESB::Buffer *outputBuffer, const Http
 
         break;
 
-      case HttpRequestUri::ES_URI_OTHER:
+      case HttpRequestUri::UriType::ES_URI_OTHER:
 
         HttpUtil::Start(&_state, outputBuffer, ES_URI_FORMATTING_NON_HTTP_URI);
 
@@ -270,28 +270,28 @@ ESB::Error HttpRequestUriFormatter::formatScheme(ESB::Buffer *outputBuffer, cons
   // scheme        = alpha *( alpha | digit | "+" | "-" | "." )
 
   assert(ES_URI_FORMATTING_SCHEME & _state);
-  assert(HttpRequestUri::ES_URI_ASTERISK != requestUri.type());
+  assert(HttpRequestUri::UriType::ES_URI_ASTERISK != requestUri.type());
 
   const char *p = 0;
 
   switch (requestUri.type()) {
-    case HttpRequestUri::ES_URI_ASTERISK:
+    case HttpRequestUri::UriType::ES_URI_ASTERISK:
 
       return HttpUtil::Rollback(outputBuffer, ESB_INVALID_STATE);
 
-    case HttpRequestUri::ES_URI_HTTP:
+    case HttpRequestUri::UriType::ES_URI_HTTP:
 
       p = "http://";
 
       break;
 
-    case HttpRequestUri::ES_URI_HTTPS:
+    case HttpRequestUri::UriType::ES_URI_HTTPS:
 
       p = "https://";
 
       break;
 
-    case HttpRequestUri::ES_URI_OTHER:
+    case HttpRequestUri::UriType::ES_URI_OTHER:
 
       return HttpUtil::Transition(&_state, outputBuffer, ES_URI_FORMATTING_SCHEME, ES_URI_FORMATTING_HOST);
 
@@ -321,7 +321,8 @@ ESB::Error HttpRequestUriFormatter::formatHost(ESB::Buffer *outputBuffer, const 
   assert(ES_URI_FORMATTING_HOST & _state);
   assert(requestUri.host());
   assert(0 != requestUri.host()[0]);
-  assert(HttpRequestUri::ES_URI_HTTP == requestUri.type() || HttpRequestUri::ES_URI_HTTPS == requestUri.type());
+  assert(HttpRequestUri::UriType::ES_URI_HTTP == requestUri.type() ||
+         HttpRequestUri::UriType::ES_URI_HTTPS == requestUri.type());
 
   for (const unsigned char *p = requestUri.host(); *p; ++p) {
     if (!outputBuffer->isWritable()) {
@@ -341,12 +342,13 @@ ESB::Error HttpRequestUriFormatter::formatPort(ESB::Buffer *outputBuffer, const 
   assert(requestUri.host());
   assert(0 != requestUri.host()[0]);
   assert(65536 > requestUri.port());
-  assert(HttpRequestUri::ES_URI_HTTP == requestUri.type() || HttpRequestUri::ES_URI_HTTPS == requestUri.type());
+  assert(HttpRequestUri::UriType::ES_URI_HTTP == requestUri.type() ||
+         HttpRequestUri::UriType::ES_URI_HTTPS == requestUri.type());
 
   ESB::Int32 port = requestUri.port();
 
   switch (requestUri.type()) {
-    case HttpRequestUri::ES_URI_HTTP:
+    case HttpRequestUri::UriType::ES_URI_HTTP:
 
       if (0 > port || 80 == port) {
         return HttpUtil::Transition(&_state, outputBuffer, ES_URI_FORMATTING_PORT, ES_URI_FORMATTING_ABS_PATH);
@@ -354,7 +356,7 @@ ESB::Error HttpRequestUriFormatter::formatPort(ESB::Buffer *outputBuffer, const 
 
       break;
 
-    case HttpRequestUri::ES_URI_HTTPS:
+    case HttpRequestUri::UriType::ES_URI_HTTPS:
 
       if (0 > port || 443 == port) {
         return HttpUtil::Transition(&_state, outputBuffer, ES_URI_FORMATTING_PORT, ES_URI_FORMATTING_ABS_PATH);
@@ -398,7 +400,7 @@ ESB::Error HttpRequestUriFormatter::formatNonHttpUri(ESB::Buffer *outputBuffer, 
   // "+" | "$" | ","
 
   assert(ES_URI_FORMATTING_NON_HTTP_URI & _state);
-  assert(HttpRequestUri::ES_URI_OTHER == requestUri.type());
+  assert(HttpRequestUri::UriType::ES_URI_OTHER == requestUri.type());
 
   if (0 == requestUri.other() || 0 == requestUri.other()[0]) {
     return HttpUtil::Rollback(outputBuffer, ESB_INVALID_ARGUMENT);

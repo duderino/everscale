@@ -1,5 +1,5 @@
 #ifndef ES_HTTP_PLUGIN_H
-#include <es_http_plugin.h>
+#include <ESHttpPlugin.h>
 #endif
 
 #ifndef ESB_ERROR_H
@@ -52,6 +52,27 @@ const es_http_header_t es_http_header_list_last(const es_http_header_list_t h) {
   return list ? (const es_http_header_t)list->last() : NULL;
 }
 
+es_http_header_filter_result_t es_http_header_filter_copy_all(const char *name, const char *value, void *context) {
+  return ES_HEADER_COPY;
+}
+
+es_http_error_t es_http_request_copy(const es_http_request_t s, es_http_request_t d, es_allocator_t a,
+                                     es_http_header_filter filter, void *context) {
+  if (!s || !d || !a) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (!filter) {
+    filter = es_http_header_filter_copy_all;
+  }
+
+  const HttpRequest *source = (const HttpRequest *)s;
+  HttpRequest *dest = (HttpRequest *)d;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  return dest->copy(source, *allocator, filter, context);
+}
+
 const es_http_header_list_t es_http_request_headers(const es_http_request_t r) {
   const HttpRequest *request = (const HttpRequest *)r;
   return request ? (const es_http_header_list_t)&request->headers() : NULL;
@@ -75,10 +96,10 @@ es_http_error_t es_http_request_set_uri_type(es_http_request_t r, es_http_reques
   HttpRequestUri::UriType type = (HttpRequestUri::UriType)t;
 
   switch (type) {
-    case HttpRequestUri::ES_URI_ASTERISK:
-    case HttpRequestUri::ES_URI_HTTP:
-    case HttpRequestUri::ES_URI_HTTPS:
-    case HttpRequestUri::ES_URI_OTHER:
+    case HttpRequestUri::UriType::ES_URI_ASTERISK:
+    case HttpRequestUri::UriType::ES_URI_HTTP:
+    case HttpRequestUri::UriType::ES_URI_HTTPS:
+    case HttpRequestUri::UriType::ES_URI_OTHER:
       break;
     default:
       return ESB_INVALID_ARGUMENT;
@@ -91,7 +112,7 @@ es_http_error_t es_http_request_set_uri_type(es_http_request_t r, es_http_reques
 
 es_http_request_uri_t es_http_request_uri_type(const es_http_request_t r) {
   const HttpRequest *request = (const HttpRequest *)r;
-  return request ? (const es_http_request_uri_t)request->requestUri().type() : ES_HTTP_REQUEST_URI_OTHER;
+  return request ? (const es_http_request_uri_t)request->requestUri().type() : ES_URI_OTHER;
 }
 
 es_http_error_t es_http_request_set_uri_path(es_http_request_t r, es_allocator_t a, const char *path) {
@@ -207,7 +228,7 @@ es_http_error_t es_http_request_set_uri_other(es_http_request_t r, es_allocator_
 
   HttpRequest *request = (HttpRequest *)r;
 
-  if (HttpRequestUri::ES_URI_OTHER != request->requestUri().type()) {
+  if (HttpRequestUri::UriType::ES_URI_OTHER != request->requestUri().type()) {
     return ESB_INVALID_STATE;
   }
 

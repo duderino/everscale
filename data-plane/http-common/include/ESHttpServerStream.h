@@ -38,7 +38,8 @@ class HttpServerStream : public HttpStream {
    * error code otherwise.
    */
   virtual ESB::Error sendResponse(const HttpResponse &response,
-                                  HttpMessage::HeaderCopyFilter filter = HttpMessage::HeaderCopyAll) = 0;
+                                  es_http_header_filter filter = HttpMessage::DefaultHeaderFilter,
+                                  void *context = NULL) = 0;
 
   /**
    * Buffer and occasionally flush a request body chunk to the underlying

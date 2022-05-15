@@ -1,5 +1,5 @@
 #ifndef ES_HTTP_PLUGIN_H
-#include <es_http_plugin.h>
+#include <ESHttpPlugin.h>
 #endif
 
 #include <gtest/gtest.h>
@@ -103,6 +103,83 @@ TEST(HttpPlugin, RequestHeadersReverseIterate) {
   }
 }
 
+TEST(HttpPlugin, RequestCopy) {
+  HttpRequest s;
+  HttpRequest d;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_request_t src = (es_http_request_t)&s;
+    es_http_request_t dest = (es_http_request_t)&d;
+    es_allocator_t allocator = (es_allocator_t)&a;
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name1", "value1"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name2", "value2"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name3", "value3"));
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_copy(src, dest, allocator, es_http_header_filter_copy_all, NULL));
+
+    es_http_header_list_t headers = es_http_request_headers(dest);
+
+    es_http_header_t h3 = es_http_header_list_last(headers);
+    ASSERT_TRUE(h3);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h3), "name3"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h3), "value3"));
+
+    es_http_header_t h2 = es_http_header_previous(h3);
+    ASSERT_TRUE(h2);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h2), "name2"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h2), "value2"));
+
+    es_http_header_t h1 = es_http_header_previous(h2);
+    ASSERT_TRUE(h1);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h1), "name1"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h1), "value1"));
+
+    es_http_header_t h0 = es_http_header_previous(h1);
+    ASSERT_FALSE(h0);
+  }
+}
+
+static es_http_header_filter_result_t es_http_header_filter_copy_even(const char *name, const char *value,
+                                                                      void *context) {
+  int *count = (int *)context;
+  (*count)++;
+
+  return *count % 2 ? ES_HEADER_SKIP : ES_HEADER_COPY;
+}
+
+TEST(HttpPlugin, RequestFilteredCopy) {
+  HttpRequest s;
+  HttpRequest d;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_request_t src = (es_http_request_t)&s;
+    es_http_request_t dest = (es_http_request_t)&d;
+    es_allocator_t allocator = (es_allocator_t)&a;
+    int count = 0;
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name1", "value1"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name2", "value2"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name3", "value3"));
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_copy(src, dest, allocator, es_http_header_filter_copy_even, &count));
+
+    es_http_header_list_t headers = es_http_request_headers(dest);
+
+    es_http_header_t h2 = es_http_header_list_last(headers);
+    ASSERT_TRUE(h2);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h2), "name2"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h2), "value2"));
+
+    es_http_header_t h1 = es_http_header_previous(h2);
+    ASSERT_FALSE(h1);
+
+    ASSERT_EQ(3, count);
+  }
+}
+
 TEST(HttpPlugin, RequestUriType) {
   HttpRequest r;
 
@@ -110,18 +187,18 @@ TEST(HttpPlugin, RequestUriType) {
     es_http_request_t request = (es_http_request_t)&r;
 
     // HTTP is the default
-    ASSERT_EQ(ES_HTTP_REQUEST_URI_HTTP, es_http_request_uri_type(request));
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_REQUEST_URI_HTTPS));
-    ASSERT_EQ(ES_HTTP_REQUEST_URI_HTTPS, es_http_request_uri_type(request));
+    ASSERT_EQ(ES_URI_HTTP, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_HTTPS));
+    ASSERT_EQ(ES_URI_HTTPS, es_http_request_uri_type(request));
 
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_REQUEST_URI_ASTERISK));
-    ASSERT_EQ(ES_HTTP_REQUEST_URI_ASTERISK, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_ASTERISK));
+    ASSERT_EQ(ES_URI_ASTERISK, es_http_request_uri_type(request));
 
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_REQUEST_URI_OTHER));
-    ASSERT_EQ(ES_HTTP_REQUEST_URI_OTHER, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_OTHER));
+    ASSERT_EQ(ES_URI_OTHER, es_http_request_uri_type(request));
 
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_REQUEST_URI_HTTP));
-    ASSERT_EQ(ES_HTTP_REQUEST_URI_HTTP, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_HTTP));
+    ASSERT_EQ(ES_URI_HTTP, es_http_request_uri_type(request));
 
     ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_request_set_uri_type(request, (es_http_request_uri_t)42));
   }
@@ -212,7 +289,7 @@ TEST(HttpPlugin, RequestUriOther) {
 
     ASSERT_FALSE(es_http_request_uri_other(request));
     ASSERT_EQ(ESB_INVALID_STATE, es_http_request_set_uri_other(request, allocator, other));
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_REQUEST_URI_OTHER));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_OTHER));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_other(request, allocator, other));
     ASSERT_EQ(0, strcmp(es_http_request_uri_other(request), other));
   }

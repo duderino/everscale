@@ -42,21 +42,23 @@ add_library(http1 STATIC ${SOURCE_FILES})
 
 target_include_directories(http1 PRIVATE
         "${PROJECT_SOURCE_DIR}/source"
-        "${PROJECT_SOURCE_DIR}/../http-common/include"
+		"${PROJECT_SOURCE_DIR}/../http-common/include"
         "${PROJECT_SOURCE_DIR}/../../base/include"
         )
 
 target_include_directories(http1 PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
-        )
+		"${PROJECT_SOURCE_DIR}/../http-plugin/include"
+		)
 
 # Unit tests
 
 set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/source"
         "${PROJECT_SOURCE_DIR}/tests"
-        "${PROJECT_SOURCE_DIR}/../http-common/include"
-        "${PROJECT_SOURCE_DIR}/../../base/include"
+		"${PROJECT_SOURCE_DIR}/../http-common/include"
+		"${PROJECT_SOURCE_DIR}/../http-plugin/include"
+		"${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../../unit-tf/include"
         "${PROJECT_SOURCE_DIR}/include"
         )

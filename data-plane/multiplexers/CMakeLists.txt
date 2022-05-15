@@ -19,5 +19,6 @@ target_include_directories(multiplexers PRIVATE
 
 target_include_directories(multiplexers PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/../http-plugin/include"
         )
 

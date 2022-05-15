@@ -31,7 +31,7 @@ set(TEST_INCS
 
 set(TEST_LIBS -pthread http-plugin http1 http-common config base)
 
-add_gtest(http-plugin-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/PluginTest.cpp)
+add_gtest(http-plugin-gtest "${TEST_INCS}" "${TEST_LIBS}" ${PROJECT_SOURCE_DIR}/tests 300 tests/ESPluginTest.cpp)
 
 # For global code coverage report
 

@@ -13,19 +13,21 @@ add_library(config STATIC ${SOURCE_FILES})
 
 target_include_directories(config PRIVATE
         "${PROJECT_SOURCE_DIR}/source"
-        "${PROJECT_SOURCE_DIR}/../../base/include"
+		"${PROJECT_SOURCE_DIR}/../../base/include"
         )
 
 target_include_directories(config PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
-        )
+		"${PROJECT_SOURCE_DIR}/../http-plugin/include"
+		)
 
 # Unit tests
 
 set(TEST_INCS
         "${PROJECT_SOURCE_DIR}/source"
         "${PROJECT_SOURCE_DIR}/tests"
-        "${PROJECT_SOURCE_DIR}/../../base/include"
+		"${PROJECT_SOURCE_DIR}/../http-plugin/include"
+		"${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../../unit-tf/include"
         "${CMAKE_SOURCE_DIR}/data-plane/config/include"
         )

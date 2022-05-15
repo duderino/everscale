@@ -20,6 +20,7 @@ target_include_directories(loadgen PRIVATE
 
 target_include_directories(loadgen PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/../http-plugin/include"
         )
 
 add_executable(http-loadgen source/ESHttpLoadgen.cpp)
@@ -28,6 +29,7 @@ target_include_directories(http-loadgen PRIVATE
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/../../base/include"
         "${PROJECT_SOURCE_DIR}/../http-common/include"
+        "${PROJECT_SOURCE_DIR}/../http-plugin/include"
         "${PROJECT_SOURCE_DIR}/../http-test-common/include"
         "${PROJECT_SOURCE_DIR}/../http1/include"
         "${PROJECT_SOURCE_DIR}/../multiplexers/include"

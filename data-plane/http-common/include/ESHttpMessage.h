@@ -9,6 +9,10 @@
 #include <ESHttpHeader.h>
 #endif
 
+#ifndef ES_HTTP_PLUGIN_H
+#include <ESHttpPlugin.h>
+#endif
+
 namespace ES {
 
 #define ES_HTTP_MESSAGE_HAS_BODY (1 << 0)
@@ -39,17 +43,7 @@ class HttpMessage {
   ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName, const char *fieldValueFormat, ...)
       __attribute__((format(printf, 4, 5)));
 
-  typedef enum {
-    ES_HTTP_HEADER_COPY = 0,          /**< Copy the header */
-    ES_HTTP_HEADER_SKIP = 1,          /**< Skip the header */
-    ES_HTTP_HEADER_COPY_AND_STOP = 2, /**< Copy the header and stop processing more headers */
-    ES_HTTP_HEADER_SKIP_AND_STOP = 3, /**< Skip the header and stop processing more headers */
-    ES_HTTP_HEADER_ERROR = 4          /**< Send a 400 bad response */
-  } HeaderCopyResult;
-
-  typedef HeaderCopyResult (*HeaderCopyFilter)(const unsigned char *fieldName, const unsigned char *fieldValue,
-                                               void *context);
-  static HeaderCopyResult HeaderCopyAll(const unsigned char *fieldName, const unsigned char *fieldValue, void *context);
+  static es_http_header_filter_result_t DefaultHeaderFilter(const char *name, const char *value, void *context);
 
   /**
    * Copy headers from another message into this one, potentially filtering out unwanted headers.
@@ -61,7 +55,7 @@ class HttpMessage {
    * another error code otherwise.
    */
   ESB::Error copyHeaders(const ESB::EmbeddedList &headers, ESB::Allocator &allocator,
-                         HeaderCopyFilter filter = HeaderCopyAll, void *context = NULL);
+                         es_http_header_filter filter = DefaultHeaderFilter, void *context = NULL);
 
   /**
    * Get the HTTP version.

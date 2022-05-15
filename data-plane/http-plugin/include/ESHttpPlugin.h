@@ -28,13 +28,24 @@ typedef struct es_http_header_list *es_http_header_list_t;
 const es_http_header_t es_http_header_list_first(const es_http_header_list_t headers);
 const es_http_header_t es_http_header_list_last(const es_http_header_list_t headers);
 
+typedef enum {
+  ES_HEADER_COPY = 0,          /**< Copy the header */
+  ES_HEADER_SKIP = 1,          /**< Skip the header */
+  ES_HEADER_COPY_AND_STOP = 2, /**< Copy the header and stop processing more headers */
+  ES_HEADER_SKIP_AND_STOP = 3, /**< Skip the header and stop processing more headers */
+  ES_HEADER_ERROR = 4          /**< Send a 400 bad response */
+} es_http_header_filter_result_t;
+
+typedef es_http_header_filter_result_t (*es_http_header_filter)(const char *name, const char *value, void *context);
+es_http_header_filter_result_t es_http_header_filter_copy_all(const char *name, const char *value, void *context);
+
 // Request
 
 typedef enum {
-  ES_HTTP_REQUEST_URI_ASTERISK = 0, /**< OPTIONS * HTTP/1.1 */
-  ES_HTTP_REQUEST_URI_HTTP = 1,     /**< GET http://www.yahoo.com/ HTTP/1.1 */
-  ES_HTTP_REQUEST_URI_HTTPS = 2,    /**< POST https://www.yahoo.com/ HTTP/1.1 */
-  ES_HTTP_REQUEST_URI_OTHER = 3     /**< POST foo://opaque */
+  ES_URI_ASTERISK = 0, /**< OPTIONS * HTTP/1.1 */
+  ES_URI_HTTP = 1,     /**< GET http://www.yahoo.com/ HTTP/1.1 */
+  ES_URI_HTTPS = 2,    /**< POST https://www.yahoo.com/ HTTP/1.1 */
+  ES_URI_OTHER = 3     /**< POST foo://opaque */
 } es_http_request_uri_t;
 
 typedef struct es_http_request *es_http_request_t;
@@ -54,6 +65,9 @@ es_http_error_t es_http_request_set_uri_host(es_http_request_t request, es_alloc
 const char *es_http_request_uri_host(const es_http_request_t request);
 es_http_error_t es_http_request_set_uri_port(es_http_request_t request, int32_t port);
 int32_t es_http_request_uri_port(const es_http_request_t request);
+
+es_http_error_t es_http_request_copy(const es_http_request_t source, es_http_request_t dest, es_allocator_t allocator,
+                                     es_http_header_filter filter, void *context);
 
 /**
  * For URIs of type ES_HTTP_REQUEST_URI_OTHER, set the complete URI string.

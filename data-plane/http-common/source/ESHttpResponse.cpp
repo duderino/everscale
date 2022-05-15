@@ -14,7 +14,7 @@ void HttpResponse::reset() {
   _reasonPhrase = 0;
 }
 
-ESB::Error HttpResponse::copy(const HttpResponse *other, ESB::Allocator &allocator, HeaderCopyFilter filter,
+ESB::Error HttpResponse::copy(const HttpResponse *other, ESB::Allocator &allocator, es_http_header_filter filter,
                               void *context) {
   if (!other) {
     return ESB_NULL_POINTER;

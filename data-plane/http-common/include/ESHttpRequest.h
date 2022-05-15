@@ -31,8 +31,8 @@ class HttpRequest : public HttpMessage {
    * @return ESB_SUCCESS if successful, ESB_INVALID_FIELD if the header filter callback returns ES_HTTP_HEADER_ERROR,
    * another error code otherwise.
    */
-  ESB::Error copy(const HttpRequest *other, ESB::Allocator &allocator, HeaderCopyFilter filter = HeaderCopyAll,
-                  void *context = NULL);
+  ESB::Error copy(const HttpRequest *other, ESB::Allocator &allocator,
+                  es_http_header_filter filter = DefaultHeaderFilter, void *context = NULL);
 
   inline const unsigned char *method() const { return _method; }
 

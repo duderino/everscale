@@ -5,6 +5,10 @@
 #include <ESBCommon.h>
 #endif
 
+#ifndef ES_HTTP_PLUGIN_H
+#include <ESHttpPlugin.h>
+#endif
+
 namespace ES {
 
 /**
@@ -15,12 +19,7 @@ namespace ES {
  */
 class HttpRequestUri {
  public:
-  typedef enum {
-    ES_URI_ASTERISK = 0, /**< OPTIONS * HTTP/1.1 */
-    ES_URI_HTTP = 1,     /**< GET http://www.yahoo.com/ HTTP/1.1 */
-    ES_URI_HTTPS = 2,    /**< POST https://www.yahoo.com/ HTTP/1.1 */
-    ES_URI_OTHER = 3     /**< POST foo://opaque */
-  } UriType;
+  typedef es_http_request_uri_t UriType;
 
   HttpRequestUri(UriType type);
 

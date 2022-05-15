@@ -40,6 +40,7 @@ add_library(proxy STATIC ${SOURCE_FILES})
 target_include_directories(proxy PRIVATE ${INCS})
 target_include_directories(proxy PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/../http-plugin/include"
         )
 
 add_executable(http-proxy source/ESHttpProxyMain.cpp)

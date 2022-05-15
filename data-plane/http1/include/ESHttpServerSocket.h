@@ -130,7 +130,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
 
   virtual ESB::Error sendEmptyResponse(int statusCode, const char *reasonPhrase);
   virtual ESB::Error sendResponse(const HttpResponse &response,
-                                  HttpMessage::HeaderCopyFilter filter = HttpMessage::HeaderCopyAll);
+                                  es_http_header_filter filter = HttpMessage::DefaultHeaderFilter,
+                                  void *context = NULL);
 
   virtual ESB::Error sendResponseBody(unsigned const char *chunk, ESB::UInt64 bytesOffered, ESB::UInt64 *bytesConsumed);
   virtual ESB::Error requestBodyAvailable(ESB::UInt64 *bytesAvailable);

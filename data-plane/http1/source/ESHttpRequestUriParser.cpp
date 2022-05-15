@@ -133,7 +133,7 @@ ESB::Error HttpRequestUriParser::parseAsterisk(ESB::Buffer *inputBuffer, HttpReq
     return ES_HTTP_BAD_REQUEST_URI_ASTERISK;
   }
 
-  requestUri.setType(HttpRequestUri::ES_URI_ASTERISK);
+  requestUri.setType(HttpRequestUri::UriType::ES_URI_ASTERISK);
 
   _state &= ~ES_URI_PARSING_ASTERISK;
   _state |= ES_URI_PARSE_COMPLETE;
@@ -476,7 +476,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer, HttpReque
         if (_workingBuffer->match(HTTP)) {
           _state |= ES_URI_SKIPPING_FWD_SLASHES;
 
-          requestUri.setType(HttpRequestUri::ES_URI_HTTP);
+          requestUri.setType(HttpRequestUri::UriType::ES_URI_HTTP);
 
           _workingBuffer->clear();
 
@@ -484,7 +484,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer, HttpReque
         } else if (_workingBuffer->match(HTTPS)) {
           _state |= ES_URI_SKIPPING_FWD_SLASHES;
 
-          requestUri.setType(HttpRequestUri::ES_URI_HTTPS);
+          requestUri.setType(HttpRequestUri::UriType::ES_URI_HTTPS);
 
           _workingBuffer->clear();
 
@@ -492,7 +492,7 @@ ESB::Error HttpRequestUriParser::parseScheme(ESB::Buffer *inputBuffer, HttpReque
         } else {
           _state |= ES_URI_PARSING_NON_HTTP_URI;
 
-          requestUri.setType(HttpRequestUri::ES_URI_OTHER);
+          requestUri.setType(HttpRequestUri::UriType::ES_URI_OTHER);
 
           _workingBuffer->putNext(':');
 

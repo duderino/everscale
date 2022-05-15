@@ -69,33 +69,32 @@ ESB::Error HttpMessage::addHeader(ESB::Allocator &allocator, const char *fieldNa
   return addHeader(fieldName, buffer, allocator);
 }
 
-HttpMessage::HeaderCopyResult HttpMessage::HeaderCopyAll(const unsigned char *fieldName,
-                                                         const unsigned char *fieldValue, void *context) {
-  return HttpMessage::ES_HTTP_HEADER_COPY;
-}
-
 ESB::Error HttpMessage::copyHeaders(const ESB::EmbeddedList &headers, ESB::Allocator &allocator,
-                                    HttpMessage::HeaderCopyFilter filter, void *context) {
+                                    es_http_header_filter filter, void *context) {
   for (HttpHeader *header = (HttpHeader *)headers.first(); header; header = (HttpHeader *)header->next()) {
     ESB::Error error = ESB_SUCCESS;
-    switch (filter(header->fieldName(), header->fieldValue(), context)) {
-      case ES_HTTP_HEADER_COPY:
+    switch (filter((const char *)header->fieldName(), (const char *)header->fieldValue(), context)) {
+      case ES_HEADER_COPY:
         error = addHeader(header, allocator);
         if (ESB_SUCCESS != error) {
           return error;
         }
         break;
-      case ES_HTTP_HEADER_SKIP:
+      case ES_HEADER_SKIP:
         continue;
-      case ES_HTTP_HEADER_COPY_AND_STOP:
+      case ES_HEADER_COPY_AND_STOP:
         return addHeader(header, allocator);
-      case ES_HTTP_HEADER_SKIP_AND_STOP:
+      case ES_HEADER_SKIP_AND_STOP:
         return ESB_SUCCESS;
-      case ES_HTTP_HEADER_ERROR:
+      case ES_HEADER_ERROR:
         return ESB_INVALID_FIELD;
     }
   }
   return ESB_SUCCESS;
+}
+
+es_http_header_filter_result_t HttpMessage::DefaultHeaderFilter(const char *name, const char *value, void *context) {
+  return ES_HEADER_COPY;
 }
 
 }  // namespace ES
