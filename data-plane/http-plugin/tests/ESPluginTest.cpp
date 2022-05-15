@@ -41,7 +41,7 @@ TEST(HttpPlugin, RequestHeadersForwardIterate) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(request, allocator, "name1", "value1"));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(request, allocator, "name2", "value2"));
@@ -75,7 +75,7 @@ TEST(HttpPlugin, RequestHeadersReverseIterate) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(request, allocator, "name1", "value1"));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(request, allocator, "name2", "value2"));
@@ -111,7 +111,7 @@ TEST(HttpPlugin, RequestCopy) {
   {
     es_http_request_t src = (es_http_request_t)&s;
     es_http_request_t dest = (es_http_request_t)&d;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name1", "value1"));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name2", "value2"));
@@ -141,12 +141,11 @@ TEST(HttpPlugin, RequestCopy) {
   }
 }
 
-static es_http_header_filter_result_t es_http_header_filter_copy_even(const char *name, const char *value,
-                                                                      void *context) {
+static es_http_filter_result_t es_http_header_filter_copy_even(const char *name, const char *value, void *context) {
   int *count = (int *)context;
   (*count)++;
 
-  return *count % 2 ? ES_HEADER_SKIP : ES_HEADER_COPY;
+  return *count % 2 ? ES_HTTP_FILTER_SKIP : ES_HTTP_FILTER_COPY;
 }
 
 TEST(HttpPlugin, RequestFilteredCopy) {
@@ -157,7 +156,7 @@ TEST(HttpPlugin, RequestFilteredCopy) {
   {
     es_http_request_t src = (es_http_request_t)&s;
     es_http_request_t dest = (es_http_request_t)&d;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
     int count = 0;
 
     ASSERT_EQ(ESB_SUCCESS, es_http_request_add_header(src, allocator, "name1", "value1"));
@@ -187,18 +186,18 @@ TEST(HttpPlugin, RequestUriType) {
     es_http_request_t request = (es_http_request_t)&r;
 
     // HTTP is the default
-    ASSERT_EQ(ES_URI_HTTP, es_http_request_uri_type(request));
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_HTTPS));
-    ASSERT_EQ(ES_URI_HTTPS, es_http_request_uri_type(request));
+    ASSERT_EQ(ES_HTTP_URI_HTTP, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_URI_HTTPS));
+    ASSERT_EQ(ES_HTTP_URI_HTTPS, es_http_request_uri_type(request));
 
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_ASTERISK));
-    ASSERT_EQ(ES_URI_ASTERISK, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_URI_ASTERISK));
+    ASSERT_EQ(ES_HTTP_URI_ASTERISK, es_http_request_uri_type(request));
 
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_OTHER));
-    ASSERT_EQ(ES_URI_OTHER, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_URI_OTHER));
+    ASSERT_EQ(ES_HTTP_URI_OTHER, es_http_request_uri_type(request));
 
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_HTTP));
-    ASSERT_EQ(ES_URI_HTTP, es_http_request_uri_type(request));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_URI_HTTP));
+    ASSERT_EQ(ES_HTTP_URI_HTTP, es_http_request_uri_type(request));
 
     ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_request_set_uri_type(request, (es_http_request_uri_t)42));
   }
@@ -210,7 +209,7 @@ TEST(HttpPlugin, RequestUriPath) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_FALSE(es_http_request_uri_path(request));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_path(request, allocator, "/foo/bar/baz"));
@@ -224,7 +223,7 @@ TEST(HttpPlugin, RequestUriQuery) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_FALSE(es_http_request_uri_query(request));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_query(request, allocator, "a=1&b=2&c=3"));
@@ -238,7 +237,7 @@ TEST(HttpPlugin, RequestUriFragment) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_FALSE(es_http_request_uri_fragment(request));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_fragment(request, allocator, "anchor"));
@@ -252,7 +251,7 @@ TEST(HttpPlugin, RequestUriHost) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_FALSE(es_http_request_uri_host(request));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_host(request, allocator, "example.com"));
@@ -285,11 +284,11 @@ TEST(HttpPlugin, RequestUriOther) {
 
   {
     es_http_request_t request = (es_http_request_t)&r;
-    es_allocator_t allocator = (es_allocator_t)&a;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
 
     ASSERT_FALSE(es_http_request_uri_other(request));
     ASSERT_EQ(ESB_INVALID_STATE, es_http_request_set_uri_other(request, allocator, other));
-    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_URI_OTHER));
+    ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_URI_OTHER));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_other(request, allocator, other));
     ASSERT_EQ(0, strcmp(es_http_request_uri_other(request), other));
   }

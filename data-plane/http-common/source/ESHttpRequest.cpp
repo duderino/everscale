@@ -78,7 +78,7 @@ ESB::Error HttpRequest::parsePeerAddress(char *hostname, int size, ESB::UInt16 *
    *   exact resource is being requested.
    */
 
-  *isSecure = HttpRequestUri::UriType::ES_URI_HTTPS == _requestUri.type();
+  *isSecure = HttpRequestUri::UriType::ES_HTTP_URI_HTTPS == _requestUri.type();
 
   if (_requestUri.host()) {
     int n = strlen((const char *)_requestUri.host());

@@ -600,11 +600,11 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
     int minor = _transaction->request().httpVersion() % 100 / 10;
 
     switch (_transaction->request().requestUri().type()) {
-      case HttpRequestUri::UriType::ES_URI_ASTERISK:
+      case HttpRequestUri::UriType::ES_HTTP_URI_ASTERISK:
         ESB_LOG_DEBUG("[%s] request line: %s * HTTP/%d.%d", _socket->name(), method, major, minor);
         break;
-      case HttpRequestUri::UriType::ES_URI_HTTP:
-      case HttpRequestUri::UriType::ES_URI_HTTPS:
+      case HttpRequestUri::UriType::ES_HTTP_URI_HTTP:
+      case HttpRequestUri::UriType::ES_HTTP_URI_HTTPS:
         ESB_LOG_DEBUG("[%s] request line: %s %s//%s:%d%s?%s#%s HTTP/%d.%d", _socket->name(), method,
                       _transaction->request().requestUri().typeString(),
                       ESB_SAFE_STR(_transaction->request().requestUri().host()),
@@ -613,7 +613,7 @@ ESB::Error HttpServerSocket::stateReceiveRequestHeaders() {
                       ESB_SAFE_STR(_transaction->request().requestUri().query()),
                       ESB_SAFE_STR(_transaction->request().requestUri().fragment()), major, minor);
         break;
-      case HttpRequestUri::UriType::ES_URI_OTHER:
+      case HttpRequestUri::UriType::ES_HTTP_URI_OTHER:
         ESB_LOG_DEBUG("[%s] request line: %s %s HTTP/%d.%d", _socket->name(), method,
                       ESB_SAFE_STR(_transaction->request().requestUri().other()), major, minor);
         break;

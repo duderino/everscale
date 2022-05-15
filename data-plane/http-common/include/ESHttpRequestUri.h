@@ -40,13 +40,13 @@ class HttpRequestUri {
 
   inline const char *typeString() const {
     switch (_type) {
-      case ES_URI_ASTERISK:
+      case ES_HTTP_URI_ASTERISK:
         return "*";
-      case ES_URI_HTTP:
+      case ES_HTTP_URI_HTTP:
         return "http";
-      case ES_URI_HTTPS:
+      case ES_HTTP_URI_HTTPS:
         return "https";
-      case ES_URI_OTHER:
+      case ES_HTTP_URI_OTHER:
       default:
         return "other";
     }

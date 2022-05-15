@@ -43,7 +43,7 @@ class HttpMessage {
   ESB::Error addHeader(ESB::Allocator &allocator, const char *fieldName, const char *fieldValueFormat, ...)
       __attribute__((format(printf, 4, 5)));
 
-  static es_http_header_filter_result_t DefaultHeaderFilter(const char *name, const char *value, void *context);
+  static es_http_filter_result_t DefaultHeaderFilter(const char *name, const char *value, void *context);
 
   /**
    * Copy headers from another message into this one, potentially filtering out unwanted headers.

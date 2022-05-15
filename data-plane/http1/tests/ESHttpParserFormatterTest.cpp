@@ -104,7 +104,7 @@ TEST_F(ParserFormatterTest, AsteriskRequest) {
 
   ESB::Error error = parseRequest(_inputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_ASTERISK, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_ASTERISK, request.requestUri().type());
   EXPECT_EQ(0, strcmp("OPTIONS", (const char *)request.method()));
   expectHeader(request, "host", "vip-aws.back.den.p4pnet.net");
   expectHeader(request, "connection", "close");
@@ -116,7 +116,7 @@ TEST_F(ParserFormatterTest, AsteriskRequest) {
   _requestParser.reset();
   error = parseRequest(_outputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_ASTERISK, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_ASTERISK, request.requestUri().type());
   EXPECT_EQ(0, strcmp("OPTIONS", (const char *)request.method()));
   expectHeader(request, "host", "vip-aws.back.den.p4pnet.net");
   expectHeader(request, "connection", "close");
@@ -132,7 +132,7 @@ TEST_F(ParserFormatterTest, ComplexRequestUri) {
   ESB::Error error = parseRequest(_inputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().host(), "vip-wsmt-cp.back.sc.p4pnet.net"));
   EXPECT_EQ(7005, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Router/wsdl"));
@@ -155,7 +155,7 @@ TEST_F(ParserFormatterTest, ComplexRequestUri) {
   error = parseRequest(_outputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().host(), "vip-wsmt-cp.back.sc.p4pnet.net"));
   EXPECT_EQ(7005, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Router/wsdl"));
@@ -182,7 +182,7 @@ TEST_F(ParserFormatterTest, Http10) {
   ESB::Error error = parseRequest(_inputFile, request, body1);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("POST", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/autoreview/services/CheckService"));
@@ -201,7 +201,7 @@ TEST_F(ParserFormatterTest, Http10) {
   error = parseRequest(_outputFile, request, body2);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("POST", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/autoreview/services/CheckService"));
@@ -263,7 +263,7 @@ TEST_F(ParserFormatterTest, HexEncoding) {
   ESB::Error error = parseRequest(_inputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Research/V1"));
@@ -282,7 +282,7 @@ TEST_F(ParserFormatterTest, HexEncoding) {
   error = parseRequest(_outputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Research/V1"));
@@ -336,7 +336,7 @@ TEST_F(ParserFormatterTest, NoBody) {
   ESB::Error error = parseRequest(_inputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Research/V1"));
@@ -352,7 +352,7 @@ TEST_F(ParserFormatterTest, NoBody) {
   error = parseRequest(_outputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Research/V1"));
@@ -372,7 +372,7 @@ TEST_F(ParserFormatterTest, SIP) {
   ESB::Error error = parseRequest(_inputFile, request, body1);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("INVITE", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_OTHER, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_OTHER, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(NULL, request.requestUri().absPath());
@@ -394,7 +394,7 @@ TEST_F(ParserFormatterTest, SIP) {
   error = parseRequest(_outputFile, request, body2);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("INVITE", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_OTHER, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_OTHER, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(NULL, request.requestUri().absPath());
@@ -423,7 +423,7 @@ TEST_F(ParserFormatterTest, Soap) {
   ESB::Error error = parseRequest(_inputFile, request, body1);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("POST", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Echo/V1/EchoOperation"));
@@ -442,7 +442,7 @@ TEST_F(ParserFormatterTest, Soap) {
   error = parseRequest(_outputFile, request, body2);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("POST", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/Echo/V1/EchoOperation"));
@@ -533,7 +533,7 @@ TEST_F(ParserFormatterTest, Whitespace) {
   ESB::Error error = parseRequest(_inputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/%52esearch/V1"));
@@ -553,7 +553,7 @@ TEST_F(ParserFormatterTest, Whitespace) {
   error = parseRequest(_outputFile, request, body);
   EXPECT_EQ(ESB_SUCCESS, error);
   EXPECT_EQ(0, strcmp("GET", (const char *)request.method()));
-  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_URI_HTTP, request.requestUri().type());
+  EXPECT_EQ(ES::HttpRequestUri::UriType::ES_HTTP_URI_HTTP, request.requestUri().type());
   EXPECT_EQ(NULL, request.requestUri().host());
   EXPECT_EQ(-1, request.requestUri().port());
   EXPECT_EQ(0, strcmp((const char *)request.requestUri().absPath(), "/%52esearch/V1"));
@@ -584,13 +584,13 @@ ESB::Error ParserFormatterTest::parseRequest(const char *filename, HttpRequest &
     ESB_LOG_DEBUG("RequestUri");
 
     switch (request.requestUri().type()) {
-      case HttpRequestUri::UriType::ES_URI_ASTERISK:
+      case HttpRequestUri::UriType::ES_HTTP_URI_ASTERISK:
         ESB_LOG_DEBUG("  Asterisk");
         break;
-      case HttpRequestUri::UriType::ES_URI_HTTP:
-      case HttpRequestUri::UriType::ES_URI_HTTPS:
+      case HttpRequestUri::UriType::ES_HTTP_URI_HTTP:
+      case HttpRequestUri::UriType::ES_HTTP_URI_HTTPS:
         ESB_LOG_DEBUG("  Scheme: %s",
-                      HttpRequestUri::UriType::ES_URI_HTTP == request.requestUri().type() ? "http" : "https");
+                      HttpRequestUri::UriType::ES_HTTP_URI_HTTP == request.requestUri().type() ? "http" : "https");
         ESB_LOG_DEBUG("  Host: %s", !request.requestUri().host() ? "none" : (const char *)request.requestUri().host());
         ESB_LOG_DEBUG("  Port: %d", request.requestUri().port());
         ESB_LOG_DEBUG("  AbsPath: %s", request.requestUri().absPath());
@@ -600,7 +600,7 @@ ESB::Error ParserFormatterTest::parseRequest(const char *filename, HttpRequest &
                       !request.requestUri().fragment() ? "none" : (const char *)request.requestUri().fragment());
         break;
 
-      case HttpRequestUri::UriType::ES_URI_OTHER:
+      case HttpRequestUri::UriType::ES_HTTP_URI_OTHER:
         ESB_LOG_DEBUG("  Other: %s", request.requestUri().other());
         break;
     }

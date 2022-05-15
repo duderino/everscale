@@ -44,10 +44,10 @@ ESB::Error HttpLoadgenSeedCommand::run(HttpMultiplexerExtended &multiplexer) {
 
     if (_params.secure()) {
       assert(ESB::SocketAddress::TLS == transaction->peerAddress().type());
-      transaction->request().requestUri().setType(HttpRequestUri::UriType::ES_URI_HTTPS);
+      transaction->request().requestUri().setType(HttpRequestUri::UriType::ES_HTTP_URI_HTTPS);
     } else {
       assert(ESB::SocketAddress::TCP == transaction->peerAddress().type());
-      transaction->request().requestUri().setType(HttpRequestUri::UriType::ES_URI_HTTP);
+      transaction->request().requestUri().setType(HttpRequestUri::UriType::ES_HTTP_URI_HTTP);
     }
 
     error = multiplexer.executeClientTransaction(transaction);
@@ -64,7 +64,7 @@ ESB::Error HttpLoadgenSeedCommand::buildRequest(HttpClientTransaction *transacti
   HttpRequest &request = transaction->request();
   HttpRequestUri &requestUri = request.requestUri();
 
-  requestUri.setType(HttpRequestUri::UriType::ES_URI_HTTP);
+  requestUri.setType(HttpRequestUri::UriType::ES_HTTP_URI_HTTP);
   requestUri.setAbsPath(_params.absPath());
   request.setMethod(_params.method());
 
