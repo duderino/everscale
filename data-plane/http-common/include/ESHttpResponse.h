@@ -12,7 +12,7 @@ namespace ES {
  */
 class HttpResponse : public HttpMessage {
  public:
-  const char *DefaultReasonPhrase(int statusCode);
+  static const char *DefaultReasonPhrase(int statusCode, const char *fallback = "None");
 
   HttpResponse();
 

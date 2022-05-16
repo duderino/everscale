@@ -289,3 +289,78 @@ const char *es_http_request_uri_other(const es_http_request_t r) {
   const HttpRequest *request = (const HttpRequest *)r;
   return request ? (const char *)request->requestUri().other() : NULL;
 }
+
+es_http_error_t es_http_response_copy(const es_http_response_t s, es_http_response_t d, es_http_allocator_t a,
+                                      es_http_header_filter filter, void *context) {
+  if (!s || !d || !a) {
+    return ESB_NULL_POINTER;
+  }
+
+  if (!filter) {
+    filter = es_http_header_filter_copy_all;
+  }
+
+  const HttpResponse *source = (const HttpResponse *)s;
+  HttpResponse *dest = (HttpResponse *)d;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  return dest->copy(source, *allocator, filter, context);
+}
+
+const es_http_header_list_t es_http_response_headers(const es_http_response_t r) {
+  const HttpResponse *response = (const HttpResponse *)r;
+  return response ? (const es_http_header_list_t)&response->headers() : NULL;
+}
+
+es_http_error_t es_http_response_add_header(es_http_response_t r, es_http_allocator_t a, const char *name,
+                                            const char *value) {
+  if (!r || !a || !name || !value) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpResponse *response = (HttpResponse *)r;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+  return (es_http_error_t)response->addHeader(name, value, *allocator);
+}
+
+es_http_error_t es_http_response_set_status_code(es_http_response_t r, int status_code) {
+  HttpResponse *response = (HttpResponse *)r;
+  if (0 > status_code || 999 < status_code) {
+    return ESB_INVALID_ARGUMENT;
+  }
+  response->setStatusCode(status_code);
+  return ESB_SUCCESS;
+}
+
+int es_http_response_status_code(const es_http_response_t r) {
+  const HttpResponse *response = (const HttpResponse *)r;
+  return response ? response->statusCode() : -1;
+}
+
+es_http_error_t es_http_response_set_reason_phrase(es_http_response_t r, es_http_allocator_t a,
+                                                   const char *reason_phrase) {
+  if (!r || !a || !reason_phrase) {
+    return ESB_NULL_POINTER;
+  }
+
+  HttpResponse *response = (HttpResponse *)r;
+  ESB::Allocator *allocator = (ESB::Allocator *)a;
+
+  char *copy = NULL;
+  ESB::Error error = ESB::Duplicate(reason_phrase, *allocator, &copy);
+  if (ESB_SUCCESS != error) {
+    return error;
+  }
+
+  response->setReasonPhrase(copy);
+  return ESB_SUCCESS;
+}
+
+const char *es_http_response_reason_phrase(const es_http_response_t r) {
+  const HttpResponse *response = (const HttpResponse *)r;
+  return response ? (const char *)response->reasonPhrase() : NULL;
+}
+
+const char *es_http_response_default_reason_phrase(int status_code, const char *fallback) {
+  return HttpResponse::DefaultReasonPhrase(status_code, fallback);
+}

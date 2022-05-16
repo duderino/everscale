@@ -16,6 +16,10 @@
 #include <ESHttpRequest.h>
 #endif
 
+#ifndef ES_HTTP_RESPONSE_H
+#include <ESHttpResponse.h>
+#endif
+
 #ifndef ESB_SYSTEM_ALLOCATOR_H
 #include <ESBSystemAllocator.h>
 #endif
@@ -291,5 +295,177 @@ TEST(HttpPlugin, RequestUriOther) {
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_type(request, ES_HTTP_URI_OTHER));
     ASSERT_EQ(ESB_SUCCESS, es_http_request_set_uri_other(request, allocator, other));
     ASSERT_EQ(0, strcmp(es_http_request_uri_other(request), other));
+  }
+}
+
+TEST(HttpPlugin, ResponseHeadersForwardIterate) {
+  HttpResponse r;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_response_t response = (es_http_response_t)&r;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(response, allocator, "name1", "value1"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(response, allocator, "name2", "value2"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(response, allocator, "name3", "value3"));
+
+    es_http_header_list_t headers = es_http_response_headers(response);
+
+    es_http_header_t h1 = es_http_header_list_first(headers);
+    ASSERT_TRUE(h1);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h1), "name1"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h1), "value1"));
+
+    es_http_header_t h2 = es_http_header_next(h1);
+    ASSERT_TRUE(h2);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h2), "name2"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h2), "value2"));
+
+    es_http_header_t h3 = es_http_header_next(h2);
+    ASSERT_TRUE(h3);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h3), "name3"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h3), "value3"));
+
+    es_http_header_t h4 = es_http_header_next(h3);
+    ASSERT_FALSE(h4);
+  }
+}
+
+TEST(HttpPlugin, ResponseHeadersReverseIterate) {
+  HttpResponse r;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_response_t response = (es_http_response_t)&r;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(response, allocator, "name1", "value1"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(response, allocator, "name2", "value2"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(response, allocator, "name3", "value3"));
+
+    es_http_header_list_t headers = es_http_response_headers(response);
+
+    es_http_header_t h3 = es_http_header_list_last(headers);
+    ASSERT_TRUE(h3);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h3), "name3"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h3), "value3"));
+
+    es_http_header_t h2 = es_http_header_previous(h3);
+    ASSERT_TRUE(h2);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h2), "name2"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h2), "value2"));
+
+    es_http_header_t h1 = es_http_header_previous(h2);
+    ASSERT_TRUE(h1);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h1), "name1"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h1), "value1"));
+
+    es_http_header_t h0 = es_http_header_previous(h1);
+    ASSERT_FALSE(h0);
+  }
+}
+
+TEST(HttpPlugin, ResponseCopy) {
+  HttpResponse s;
+  HttpResponse d;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_response_t src = (es_http_response_t)&s;
+    es_http_response_t dest = (es_http_response_t)&d;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(src, allocator, "name1", "value1"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(src, allocator, "name2", "value2"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(src, allocator, "name3", "value3"));
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_copy(src, dest, allocator, es_http_header_filter_copy_all, NULL));
+
+    es_http_header_list_t headers = es_http_response_headers(dest);
+
+    es_http_header_t h3 = es_http_header_list_last(headers);
+    ASSERT_TRUE(h3);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h3), "name3"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h3), "value3"));
+
+    es_http_header_t h2 = es_http_header_previous(h3);
+    ASSERT_TRUE(h2);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h2), "name2"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h2), "value2"));
+
+    es_http_header_t h1 = es_http_header_previous(h2);
+    ASSERT_TRUE(h1);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h1), "name1"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h1), "value1"));
+
+    es_http_header_t h0 = es_http_header_previous(h1);
+    ASSERT_FALSE(h0);
+  }
+}
+
+TEST(HttpPlugin, ResponseFilteredCopy) {
+  HttpResponse s;
+  HttpResponse d;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_response_t src = (es_http_response_t)&s;
+    es_http_response_t dest = (es_http_response_t)&d;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
+    int count = 0;
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(src, allocator, "name1", "value1"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(src, allocator, "name2", "value2"));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_add_header(src, allocator, "name3", "value3"));
+
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_copy(src, dest, allocator, es_http_header_filter_copy_even, &count));
+
+    es_http_header_list_t headers = es_http_response_headers(dest);
+
+    es_http_header_t h2 = es_http_header_list_last(headers);
+    ASSERT_TRUE(h2);
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_name(h2), "name2"));
+    ASSERT_TRUE(0 == ::strcasecmp(es_http_header_value(h2), "value2"));
+
+    es_http_header_t h1 = es_http_header_previous(h2);
+    ASSERT_FALSE(h1);
+
+    ASSERT_EQ(3, count);
+  }
+}
+
+TEST(HttpPlugin, ResponseStatusCode) {
+  HttpResponse r;
+
+  {
+    es_http_response_t response = (es_http_response_t)&r;
+
+    ASSERT_EQ(-1, es_http_response_status_code(response));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_set_status_code(response, 999));
+    ASSERT_EQ(999, es_http_response_status_code(response));
+
+    ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_response_set_status_code(response, -1));
+    ASSERT_EQ(999, es_http_response_status_code(response));
+
+    ASSERT_EQ(ESB_INVALID_ARGUMENT, es_http_response_set_status_code(response, 1000));
+    ASSERT_EQ(999, es_http_response_status_code(response));
+  }
+}
+
+TEST(HttpPlugin, ResponseReasonPhrase) {
+  HttpResponse r;
+  ESB::DiscardAllocator a(1024, sizeof(ESB::Word), 1, ESB::SystemAllocator::Instance(), true);
+
+  {
+    es_http_response_t response = (es_http_response_t)&r;
+    es_http_allocator_t allocator = (es_http_allocator_t)&a;
+    const char *reason_phrase = es_http_response_default_reason_phrase(404, NULL);
+
+    ASSERT_EQ(0, strcmp(reason_phrase, "Not Found"));
+
+    ASSERT_FALSE(es_http_response_reason_phrase(response));
+    ASSERT_EQ(ESB_SUCCESS, es_http_response_set_reason_phrase(response, allocator, reason_phrase));
+    ASSERT_EQ(0, strcmp(es_http_response_reason_phrase(response), reason_phrase));
   }
 }

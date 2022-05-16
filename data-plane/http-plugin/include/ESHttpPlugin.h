@@ -354,6 +354,7 @@ es_http_error_t es_http_request_copy(const es_http_request_t source, es_http_req
 
 /**
  * Get the headers of a HTTP request
+ *
  * @param request The HTTP request
  * @return The request's headers.  Will never be NULL, but may be an empty list
  */
@@ -499,6 +500,93 @@ es_http_error_t es_http_request_set_uri_other(es_http_request_t request, es_http
  * @return The HTTP request's complete URI or NULL if it has not been set.
  */
 const char *es_http_request_uri_other(const es_http_request_t request);
+
+//
+// Response
+//
+
+/**
+ * A HTTP Response
+ */
+typedef struct es_http_response *es_http_response_t;
+
+/**
+ * Copy one HTTP response to another, potentially filtering HTTP headers.
+ *
+ * @param source The source HTTP response (copy from)
+ * @param dest The destination HTTP response (copy to)
+ * @param allocator The allocator to be used for the destination's copies
+ * @param filter A filter callback that can optionally exclude specific headers from the copy
+ * @param context An optional context that can be passed to the filter callback
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise.
+ */
+es_http_error_t es_http_response_copy(const es_http_response_t source, es_http_response_t dest,
+                                      es_http_allocator_t allocator, es_http_header_filter filter, void *context);
+
+/**
+ * Get the headers of a HTTP response
+ *
+ * @param response The HTTP response
+ * @return The request's headers.  Will never be NULL, but may be an empty list
+ */
+const es_http_header_list_t es_http_response_headers(const es_http_response_t response);
+
+/**
+ * Add a header to a HTTP response, copying the name and value in the process.
+ *
+ * @param response The HTTP response
+ * @param allocator An allocator to be used to allocate memory for the copies
+ * @param name The header's field name
+ * @param value The header's field value
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise.
+ */
+es_http_error_t es_http_response_add_header(es_http_response_t response, es_http_allocator_t allocator,
+                                            const char *name, const char *value);
+
+/**
+ * Set a HTTP response's status code
+ *
+ * @param response The HTTP response
+ * @param status_code The status code
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise.
+ */
+es_http_error_t es_http_response_set_status_code(es_http_response_t response, int status_code);
+
+/**
+ * Get a HTTP response's status code
+ *
+ * @param response The HTTP response
+ * @return The status code, or -1 if not set
+ */
+int es_http_response_status_code(const es_http_response_t response);
+
+/**
+ * Set the reason phrase for a HTTP response
+ *
+ * @param response The HTTP response
+ * @param allocator The allocator to allocate memory for the copy
+ * @param fragment The reason phrase to be copied into the request
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise.
+ */
+es_http_error_t es_http_response_set_reason_phrase(es_http_response_t response, es_http_allocator_t allocator,
+                                                   const char *reason_phrase);
+
+/**
+ * Get the reason phrase for a HTTP response
+ *
+ * @param response The HTTP response
+ * @return The reason phrase or NULL if not set
+ */
+const char *es_http_response_reason_phrase(const es_http_response_t response);
+
+/**
+ * Get the default reason phrase for a status code
+ *
+ * @param status_code The status code
+ * @param fallback If a reason phrase isn't found, return this instead
+ * @return The reason phrase for the status code or the fallback
+ */
+const char *es_http_response_default_reason_phrase(int status_code, const char *fallback);
 }
 
 #endif

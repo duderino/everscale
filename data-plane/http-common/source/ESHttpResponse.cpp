@@ -4,14 +4,14 @@
 
 namespace ES {
 
-HttpResponse::HttpResponse() : HttpMessage(), _statusCode(0), _reasonPhrase(0) {}
+HttpResponse::HttpResponse() : HttpMessage(), _statusCode(-1), _reasonPhrase(NULL) {}
 
 HttpResponse::~HttpResponse() {}
 
 void HttpResponse::reset() {
   HttpMessage::reset();
-  _statusCode = 0;
-  _reasonPhrase = 0;
+  _statusCode = -1;
+  _reasonPhrase = NULL;
 }
 
 ESB::Error HttpResponse::copy(const HttpResponse *other, ESB::Allocator &allocator, es_http_header_filter filter,
@@ -80,33 +80,33 @@ static const char *FiveHundredClass[] = {
     "Internal Server Error",  // 500
     "Not Implemented",       "Bad Gateway", "Service Unavailable", "Gateway Timeout", "HTTP Version Not Supported"};
 
-const char *HttpResponse::DefaultReasonPhrase(int statusCode) {
+const char *HttpResponse::DefaultReasonPhrase(int statusCode, const char *fallback) {
   if (100 > statusCode || 600 <= statusCode) {
-    return NULL;
+    return fallback;
   }
 
   if (200 > statusCode) {
     return (((int)sizeof(OneHundredClass) / sizeof(char *)) > statusCode - 100) ? OneHundredClass[statusCode - 100]
-                                                                                : NULL;
+                                                                                : fallback;
   }
 
   if (300 > statusCode) {
     return (((int)sizeof(TwoHundredClass) / sizeof(char *)) > statusCode - 200) ? TwoHundredClass[statusCode - 200]
-                                                                                : NULL;
+                                                                                : fallback;
   }
 
   if (400 > statusCode) {
     return (((int)sizeof(ThreeHundredClass) / sizeof(char *)) > statusCode - 300) ? ThreeHundredClass[statusCode - 300]
-                                                                                  : NULL;
+                                                                                  : fallback;
   }
 
   if (500 > statusCode) {
     return (((int)sizeof(FourHundredClass) / sizeof(char *)) > statusCode - 400) ? FourHundredClass[statusCode - 400]
-                                                                                 : NULL;
+                                                                                 : fallback;
   }
 
   return (((int)sizeof(FiveHundredClass) / sizeof(char *)) > statusCode - 500) ? FiveHundredClass[statusCode - 500]
-                                                                               : NULL;
+                                                                               : fallback;
 }
 
 }  // namespace ES
