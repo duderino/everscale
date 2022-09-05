@@ -122,7 +122,7 @@ class SocketAddress {
    */
   Address *primitiveAddress();
 
-  void updatePrimitiveAddress(Address *address);
+  void updatePrimitiveAddress(const Address *address);
 
   /** Get the IP address of the SocketAddress in human readable format.
    *

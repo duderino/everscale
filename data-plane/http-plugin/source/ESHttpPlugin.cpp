@@ -18,6 +18,14 @@
 #include <ESBString.h>
 #endif
 
+#ifndef ESB_SOCKET_ADDRESS_H
+#include <ESBSocketAddress.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
 using namespace ES;
 
 es_http_error_t ES_HTTP_SUCCESS = ESB_SUCCESS;
@@ -61,6 +69,62 @@ es_http_error_t ES_HTTP_MISSING_FIELD = ESB_MISSING_FIELD;
 es_http_error_t ES_HTTP_INVALID_FIELD = ESB_INVALID_FIELD;
 
 void es_http_describe_error(es_http_error_t error, char *buffer, int size) { ESB::DescribeError(error, buffer, size); }
+
+es_http_error_t es_http_address_set_sockaddr(es_http_address_t a, const struct sockaddr_in *sockaddr) {
+  ESB::SocketAddress *address = (ESB::SocketAddress *)a;
+  if (!address || !sockaddr) {
+    return ES_HTTP_NULL_POINTER;
+  }
+  address->updatePrimitiveAddress(sockaddr);
+  return ES_HTTP_SUCCESS;
+}
+
+es_http_error_t es_http_address_set_ip(es_http_address_t a, const char *presentation) {
+  ESB::SocketAddress *address = (ESB::SocketAddress *)a;
+  if (!address || !presentation) {
+    return ES_HTTP_NULL_POINTER;
+  }
+  return address->setAddress(presentation);
+}
+
+es_http_error_t es_http_address_set_port(es_http_address_t a, uint16_t port) {
+  ESB::SocketAddress *address = (ESB::SocketAddress *)a;
+  if (!address) {
+    return ES_HTTP_NULL_POINTER;
+  }
+  address->setPort(port);
+  return ES_HTTP_SUCCESS;
+}
+
+es_http_error_t es_http_address_sockaddr(const es_http_address_t a, struct sockaddr_in *sockaddr) {
+  ESB::SocketAddress *address = (ESB::SocketAddress *)a;
+  if (!address || !sockaddr) {
+    return ES_HTTP_NULL_POINTER;
+  }
+  memcpy(sockaddr, address->primitiveAddress(), sizeof(*sockaddr));
+  return ES_HTTP_SUCCESS;
+}
+
+es_http_error_t es_http_address_ip(const es_http_address_t a, char *presentation, int size) {
+  ESB::SocketAddress *address = (ESB::SocketAddress *)a;
+  if (!address || !presentation) {
+    return ES_HTTP_NULL_POINTER;
+  }
+  if (size < ESB_IPV6_PRESENTATION_SIZE) {
+    return ES_HTTP_INVALID_ARGUMENT;
+  }
+  address->presentationAddress(presentation, size);
+  return ES_HTTP_SUCCESS;
+}
+
+es_http_error_t es_http_address_port(const es_http_address_t a, uint16_t *port) {
+  ESB::SocketAddress *address = (ESB::SocketAddress *)a;
+  if (!address || !port) {
+    return ES_HTTP_NULL_POINTER;
+  }
+  *port = address->port();
+  return ES_HTTP_SUCCESS;
+}
 
 const char *es_http_header_name(const es_http_header_t h) {
   const HttpHeader *header = (const HttpHeader *)h;

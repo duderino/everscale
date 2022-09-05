@@ -174,7 +174,7 @@ SocketAddress::TransportType SocketAddress::type() const { return _transport; }
 
 void SocketAddress::setType(TransportType transport) { _transport = transport; }
 
-void SocketAddress::updatePrimitiveAddress(SocketAddress::Address *address) {
+void SocketAddress::updatePrimitiveAddress(const SocketAddress::Address *address) {
   if (!address) {
     return;
   }

@@ -224,6 +224,72 @@ void es_http_describe_error(es_http_error_t error, char *buffer, int size);
 typedef struct es_http_allocator *es_http_allocator_t;
 
 //
+// L3 IP Address
+//
+
+/**
+ * An L3 IP address
+ */
+typedef struct es_http_address *es_http_address_t;
+
+/**
+ * Set the ip and port with a sockaddr struct
+ *
+ * @param address The es_http_address_t to modify
+ * @param sockaddr The sockaddr to copy
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise (won't fail unless you pass in a NULL)
+ */
+extern es_http_error_t es_http_address_set_sockaddr(es_http_address_t address, const struct sockaddr_in *sockaddr);
+
+/**
+ * Set the ip address
+ *
+ * @param address The es_http_address_t to modify
+ * @param presentation The IP address string in presentation/dotted IP format
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise (will only fail if you pass in NULL or an invalid
+ * presentation address)
+ */
+extern es_http_error_t es_http_address_set_ip(es_http_address_t address, const char *presentation);
+
+/**
+ * Set the port
+ *
+ * @param address The es_http_address_t to modify
+ * @param port The port
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise (won't fail unless you pass in a NULL)
+ */
+extern es_http_error_t es_http_address_set_port(es_http_address_t address, uint16_t port);
+
+/**
+ * Convert the address to a sockaddr struct
+ *
+ * @param address The es_http_address_t to read
+ * @param sockaddr The sockaddr struct
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise (won't fail unless you pass in a NULL)
+ */
+extern es_http_error_t es_http_address_sockaddr(const es_http_address_t address, struct sockaddr_in *sockaddr);
+
+/**
+ * Read the ip address from a es_http_address_t
+ *
+ * @param address The es_http_address_t to read
+ * @param presentation The buffer to hold the presentation address
+ * @param size The size of the presentation buffer.  Should be at least INET6_ADDRSTRLEN (46)
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise (won't fail unless you pass in a NULL or a buffer
+ * that's < INET6_ADDRSTRLEN)
+ */
+extern es_http_error_t es_http_address_ip(const es_http_address_t address, char *presentation, int size);
+
+/**
+ * Read the port from a es_http_address_t
+ *
+ * @param address The es_http_address_t to read
+ * @param port The port to read
+ * @return ES_HTTP_SUCCESS if successful, another error code otherwise (won't fail unless you pass in a NULL)
+ */
+extern es_http_error_t es_http_address_port(const es_http_address_t address, uint16_t *port);
+
+//
 // Header
 //
 
