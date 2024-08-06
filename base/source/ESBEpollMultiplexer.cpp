@@ -457,7 +457,6 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
           keepInMultiplexer = false;
         } else if (_events[i].events & EPOLLIN) {
           while (keepInMultiplexer) {
-            ESB_LOG_DEBUG("[%s] listening socket accept event", socket->name());
             ESB::Error error = socket->handleAccept();
             if (ESB_AGAIN == error) {
               continue;
@@ -555,13 +554,11 @@ bool EpollMultiplexer::run(SharedInt *isRunning) {
         } else {
           // TODO consider swapping these - drain first, then fill.
           if (socket->wantRead() && (_events[i].events & EPOLLIN)) {
-            ESB_LOG_DEBUG("[%s] socket read event", socket->name());
             ESB::Error error = socket->handleReadable();
             keepInMultiplexer = ESB_AGAIN == error || ESB_PAUSE == error;
           }
 
           if (keepInMultiplexer && socket->wantWrite() && (_events[i].events & EPOLLOUT)) {
-            ESB_LOG_DEBUG("[%s] socket write event", socket->name());
             ESB::Error error = socket->handleWritable();
             keepInMultiplexer = ESB_AGAIN == error || ESB_PAUSE == error;
           }
