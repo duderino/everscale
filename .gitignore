@@ -30,5 +30,10 @@ http-proxy
 base/tests/*.srl
 base/tests/*.key
 base/tests/*.crt
-third_party
+third_party/src
+third_party/tmp
 generated
+.cmake
+cmake-build-debug
+log
+

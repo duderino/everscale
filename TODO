@@ -1,4 +1,14 @@
 top:
+ - Boringssl build - is this really a good idea? -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF
+ - Fix CN/SAN validation failures with recent versions of boringssl
+   - Failures:
+      - 47/369 Test  #47: ConnectionPoolTest.CompatibleServerCertificate .............................................................................................................***Failed    0.06 sec
+      - 52/369 Test  #52: TLSSocketTest.ServerSNI ....................................................................................................................................***Failed    1.06 sec
+      - 53/369 Test  #53: TLSSocketTest.MutualTLSHappyPath ...........................................................................................................................***Failed    1.04 sec
+   - Did the validation logic change or is it an issue with the SSL context swap?
+   - All test failures look like handshake failures:
+      - [1722966253:56018:INF] [test-client:127.0.0.1:47670>127.0.0.1:38503,7] cannot complete client TLS handshake (1): error:1000007d:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED [/home/jblatt/src/duderino/everscale/base/source/ESBClientTLSSocket.cpp:121]
+      - [1722966253:56019:INF] [sec-echo-serve:127.0.0.1:38503>127.0.0.1:47670,8] cannot complete server TLS handshake (1): error:10000412:SSL routines:OPENSSL_internal:SSLV3_ALERT_BAD_CERTIFICATE [/home/jblatt/src/duderino/everscale/base/source/ESBServerTLSSocket.cpp:73]
  - rename HttpTestParams HttpArguments or similar
  - add counters to detect runaway epoll events (e.g., writable notifications when there is no data to send)
  - put detection of remote close in epoll handler and call handleRemoteClose()?  audit how client/server socket handle 0 reads.  Should those also call remote close?  Or just put the remote close logic only there?

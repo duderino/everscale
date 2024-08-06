@@ -1,0 +1,14 @@
+diff --git a/util/fipstools/acvp/modulewrapper/modulewrapper.cc b/util/fipstools/acvp/modulewrapper/modulewrapper.cc
+index f877c7557..5d8e7161d 100644
+--- a/util/fipstools/acvp/modulewrapper/modulewrapper.cc
++++ b/util/fipstools/acvp/modulewrapper/modulewrapper.cc
+@@ -19,6 +19,9 @@
+ #include <sys/uio.h>
+ #include <unistd.h>
+ #include <cstdarg>
++#include <errno.h>
++#include <stdio.h>
++#include <string>
+ 
+ #include <openssl/aes.h>
+ #include <openssl/sha.h>

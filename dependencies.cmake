@@ -65,7 +65,7 @@ mark_as_advanced(
 # BoringSSL
 #
 
-set(BSSL_TAG fips-20220613)
+set(BSSL_TAG fips-20190808)  # If you change this, update the patch in third_party/patch/bssl/index.patch. If you remove the patch, remove the PATCH_COMMAND below
 set(BSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/third_party/src/bssl)
 set(BSSL_INCLUDE_DIR ${BSSL_ROOT_DIR}/include)
 set(BSSL_LIB_DIR ${BSSL_ROOT_DIR}/lib)
@@ -83,10 +83,11 @@ else ()
             BUILD_IN_SOURCE 1
             GIT_REPOSITORY https://boringssl.googlesource.com/boringssl
             GIT_TAG ${BSSL_TAG}
-            CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release -DFIPS:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF
+            CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release -DFIPS:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF "-DCMAKE_C_FLAGS=-w" "-DCMAKE_CXX_FLAGS=-w"
             INSTALL_COMMAND mkdir -p lib && cp ssl/libssl.a lib && cp crypto/libcrypto.a lib
             UPDATE_COMMAND ""
-            )
+            PATCH_COMMAND patch -p1 < ../../patch/bssl/index.patch
+    )
 endif ()
 
 include_directories(${BSSL_INCLUDE_DIR})
