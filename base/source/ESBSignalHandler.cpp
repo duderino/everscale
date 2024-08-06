@@ -51,7 +51,14 @@ static const char *DescribeSignal(int signo) {
     return "Unknown Signal";
   }
 
+#if defined HAVE_SIGDESCR_NP
+  return sigdescr_np(signo);
+#elif defined HAVE_SYS_SIGLIST
   return sys_siglist[signo];
+#else
+#error "sigdescr_np or equivalent is required for the signal handler"
+#endif
+
 }
 
 void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) {

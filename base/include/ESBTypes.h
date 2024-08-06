@@ -59,7 +59,7 @@ typedef unsigned short UInt16;
 typedef int Int32;
 #define ESB_INT32_C(c) c
 #define ESB_INT32_MAX 2147483647
-#define ESB_INT32_MIN (-(ESB_INT32_MAX + 1))
+#define ESB_INT32_MIN (-(ESB_INT32_MAX) - 1)
 #else
 #error "32 bit integer required"
 #endif
@@ -77,17 +77,17 @@ typedef unsigned int UInt32;
 typedef long Int64;
 #define ESB_INT64_C(c) c##L
 #define ESB_INT64_MAX 9223372036854775807L
-#define ESB_INT64_MIN (-(ESB_INT64_MAX + 1L))
+#define ESB_INT64_MIN (-(ESB_INT64_MAX) - 1L)
 #elif 64 == SIZEOF_LONG_LONG
 typedef long long Int64;
 #define ESB_INT64_C(c) c##LL
 #define ESB_INT64_MAX 9223372036854775807LL
-#define ESB_INT64_MIN (-(ESB_INT64_MAX + 1LL))
+#define ESB_INT64_MIN (-(ESB_INT64_MAX) - 1LL)
 #elif 64 == SIZEOF___INT64
 typedef __int64 Int64;
 #define ESB_INT64_C(c) c##i64
 #define ESB_INT64_MAX 9223372036854775807i64
-#define ESB_INT64_MIN -(ESB_INT64_MAX + 1i64)
+#define ESB_INT64_MIN (-(ESB_INT64_MAX) - 1i64)
 #else
 #error "64 bit integer required"
 #endif

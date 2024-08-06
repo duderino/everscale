@@ -4,7 +4,7 @@ unset(DEFAULT_BUILD_TYPE)
 set(DEFAULT_BUILD_TYPE DEBUG)
 set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE})
 set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE} CACHE STRING "build type" FORCE)
-set(COMMON_C_FLAGS "-Wall -Werror -D_REENTRANT -Wno-error=deprecated-declarations")
+set(COMMON_C_FLAGS "-Wall -Werror -D_REENTRANT -D_GNU_SOURCE -Wno-error=deprecated-declarations")
 set(COMMON_CXX_FLAGS "${COMMON_C_FLAGS} -fno-exceptions -fno-rtti")
 
 if (DEFINED ENV{BUILD_TYPE})

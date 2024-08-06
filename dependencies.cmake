@@ -36,15 +36,15 @@ endif ()
 
 set(GTEST_DIR ${FETCHCONTENT_BASE_DIR}/googletest-src)
 
-if (EXISTS ${GTEST_DIR})
-    message(STATUS "${GTEST_DIR} exists, skipping rebuild")
-    set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${GTEST_DIR})
-else ()
+#if (EXISTS ${GTEST_DIR})
+#    message(STATUS "${GTEST_DIR} exists, skipping rebuild")
+#    set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST ${GTEST_DIR})
+#else ()
     FetchContent_Declare(googletest
             GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG release-1.10.0
+            GIT_TAG v1.15.2
             )
-endif ()
+#endif ()
 
 FetchContent_GetProperties(googletest)
 if (NOT googletest_POPULATED)
@@ -65,7 +65,7 @@ mark_as_advanced(
 # BoringSSL
 #
 
-set(BSSL_TAG fips-20190808)
+set(BSSL_TAG fips-20220613)
 set(BSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/third_party/src/bssl)
 set(BSSL_INCLUDE_DIR ${BSSL_ROOT_DIR}/include)
 set(BSSL_LIB_DIR ${BSSL_ROOT_DIR}/lib)

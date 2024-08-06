@@ -100,7 +100,7 @@ class Date {
    *    @param date The date to add to this one.
    *    @return The sum of the date param and this object.
    */
-  inline Date &operator+(const Date &date) const {
+  inline Date operator+(const Date &date) const {
     Date newDate(*this);
 
     return newDate += date;
@@ -111,7 +111,7 @@ class Date {
    *    @param date The date to subtract from this one.
    *    @return The difference of the date param and this object.
    */
-  inline Date &operator-(const Date &date) const {
+  inline Date operator-(const Date &date) const {
     Date newDate(*this);
 
     return newDate -= date;

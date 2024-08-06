@@ -65,24 +65,28 @@ void Socket::Close(SOCKET socket) {
 Error Socket::setBlocking(bool isBlocking) {
 #if defined HAVE_FCNTL && defined USE_FCNTL_FOR_NONBLOCK
 
-  int value = fcntl(_socketDescriptor, F_GETFL, 0);
+  int value = fcntl(_sockFd, F_GETFL, 0);
 
   if (SOCKET_ERROR == value) {
-    return GetLastError();
+    return LastError();
   }
 
-  if (((false == isBlocking) && (O_NONBLOCK & value)) || ((true == isBlocking) && (!(O_NONBLOCK & value)))) {
-    return ESB_SUCCESS;
-  }
+  if (isBlocking) {
+    if (!(O_NONBLOCK & value)) {
+      return ESB_SUCCESS;
+    }
 
-  if (true == isBlocking) {
     value |= O_NONBLOCK;
   } else {
+    if (O_NONBLOCK & value) {
+      return ESB_SUCCESS;
+    }
+
     value &= ~O_NONBLOCK;
   }
 
-  if (SOCKET_ERROR == fcntl(_socketDescriptor, F_SETFL, value)) {
-    return GetLastError();
+  if (SOCKET_ERROR == fcntl(_sockFd, F_SETFL, value)) {
+    return LastError();
   }
 
 #elif defined HAVE_IOCTL && defined USE_IOCTL_FOR_NONBLOCK
@@ -114,17 +118,17 @@ Error Socket::SetBlocking(SOCKET sockFd, bool isBlocking) {
   int value = fcntl(sockFd, F_GETFL, 0);
 
   if (SOCKET_ERROR == value) {
-    return GetLastError();
+    return LastError();
   }
 
-  if (true == isBlocking) {
+  if (isBlocking) {
     value |= O_NONBLOCK;
   } else {
     value &= ~O_NONBLOCK;
   }
 
   if (SOCKET_ERROR == fcntl(sockFd, F_SETFL, value)) {
-    return GetLastError();
+    return LastError();
   }
 
 #elif defined HAVE_IOCTL && defined USE_IOCTL_FOR_NONBLOCK

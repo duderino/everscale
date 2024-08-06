@@ -113,6 +113,7 @@ check_cxx_source_compiles("
 int main () {
         sigignore(SIGTERM);
 }" HAVE_SIGIGNORE)
+check_symbol_exists(sys_siglist "signal.h" HAVE_SYS_SIGLIST)
 
 check_include_file("stdio.h" HAVE_STDIO_H)
 check_symbol_exists(vfprintf "stdio.h" HAVE_VFPRINTF)
@@ -198,6 +199,9 @@ check_symbol_exists(strncpy "string.h" HAVE_STRNCPY)
 check_symbol_exists(strlen "string.h" HAVE_STRLEN)
 check_symbol_exists(strcat "string.h" HAVE_STRCAT)
 check_symbol_exists(memmove "string.h" HAVE_MEMMOVE)
+set(CMAKE_REQUIRED_FLAGS "-D_GNU_SOURCE")
+check_symbol_exists(sigdescr_np "string.h" HAVE_SIGDESCR_NP)
+unset(CMAKE_REQUIRED_FLAGS)
 
 check_include_file("unistd.h" HAVE_UNISTD_H)
 check_symbol_exists(gethostname "unistd.h" HAVE_GETHOSTNAME)
