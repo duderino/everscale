@@ -12,12 +12,42 @@
 
 namespace ES {
 
+class NullHttpClientStream : public HttpClientStream {
+ public:
+  virtual bool secure() const { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error abort(bool updateMultiplexer) { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error pauseRecv(bool updateMultiplexer) { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error resumeRecv(bool updateMultiplexer) { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error pauseSend(bool updateMultiplexer) { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error resumeSend(bool updateMultiplexer) { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Allocator &allocator() { assert(0 == "NullHttpClientStream called"); }
+  virtual const HttpRequest &request() const { assert(0 == "NullHttpClientStream called"); }
+  virtual HttpRequest &request() { assert(0 == "NullHttpClientStream called"); }
+  virtual const HttpResponse &response() const { assert(0 == "NullHttpClientStream called"); }
+  virtual HttpResponse &response() { assert(0 == "NullHttpClientStream called"); }
+  virtual void setContext(void *context) { assert(0 == "NullHttpClientStream called"); }
+  virtual void *context() { assert(0 == "NullHttpClientStream called"); }
+  virtual const void *context() const { assert(0 == "NullHttpClientStream called"); }
+  virtual const ESB::SocketAddress &peerAddress() const { assert(0 == "NullHttpClientStream called"); }
+  virtual const char *logAddress() const { assert(0 == "NullHttpClientStream called"); }
+  virtual const ESB::Date &transactionStartTime() const { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error sendRequestBody(const unsigned char *body, ESB::UInt64 bytesOffered, ESB::UInt64 *bytesConsumed) {
+    assert(0 == "NullHttpClientStream called");
+  }
+  virtual ESB::Error responseBodyAvailable(ESB::UInt64 *bytesAvailable) { assert(0 == "NullHttpClientStream called"); }
+  virtual ESB::Error readResponseBody(unsigned char *body, ESB::UInt64 bytesRequested, ESB::UInt64 *bytesRead) {
+    assert(0 == "NullHttpClientStream called");
+  }
+};
+
+NullHttpClientStream NullHttpClientStream;
+
 HttpClientSocketFactory::HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
-                                                 HttpClientCounters &counters, ESB::ClientTLSContextIndex &contextIndex,
-                                                 ESB::Allocator &allocator)
+                                                 HttpConnectionMetrics &connectionMetrics,
+                                                 ESB::ClientTLSContextIndex &contextIndex, ESB::Allocator &allocator)
     : _multiplexer(multiplexer),
       _handler(handler),
-      _counters(counters),
+      _connectionMetrics(connectionMetrics),
       _allocator(allocator),
       _connectionPool(multiplexer.multiplexer().name(), HttpConfig::Instance().connectionPoolBuckets(), 0,
                       contextIndex),
@@ -79,10 +109,10 @@ ESB::Error HttpClientSocketFactory::create(HttpClientTransaction *transaction, H
     HttpClientSocket *memory = (HttpClientSocket *)_deconstructedHttpSockets.removeLast();
     if (memory) {
       httpSocket = new (memory)
-          HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler);
+          HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _connectionMetrics, _cleanupHandler);
     } else {
       httpSocket = new (_allocator)
-          HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _counters, _cleanupHandler);
+          HttpClientSocket(reused, transaction, connection, _handler, _multiplexer, _connectionMetrics, _cleanupHandler);
     }
   }
 
@@ -135,9 +165,7 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
   HttpClientSocket *socket = NULL;
   ESB::Error error = create(transaction, &socket);
   if (ESB_SUCCESS != error) {
-    _counters.getFailures()->record(transaction->startTime(), ESB::Time::Instance().now());
-    // transaction->getHandler()->end(transaction,
-    //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+    _handler.endTransaction(_multiplexer, NullHttpClientStream, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
     ESB_LOG_CRITICAL_ERRNO(error, "[%s] cannot create new client socket", name());
     return error;
   }
@@ -154,10 +182,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
   } else {
     error = socket->connect();
     if (ESB_SUCCESS != error) {
-      _counters.getFailures()->record(transaction->startTime(), ESB::Time::Instance().now());
       ESB_LOG_WARNING_ERRNO(error, "[%s] Cannot connect", socket->logAddress());
-      // transaction->getHandler()->end(transaction,
-      //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+      _handler.endTransaction(_multiplexer, *socket, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
       socket->close();
       socket->clearTransaction();
       release(socket);
@@ -168,10 +194,8 @@ ESB::Error HttpClientSocketFactory::executeClientTransaction(HttpClientTransacti
   error = _multiplexer.multiplexer().addMultiplexedSocket(socket);
 
   if (ESB_SUCCESS != error) {
-    _counters.getFailures()->record(transaction->startTime(), ESB::Time::Instance().now());
     ESB_LOG_CRITICAL_ERRNO(error, "[%s] Cannot add client socket to multiplexer", socket->logAddress());
-    // transaction->getHandler()->end(transaction,
-    //                               HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
+    _handler.endTransaction(_multiplexer, *socket, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
     socket->close();
     socket->clearTransaction();
     release(socket);

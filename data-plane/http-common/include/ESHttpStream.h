@@ -17,6 +17,10 @@
 #include <ESBAllocator.h>
 #endif
 
+#ifndef ESB_DATE_H
+#include <ESBDate.h>
+#endif
+
 namespace ES {
 
 class HttpStream {
@@ -153,6 +157,11 @@ class HttpStream {
    * @return A string that describes the stream for use in log messages.
    */
   virtual const char *logAddress() const = 0;
+
+  /**
+   * Get the time that the transaction started
+   *   * @return The time the transaction started   */
+  virtual const ESB::Date &transactionStartTime() const = 0;
 
   ESB_DISABLE_AUTO_COPY(HttpStream);
 };

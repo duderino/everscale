@@ -111,8 +111,8 @@ TEST_P(HttpProxyTest, ClientToServer) {
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getSuccesses()->queries());
-  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().successes()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().failures()->queries());
 }
 
 TEST_P(HttpProxyTest, ClientToProxyToServer) {
@@ -139,8 +139,8 @@ TEST_P(HttpProxyTest, ClientToProxyToServer) {
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getSuccesses()->queries());
-  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().successes()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().failures()->queries());
 }
 
 TEST_P(HttpProxyTest, LargeResponse) {
@@ -170,8 +170,8 @@ TEST_P(HttpProxyTest, LargeResponse) {
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getSuccesses()->queries());
-  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().successes()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().failures()->queries());
 }
 
 TEST_P(HttpProxyTest, LargeRequest) {
@@ -201,8 +201,8 @@ TEST_P(HttpProxyTest, LargeRequest) {
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getSuccesses()->queries());
-  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().successes()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().failures()->queries());
 }
 
 class HttpSmallChunkOriginHandler : public HttpOriginHandler {
@@ -286,8 +286,8 @@ TEST_P(HttpProxyTest, SmallChunks) {
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getSuccesses()->queries());
-  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().successes()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().failures()->queries());
 }
 
 class HttpProxyTestMessageBody : public ::testing::TestWithParam<std::tuple<ESB::UInt32, bool, bool>> {
@@ -354,6 +354,6 @@ TEST_P(HttpProxyTestMessageBody, BodySizes) {
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getSuccesses()->queries());
-  ASSERT_EQ(0, test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().successes()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().failures()->queries());
 }

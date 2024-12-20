@@ -21,11 +21,15 @@
 #include <ESHttpTestParams.h>
 #endif
 
+#ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
+#include <ESHttpClientHistoricalCounters.h>
+#endif
+
 namespace ES {
 
 class HttpLoadgenHandler : public HttpClientHandler {
  public:
-  HttpLoadgenHandler(const HttpTestParams &params);
+  HttpLoadgenHandler(const HttpTestParams &params, ESB::Allocator &allocator = ESB::SystemAllocator::Instance());
 
   virtual ~HttpLoadgenHandler();
 
@@ -50,9 +54,12 @@ class HttpLoadgenHandler : public HttpClientHandler {
 
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state);
 
+  virtual void dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const;
+
  private:
   const HttpTestParams &_params;
   ESB::SharedInt _completedTransactions;
+  HttpClientHistoricalCounters _clientCounters;
 
   ESB_DEFAULT_FUNCS(HttpLoadgenHandler);
 };

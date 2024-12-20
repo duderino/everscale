@@ -213,9 +213,9 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
               std::cerr << "Failed to insert: " << (char *)_records[j]._key << " at time " << i << std::endl;
             }
 
-            delete[](char *) _records[j]._key;
+            delete[] (char *)_records[j]._key;
             _records[j]._key = 0;
-            delete[](char *) _records[j]._value;
+            delete[] (char *)_records[j]._value;
             _records[j]._value = 0;
           } else {
             if (Debug) {
@@ -255,9 +255,9 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
                       << " stl size: " << _stlMap.size() << ") at time " << i << std::endl;
           }
 
-          delete[](char *) _records[j]._key;
+          delete[] (char *)_records[j]._key;
           _records[j]._key = 0;
-          delete[](char *) _records[j]._value;
+          delete[] (char *)_records[j]._value;
           _records[j]._value = 0;
 
           validateTree(collector);
@@ -290,9 +290,9 @@ bool MapTest::run(ESTF::ResultCollector *collector) {
                   << ") at cleanup stage" << std::endl;
       }
 
-      delete[](char *) key;
+      delete[] (char *)key;
       key = 0;
-      delete[](char *) value;
+      delete[] (char *)value;
       value = 0;
 
       validateTree(collector);

@@ -21,12 +21,12 @@
 namespace ES {
 
 HttpServerSocketFactory::HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
-                                                 HttpServerCounters &counters, ESB::ServerTLSContextIndex &contextIndex,
-                                                 ESB::Allocator &allocator)
+                                                 HttpConnectionMetrics &connectionMetrics,
+                                                 ESB::ServerTLSContextIndex &contextIndex, ESB::Allocator &allocator)
     : _contextIndex(contextIndex),
       _multiplexer(multiplexer),
       _handler(handler),
-      _counters(counters),
+      _connectionMetrics(connectionMetrics),
       _allocator(allocator),
       _deconstructedHTTPSockets(),
       _deconstructedClearSockets(),
@@ -87,9 +87,10 @@ HttpServerSocket *HttpServerSocketFactory::create(ESB::Socket::State &state) {
   {
     HttpServerSocket *memory = (HttpServerSocket *)_deconstructedHTTPSockets.removeFirst();
     if (memory) {
-      serverSocket = new (memory) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler);
+      serverSocket = new (memory) HttpServerSocket(socket, _handler, _multiplexer, _connectionMetrics, _cleanupHandler);
     } else {
-      serverSocket = new (_allocator) HttpServerSocket(socket, _handler, _multiplexer, _counters, _cleanupHandler);
+      serverSocket =
+          new (_allocator) HttpServerSocket(socket, _handler, _multiplexer, _connectionMetrics, _cleanupHandler);
     }
   }
 

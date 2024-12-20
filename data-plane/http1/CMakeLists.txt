@@ -13,6 +13,7 @@ set(SOURCE_FILES
         source/ESHttpClientTransaction.cpp
         source/ESHttpClientTransactionFactory.cpp
         source/ESHttpCommandSocket.cpp
+        source/ESHttpConnectionMetrics.cpp
         source/ESHttpConnectionPool.cpp
         source/ESHttpMessageFormatter.cpp
         source/ESHttpMessageParser.cpp

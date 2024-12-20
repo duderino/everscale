@@ -9,8 +9,8 @@
 #include <ESBEmbeddedList.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_COUNTERS_H
-#include <ESHttpServerCounters.h>
+#ifndef ES_HTTP_CONNECTION_METRICS_H
+#include <ESHttpConnectionMetrics.h>
 #endif
 
 #ifndef ES_HTTP_SERVER_HANDLER_H
@@ -32,11 +32,12 @@
 namespace ES {
 
 /** A factory that creates and reuses HttpServerSockets
+ *
  */
 class HttpServerSocketFactory {
  public:
   HttpServerSocketFactory(HttpMultiplexerExtended &multiplexer, HttpServerHandler &handler,
-                          HttpServerCounters &counters, ESB::ServerTLSContextIndex &contextIndex,
+                          HttpConnectionMetrics &connectionMetrics, ESB::ServerTLSContextIndex &contextIndex,
                           ESB::Allocator &allocator);
 
   virtual ~HttpServerSocketFactory();
@@ -73,7 +74,7 @@ class HttpServerSocketFactory {
   ESB::ServerTLSContextIndex &_contextIndex;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
-  HttpServerCounters &_counters;
+  HttpConnectionMetrics &_connectionMetrics;
   ESB::Allocator &_allocator;
   ESB::EmbeddedList _deconstructedHTTPSockets;
   ESB::EmbeddedList _deconstructedClearSockets;

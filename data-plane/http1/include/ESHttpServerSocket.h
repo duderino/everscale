@@ -29,6 +29,10 @@
 #include <ESHttpServerStream.h>
 #endif
 
+#ifndef ES_HTTP_CONNECTION_METRICS_H
+#include <ESHttpConnectionMetrics.h>
+#endif
+
 namespace ES {
 
 /** A socket that receives and echoes back HTTP requests
@@ -38,7 +42,7 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   /** Constructor
    */
   HttpServerSocket(ESB::ConnectedSocket *socket, HttpServerHandler &handler, HttpMultiplexerExtended &multiplexer,
-                   HttpServerCounters &counters, ESB::CleanupHandler &cleanupHandler);
+                   HttpConnectionMetrics &connectionMetrics, ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
    */
@@ -121,6 +125,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   virtual const ESB::SocketAddress &peerAddress() const;
 
   virtual const char *logAddress() const;
+
+  virtual const ESB::Date &transactionStartTime() const;
 
   //
   // ES::HttpServerStream
@@ -241,8 +247,8 @@ class HttpServerSocket : public HttpSocket, public HttpServerStream {
   ESB::UInt64 _bytesAvailable;
   HttpMultiplexerExtended &_multiplexer;
   HttpServerHandler &_handler;
+  HttpConnectionMetrics &_connectionMetrics;
   HttpServerTransaction *_transaction;
-  HttpServerCounters &_counters;
   ESB::CleanupHandler &_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;

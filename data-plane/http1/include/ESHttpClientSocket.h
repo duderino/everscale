@@ -9,8 +9,8 @@
 #include <ESBConnectedSocket.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_COUNTERS_H
-#include <ESHttpClientCounters.h>
+#ifndef ES_HTTP_CONNECTION_METRICS_H
+#include <ESHttpConnectionMetrics.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_TRANSACTION_H
@@ -40,7 +40,7 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   /** Constructor
    */
   HttpClientSocket(bool reused, HttpClientTransaction *transaction, ESB::ConnectedSocket *socket,
-                   HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer, HttpClientCounters &counters,
+                   HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,  HttpConnectionMetrics &connectionMetrics,
                    ESB::CleanupHandler &cleanupHandler);
 
   /** Destructor.
@@ -134,6 +134,8 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   virtual const ESB::SocketAddress &peerAddress() const;
 
   virtual const char *logAddress() const;
+
+  virtual const ESB::Date &transactionStartTime() const;
 
   //
   // ES::HttpClientStream
@@ -232,12 +234,13 @@ class HttpClientSocket : public HttpSocket, public HttpClientStream {
   ESB::Error flushSendBuffer();
 
   int _state;
+  int _requestsPerConnection;
   ESB::UInt64 _bodyBytesWritten;
   ESB::UInt64 _bytesAvailable;
   HttpMultiplexerExtended &_multiplexer;
   HttpClientHandler &_handler;
+  HttpConnectionMetrics &_connectionMetrics;
   HttpClientTransaction *_transaction;
-  HttpClientCounters &_counters;
   ESB::CleanupHandler &_cleanupHandler;
   ESB::Buffer *_recvBuffer;
   ESB::Buffer *_sendBuffer;

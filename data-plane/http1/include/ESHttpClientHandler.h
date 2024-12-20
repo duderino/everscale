@@ -121,6 +121,14 @@ class HttpClientHandler {
    */
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream, State state) = 0;
 
+  /**
+   * Dump counters to a logger
+   *
+   * @param logger The logger
+   * @param severity Severity for the log messages
+   */
+  virtual void dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const = 0;
+
   ESB_DISABLE_AUTO_COPY(HttpClientHandler);
 };
 

@@ -9,6 +9,10 @@
 #include <ESHttpTestParams.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
+#include <ESHttpServerSimpleCounters.h>
+#endif
+
 namespace ES {
 
 class HttpOriginHandler : public HttpServerHandler {
@@ -31,9 +35,11 @@ class HttpOriginHandler : public HttpServerHandler {
   virtual ESB::Error produceResponseBody(HttpMultiplexer &multiplexer, HttpServerStream &stream, unsigned char *chunk,
                                          ESB::UInt64 bytesRequested);
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state);
+  virtual void dumpServerCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const;
 
  private:
   const HttpTestParams &_params;
+  HttpServerSimpleCounters _serverCounters;
 
   ESB_DEFAULT_FUNCS(HttpOriginHandler);
 };

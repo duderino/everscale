@@ -9,8 +9,8 @@
 #include <ESHttpClientTransaction.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_COUNTERS_H
-#include <ESHttpClientCounters.h>
+#ifndef ES_HTTP_CONNECTION_METRICS_H
+#include <ESHttpConnectionMetrics.h>
 #endif
 
 #ifndef ES_HTTP_CLIENT_SOCKET_H
@@ -47,7 +47,7 @@ class HttpClientSocketFactory {
    *
    */
   HttpClientSocketFactory(HttpMultiplexerExtended &multiplexer, HttpClientHandler &handler,
-                          HttpClientCounters &counters, ESB::ClientTLSContextIndex &contextIndex,
+                          HttpConnectionMetrics &connectionMetrics, ESB::ClientTLSContextIndex &contextIndex,
                           ESB::Allocator &allocator);
 
   /** Destructor.
@@ -113,7 +113,7 @@ class HttpClientSocketFactory {
 
   HttpMultiplexerExtended &_multiplexer;
   HttpClientHandler &_handler;
-  HttpClientCounters &_counters;
+  HttpConnectionMetrics &_connectionMetrics;
   ESB::Allocator &_allocator;
   ESB::ConnectionPool _connectionPool;
   ESB::EmbeddedList _deconstructedHttpSockets;

@@ -8,7 +8,7 @@
 
 namespace ES {
 
-HttpOriginHandler::HttpOriginHandler(const HttpTestParams &params) : _params(params) {}
+HttpOriginHandler::HttpOriginHandler(const HttpTestParams &params) : _params(params), _serverCounters() {}
 
 HttpOriginHandler::~HttpOriginHandler() {}
 
@@ -182,29 +182,39 @@ ESB::Error HttpOriginHandler::produceResponseBody(HttpMultiplexer &multiplexer, 
 }
 
 void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
-  HttpOriginContext *context = (HttpOriginContext *)stream.context();
+  HttpOriginContext *context = (HttpOriginContext *) stream.context();
+  const ESB::Date &start = stream.transactionStartTime();
+  const ESB::Date stop = ESB::Time::Instance().now();
 
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
+      _serverCounters.requestHeaderBeginError().record(start, stop);
       ESB_LOG_INFO("[%s] Transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
       // Can fail here when the server connection is waiting for the next request
       // assert(!"Transaction failed at request header parse state");
+      _serverCounters.requestHeaderReceiveError().record(start, stop);
       ESB_LOG_DEBUG("[%s] Transaction failed at request header parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
+      _serverCounters.requestBodyReceiveError().record(start, stop);
       ESB_LOG_INFO("[%s] Transaction failed at request body parse state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
+      _serverCounters.responseHeaderSendError().record(start, stop);
       ESB_LOG_INFO("[%s] Transaction failed at response header send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
+      _serverCounters.responseBodySendError().record(start, stop);
       ESB_LOG_INFO("[%s] Transaction failed at response body send state", stream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
+      _serverCounters.successfulTransactions().record(start, stop);
+      _serverCounters.incrementStatusCounter(stream.response().statusCode(), start, stop);
       if (context) {
         if (_params.requestSize() != context->bytesReceived()) {
+          _serverCounters.requestBodySizeError().record(start, stop);
           ESB_LOG_ERROR("[%s] expected %lu request body bytes but received %lu bytes (delta %lu)", stream.logAddress(),
                         _params.requestSize(), context->bytesReceived(),
                         _params.requestSize() - context->bytesReceived());
@@ -214,6 +224,7 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
       break;
     default:
       assert(!"Transaction failed at unknown state");
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
 
@@ -226,6 +237,10 @@ void HttpOriginHandler::endTransaction(HttpMultiplexer &stack, HttpServerStream 
   context->~HttpOriginContext();
   allocator.deallocate(context);
   stream.setContext(NULL);
+}
+
+void HttpOriginHandler::dumpServerCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+  _serverCounters.log(logger, severity);
 }
 
 }  // namespace ES

@@ -8,7 +8,8 @@
 
 namespace ES {
 
-HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router) : _router(router) {}
+HttpRoutingProxyHandler::HttpRoutingProxyHandler(HttpRouter &router, ESB::Allocator &allocator)
+    : _router(router), _serverCounters(true), _clientCounters(true) {}
 
 HttpRoutingProxyHandler::~HttpRoutingProxyHandler() {}
 
@@ -456,29 +457,52 @@ ESB::Error HttpRoutingProxyHandler::consumeResponseBody(HttpMultiplexer &multipl
 
 void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                                              HttpClientHandler::State state) {
+  const ESB::Date &start = clientStream.transactionStartTime();
+  const ESB::Date stop = ESB::Time::Instance().now();
+
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
+      _clientCounters.requestBeginError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] client transaction failed at begin state", clientStream.logAddress());
       break;
+    case ES_HTTP_CLIENT_HANDLER_RESOLVE:
+      _clientCounters.requestResolveError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
+      ESB_LOG_INFO("[%s] client transaction failed at resolve state", clientStream.logAddress());
+      break;
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
-      ESB_LOG_DEBUG("[%s] client transaction failed at connect state", clientStream.logAddress());
+      _clientCounters.requestConnectError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
+      ESB_LOG_INFO("[%s] client transaction failed at connect state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
+      _clientCounters.requestHeaderSendError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] client transaction failed at response header send state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
+      _clientCounters.requestBodySendError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] client transaction failed at response header send state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
+      _clientCounters.responseHeaderReceiveError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] client transaction failed at response header parse state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
+      _clientCounters.responseBodyReceiveError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] client transaction failed at request body parse state", clientStream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
+      _clientCounters.successfulTransactions().record(start, stop);
+      _clientCounters.incrementStatusCounter(clientStream.response().statusCode(), start, stop);
       ESB_LOG_DEBUG("[%s] client transaction successfully completed", clientStream.logAddress());
       break;
     default:
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_WARNING("[%s] client transaction failed at unknown state", clientStream.logAddress());
   }
 
@@ -518,26 +542,42 @@ void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpC
 
 void HttpRoutingProxyHandler::endTransaction(HttpMultiplexer &multiplexer, HttpServerStream &serverStream,
                                              HttpServerHandler::State state) {
+  const ESB::Date &start = serverStream.transactionStartTime();
+  const ESB::Date stop = ESB::Time::Instance().now();
+
   switch (state) {
     case ES_HTTP_SERVER_HANDLER_BEGIN:
+      _serverCounters.requestHeaderBeginError().record(start, stop);
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] server transaction failed at begin state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_HEADERS:
+      _serverCounters.requestHeaderReceiveError().record(start, stop);
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] server transaction failed at request header parse state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_RECV_REQUEST_BODY:
+      _serverCounters.requestBodyReceiveError().record(start, stop);
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] server transaction failed at request body parse state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_HEADERS:
+      _serverCounters.responseHeaderSendError().record(start, stop);
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] server transaction failed at response header send state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_SEND_RESPONSE_BODY:
+      _serverCounters.responseBodySendError().record(start, stop);
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_DEBUG("[%s] server transaction failed at response header send state", serverStream.logAddress());
       break;
     case ES_HTTP_SERVER_HANDLER_END:
+      _serverCounters.successfulTransactions().record(start, stop);
+      _serverCounters.incrementStatusCounter(serverStream.response().statusCode(), start, stop);
       ESB_LOG_DEBUG("[%s] server transaction successfully completed", serverStream.logAddress());
       break;
     default:
+      _serverCounters.failedTransactions().record(start, stop);
       ESB_LOG_WARNING("[%s] server transaction failed at unknown state", serverStream.logAddress());
   }
 

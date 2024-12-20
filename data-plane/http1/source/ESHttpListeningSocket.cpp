@@ -57,8 +57,6 @@ ESB::Error HttpListeningSocket::handleAccept() {
     return error;
   }
 
-  _multiplexer.serverCounters().getTotalConnections()->inc();
-
   error = _handler.acceptConnection(_multiplexer, &state.peerAddress());
 
   if (ESB_SUCCESS != error) {

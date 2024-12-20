@@ -9,11 +9,19 @@
 #include <ESHttpRouter.h>
 #endif
 
+#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
+#include <ESHttpServerSimpleCounters.h>
+#endif
+
+#ifndef ES_HTTP_CLIENT_SIMPLE_COUNTERS_H
+#include <ESHttpClientSimpleCounters.h>
+#endif
+
 namespace ES {
 
 class HttpRoutingProxyHandler : public HttpProxyHandler {
  public:
-  HttpRoutingProxyHandler(HttpRouter &router);
+  HttpRoutingProxyHandler(HttpRouter &router, ESB::Allocator &allocator);
 
   virtual ~HttpRoutingProxyHandler();
 
@@ -50,6 +58,7 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &clientStream,
                               HttpClientHandler::State state);
   virtual ESB::Error endRequest(HttpMultiplexer &multiplexer, HttpClientStream &clientStream);
+  virtual void dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const;
 
  private:
   ESB::Error onClientRecvBlocked(HttpServerStream &serverStream, HttpClientStream &clientStream);
@@ -58,6 +67,8 @@ class HttpRoutingProxyHandler : public HttpProxyHandler {
   ESB::Error onServerSendBlocked(HttpServerStream &serverStream, HttpClientStream &clientStream);
 
   HttpRouter &_router;
+  HttpServerSimpleCounters _serverCounters;
+  HttpClientSimpleCounters _clientCounters;
 
   ESB_DEFAULT_FUNCS(HttpRoutingProxyHandler);
 };

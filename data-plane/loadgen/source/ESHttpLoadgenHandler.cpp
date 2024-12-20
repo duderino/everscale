@@ -8,7 +8,8 @@
 
 namespace ES {
 
-HttpLoadgenHandler::HttpLoadgenHandler(const HttpTestParams &params) : _params(params), _completedTransactions() {}
+HttpLoadgenHandler::HttpLoadgenHandler(const HttpTestParams &params, ESB::Allocator &allocator)
+    : _params(params), _completedTransactions(), _clientCounters(5 * 60, 1, allocator) {}
 
 HttpLoadgenHandler::~HttpLoadgenHandler() {}
 
@@ -130,31 +131,50 @@ ESB::Error HttpLoadgenHandler::consumeResponseBody(HttpMultiplexer &multiplexer,
 }
 
 void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state) {
-  HttpLoadgenContext *context = (HttpLoadgenContext *)stream.context();
+  HttpLoadgenContext *context = (HttpLoadgenContext *) stream.context();
   assert(context);
+  const ESB::Date &start = stream.transactionStartTime();
+  const ESB::Date stop = ESB::Time::Instance().now();
 
   switch (state) {
     case ES_HTTP_CLIENT_HANDLER_BEGIN:
+      _clientCounters.requestBeginError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at begin state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RESOLVE:
+      _clientCounters.requestResolveError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at resolve state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_CONNECT:
+      _clientCounters.requestConnectError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at connect state", stream.logAddress());
+      break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS:
+      _clientCounters.requestHeaderSendError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at send request headers state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY:
+      _clientCounters.requestBodySendError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at send request body state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS:
+      _clientCounters.responseHeaderReceiveError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at receive response headers state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY:
+      _clientCounters.responseBodyReceiveError().record(start, stop);
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_INFO("[%s] transaction failed at receive response body state", stream.logAddress());
       break;
     case ES_HTTP_CLIENT_HANDLER_END:
+      _clientCounters.successfulTransactions().record(start, stop);
+      _clientCounters.incrementStatusCounter(stream.response().statusCode(), start, stop);
       if (_params.responseSize() != context->bytesReceived()) {
         ESB_LOG_ERROR("[%s] expected %lu response body bytes but received %lu bytes (delta %lu)", stream.logAddress(),
                       _params.responseSize(), context->bytesReceived(),
@@ -164,6 +184,7 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
       break;
     default:
       assert(!"Transaction failed at unknown state");
+      _clientCounters.failedTransactions().record(start, stop);
       ESB_LOG_ERROR("[%s] Transaction failed at unknown state %d", stream.logAddress(), state);
   }
 
@@ -208,6 +229,10 @@ void HttpLoadgenHandler::endTransaction(HttpMultiplexer &multiplexer, HttpClient
   }
 
   ESB_LOG_DEBUG("Resubmitted transaction.  %u iterations remaining", remainingIterations);
+}
+
+void HttpLoadgenHandler::dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+  _clientCounters.log(logger, severity);
 }
 
 ESB::Error HttpLoadgenHandler::endRequest(HttpMultiplexer &multiplexer, HttpClientStream &stream) {

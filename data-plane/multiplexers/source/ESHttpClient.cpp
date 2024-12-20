@@ -27,8 +27,7 @@ HttpClient::HttpClient(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 
       _threadPool(namePrefix, _threads),
       _rand(),
       _clientContextIndex(HttpConfig::Instance().tlsContextBuckets(), HttpConfig::Instance().tlsContextLocks(),
-                          _allocator),
-      _clientCounters(5 * 60, 1, _allocator) {
+                          _allocator) {
   strncpy(_name, namePrefix, sizeof(_name));
   _name[sizeof(_name) - 1] = 0;
 }
@@ -81,8 +80,8 @@ ESB::Error HttpClient::start() {
   ESB_LOG_DEBUG("[%s] maximum sockets %u", _name, maxSockets);
 
   for (ESB::UInt32 i = 0; i < _threads; ++i) {
-    ESB::SocketMultiplexer *multiplexer = new (_allocator)
-        HttpProxyMultiplexer(_name, maxSockets, _idleTimeoutMsec, _clientHandler, _clientCounters, _clientContextIndex);
+    ESB::SocketMultiplexer *multiplexer =
+        new (_allocator) HttpProxyMultiplexer(_name, maxSockets, _idleTimeoutMsec, _clientHandler, _clientContextIndex);
 
     if (!multiplexer) {
       ESB_LOG_CRITICAL_ERRNO(ESB_OUT_OF_MEMORY, "Cannot initialize multiplexer");

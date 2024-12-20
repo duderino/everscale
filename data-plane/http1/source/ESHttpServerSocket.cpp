@@ -86,6 +86,10 @@ class HttpResponseBodyProducer : public HttpServerHandler {
     assert(!"function should not be called");
   }
 
+  virtual void dumpServerCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+    assert(!"function should not be called");
+  }
+
   inline ESB::UInt64 bytesProduced() const { return _bytesProduced; };
 
  private:
@@ -168,6 +172,10 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
     assert(!"function should not be called");
   }
 
+  virtual void dumpServerCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+    assert(!"function should not be called");
+  }
+
   inline ESB::UInt64 bytesConsumed() const { return _bytesConsumed; };
 
   inline ESB::UInt64 bytesOffered() const { return _bytesOffered; }
@@ -183,7 +191,7 @@ class HttpRequestBodyConsumer : public HttpServerHandler {
 };
 
 HttpServerSocket::HttpServerSocket(ESB::ConnectedSocket *socket, HttpServerHandler &handler,
-                                   HttpMultiplexerExtended &multiplexer, HttpServerCounters &counters,
+                                   HttpMultiplexerExtended &multiplexer, HttpConnectionMetrics &connectionMetrics,
                                    ESB::CleanupHandler &cleanupHandler)
     : _state(SERVER_TRANSACTION_BEGIN),
       _requestsPerConnection(0),
@@ -191,8 +199,8 @@ HttpServerSocket::HttpServerSocket(ESB::ConnectedSocket *socket, HttpServerHandl
       _bytesAvailable(0),
       _multiplexer(multiplexer),
       _handler(handler),
+      _connectionMetrics(connectionMetrics),
       _transaction(NULL),
-      _counters(counters),
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
@@ -426,7 +434,7 @@ void HttpServerSocket::handleRemove() {
   }
 
   stateTransition(SERVER_INACTIVE);
-  _counters.getAverageTransactionsPerConnection()->add(_requestsPerConnection);
+  _connectionMetrics.averageTransactionsPerConnection().add(_requestsPerConnection);
   _requestsPerConnection = 0;
 }
 
@@ -1074,6 +1082,8 @@ ESB::Error HttpServerSocket::setResponse(int statusCode, const char *reasonPhras
 }
 
 const char *HttpServerSocket::logAddress() const { return _socket->name(); }
+
+const ESB::Date &HttpServerSocket::transactionStartTime() const { return _transaction->startTime(); }
 
 ESB::Error HttpServerSocket::abort(bool updateMultiplexer) {
 #ifdef ESB_CI_BUILD

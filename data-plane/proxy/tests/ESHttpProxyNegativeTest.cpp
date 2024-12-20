@@ -159,9 +159,9 @@ TEST_P(HttpProxyNegativeTest, FailCleanly) {
 
   ASSERT_EQ(ESB_SUCCESS, test.loadDefaultTLSContexts());
   ASSERT_EQ(ESB_SUCCESS, test.run());
-  ASSERT_EQ(0, test.client().clientCounters().getSuccesses()->queries());
+  ASSERT_EQ(0, test.client().clientCounters().successes()->queries());
   ASSERT_EQ(params.connections() * params.requestsPerConnection(),
-            test.client().clientCounters().getFailures()->queries());
+            test.client().clientCounters().failures()->queries());
 }
 
 // body-size variations X use content-length header if true X use secure if true X failure type X client timeout msec X

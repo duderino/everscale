@@ -49,8 +49,6 @@ class HttpMultiplexerExtended : public HttpMultiplexer {
 
   virtual void destroyServerTransaction(HttpServerTransaction *transaction) = 0;
 
-  virtual HttpServerCounters &serverCounters() = 0;
-
   /**
    * Construct a new server socket and immediately add it to a multiplexer.
    *
@@ -68,6 +66,8 @@ class HttpMultiplexerExtended : public HttpMultiplexer {
   virtual ESB::Error addListeningSocket(ESB::ListeningSocket &socket) = 0;
 
   virtual ESB::SocketMultiplexer &multiplexer() = 0;
+
+  virtual void dumpCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const = 0;
 
   ESB_DISABLE_AUTO_COPY(HttpMultiplexerExtended);
 };

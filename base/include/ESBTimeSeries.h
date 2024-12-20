@@ -35,8 +35,7 @@ class TimeSeries : public PerformanceCounter {
    *   for each new element in the sequence.
    *
    */
-  TimeSeries(const char *name, UInt16 maxWindows, UInt16 windowSizeSec,
-             Allocator &allocator = SystemAllocator::Instance());
+  TimeSeries(const char *name, UInt16 maxWindows, UInt16 windowSizeSec, Allocator &allocator = SystemAllocator::Instance());
 
   virtual ~TimeSeries();
 

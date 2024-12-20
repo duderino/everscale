@@ -27,8 +27,7 @@ HttpServer::HttpServer(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 
       _threadPool(namePrefix, _threads),
       _rand(),
       _serverContextIndex(HttpConfig::Instance().tlsContextBuckets(), HttpConfig::Instance().tlsContextLocks(),
-                          _allocator),
-      _serverCounters() {
+                          _allocator) {
   strncpy(_name, namePrefix, sizeof(_name));
   _name[sizeof(_name) - 1] = 0;
 }
@@ -169,7 +168,7 @@ void HttpServer::destroy() {
 
 ESB::SocketMultiplexer *HttpServer::createMultiplexer() {
   return new (_allocator) HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec,
-                                               _serverHandler, _serverCounters, _serverContextIndex);
+                                               _serverHandler, _serverContextIndex);
 }
 
 void HttpServer::destroyMultiplexer(ESB::SocketMultiplexer *multiplexer) {

@@ -126,7 +126,7 @@ class Logger {
 #define ESB_STRING_LITERAL(x) ESB_STRING_LITERAL2(x)
 #define ESB_LOG_PREFIX "] "
 #define ESB_LOG_SUFFIX " [" __FILE__ ":" ESB_STRING_LITERAL(__LINE__) "]\n"
-//#define ESB_LOG_SUFFIX "\n"
+// #define ESB_LOG_SUFFIX "\n"
 #define ESB_EMERGENCY_LOG_PREFIX "[%u:%lu:EMR" ESB_LOG_PREFIX
 #define ESB_ALERT_LOG_PREFIX "[%u:%lu:ALT" ESB_LOG_PREFIX
 #define ESB_CRITICAL_LOG_PREFIX "[%u:%lu:CRT" ESB_LOG_PREFIX

@@ -21,8 +21,7 @@ HttpProxy::HttpProxy(const char *namePrefix, ESB::UInt32 threads, ESB::UInt32 id
     : HttpServer(namePrefix, threads, idleTimeoutMsec, proxyHandler, allocator),
       _proxyHandler(proxyHandler),
       _clientContextIndex(HttpConfig::Instance().tlsContextBuckets(), HttpConfig::Instance().tlsContextLocks(),
-                          _allocator),
-      _clientCounters(60, 1, _allocator) {}
+                          _allocator) {}
 
 HttpProxy::~HttpProxy() {}
 
@@ -53,9 +52,8 @@ ESB::Error HttpProxy::push(HttpClientCommand *command, int idx) {
 }
 
 ESB::SocketMultiplexer *HttpProxy::createMultiplexer() {
-  return new (_allocator)
-      HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec, _proxyHandler,
-                           _proxyHandler, _clientCounters, _serverCounters, _clientContextIndex, _serverContextIndex);
+  return new (_allocator) HttpProxyMultiplexer(_name, ESB::SystemConfig::Instance().socketSoftMax(), _idleTimeoutMsec,
+                                               _proxyHandler, _proxyHandler, _clientContextIndex, _serverContextIndex);
 }
 
 }  // namespace ES

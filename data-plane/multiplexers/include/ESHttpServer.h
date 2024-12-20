@@ -1,10 +1,6 @@
 #ifndef ES_HTTP_SERVER_H
 #define ES_HTTP_SERVER_H
 
-#ifndef ES_HTTP_SERVER_SIMPLE_COUNTERS_H
-#include <ESHttpServerSimpleCounters.h>
-#endif
-
 #ifndef ES_HTTP_SERVER_HANDLER_H
 #include <ESHttpServerHandler.h>
 #endif
@@ -88,8 +84,6 @@ class HttpServer {
 
   void destroy();
 
-  inline const HttpServerCounters &serverCounters() const { return _serverCounters; }
-
   class AddListeningSocketCommand : public HttpServerCommand {
    public:
     AddListeningSocketCommand(ESB::ListeningSocket &socket, ESB::CleanupHandler &cleanupHandler)
@@ -132,7 +126,6 @@ class HttpServer {
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
   ESB::ServerTLSContextIndex _serverContextIndex;
-  HttpServerSimpleCounters _serverCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
 
   ESB_DEFAULT_FUNCS(HttpServer);

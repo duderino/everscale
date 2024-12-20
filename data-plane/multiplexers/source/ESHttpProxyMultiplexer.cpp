@@ -47,6 +47,8 @@ class HttpNullClientHandler : public HttpClientHandler {
   virtual void endTransaction(HttpMultiplexer &multiplexer, HttpClientStream &stream, State state) {
     assert(0 == "HttpNullClientHandler called");
   }
+
+  virtual void dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {}
 };
 
 class HttpNullServerHandler : public HttpServerHandler {
@@ -87,172 +89,158 @@ class HttpNullServerHandler : public HttpServerHandler {
   virtual void endTransaction(HttpMultiplexer &stack, HttpServerStream &stream, State state) {
     assert(0 == "HttpNullServerHandler called");
   }
+
+  virtual void dumpServerCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {}
 };
 
-class HttpNullClientCounters : public HttpClientCounters {
- public:
-  virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const {
-    assert(0 == "HttpNullClientCounters called");
-  }
-
-  virtual ESB::PerformanceCounter *getSuccesses() {
-    assert(0 == "HttpNullClientCounters called");
-    return NULL;
-  }
-
-  virtual const ESB::PerformanceCounter *getSuccesses() const {
-    assert(0 == "HttpNullClientCounters called");
-    return NULL;
-  }
-
-  virtual ESB::PerformanceCounter *getFailures() {
-    assert(0 == "HttpNullClientCounters called");
-    return NULL;
-  }
-
-  virtual const ESB::PerformanceCounter *getFailures() const {
-    assert(0 == "HttpNullClientCounters called");
-    return NULL;
-  }
-};
-
-class HttpNullServerCounters : public HttpServerCounters {
- public:
-  virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const {
-    assert(0 == "HttpNullServerCounters called");
-  }
-  virtual ESB::PerformanceCounter *getSuccessfulTransactions() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getSuccessfulTransactions() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getRequestHeaderErrors() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getRequestHeaderErrors() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getRequestHeaderFailures() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getRequestHeaderFailures() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getRequestHeaderTimeouts() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getRequestHeaderTimeouts() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getRequestBodyErrors() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getRequestBodyErrors() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getRequestBodyFailures() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getRequestBodyFailures() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getRequestBodyTimeouts() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getRequestBodyTimeouts() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getResponseHeaderErrors() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getResponseHeaderErrors() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getResponseHeaderFailures() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getResponseHeaderFailures() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getResponseHeaderTimeouts() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getResponseHeaderTimeouts() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getResponseBodyErrors() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getResponseBodyErrors() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getResponseBodyFailures() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getResponseBodyFailures() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::PerformanceCounter *getResponseBodyTimeouts() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::PerformanceCounter *getResponseBodyTimeouts() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::SharedInt *getTotalConnections() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::SharedInt *getTotalConnections() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-  virtual const ESB::SharedAveragingCounter *getAverageTransactionsPerConnection() const {
-    assert(0 == "HttpNullServerCounters called");
-    return NULL;
-  }
-};
+// class HttpNullClientCounters : public HttpClientCounters {
+//  public:
+//   virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+//     assert(0 == "HttpNullClientCounters called");
+//   }
+//
+//   virtual ESB::PerformanceCounter &successfulTransactions() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &successfulTransactions() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &failedTransactions() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &failedTransactions() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestBeginError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestBeginError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestResolveError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestResolveError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestConnectError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestConnectError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestHeaderSendError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestHeaderSendError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestBodySendError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &requestBodySendError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseHeaderReceiveError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseHeaderReceiveError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseBodyReceiveError() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseBodyReceiveError() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus1xx() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus1xx() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus200() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus200() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus201() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus201() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus202() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus202() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus204() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus204() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus2xx() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus2xx() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus304() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus304() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus3xx() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus3xx() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus400() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus400() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus401() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus401() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus403() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus403() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus404() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus404() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus410() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus410() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus4xx() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus4xx() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus500() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus500() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus502() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus502() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus503() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus503() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus504() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus504() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus5xx() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus5xx() const { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatusOther() { assert(0 == "HttpNullClientCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatusOther() const { assert(0 == "HttpNullClientCounters called"); }
+// };
+//
+// class HttpNullServerCounters : public HttpServerCounters {
+//  public:
+//   virtual void log(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+//     assert(0 == "HttpNullServerCounters called");
+//   }
+//   virtual ESB::PerformanceCounter &successfulTransactions() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &successfulTransactions() const {
+//     assert(0 == "HttpNullServerCounters called");
+//   }
+//   virtual ESB::PerformanceCounter &failedTransactions() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &failedTransactions() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &requestHeaderBeginError() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &requestHeaderBeginError() const {
+//     assert(0 == "HttpNullServerCounters called");
+//   }
+//   virtual ESB::PerformanceCounter &requestHeaderReceiveError() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &requestHeaderReceiveError() const {
+//     assert(0 == "HttpNullServerCounters called");
+//   }
+//   virtual ESB::PerformanceCounter &requestBodyReceiveError() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &requestBodyReceiveError() const {
+//     assert(0 == "HttpNullServerCounters called");
+//   }
+//   virtual ESB::PerformanceCounter &requestBodySizeError() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &requestBodySizeError() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseHeaderSendError() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseHeaderSendError() const {
+//     assert(0 == "HttpNullServerCounters called");
+//   }
+//   virtual ESB::PerformanceCounter &responseBodySendError() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseBodySendError() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus1xx() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus1xx() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus200() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus200() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus201() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus201() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus202() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus202() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus204() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus204() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus2xx() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus2xx() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus304() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus304() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus3xx() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus3xx() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus400() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus400() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus401() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus401() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus403() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus403() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus404() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus404() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus410() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus410() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus4xx() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus4xx() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus500() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus500() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus502() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus502() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus503() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus503() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus504() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus504() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatus5xx() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatus5xx() const { assert(0 == "HttpNullServerCounters called"); }
+//   virtual ESB::PerformanceCounter &responseStatusOther() { assert(0 == "HttpNullServerCounters called"); }
+//   virtual const ESB::PerformanceCounter &responseStatusOther() const { assert(0 == "HttpNullServerCounters called"); }
+// };
+//   static HttpNullClientCounters HttpNullClientCounters;
+//   static HttpNullServerCounters HttpNullServerCounters;
 
 static HttpNullClientHandler HttpNullClientHandler;
 static HttpNullServerHandler HttpNullServerHandler;
-static HttpNullClientCounters HttpNullClientCounters;
-static HttpNullServerCounters HttpNullServerCounters;
 static ESB::ClientTLSContextIndex EmptyClientContextIndex(0, 0, ESB::SystemAllocator::Instance());
 static ESB::ServerTLSContextIndex EmptyServerContextIndex(0, 0, ESB::SystemAllocator::Instance());
 
 HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                                            HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
-                                           HttpClientCounters &clientCounters, HttpServerCounters &serverCounters,
                                            ESB::ClientTLSContextIndex &clientContextIndex,
                                            ESB::ServerTLSContextIndex &serverContextIndex)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
@@ -261,19 +249,19 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, serverHandler, serverCounters, serverContextIndex, _factoryAllocator),
+      _serverSocketFactory(*this, serverHandler, _serverConnectionMetrics, serverContextIndex, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
-      _clientSocketFactory(*this, clientHandler, clientCounters, clientContextIndex, _factoryAllocator),
+      _clientSocketFactory(*this, clientHandler, _clientConnectionMetrics, clientContextIndex, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientCommandSocket(namePrefix, *this),
       _clientHandler(clientHandler),
       _serverHandler(serverHandler),
-      _clientCounters(clientCounters),
-      _serverCounters(serverCounters) {}
+      _isClient(true),
+      _isServer(true) {}
 
 HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
-                                           HttpClientHandler &clientHandler, HttpClientCounters &clientCounters,
+                                           HttpClientHandler &clientHandler,
                                            ESB::ClientTLSContextIndex &clientContextIndex)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
@@ -281,20 +269,20 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, HttpNullServerHandler, HttpNullServerCounters, EmptyServerContextIndex,
+      _serverSocketFactory(*this, HttpNullServerHandler, _serverConnectionMetrics, EmptyServerContextIndex,
                            _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
-      _clientSocketFactory(*this, clientHandler, clientCounters, clientContextIndex, _factoryAllocator),
+      _clientSocketFactory(*this, clientHandler, _clientConnectionMetrics, clientContextIndex, _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientCommandSocket(namePrefix, *this),
       _clientHandler(clientHandler),
       _serverHandler(HttpNullServerHandler),
-      _clientCounters(clientCounters),
-      _serverCounters(HttpNullServerCounters) {}
+      _isClient(true),
+      _isServer(false) {}
 
 HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
-                                           HttpServerHandler &serverHandler, HttpServerCounters &serverCounters,
+                                           HttpServerHandler &serverHandler,
                                            ESB::ServerTLSContextIndex &serverContextIndex)
     : _ioBufferPoolAllocator(HttpConfig::Instance().ioBufferChunkSize(), ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE,
                              ESB::SystemAllocator::Instance()),
@@ -302,17 +290,17 @@ HttpProxyMultiplexer::HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 m
       _factoryAllocator(ESB_PAGE_SIZE * 1000 - ESB::DiscardAllocator::SizeofChunk(ESB_CACHE_LINE_SIZE),
                         ESB_CACHE_LINE_SIZE, ESB_PAGE_SIZE, ESB::SystemAllocator::Instance()),
       _multiplexer(namePrefix, idleTimeoutMsec, maxSockets, ESB::SystemAllocator::Instance()),
-      _serverSocketFactory(*this, serverHandler, serverCounters, serverContextIndex, _factoryAllocator),
+      _serverSocketFactory(*this, serverHandler, _serverConnectionMetrics, serverContextIndex, _factoryAllocator),
       _serverTransactionFactory(_factoryAllocator),
       _serverCommandSocket(namePrefix, *this),
-      _clientSocketFactory(*this, HttpNullClientHandler, HttpNullClientCounters, EmptyClientContextIndex,
+      _clientSocketFactory(*this, HttpNullClientHandler, _clientConnectionMetrics, EmptyClientContextIndex,
                            _factoryAllocator),
       _clientTransactionFactory(_factoryAllocator),
       _clientCommandSocket(namePrefix, *this),
       _clientHandler(HttpNullClientHandler),
       _serverHandler(serverHandler),
-      _clientCounters(HttpNullClientCounters),
-      _serverCounters(serverCounters) {}
+      _isClient(false),
+      _isServer(true) {}
 
 HttpProxyMultiplexer::~HttpProxyMultiplexer() {}
 
@@ -384,6 +372,7 @@ ESB::Error HttpProxyMultiplexer::addServerSocket(ESB::Socket::State &state) {
     return error;
   }
 
+  _serverConnectionMetrics.totalConnections().inc();
   return ESB_SUCCESS;
 }
 
@@ -415,8 +404,6 @@ ESB::Error HttpProxyMultiplexer::addListeningSocket(ESB::ListeningSocket &socket
   return ESB_SUCCESS;
 }
 
-HttpServerCounters &HttpProxyMultiplexer::serverCounters() { return _serverCounters; }
-
 HttpServerTransaction *HttpProxyMultiplexer::createServerTransaction() { return _serverTransactionFactory.create(); }
 
 void HttpProxyMultiplexer::destroyServerTransaction(HttpServerTransaction *transaction) {
@@ -424,6 +411,40 @@ void HttpProxyMultiplexer::destroyServerTransaction(HttpServerTransaction *trans
 }
 
 ESB::SocketMultiplexer &HttpProxyMultiplexer::multiplexer() { return _multiplexer; }
+
+void HttpProxyMultiplexer::dumpCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+  const bool isProxy = _isClient && _isServer;
+
+  if (_isClient) {
+    _clientHandler.dumpClientCounters(logger, severity);
+
+    if (isProxy) {
+      ESB_LOG(logger, severity, "PROXY CONNECTS: %u", _clientConnectionMetrics.totalConnections().get());
+    } else {
+      ESB_LOG(logger, severity, "CLIENT CONNECTS: %u", _clientConnectionMetrics.totalConnections().get());
+    }
+
+    _clientConnectionMetrics.averageTransactionsPerConnection().log(logger, severity,
+                                                                    isProxy ? "PROXY "
+                                                                            : "CLIENT "
+                                                                              "AVG TRANS PER CLIENT CONNECTION");
+  }
+
+  if (_isServer) {
+    _serverHandler.dumpServerCounters(logger, severity);
+
+    if (isProxy) {
+      ESB_LOG(logger, severity, "PROXY ACCEPTS: %u", _serverConnectionMetrics.totalConnections().get());
+    } else {
+      ESB_LOG(logger, severity, "ORIGIN ACCEPTS: %u", _serverConnectionMetrics.totalConnections().get());
+    }
+
+    _serverConnectionMetrics.averageTransactionsPerConnection().log(logger, severity,
+                                                                    isProxy ? "PROXY "
+                                                                            : "ORIGIN "
+                                                                              "AVG TRANS PER SERVER CONNECTION");
+  }
+}
 
 bool HttpProxyMultiplexer::shutdown() { return !_multiplexer.isRunning(); }
 

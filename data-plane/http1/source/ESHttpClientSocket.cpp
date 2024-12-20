@@ -81,6 +81,10 @@ class HttpRequestBodyProducer : public HttpClientHandler {
     assert(!"function should not be called");
   }
 
+  virtual void dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+    assert(!"function should not be called");
+  }
+
   inline ESB::UInt64 bytesProduced() const { return _bytesProduced; };
 
  private:
@@ -163,6 +167,10 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
     assert(!"function should not be called");
   }
 
+  virtual void dumpClientCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const {
+    assert(!"function should not be called");
+  }
+
   inline ESB::UInt64 bytesConsumed() const { return _bytesConsumed; };
 
   inline ESB::UInt64 bytesOffered() const { return _bytesOffered; }
@@ -179,14 +187,15 @@ class HttpResponseBodyConsumer : public HttpClientHandler {
 
 HttpClientSocket::HttpClientSocket(bool reused, HttpClientTransaction *transaction, ESB::ConnectedSocket *socket,
                                    HttpClientHandler &handler, HttpMultiplexerExtended &multiplexer,
-                                   HttpClientCounters &counters, ESB::CleanupHandler &cleanupHandler)
+                                   HttpConnectionMetrics &connectionMetrics, ESB::CleanupHandler &cleanupHandler)
     : _state(CONNECTING),
+      _requestsPerConnection(0),
       _bodyBytesWritten(0),
       _bytesAvailable(0),
       _multiplexer(multiplexer),
       _handler(handler),
+  _connectionMetrics(connectionMetrics),
       _transaction(transaction),
-      _counters(counters),
       _cleanupHandler(cleanupHandler),
       _recvBuffer(NULL),
       _sendBuffer(NULL),
@@ -259,6 +268,7 @@ ESB::Error HttpClientSocket::handleConnect() {
   assert(!(ABORTED & _state));
   assert(_socket->connected());
 
+  _connectionMetrics.totalConnections().inc();
   ESB_LOG_INFO("[%s] connected to peer", _socket->name());
 
   stateTransition(TRANSACTION_BEGIN);
@@ -427,38 +437,32 @@ void HttpClientSocket::handleRemove() {
   switch (state) {
     case TRANSACTION_BEGIN:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_BEGIN);
       break;
     case CONNECTING:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_CONNECT);
       break;
     case FORMATTING_HEADERS:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_HEADERS);
       break;
     case FORMATTING_BODY:
     case FLUSHING_BODY:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_SEND_REQUEST_BODY);
       break;
     case PARSING_HEADERS:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_HEADERS);
       break;
     case PARSING_BODY:
       assert(_transaction);
-      _counters.getFailures()->record(_transaction->startTime(), ESB::Time::Instance().now());
       _handler.endTransaction(_multiplexer, *this, HttpClientHandler::ES_HTTP_CLIENT_HANDLER_RECV_RESPONSE_BODY);
       break;
     case TRANSACTION_END:
       assert(_transaction);
-      _counters.getSuccesses()->record(_transaction->startTime(), ESB::Time::Instance().now());
+      ++_requestsPerConnection;
       if (GetReuseConnections() && !(_state & ABORTED)) {
         const HttpHeader *header = _transaction->response().findHeader("Connection");
         reuseConnection = !(header && header->fieldValue() && !strcasecmp("close", (const char *)header->fieldValue()));
@@ -481,6 +485,8 @@ void HttpClientSocket::handleRemove() {
     ESB_LOG_DEBUG("[%s] adding connection to connection pool", _socket->name());
   } else {
     ESB_LOG_DEBUG("[%s] connection will not be reused", _socket->name());
+    _connectionMetrics.averageTransactionsPerConnection().add(_requestsPerConnection);
+    _requestsPerConnection = 0;
     _socket->close();
   }
 
@@ -921,6 +927,8 @@ ESB::Error HttpClientSocket::flushSendBuffer() {
 }
 
 const char *HttpClientSocket::logAddress() const { return _socket->name(); }
+
+const ESB::Date &HttpClientSocket::transactionStartTime() const { return _transaction->startTime(); }
 
 ESB::Error HttpClientSocket::abort(bool updateMultiplexer) {
 #ifdef ESB_CI_BUILD

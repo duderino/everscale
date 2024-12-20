@@ -9,10 +9,6 @@
 #include <ESHttpClientHandler.h>
 #endif
 
-#ifndef ES_HTTP_CLIENT_COUNTERS_H
-#include <ESHttpClientCounters.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_SOCKET_FACTORY_H
 #include <ESHttpClientSocketFactory.h>
 #endif
@@ -29,10 +25,6 @@
 #include <ESHttpServerHandler.h>
 #endif
 
-#ifndef ES_HTTP_SERVER_COUNTERS_H
-#include <ESHttpServerCounters.h>
-#endif
-
 #ifndef ES_HTTP_SERVER_SOCKET_FACTORY_H
 #include <ESHttpServerSocketFactory.h>
 #endif
@@ -47,6 +39,10 @@
 
 #ifndef ES_HTTP_LISTENING_SOCKET_H
 #include <ESHttpListeningSocket.h>
+#endif
+
+#ifndef ES_HTTP_CONNECTION_METRICS_H
+#include <ESHttpConnectionMetrics.h>
 #endif
 
 #ifndef ESB_DISCARD_ALLOCATOR_H
@@ -71,12 +67,9 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
    * @param maxSockets
    * @param clientHandler
    * @param serverHandler
-   * @param clientCounters
-   * @param serverCounters
    */
   HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
                        HttpClientHandler &clientHandler, HttpServerHandler &serverHandler,
-                       HttpClientCounters &clientCounters, HttpServerCounters &serverCounters,
                        ESB::ClientTLSContextIndex &clientContextIndex, ESB::ServerTLSContextIndex &serverContextIndex);
 
   /**
@@ -84,22 +77,18 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
    *
    * @param maxSockets
    * @param clientHandler
-   * @param clientCounters
    */
   HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
-                       HttpClientHandler &clientHandler, HttpClientCounters &clientCounters,
-                       ESB::ClientTLSContextIndex &clientContextIndex);
+                       HttpClientHandler &clientHandler, ESB::ClientTLSContextIndex &clientContextIndex);
 
   /**
    * Create a server-only multiplexer
    *
    * @param maxSockets
    * @param serverHandler
-   * @param serverCounters
    */
   HttpProxyMultiplexer(const char *namePrefix, ESB::UInt32 maxSockets, ESB::UInt32 idleTimeoutMsec,
-                       HttpServerHandler &serverHandler, HttpServerCounters &serverCounters,
-                       ESB::ServerTLSContextIndex &serverContextIndex);
+                       HttpServerHandler &serverHandler, ESB::ServerTLSContextIndex &serverContextIndex);
 
   virtual ~HttpProxyMultiplexer();
 
@@ -160,15 +149,18 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
 
   virtual ESB::Error addServerSocket(ESB::Socket::State &state);
   virtual ESB::Error addListeningSocket(ESB::ListeningSocket &socket);
-  virtual HttpServerCounters &serverCounters();
 
   virtual ESB::SocketMultiplexer &multiplexer();
+
+  virtual void dumpCounters(ESB::Logger &logger, ESB::Logger::Severity severity) const;
 
  private:
   ESB::DiscardAllocator _ioBufferPoolAllocator;
   ESB::BufferPool _ioBufferPool;
   ESB::DiscardAllocator _factoryAllocator;
   ESB::EpollMultiplexer _multiplexer;
+  HttpConnectionMetrics _serverConnectionMetrics;
+  HttpConnectionMetrics _clientConnectionMetrics;
   HttpServerSocketFactory _serverSocketFactory;
   HttpServerTransactionFactory _serverTransactionFactory;
   HttpServerCommandSocket _serverCommandSocket;
@@ -177,8 +169,8 @@ class HttpProxyMultiplexer : public ESB::SocketMultiplexer, public HttpMultiplex
   HttpClientCommandSocket _clientCommandSocket;
   HttpClientHandler &_clientHandler;
   HttpServerHandler &_serverHandler;
-  HttpClientCounters &_clientCounters;
-  HttpServerCounters &_serverCounters;
+  const bool _isClient;
+  const bool _isServer;
 
   ESB_DEFAULT_FUNCS(HttpProxyMultiplexer);
 };

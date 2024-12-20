@@ -58,7 +58,6 @@ static const char *DescribeSignal(int signo) {
 #else
 #error "sigdescr_np or equivalent is required for the signal handler"
 #endif
-
 }
 
 void BacktraceHandler(int signo, siginfo_t *siginfo, void *context) {

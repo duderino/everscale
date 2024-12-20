@@ -1,10 +1,6 @@
 #ifndef ES_HTTP_CLIENT_H
 #define ES_HTTP_CLIENT_H
 
-#ifndef ES_HTTP_CLIENT_HISTORICAL_COUNTERS_H
-#include <ESHttpClientHistoricalCounters.h>
-#endif
-
 #ifndef ES_HTTP_CLIENT_HANDLER_H
 #include <ESHttpClientHandler.h>
 #endif
@@ -73,8 +69,6 @@ class HttpClient {
 
   void destroy();
 
-  inline const HttpClientCounters &clientCounters() const { return _clientCounters; }
-
  private:
   typedef enum {
     ES_HTTP_CLIENT_IS_INITIALIZED = 0,
@@ -93,7 +87,6 @@ class HttpClient {
   ESB::ThreadPool _threadPool;
   ESB::Rand _rand;
   ESB::ClientTLSContextIndex _clientContextIndex;
-  HttpClientHistoricalCounters _clientCounters;
   char _name[ESB_NAME_PREFIX_SIZE];
 
   ESB_DEFAULT_FUNCS(HttpClient);

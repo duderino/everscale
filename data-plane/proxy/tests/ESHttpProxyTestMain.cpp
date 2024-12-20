@@ -122,8 +122,8 @@ int main(int argc, char **argv) {
   // Assert all requests succeeded
   //
 
-  const ESB::UInt32 totalSuccesses = test.client().clientCounters().getSuccesses()->queries();
-  const ESB::UInt32 totalFailures = test.client().clientCounters().getFailures()->queries();
+  const ESB::UInt32 totalSuccesses = test.client().clientCounters().successes()->queries();
+  const ESB::UInt32 totalFailures = test.client().clientCounters().failures()->queries();
   const ESB::UInt32 totalTransactions = params.connections() * params.requestsPerConnection();
 
   if (totalSuccesses != totalTransactions || 0 < totalFailures) {
