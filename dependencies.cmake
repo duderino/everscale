@@ -65,17 +65,17 @@ mark_as_advanced(
 # BoringSSL
 #
 
-set(BSSL_TAG fips-20190808)  # If you change this, update the patch in third_party/patch/bssl/index.patch. If you remove the patch, remove the PATCH_COMMAND below
+set(BSSL_TAG 0.20250701.0)  # If you change this, update the patch in third_party/patch/bssl/index.patch. If you remove the patch, remove the PATCH_COMMAND below
 set(BSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/third_party/src/bssl)
 set(BSSL_INCLUDE_DIR ${BSSL_ROOT_DIR}/include)
-set(BSSL_LIB_DIR ${BSSL_ROOT_DIR}/lib)
+set(BSSL_LIB_DIR ${BSSL_ROOT_DIR})
 
 # This EXISTS checks with no-op custom target can be removed once
 # https://gitlab.kitware.com/cmake/cmake/-/issues/16419# is fixed.
 
-if (EXISTS ${BSSL_LIB_DIR})
+if (EXISTS ${BSSL_LIB_DIR}/libssl.a)
     add_custom_target(bssl
-            COMMAND echo "${BSSL_LIB_DIR} exists, skipping rebuild")
+            COMMAND echo "${BSSL_LIB_DIR}/libssl.a exists, skipping rebuild")
 else ()
     ExternalProject_Add(bssl
             PREFIX third_party
@@ -83,10 +83,10 @@ else ()
             BUILD_IN_SOURCE 1
             GIT_REPOSITORY https://boringssl.googlesource.com/boringssl
             GIT_TAG ${BSSL_TAG}
-            CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release -DFIPS:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF "-DCMAKE_C_FLAGS=-w" "-DCMAKE_CXX_FLAGS=-w"
-            INSTALL_COMMAND mkdir -p lib && cp ssl/libssl.a lib && cp crypto/libcrypto.a lib
+	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release -DFIPS:BOOL=OFF -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF "-DCMAKE_C_FLAGS=-w" "-DCMAKE_CXX_FLAGS=-w"
+	    #INSTALL_COMMAND mkdir -p lib && cp libssl.a lib && cp libcrypto.a lib
             UPDATE_COMMAND ""
-            PATCH_COMMAND patch -p1 < ../../patch/bssl/index.patch
+	    #PATCH_COMMAND patch -p1 < ../../patch/bssl/index.patch
     )
 endif ()
 
