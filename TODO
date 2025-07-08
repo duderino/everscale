@@ -1,4 +1,5 @@
 top:
+ - Address these https://docs.google.com/document/d/1u8H-9IaXbodIevgw4k6qp_4wDy8QVd9FYyeBBalke_s/edit?tab=t.0
  - Boringssl build - is this really a good idea? -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF
  - Fix CN/SAN validation failures with recent versions of boringssl
    - Failures:
